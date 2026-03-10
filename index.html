@@ -1367,39 +1367,48 @@ function fillDL(id,key){
 function refreshDLs(){ fillDL('dl-batch','Batch / Train'); fillDL('dl-truck','Trucker'); fillDL('dl-con','Consignee'); }
 
 // ── MULTI-SELECT HELPERS ──────────────────────────────────────────
+// Selections stored in JS state so they survive DOM rebuilds in fillMultiSel
+const _msState={};
+function msGetValues(id){ return _msState[id]?[..._msState[id]]:[]; }
+function _msUpdateBtn(id,vals,placeholder){
+  const btn=document.getElementById('btn-'+id); if(!btn) return;
+  if(vals.length){ btn.textContent=vals.join(', '); btn.classList.add('has-sel'); }
+  else{ btn.textContent=placeholder; btn.classList.remove('has-sel'); }
+}
+function _msSyncDOM(id){
+  const s=_msState[id]||new Set();
+  document.querySelectorAll('#menu-'+id+' input[type=checkbox]').forEach(cb=>{ cb.checked=s.has(cb.value); });
+}
 function msOpen(id){
   const menu=document.getElementById('menu-'+id);
   const wasOpen=menu.classList.contains('open');
   document.querySelectorAll('.ms-menu.open').forEach(m=>m.classList.remove('open'));
   if(!wasOpen) menu.classList.add('open');
 }
-function msGetValues(id){
-  return Array.from(document.querySelectorAll('#menu-'+id+' input[type=checkbox]:checked')).map(cb=>cb.value);
-}
 function msChange(id, placeholder){
-  const vals=msGetValues(id);
-  const btn=document.getElementById('btn-'+id);
-  if(vals.length){ btn.textContent=vals.join(', '); btn.classList.add('has-sel'); }
-  else { btn.textContent=placeholder; btn.classList.remove('has-sel'); }
+  // Read from DOM (user just toggled a checkbox) → sync into state
+  const vals=Array.from(document.querySelectorAll('#menu-'+id+' input[type=checkbox]:checked')).map(cb=>cb.value);
+  _msState[id]=new Set(vals);
+  _msUpdateBtn(id,vals,placeholder);
   renderCT();
 }
 function msSetValues(id, vals, placeholder){
-  document.querySelectorAll('#menu-'+id+' input[type=checkbox]').forEach(cb=>{ cb.checked=vals.includes(cb.value); });
-  const btn=document.getElementById('btn-'+id);
-  if(btn){ if(vals.length){ btn.textContent=vals.join(', '); btn.classList.add('has-sel'); }
-           else { btn.textContent=placeholder; btn.classList.remove('has-sel'); } }
+  _msState[id]=new Set(vals);
+  _msSyncDOM(id);
+  _msUpdateBtn(id,vals,placeholder);
 }
 function msClear(id, placeholder){
-  document.querySelectorAll('#menu-'+id+' input[type=checkbox]').forEach(cb=>cb.checked=false);
-  const btn=document.getElementById('btn-'+id);
-  if(btn){ btn.textContent=placeholder; btn.classList.remove('has-sel'); }
+  _msState[id]=new Set();
+  _msSyncDOM(id);
+  _msUpdateBtn(id,[],placeholder);
 }
 function fillMultiSel(id, key, placeholder){
-  const menu=document.getElementById('menu-'+id);
-  if(!menu) return;
-  const checkedVals=msGetValues(id);
+  const menu=document.getElementById('menu-'+id); if(!menu) return;
+  const checkedVals=msGetValues(id); // reads JS state — survives DOM rebuild
   const vals=[...new Set(CT.map(r=>r[key]).filter(Boolean))].sort();
   menu.innerHTML=vals.map(v=>`<label><input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${checkedVals.includes(v)?'checked':''} onchange="msChange('${id}','${placeholder}')"> ${v}</label>`).join('');
+  // Re-sync any hardcoded menus that share this id (e.g. arrival, tracking)
+  _msSyncDOM(id);
 }
 // Close dropdowns when clicking outside
 document.addEventListener('click',function(e){ if(!e.target.closest('.ms-wrap')) document.querySelectorAll('.ms-menu.open').forEach(m=>m.classList.remove('open')); });
