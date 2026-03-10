@@ -610,8 +610,14 @@ td.editing .cell-edit{display:block}
         </label>
       </div>
       <div class="form-group full">
-        <label>Container Numbers — one per line</label>
-        <textarea id="b_nos" rows="8" style="border:1px solid var(--border);border-radius:7px;padding:8px;font-family:monospace;font-size:12px" placeholder="NEPU4592465&#10;SEKU6528621&#10;…" oninput="bulkPreview()"></textarea>
+        <label>Container No. &amp; Master B/L — one pair per line
+          <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px">
+            Format: <code style="background:#f0f2f8;padding:1px 5px;border-radius:4px">CONTAINER_NO, MASTER_BL</code>
+            &nbsp;—&nbsp; Master B/L is optional (can paste container numbers only)
+          </span>
+        </label>
+        <textarea id="b_nos" rows="10" style="border:1px solid var(--border);border-radius:7px;padding:8px;font-family:monospace;font-size:12px;resize:vertical" placeholder="NEPU4592465, OyTM202602248261&#10;SEKU6528621, OyTM202602254802&#10;MSCU1234567&#10;…" oninput="bulkPreview()"></textarea>
+        <div id="b_parsed_preview" style="margin-top:6px;font-size:11px;color:var(--muted);max-height:120px;overflow-y:auto"></div>
       </div>
     </div>
     <div id="b_ok"  class="info-box info-ok"></div>
@@ -1956,32 +1962,53 @@ function openBulk(){
   document.getElementById('b_cmr').checked=false;
   document.getElementById('b_ok').style.display='none';
   document.getElementById('b_err').style.display='none';
+  document.getElementById('b_parsed_preview').innerHTML='';
   refreshDLs();
   document.getElementById('bulk-overlay').classList.add('open');
 }
 function closeBulk(){ document.getElementById('bulk-overlay').classList.remove('open'); }
-function parseBulkNos(){ return document.getElementById('b_nos').value.split(/[\n,;\t]+/).map(s=>s.trim().toUpperCase()).filter(Boolean); }
+function parseBulkPairs(){
+  // Each line: "CONTAINER_NO" or "CONTAINER_NO, MASTER_BL" (comma/tab separated)
+  return document.getElementById('b_nos').value
+    .split(/\n/)
+    .map(line=>{
+      const parts=line.split(/[\t,]+/).map(s=>s.trim()).filter(Boolean);
+      if(!parts.length) return null;
+      return { cn: parts[0].toUpperCase(), bl: parts[1]||'' };
+    })
+    .filter(Boolean);
+}
 function bulkPreview(){
-  const nums=parseBulkNos(), ok=document.getElementById('b_ok'), err=document.getElementById('b_err');
+  const pairs=parseBulkPairs(), ok=document.getElementById('b_ok'), err=document.getElementById('b_err');
   err.style.display='none';
-  if(!nums.length){ ok.style.display='none'; return; }
+  const preview=document.getElementById('b_parsed_preview');
+  if(!pairs.length){ ok.style.display='none'; preview.innerHTML=''; return; }
   const exist=new Set(CT.map(r=>(r['Container No.']||'').toUpperCase()));
-  const dupes=nums.filter(n=>exist.has(n));
-  if(dupes.length){ err.textContent='⚠️ Already in tracker: '+dupes.slice(0,5).join(', ')+(dupes.length>5?' + '+(dupes.length-5)+' more':''); err.style.display='block'; }
-  ok.textContent='✓ '+nums.length+' container'+(nums.length!==1?'s':'')+' ready to add';
+  const dupes=pairs.filter(p=>exist.has(p.cn));
+  if(dupes.length){ err.textContent='⚠️ Already in tracker: '+dupes.slice(0,5).map(p=>p.cn).join(', ')+(dupes.length>5?' + '+(dupes.length-5)+' more':''); err.style.display='block'; }
+  const withBL=pairs.filter(p=>p.bl).length;
+  ok.textContent='✓ '+pairs.length+' container'+(pairs.length!==1?'s':'')+' ready — '+withBL+' with Master B/L';
   ok.style.display='block';
+  // Show parsed pairs as a mini-table preview
+  preview.innerHTML='<table style="border-collapse:collapse;width:100%">'+
+    '<tr style="background:#f0f2f8"><th style="padding:3px 8px;text-align:left;font-size:11px">Container No.</th><th style="padding:3px 8px;text-align:left;font-size:11px">Master B/L</th></tr>'+
+    pairs.slice(0,20).map(p=>`<tr style="border-bottom:1px solid #eee">
+      <td style="padding:2px 8px;font-family:monospace;font-size:11px">${p.cn}</td>
+      <td style="padding:2px 8px;font-size:11px;color:${p.bl?'var(--navy)':'#ccc'}">${p.bl||'—'}</td>
+    </tr>`).join('')+
+    (pairs.length>20?`<tr><td colspan="2" style="padding:3px 8px;font-size:10px;color:var(--muted)">… and ${pairs.length-20} more</td></tr>`:'')+'</table>';
 }
 function saveBulk(){
-  const nums=parseBulkNos(), err=document.getElementById('b_err');
-  if(!nums.length){ err.textContent='Please enter at least one container number.'; err.style.display='block'; return; }
+  const pairs=parseBulkPairs(), err=document.getElementById('b_err');
+  if(!pairs.length){ err.textContent='Please enter at least one container number.'; err.style.display='block'; return; }
   const batch=document.getElementById('b_batch').value.trim();
   if(!batch){ err.textContent='Batch / Train is required.'; err.style.display='block'; return; }
   const g=id=>document.getElementById(id).value.trim();
   const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),
     'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'Scheduled Slot':g('b_slot'),
     'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
-    'Master B/L':'','Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Broker':'','Remark':''};
-  nums.forEach(cn=>CT.push({...shared,'Container No.':cn,_id:nextId++}));
+    'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Broker':'','Remark':''};
+  pairs.forEach(p=>CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,_id:nextId++}));
   saveData(); closeBulk(); renderCT();
 }
 
