@@ -39,6 +39,12 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 .page{display:none}.page.active{display:block}
 
 /* SMART INSIGHTS PANEL */
+/* SURCHARGE SUMMARY TABLE */
+.sur-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.sur-tbl th{background:var(--navy);color:#fff;padding:6px 10px;font-size:11px;font-weight:600;text-align:left}
+.sur-tbl td{padding:6px 10px;border-bottom:1px solid rgba(0,0,0,.05)}
+.sur-tbl tbody tr:hover td{background:#fef6f9}
+.sur-amt{font-weight:800;color:#880E4F}
 /* UNDELIVERED BATCH TABLE */
 .ud-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .ud-tbl th{background:var(--navy);color:#fff;padding:7px 12px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap}
@@ -95,7 +101,12 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
 .chart-card{background:var(--card);border-radius:var(--rad);padding:16px 18px;
   box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.chart-card h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px}
+.chart-card h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.chart-card h3:hover{color:var(--blue)}
+.chart-card h3 .ch-toggle{font-size:14px;transition:transform .2s;flex-shrink:0;margin-left:6px}
+.chart-card.collapsed h3 .ch-toggle{transform:rotate(-90deg)}
+.chart-card.collapsed .chart-wrap,.chart-card.collapsed .chart-body{display:none}
 .chart-wrap{position:relative;height:220px}
 
 /* TOOLBAR */
@@ -159,6 +170,9 @@ td.fc-1,td.fc-2,td.fc-3,td.fc-4{background:#fff}
 tbody tr.hi-missing td.fc-1,tbody tr.hi-missing td.fc-2,
 tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
 /* Broker badge */
+.sr-unloading{background:#FFF3E0;color:#E65100;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.sr-ata{background:#FCE4EC;color:#880E4F;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.sr-other{background:#F3E5F5;color:#6A1B9A;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .broker-wispex{display:inline-block;background:#E3F2FD;color:#1565C0;
   border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700}
 .broker-self{display:inline-block;background:#E8F5E9;color:#2E7D32;
@@ -325,11 +339,11 @@ td.editing .cell-edit{display:block}
 
   <div class="charts-row">
     <div class="chart-card">
-      <h3>Containers Delivered by Month (Actual Arrival)</h3>
+      <h3 onclick="toggleChart(this)">Containers Delivered by Month (Actual Arrival)<span class="ch-toggle">▼</span></h3>
       <div class="chart-wrap"><canvas id="monthly-chart"></canvas></div>
     </div>
     <div class="chart-card">
-      <h3>Containers by Batch</h3>
+      <h3 onclick="toggleChart(this)">Containers by Batch<span class="ch-toggle">▼</span></h3>
       <div class="chart-wrap"><canvas id="batch-chart"></canvas></div>
     </div>
   </div>
@@ -337,11 +351,11 @@ td.editing .cell-edit{display:block}
   <!-- Analytics row 2 -->
   <div class="charts-row" style="margin-top:0">
     <div class="chart-card">
-      <h3>Tracking Status Breakdown</h3>
+      <h3 onclick="toggleChart(this)">Tracking Status Breakdown<span class="ch-toggle">▼</span></h3>
       <div class="chart-wrap"><canvas id="tracking-chart"></canvas></div>
     </div>
     <div class="chart-card">
-      <h3>Vessel Status Overview</h3>
+      <h3 onclick="toggleChart(this)">Vessel Status Overview<span class="ch-toggle">▼</span></h3>
       <div class="chart-wrap"><canvas id="vessel-status-chart"></canvas></div>
     </div>
   </div>
@@ -349,11 +363,11 @@ td.editing .cell-edit{display:block}
   <!-- Analytics row 3: Slot–ETA -->
   <div class="charts-row" style="margin-top:0">
     <div class="chart-card">
-      <h3>Slot–ETA Lead Time Distribution (days)</h3>
+      <h3 onclick="toggleChart(this)">Slot–ETA Lead Time Distribution (days)<span class="ch-toggle">▼</span></h3>
       <div class="chart-wrap"><canvas id="slot-eta-dist-chart"></canvas></div>
     </div>
     <div class="chart-card">
-      <h3>Avg Slot–ETA Lead Time by Batch (days)</h3>
+      <h3 onclick="toggleChart(this)">Avg Slot–ETA Lead Time by Batch (days)<span class="ch-toggle">▼</span></h3>
       <div class="chart-wrap"><canvas id="slot-eta-batch-chart"></canvas></div>
     </div>
   </div>
@@ -361,11 +375,11 @@ td.editing .cell-edit{display:block}
   <!-- Analytics row 4: Price comparison -->
   <div class="charts-row" style="margin-top:0">
     <div class="chart-card">
-      <h3>Avg Price vs Avg Price T1 by Trucker (€)</h3>
+      <h3 onclick="toggleChart(this)">Avg Price vs Avg Price T1 by Trucker (€)<span class="ch-toggle">▼</span></h3>
       <div class="chart-wrap"><canvas id="price-trucker-avg-chart"></canvas></div>
     </div>
     <div class="chart-card">
-      <h3>Total Freight Cost by Trucker — Price vs Price T1 (€)</h3>
+      <h3 onclick="toggleChart(this)">Total Freight Cost by Trucker — Price vs Price T1 (€)<span class="ch-toggle">▼</span></h3>
       <div class="chart-wrap"><canvas id="price-trucker-total-chart"></canvas></div>
     </div>
   </div>
@@ -373,8 +387,28 @@ td.editing .cell-edit{display:block}
   <!-- Analytics row 5: Containers by Consignee -->
   <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
     <div class="chart-card">
-      <h3>Total Containers by Consignee</h3>
+      <h3 onclick="toggleChart(this)">Total Containers by Consignee<span class="ch-toggle">▼</span></h3>
       <div class="chart-wrap" style="height:260px"><canvas id="consignee-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Surcharge Summary -->
+  <div id="surcharge-summary-row" class="charts-row" style="margin-top:0;display:none">
+    <div class="chart-card" style="padding:16px 18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3 style="margin:0">💸 Surcharge Summary</h3>
+        <span id="surcharge-total-badge" style="font-size:12px;font-weight:700;color:#880E4F;background:#FCE4EC;border-radius:8px;padding:3px 10px"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Batch</div>
+          <div id="surcharge-by-batch"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Reason</div>
+          <div id="surcharge-by-reason"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -447,6 +481,14 @@ td.editing .cell-edit{display:block}
       <button class="ms-btn" id="btn-consignee" onclick="msOpen('consignee')">All Consignees</button>
       <div class="ms-menu" id="menu-consignee"></div>
     </div>
+    <div class="ms-wrap" id="wrap-surcharge">
+      <span class="ms-label">Surcharge</span>
+      <button class="ms-btn" id="btn-surcharge" onclick="msOpen('surcharge')">All</button>
+      <div class="ms-menu" id="menu-surcharge">
+        <label><input type="checkbox" value="missing" onchange="msChange('surcharge','All')"> Missing only</label>
+        <label><input type="checkbox" value="filled"  onchange="msChange('surcharge','All')"> Filled only</label>
+      </div>
+    </div>
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
@@ -474,6 +516,8 @@ td.editing .cell-edit{display:block}
           <th onclick="ctSort('Pickup Ref')">Pickup Ref ↕</th>
           <th onclick="ctSort('Price')">Price ↕</th>
           <th onclick="ctSort('Price T1')">Price T1 ↕</th>
+          <th onclick="ctSort('Surcharge')">Surcharge ↕</th>
+          <th class="no-sort">Surcharge Reason</th>
           <th onclick="ctSort('Remark')">Remark ↕</th>
           <th class="no-sort"></th>
           <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="ct-sel-all" onchange="ctSelAll(this.checked)" title="Select all" style="width:14px;height:14px;cursor:pointer"/></th>
@@ -539,6 +583,9 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>Pickup Ref</label><input type="text" id="f_ref"/></div>
       <div class="form-group"><label>Price (€)</label><input type="number" min="0" step="0.01" id="f_price" placeholder="0.00"/></div>
       <div class="form-group"><label>Price T1 (€)</label><input type="number" min="0" step="0.01" id="f_price_t1" placeholder="0.00"/></div>
+      <div class="form-group"><label>Surcharge (€)</label><input type="number" min="0" step="0.01" id="f_surcharge" placeholder="0.00"/></div>
+      <div class="form-group"><label>Surcharge Reason</label>
+        <select id="f_surcharge_reason"><option value="">—</option><option value="unloading">Unloading</option><option value="ATA delayed">ATA Delayed</option><option value="other">Other</option></select></div>
       <div class="form-group"><label>Remark</label><input type="text" id="f_rmk"/></div>
       <div class="form-group" style="align-items:flex-start;padding-top:18px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
@@ -796,6 +843,9 @@ function gotoFilter(col, val){
   if(col==='Batch / Train')     msSetValues('batch',[val],val);
   showPage('containers');
 }
+function toggleChart(h3el){
+  h3el.closest('.chart-card').classList.toggle('collapsed');
+}
 function gotoBatch(batchName){
   msClear('batch','All Batches');
   msClear('trucker','All Truckers');
@@ -803,6 +853,7 @@ function gotoBatch(batchName){
   msClear('arrival','All Arrivals');
   msClear('broker','All Brokers');
   msClear('consignee','All Consignees');
+  msClear('surcharge','All');
   document.getElementById('f-search').value='';
   msSetValues('batch',[batchName],batchName);
   showPage('containers');
@@ -1228,6 +1279,45 @@ function renderDashboard(){
     }
   });
 
+  // ── Surcharge Summary ─────────────────────────────────────────
+  const surRows=CT.filter(r=>r['Surcharge']&&parseFloat(r['Surcharge'])>0);
+  const surTotalAll=surRows.reduce((s,r)=>s+parseFloat(r['Surcharge']),0);
+  const surRow=document.getElementById('surcharge-summary-row');
+  if(!surRows.length){
+    surRow.style.display='none';
+  } else {
+    surRow.style.display='';
+    document.getElementById('surcharge-total-badge').textContent=
+      'Total: €'+surTotalAll.toFixed(2)+' ('+surRows.length+' containers)';
+
+    // By Batch
+    const surByBatch={};
+    surRows.forEach(r=>{ const b=r['Batch / Train']||'(No Batch)'; surByBatch[b]=(surByBatch[b]||0)+parseFloat(r['Surcharge']); });
+    const surBatchKeys=Object.keys(surByBatch).sort((a,b)=>surByBatch[b]-surByBatch[a]);
+    document.getElementById('surcharge-by-batch').innerHTML=`<table class="sur-tbl">
+      <thead><tr><th>Batch / Train</th><th>Total Surcharge</th><th>Containers</th></tr></thead>
+      <tbody>${surBatchKeys.map(b=>{
+        const cnt=surRows.filter(r=>(r['Batch / Train']||'(No Batch)')===b).length;
+        return `<tr><td style="font-weight:700">${b}</td><td class="sur-amt">€${surByBatch[b].toFixed(2)}</td><td style="color:var(--muted)">${cnt}</td></tr>`;
+      }).join('')}</tbody>
+    </table>`;
+
+    // By Reason
+    const REASONS=['unloading','ATA delayed','other',''];
+    const REASON_LABELS={'unloading':'Unloading','ATA delayed':'ATA Delayed','other':'Other','':'Not set'};
+    const surByReason={};
+    surRows.forEach(r=>{ const rs=r['Surcharge Reason']||''; surByReason[rs]=(surByReason[rs]||0)+parseFloat(r['Surcharge']); });
+    const reasonKeys=REASONS.filter(k=>surByReason[k]);
+    document.getElementById('surcharge-by-reason').innerHTML=`<table class="sur-tbl">
+      <thead><tr><th>Reason</th><th>Total Surcharge</th><th>Containers</th></tr></thead>
+      <tbody>${reasonKeys.map(rk=>{
+        const cnt=surRows.filter(r=>(r['Surcharge Reason']||'')=== rk).length;
+        const cls=rk==='unloading'?'sr-unloading':rk==='ATA delayed'?'sr-ata':rk==='other'?'sr-other':'';
+        return `<tr><td><span class="${cls}">${REASON_LABELS[rk]}</span></td><td class="sur-amt">€${surByReason[rk].toFixed(2)}</td><td style="color:var(--muted)">${cnt}</td></tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+
   // ── Undelivered by Batch ──────────────────────────────────────
   const today=new Date(); today.setHours(0,0,0,0);
   const undelivered=CT.filter(r=>r['Tracking']!=='Arrived');
@@ -1421,6 +1511,7 @@ function getCTRows(){
   const fars=msGetValues('arrival');
   const fbrs=msGetValues('broker');
   const fcons=msGetValues('consignee');
+  const fsur=msGetValues('surcharge');
   return CT.filter(r=>{
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
@@ -1432,6 +1523,11 @@ function getCTRows(){
       if(fill&&!miss&&!r['Actual Arrival']) return false;
     }
     if(fbrs.length&&!fbrs.includes(r['Broker']||'')) return false;
+    if(fsur.length){
+      const hasSur=!!(r['Surcharge']&&String(r['Surcharge']).trim()!=='');
+      if(fsur.includes('missing')&&!fsur.includes('filled')&&hasSur) return false;
+      if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
+    }
     if(q){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
                r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
@@ -1454,6 +1550,7 @@ function resetFilters(){
   msClear('arrival','All Arrivals');
   msClear('broker','All Brokers');
   msClear('consignee','All Consignees');
+  msClear('surcharge','All');
   renderCT();
 }
 
@@ -1595,6 +1692,23 @@ function renderCT(){
       <td data-id="${r._id}" data-col="Price T1">
         <div class="cell-view" onclick="startEdit(this)">${r['Price T1']?'€'+r['Price T1']:'<span style="color:#ccc">—</span>'}</div>
         <div class="cell-edit"><input type="number" min="0" step="0.01" value="${(r['Price T1']||'').toString().replace(/"/g,'&quot;')}" placeholder="0.00" onblur="commitEdit(this,'Price T1',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:90px"/></div>
+      </td>
+      <td data-id="${r._id}" data-col="Surcharge">
+        <div class="cell-view" onclick="startEdit(this)">${r['Surcharge']?'€'+r['Surcharge']:'<span style="color:#ccc">—</span>'}</div>
+        <div class="cell-edit"><input type="number" min="0" step="0.01" value="${(r['Surcharge']||'').toString()}" placeholder="0.00" onblur="commitEdit(this,'Surcharge',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:90px"/></div>
+      </td>
+      <td data-id="${r._id}" data-col="Surcharge Reason">
+        ${(()=>{
+          const sv=r['Surcharge Reason']||'';
+          const badge=sv==='unloading'?`<span class="sr-unloading">Unloading</span>`:sv==='ATA delayed'?`<span class="sr-ata">ATA Delayed</span>`:sv==='other'?`<span class="sr-other">Other</span>`:'<span style="color:#ccc">—</span>';
+          return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
+          <div class="cell-edit"><select onblur="commitEditSelect(this,'Surcharge Reason',${r._id})" onchange="commitEditSelect(this,'Surcharge Reason',${r._id})">
+            <option value="" ${!sv?'selected':''}>—</option>
+            <option ${sv==='unloading'?'selected':''}>unloading</option>
+            <option ${sv==='ATA delayed'?'selected':''}>ATA delayed</option>
+            <option ${sv==='other'?'selected':''}>other</option>
+          </select></div>`;
+        })()}
       </td>
       ${rmkCell}
       <td style="padding:4px 6px;text-align:center">
@@ -1828,8 +1942,9 @@ function vtSearchContainer(q){
 function openAdd(){
   editId=null;
   document.getElementById('modal-title').textContent='+ Add Container';
-  ['f_no','f_bl','f_batch','f_con','f_truck','f_eta_mala','f_eta','f_slot','f_arr','f_dl','f_ref','f_rmk','f_price','f_price_t1']
+  ['f_no','f_bl','f_batch','f_con','f_truck','f_eta_mala','f_eta','f_slot','f_arr','f_dl','f_ref','f_rmk','f_price','f_price_t1','f_surcharge']
     .forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_surcharge_reason').value='';
   document.getElementById('f_broker').value='';
   document.getElementById('f_track').value='None';
   document.getElementById('f_cmr').checked=false;
@@ -1852,9 +1967,11 @@ function openEdit(id){
   document.getElementById('f_arr').value  =r['Actual Arrival']||'';
   document.getElementById('f_dl').value   =r['Deadline']||'';
   document.getElementById('f_ref').value  =r['Pickup Ref']||'';
-  document.getElementById('f_price').value   =r['Price']||'';
-  document.getElementById('f_price_t1').value=r['Price T1']||'';
-  document.getElementById('f_rmk').value     =r['Remark']||'';
+  document.getElementById('f_price').value          =r['Price']||'';
+  document.getElementById('f_price_t1').value       =r['Price T1']||'';
+  document.getElementById('f_surcharge').value      =r['Surcharge']||'';
+  document.getElementById('f_surcharge_reason').value=r['Surcharge Reason']||'';
+  document.getElementById('f_rmk').value            =r['Remark']||'';
   document.getElementById('f_cmr').checked=(r['CMR']==='✅');
   refreshDLs();
   document.getElementById('modal-overlay').classList.add('open');
@@ -1866,7 +1983,8 @@ function saveRow(){
     'Container No.':g('f_no'),'Master B/L':g('f_bl'),'Batch / Train':g('f_batch'),
     'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Tracking':g('f_track'),
     'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'Scheduled Slot':g('f_slot'),'Actual Arrival':g('f_arr'),
-    'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),'Remark':g('f_rmk'),
+    'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
+    'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
   if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0) CT[i]={...CT[i],...u}; }
@@ -1905,7 +2023,7 @@ function saveBulk(){
   const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),
     'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'Scheduled Slot':g('b_slot'),
     'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
-    'Master B/L':'','Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Broker':'','Remark':''};
+    'Master B/L':'','Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Broker':'','Remark':''};
   nums.forEach(cn=>CT.push({...shared,'Container No.':cn,_id:nextId++}));
   saveData(); closeBulk(); renderCT();
 }
