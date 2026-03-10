@@ -38,6 +38,35 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 /* PAGES */
 .page{display:none}.page.active{display:block}
 
+/* SMART INSIGHTS PANEL */
+/* MALA PIPELINE TABLE */
+.mala-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.mala-tbl th{background:var(--navy);color:#fff;padding:6px 10px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap}
+.mala-tbl td{padding:6px 10px;border-bottom:1px solid rgba(0,0,0,.05);white-space:nowrap}
+.mala-tbl tr:hover td{background:#f0f4ff}
+.mala-arrow{color:var(--muted);padding:0 4px}
+.mala-date-mala{color:#1565C0;font-weight:600}
+.mala-date-hub{color:#2e7d32;font-weight:600}
+.mala-date-slot{color:#7B1FA2;font-weight:600}
+.mala-days-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px}
+.mala-days-ok{background:#E8F5E9;color:#2e7d32}
+.mala-days-soon{background:#FFF3E0;color:#E65100}
+.mala-days-overdue{background:#FFEBEE;color:#C62828}
+.smart-panel{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.smart-card{display:flex;align-items:center;gap:10px;border-radius:9px;padding:10px 14px;
+  flex:1;min-width:170px;border-left:4px solid;cursor:pointer;transition:opacity .15s;
+  box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.smart-card:hover{opacity:.85}
+.smart-card .sc-icon{font-size:22px;line-height:1}
+.smart-card .sc-count{font-size:24px;font-weight:800;line-height:1}
+.smart-card .sc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.smart-card .sc-desc{font-size:10px;color:#777;margin-top:3px}
+/* Hint badges shown in table cells when value is estimated/suggested */
+.cell-hint{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;
+  border-radius:4px;padding:1px 6px;white-space:nowrap;cursor:pointer}
+.hint-slot{background:#E3F2FD;color:#1565C0;border:1px dashed #90CAF9}
+.hint-trucker{background:#F3E5F5;color:#7B1FA2;border:1px dashed #CE93D8}
+.hint-eta{background:#E8F5E9;color:#2E7D32;border:1px dashed #A5D6A7}
 /* KPI */
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:18px}
 .kpi{background:var(--card);border-radius:var(--rad);padding:13px 16px;
@@ -156,7 +185,7 @@ td.editing .cell-edit{display:block}
 .vt-containers-cell{padding:8px 14px 12px 44px;background:#f4f8ff;border-bottom:2px solid #d0dcf0}
 .vt-cn-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;min-height:24px}
 .vt-cn-tag{display:inline-flex;align-items:center;gap:3px;background:#dce8f8;color:var(--navy);
-  border-radius:14px;padding:3px 10px 3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  border-radius:10px;padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap;flex-wrap:wrap}
 .vt-cn-tag .vt-cn-rm{background:none;border:none;cursor:pointer;color:#7a9cc5;font-size:12px;
   line-height:1;padding:0 0 0 3px;margin:0}
 .vt-cn-tag .vt-cn-rm:hover{color:#e53935}
@@ -263,6 +292,7 @@ td.editing .cell-edit{display:block}
 
 <!-- ══ DASHBOARD ══ -->
 <div id="page-dashboard" class="page active">
+  <div id="smart-panel" class="smart-panel"></div>
   <div class="kpi-row">
     <div class="kpi" onclick="showPage('containers')">
       <div class="kl">Total Containers</div><div class="kv" id="kv-total">—</div><div class="ks">all batches</div>
@@ -335,6 +365,17 @@ td.editing .cell-edit{display:block}
       <div class="chart-wrap" style="height:260px"><canvas id="consignee-chart"></canvas></div>
     </div>
   </div>
+
+  <!-- Mala Pipeline -->
+  <div id="mala-pipeline-row" class="charts-row" style="margin-top:0;grid-template-columns:1fr;display:none">
+    <div class="chart-card" style="padding:16px 18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3 style="margin:0">📍 Mala Pipeline — Projected Hub Arrivals</h3>
+        <span style="font-size:11px;color:var(--muted)">ETA in Mala → Hub (+5 days) → Slot (same day)</span>
+      </div>
+      <div id="mala-pipeline" style="overflow-x:auto"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ══ CONTAINERS ══ -->
@@ -399,6 +440,7 @@ td.editing .cell-edit{display:block}
           <th class="fc-4" onclick="ctSort('Consignee')">Consignee ↕</th>
           <th onclick="ctSort('Trucker')">Trucker ↕</th>
           <th class="no-sort">Broker</th>
+          <th onclick="ctSort('ETA in Mala')" title="ETA at Port of Malaysia">ETA in Mala ↕</th>
           <th onclick="ctSort('ETA at Hub')">ETA at Hub ↕</th>
           <th onclick="ctSort('Scheduled Slot')">Scheduled Slot ↕</th>
           <th onclick="ctSort('Actual Arrival')">Actual Arrival ↕</th>
@@ -466,8 +508,9 @@ td.editing .cell-edit{display:block}
         <select id="f_broker"><option value="">—</option><option value="Wispex">Wispex</option><option value="Self">Self</option></select></div>
       <div class="form-group"><label>Tracking</label>
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
-      <div class="form-group"><label>ETA at Hub</label><input type="text" id="f_eta" placeholder="yyyy/mm/dd"/></div>
-      <div class="form-group"><label>Scheduled Slot</label><input type="text" id="f_slot" placeholder="yyyy/mm/dd HH:MM"/></div>
+      <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="yyyy/mm/dd" title="ETA at Port of Malaysia"/></div>
+      <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+5d)</span></label><input type="text" id="f_eta" placeholder="yyyy/mm/dd"/></div>
+      <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: same as Hub)</span></label><input type="text" id="f_slot" placeholder="yyyy/mm/dd HH:MM"/></div>
       <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr" placeholder="yyyy/mm/dd"/></div>
       <div class="form-group"><label>Deadline</label><input type="text" id="f_dl" placeholder="yyyy/mm/dd"/></div>
       <div class="form-group"><label>Pickup Ref</label><input type="text" id="f_ref"/></div>
@@ -498,6 +541,7 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
       <div class="form-group"><label>Tracking</label>
         <select id="b_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
+      <div class="form-group"><label>ETA in Mala</label><input type="text" id="b_eta_mala" placeholder="yyyy/mm/dd" title="ETA at Port of Malaysia"/></div>
       <div class="form-group"><label>ETA at Hub</label><input type="text" id="b_eta" placeholder="yyyy/mm/dd"/></div>
       <div class="form-group"><label>Scheduled Slot</label><input type="text" id="b_slot" placeholder="yyyy/mm/dd HH:MM"/></div>
       <div class="form-group"><label>Deadline</label><input type="text" id="b_dl" placeholder="yyyy/mm/dd"/></div>
@@ -765,8 +809,146 @@ function computeDays(r){
 }
 function daysClass(v){ const n=parseFloat(v); if(isNaN(n)) return ''; return n<0?'days-ok':n<=3?'days-warn':'days-hot'; }
 
+// ── SMART INTELLIGENCE ────────────────────────────────────────────
+let _smartData = null;
+
+function computeSmartData(){
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Average Slot−ETA lead time from containers that have both (positive only)
+  const leadTimes = CT.map(r=>{
+    const s=parseDate(r['Scheduled Slot']), e=parseDate(r['ETA at Hub']);
+    return (s&&e) ? Math.round((s-e)/864e5) : null;
+  }).filter(v=>v!==null&&v>=0);
+  const avgLead = leadTimes.length
+    ? Math.round(leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length) : 3;
+
+  // Most common trucker per consignee (for dispatch suggestions)
+  const truckFreq={};
+  CT.filter(r=>r['Trucker']&&r['Consignee']).forEach(r=>{
+    const c=r['Consignee'];
+    if(!truckFreq[c]) truckFreq[c]={};
+    truckFreq[c][r['Trucker']]=(truckFreq[c][r['Trucker']]||0)+1;
+  });
+  const suggestTrucker={};
+  Object.keys(truckFreq).forEach(c=>{
+    const f=truckFreq[c];
+    suggestTrucker[c]=Object.keys(f).sort((a,b)=>f[b]-f[a])[0];
+  });
+
+  // ETA from linked vessel booking (container appears in VT.containers)
+  const etaFromVessel={};
+  VT.forEach(v=>{
+    const ets=parseDate(v['ETS (Departure)']);
+    if(!ets||!Array.isArray(v.containers)) return;
+    v.containers.forEach(cn=>{
+      if(!etaFromVessel[cn]) etaFromVessel[cn]={ date: formatDate(ets), vessel: v['Vessel Name']||v['Booking / BC No.']||'vessel' };
+    });
+  });
+
+  // Insight groups (pending = not Arrived)
+  const pending = CT.filter(r=>r['Tracking']!=='Arrived');
+  const overdue  = pending.filter(r=>{ const s=parseDate(r['Scheduled Slot']); return s&&s<today; });
+  const atRisk   = pending.filter(r=>{ const s=parseDate(r['Scheduled Slot']); if(!s) return false; const d=Math.round((s-today)/864e5); return d>=0&&d<=3; });
+  const needsSlot= pending.filter(r=>!r['Scheduled Slot']&&r['ETA at Hub']);
+  const noTrucker= pending.filter(r=>!r['Trucker']);
+  const missingETA=pending.filter(r=>!r['ETA at Hub']);
+
+  _smartData={ today, avgLead, suggestTrucker, etaFromVessel, overdue, atRisk, needsSlot, noTrucker, missingETA };
+  return _smartData;
+}
+
+function renderSmartInsights(){
+  const d=computeSmartData();
+  const panel=document.getElementById('smart-panel');
+  if(!panel) return;
+
+  const cards=[
+    d.overdue.length&&{
+      icon:'🔴', count:d.overdue.length, color:'#C62828', bg:'#FFEBEE',
+      label:'Overdue Slots', desc:'past scheduled slot, not arrived',
+      action:'_filter_overdue'
+    },
+    d.needsSlot.length&&{
+      icon:'📅', count:d.needsSlot.length, color:'#1565C0', bg:'#E3F2FD',
+      label:'Slot Estimation', desc:`ETA set, avg lead ${d.avgLead}d → see table hints`,
+      action:'_filter_needsslot'
+    },
+    d.noTrucker.length&&{
+      icon:'🚛', count:d.noTrucker.length, color:'#6A1B9A', bg:'#F3E5F5',
+      label:'Needs Dispatch', desc:'pending containers without trucker',
+      action:'_filter_notrucker'
+    }
+  ].filter(Boolean);
+
+  if(!cards.length){ panel.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 0">✅ All containers look good — no action items.</div>'; return; }
+
+  panel.innerHTML=cards.map(c=>`
+    <div class="smart-card" style="background:${c.bg};border-color:${c.color}" onclick="smartCardClick('${c.action}')">
+      <span class="sc-icon">${c.icon}</span>
+      <div>
+        <div class="sc-count" style="color:${c.color}">${c.count}</div>
+        <div class="sc-label" style="color:${c.color}">${c.label}</div>
+        <div class="sc-desc">${c.desc}</div>
+      </div>
+    </div>`).join('');
+}
+
+function smartCardClick(action){
+  // Navigate to containers and pre-filter to show relevant rows
+  resetFilters();
+  showPage('containers');
+  if(action==='_filter_overdue'||action==='_filter_atrisk'){
+    // highlight at-risk / overdue by sorting by Scheduled Slot ascending
+    ctSortCol='Scheduled Slot'; ctSortDir=1; renderCT();
+  } else if(action==='_filter_needsslot'){
+    // filter to containers with ETA but no slot — use search workaround: none, just sort by ETA
+    ctSortCol='ETA at Hub'; ctSortDir=1; renderCT();
+  } else if(action==='_filter_notrucker'){
+    msSetValues('arrival',['missing'],'All Arrivals'); renderCT(); // show unarrived
+    ctSortCol='Trucker'; ctSortDir=1; renderCT();
+  } else if(action==='_filter_missingeta'){
+    ctSortCol='ETA at Hub'; ctSortDir=1; renderCT();
+  }
+}
+
+function applySmartSlot(id){
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  const eta=parseDate(CT[i]['ETA at Hub']); if(!eta) return;
+  // Book slot on same day as ETA at Hub
+  CT[i]['Scheduled Slot']=formatDate(eta);
+  saveData(); _smartData=null; renderCT();
+}
+
+function applyMalaHub(id){
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  const mala=parseDate(CT[i]['ETA in Mala']); if(!mala) return;
+  const hub=new Date(mala.getTime()+5*864e5);
+  CT[i]['ETA at Hub']=formatDate(hub);
+  saveData(); _smartData=null; renderCT();
+}
+
+function applySmartTrucker(id){
+  const d=_smartData||computeSmartData();
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  const con=CT[i]['Consignee'];
+  const suggested=d.suggestTrucker[con]; if(!suggested) return;
+  CT[i]['Trucker']=suggested;
+  saveData(); renderCT();
+}
+
+function applySmartETA(id){
+  const d=_smartData||computeSmartData();
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  const cn=(CT[i]['Container No.']||'').toUpperCase();
+  const v=d.etaFromVessel[cn]; if(!v) return;
+  CT[i]['ETA at Hub']=v.date;
+  saveData(); _smartData=null; renderCT();
+}
+
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function renderDashboard(){
+  renderSmartInsights();
   document.getElementById('kv-total').textContent = CT.length;
   document.getElementById('kv-arr').textContent   = CT.filter(r=>r['Tracking']==='Arrived').length;
   document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
@@ -1005,6 +1187,67 @@ function renderDashboard(){
       }
     }
   });
+
+  // ── Mala Pipeline ─────────────────────────────────────────────
+  const today=new Date(); today.setHours(0,0,0,0);
+  const malaRows=CT.filter(r=>r['ETA in Mala']&&r['Tracking']!=='Arrived')
+    .map(r=>{
+      const malaDt=parseDate(r['ETA in Mala']);
+      const hubDt=malaDt?new Date(malaDt.getTime()+5*864e5):null;
+      return { r, malaDt, hubDt };
+    })
+    .filter(x=>x.malaDt)
+    .sort((a,b)=>a.malaDt-b.malaDt);
+
+  const pipelineEl=document.getElementById('mala-pipeline');
+  const pipelineRow=document.getElementById('mala-pipeline-row');
+  if(!malaRows.length){
+    pipelineRow.style.display='none';
+  } else {
+    pipelineRow.style.display='';
+    const rows=malaRows.map(({r,malaDt,hubDt})=>{
+      const daysToHub=hubDt?Math.round((hubDt-today)/864e5):null;
+      let badge='';
+      if(daysToHub!==null){
+        const cls=daysToHub<0?'mala-days-overdue':daysToHub<=3?'mala-days-soon':'mala-days-ok';
+        const lbl=daysToHub<0?`${Math.abs(daysToHub)}d overdue`:daysToHub===0?'today':`in ${daysToHub}d`;
+        badge=`<span class="mala-days-badge ${cls}">${lbl}</span>`;
+      }
+      const hubStr=hubDt?`<span class="mala-date-hub">${formatDate(hubDt)}</span>${badge}`:'<span style="color:#ccc">—</span>';
+      const slotStr=hubDt?`<span class="mala-date-slot">${formatDate(hubDt)}</span>`:'<span style="color:#ccc">—</span>';
+      const hasHub=r['ETA at Hub']?'✅':'<button class="btn btn-blue" style="font-size:10px;padding:2px 8px" onclick="applyMalaHubById('+r._id+')">+5d</button>';
+      const hasSlot=r['Scheduled Slot']?'✅':'<button class="btn btn-blue" style="font-size:10px;padding:2px 8px" onclick="applyMalaSlotById('+r._id+')">Set</button>';
+      return `<tr>
+        <td><strong>${r['Container No.']||'—'}</strong></td>
+        <td>${r['Consignee']||'—'}</td>
+        <td>${r['Trucker']||'<span style="color:#ccc">—</span>'}</td>
+        <td><span class="mala-date-mala">${formatDate(malaDt)}</span></td>
+        <td class="mala-arrow">→</td>
+        <td>${hubStr}&nbsp;${hasHub}</td>
+        <td class="mala-arrow">→</td>
+        <td>${slotStr}&nbsp;${hasSlot}</td>
+      </tr>`;
+    }).join('');
+    pipelineEl.innerHTML=`<table class="mala-tbl">
+      <thead><tr>
+        <th>Container No.</th><th>Consignee</th><th>Trucker</th>
+        <th>📍 ETA in Mala</th><th></th>
+        <th>🏭 ETA at Hub (+5d)</th><th></th>
+        <th>📅 Scheduled Slot</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+}
+
+function applyMalaHubById(id){ applyMalaHub(id); renderDashboard(); }
+function applyMalaSlotById(id){
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  const hub=parseDate(CT[i]['ETA at Hub'])||
+    (CT[i]['ETA in Mala']?new Date(parseDate(CT[i]['ETA in Mala']).getTime()+5*864e5):null);
+  if(!hub) return;
+  CT[i]['Scheduled Slot']=formatDate(hub);
+  saveData(); _smartData=null; renderDashboard();
 }
 
 // ── CONTAINER TABLE ───────────────────────────────────────────────
@@ -1114,7 +1357,7 @@ function renderCT(){
   if(!rows.length){ tbody.innerHTML=''; nodata.style.display='block'; return; }
   nodata.style.display='none';
 
-  const EDITABLE=['ETA at Hub','Scheduled Slot','Actual Arrival','Deadline','Master B/L','Consignee','Trucker'];
+  const EDITABLE=['ETA in Mala','ETA at Hub','Scheduled Slot','Actual Arrival','Deadline','Master B/L','Consignee','Trucker'];
   // Frozen column class map by col name
   const FC_CLASS={'Master B/L':'fc-3','Consignee':'fc-4'};
 
@@ -1158,7 +1401,55 @@ function renderCT(){
     </td>`;
 
     // split editCells into groups
-    const [etaC,slotC,arrC,dlC,blC,conC,truckC]=editCells;
+    const [etaMalaC,etaC,slotC,arrC,dlC,blC,conC,truckC]=editCells;
+
+    // ── Smart hint overrides ──────────────────────────────────────
+    const sd=_smartData||computeSmartData();
+    const cn=(r['Container No.']||'').toUpperCase();
+
+    // ETA at Hub: prefer Mala+5d hint, fallback to vessel hint
+    let etaCell=etaC;
+    if(!r['ETA at Hub']){
+      const malaDate=parseDate(r['ETA in Mala']);
+      if(malaDate){
+        const hubEst=new Date(malaDate.getTime()+5*864e5);
+        etaCell=`<td data-id="${r._id}" data-col="ETA at Hub">
+          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-eta" onclick="event.stopPropagation();applyMalaHub(${r._id})" title="Apply: ETA in Mala + 5 days transit">📍 ${formatDate(hubEst)}</span></div>
+          <div class="cell-edit"><input value="" onblur="commitEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+        </td>`;
+      } else if(sd.etaFromVessel[cn]){
+        const v=sd.etaFromVessel[cn];
+        etaCell=`<td data-id="${r._id}" data-col="ETA at Hub">
+          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-eta" onclick="event.stopPropagation();applySmartETA(${r._id})" title="Apply ETA from vessel ${v.vessel}">📡 ${v.date}</span></div>
+          <div class="cell-edit"><input value="" onblur="commitEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+        </td>`;
+      }
+    }
+
+    // Scheduled Slot: same day as ETA at Hub (slot is booked on arrival day)
+    let slotCell=slotC;
+    if(!r['Scheduled Slot']&&r['ETA at Hub']){
+      const hubParsed=parseDate(r['ETA at Hub']);
+      if(hubParsed){
+        slotCell=`<td data-id="${r._id}" data-col="Scheduled Slot">
+          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-slot" onclick="event.stopPropagation();applySmartSlot(${r._id})" title="Book slot on same day as ETA at Hub">📅 ${formatDate(hubParsed)}</span></div>
+          <div class="cell-edit"><input value="" onblur="commitEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+        </td>`;
+      }
+    }
+
+    // Trucker: show auto-dispatch suggestion when empty and consignee has history
+    let truckCell=truckC;
+    if(!r['Trucker']){
+      const sug=sd.suggestTrucker[r['Consignee']||''];
+      if(sug){
+        truckCell=`<td data-id="${r._id}" data-col="Trucker">
+          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-trucker" onclick="event.stopPropagation();applySmartTrucker(${r._id})" title="Apply suggested trucker for this consignee">🚛 ${sug}</span></div>
+          <div class="cell-edit"><input value="" onblur="commitEdit(this,'Trucker',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+        </td>`;
+      }
+    }
+    // ─────────────────────────────────────────────────────────────
 
     const rmkV=r['Remark']||'';
     const rmkCell=`<td data-id="${r._id}" data-col="Remark">
@@ -1170,10 +1461,11 @@ function renderCT(){
       <td class="fc-2" style="padding:7px 10px"><strong>${r['Container No.']||''}</strong></td>
       ${blC}
       ${conC}
-      ${truckC}
+      ${truckCell}
       ${brokerCell}
-      ${etaC}
-      ${slotC}
+      ${etaMalaC}
+      ${etaCell}
+      ${slotCell}
       ${arrC}
       ${dlC}
       <td style="padding:7px 10px;white-space:nowrap" class="${daysClass(dl)}">${dlStr}</td>
@@ -1312,8 +1604,21 @@ function renderVT(){
     const cnCount=cns.length;
     const isOpen=vtExpanded.has(r._id);
 
-    // Container tags in sub-row
-    const tags=cns.map(cn=>`<span class="vt-cn-tag">${cn}<button class="vt-cn-rm" onclick="vtRemoveContainer(${r._id},'${cn}')" title="Remove">✕</button></span>`).join('');
+    // Container tags in sub-row with projected dates
+    const tags=cns.map(cn=>{
+      const ctRow=CT.find(x=>(x['Container No.']||'').toUpperCase()===cn.toUpperCase());
+      let dateHints='';
+      if(ctRow){
+        const malaDt=parseDate(ctRow['ETA in Mala']);
+        const hubDt=ctRow['ETA at Hub']?parseDate(ctRow['ETA at Hub']):(malaDt?new Date(malaDt.getTime()+5*864e5):null);
+        const parts=[];
+        if(malaDt) parts.push(`<span style="color:#1565C0;font-size:10px" title="ETA in Mala">📍${formatDate(malaDt)}</span>`);
+        if(hubDt)  parts.push(`<span style="color:#2e7d32;font-size:10px" title="ETA at Hub">🏭${formatDate(hubDt)}</span>`);
+        if(ctRow['Scheduled Slot']) parts.push(`<span style="color:#7B1FA2;font-size:10px" title="Scheduled Slot">📅${ctRow['Scheduled Slot']}</span>`);
+        if(parts.length) dateHints=`<span style="display:inline-flex;gap:5px;margin-left:6px">${parts.join('<span style="color:#ccc">›</span>')}</span>`;
+      }
+      return `<span class="vt-cn-tag">${cn}${dateHints}<button class="vt-cn-rm" onclick="vtRemoveContainer(${r._id},'${cn}')" title="Remove">✕</button></span>`;
+    }).join('');
     const tagsHtml=cnCount?`<div class="vt-cn-tags">${tags}</div>`:`<div class="vt-cn-tags"><span class="vt-cn-empty">No containers linked yet</span></div>`;
 
     return `<tr class="${cls}" id="vrow-${r._id}">
@@ -1412,7 +1717,7 @@ function vtSearchContainer(q){
 function openAdd(){
   editId=null;
   document.getElementById('modal-title').textContent='+ Add Container';
-  ['f_no','f_bl','f_batch','f_con','f_truck','f_eta','f_slot','f_arr','f_dl','f_ref','f_rmk','f_price','f_price_t1']
+  ['f_no','f_bl','f_batch','f_con','f_truck','f_eta_mala','f_eta','f_slot','f_arr','f_dl','f_ref','f_rmk','f_price','f_price_t1']
     .forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_broker').value='';
   document.getElementById('f_track').value='None';
@@ -1430,6 +1735,7 @@ function openEdit(id){
   document.getElementById('f_truck').value =r['Trucker']||'';
   document.getElementById('f_broker').value=r['Broker']||'';
   document.getElementById('f_track').value =r['Tracking']||'None';
+  document.getElementById('f_eta_mala').value=r['ETA in Mala']||'';
   document.getElementById('f_eta').value  =r['ETA at Hub']||'';
   document.getElementById('f_slot').value =r['Scheduled Slot']||'';
   document.getElementById('f_arr').value  =r['Actual Arrival']||'';
@@ -1448,7 +1754,7 @@ function saveRow(){
   const u={
     'Container No.':g('f_no'),'Master B/L':g('f_bl'),'Batch / Train':g('f_batch'),
     'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Tracking':g('f_track'),
-    'ETA at Hub':g('f_eta'),'Scheduled Slot':g('f_slot'),'Actual Arrival':g('f_arr'),
+    'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'Scheduled Slot':g('f_slot'),'Actual Arrival':g('f_arr'),
     'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
@@ -1459,7 +1765,7 @@ function saveRow(){
 
 // ── BULK ADD ──────────────────────────────────────────────────────
 function openBulk(){
-  ['b_batch','b_con','b_truck','b_eta','b_slot','b_dl','b_nos'].forEach(id=>document.getElementById(id).value='');
+  ['b_batch','b_con','b_truck','b_eta_mala','b_eta','b_slot','b_dl','b_nos'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('b_track').value='T1';
   document.getElementById('b_cmr').checked=false;
   document.getElementById('b_ok').style.display='none';
@@ -1486,7 +1792,7 @@ function saveBulk(){
   if(!batch){ err.textContent='Batch / Train is required.'; err.style.display='block'; return; }
   const g=id=>document.getElementById(id).value.trim();
   const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),
-    'Tracking':g('b_track'),'ETA at Hub':g('b_eta'),'Scheduled Slot':g('b_slot'),
+    'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'Scheduled Slot':g('b_slot'),
     'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
     'Master B/L':'','Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Broker':'','Remark':''};
   nums.forEach(cn=>CT.push({...shared,'Container No.':cn,_id:nextId++}));
