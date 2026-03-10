@@ -39,6 +39,18 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 .page{display:none}.page.active{display:block}
 
 /* SMART INSIGHTS PANEL */
+/* UNDELIVERED BATCH TABLE */
+.ud-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.ud-tbl th{background:var(--navy);color:#fff;padding:7px 12px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap}
+.ud-tbl td{padding:7px 12px;border-bottom:1px solid rgba(0,0,0,.05);vertical-align:middle}
+.ud-tbl tbody tr:hover td{background:#f0f4ff;cursor:pointer}
+.ud-bar-wrap{display:flex;align-items:center;gap:8px;min-width:160px}
+.ud-bar-bg{flex:1;background:#eee;border-radius:4px;height:8px;overflow:hidden}
+.ud-bar-fill{height:8px;border-radius:4px;transition:width .3s}
+.ud-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.ud-pill-none{background:#E3F2FD;color:#1565C0}
+.ud-pill-t1{background:#FFF9C4;color:#F57F17}
+.ud-pill-arr{background:#E8F5E9;color:#2E7D32}
 /* MALA PIPELINE TABLE */
 .mala-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .mala-tbl th{background:var(--navy);color:#fff;padding:6px 10px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap}
@@ -363,6 +375,17 @@ td.editing .cell-edit{display:block}
     <div class="chart-card">
       <h3>Total Containers by Consignee</h3>
       <div class="chart-wrap" style="height:260px"><canvas id="consignee-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Undelivered by Batch -->
+  <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+    <div class="chart-card" style="padding:16px 18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3 style="margin:0">🚚 Undelivered Containers by Batch</h3>
+        <span id="undelivered-total-badge" style="font-size:12px;font-weight:700;color:#C62828;background:#FFEBEE;border-radius:8px;padding:3px 10px"></span>
+      </div>
+      <div id="undelivered-batch" style="overflow-x:auto"></div>
     </div>
   </div>
 
@@ -1188,8 +1211,64 @@ function renderDashboard(){
     }
   });
 
-  // ── Mala Pipeline ─────────────────────────────────────────────
+  // ── Undelivered by Batch ──────────────────────────────────────
   const today=new Date(); today.setHours(0,0,0,0);
+  const undelivered=CT.filter(r=>r['Tracking']!=='Arrived');
+  // Group by batch
+  const batchMap={};
+  undelivered.forEach(r=>{
+    const b=r['Batch / Train']||'(No Batch)';
+    if(!batchMap[b]) batchMap[b]={total:0,none:0,t1:0,overdue:0,noETA:0,containers:[]};
+    batchMap[b].total++;
+    batchMap[b].containers.push(r);
+    if(r['Tracking']==='T1') batchMap[b].t1++;
+    else batchMap[b].none++;
+    const slot=parseDate(r['Scheduled Slot']);
+    if(slot&&slot<today) batchMap[b].overdue++;
+    if(!r['ETA at Hub']) batchMap[b].noETA++;
+  });
+  const batchKeys=Object.keys(batchMap).sort((a,b)=>batchMap[b].total-batchMap[a].total);
+  const maxBatch=batchKeys.length?batchMap[batchKeys[0]].total:1;
+
+  document.getElementById('undelivered-total-badge').textContent=
+    undelivered.length+' undelivered';
+
+  const udEl=document.getElementById('undelivered-batch');
+  if(!batchKeys.length){
+    udEl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0">🎉 All containers delivered!</div>';
+  } else {
+    const udRows=batchKeys.map(b=>{
+      const m=batchMap[b];
+      const pct=Math.round(m.total/maxBatch*100);
+      const overdueBadge=m.overdue?`<span class="ud-pill" style="background:#FFEBEE;color:#C62828">⚠ ${m.overdue} overdue</span>`:'';
+      const noETABadge=m.noETA?`<span class="ud-pill" style="background:#F3E5F5;color:#7B1FA2">📡 ${m.noETA} no ETA</span>`:'';
+      return `<tr onclick="gotoFilter('Batch / Train','${b.replace(/'/g,"\\'")}')">
+        <td style="font-weight:700;color:var(--navy)">${b}</td>
+        <td style="font-size:15px;font-weight:800;color:#C62828;text-align:center">${m.total}</td>
+        <td>
+          <div class="ud-bar-wrap">
+            <div class="ud-bar-bg"><div class="ud-bar-fill" style="width:${pct}%;background:#e53935"></div></div>
+            <span style="font-size:11px;color:var(--muted);min-width:28px">${pct}%</span>
+          </div>
+        </td>
+        <td><span class="ud-pill ud-pill-none">${m.none} None</span></td>
+        <td><span class="ud-pill ud-pill-t1">${m.t1} T1</span></td>
+        <td style="display:flex;gap:5px;flex-wrap:wrap;padding:6px 12px">${overdueBadge}${noETABadge}</td>
+      </tr>`;
+    }).join('');
+    udEl.innerHTML=`<table class="ud-tbl">
+      <thead><tr>
+        <th>Batch / Train</th>
+        <th style="text-align:center">Undelivered</th>
+        <th style="min-width:180px">Volume</th>
+        <th>None</th><th>T1</th>
+        <th>Alerts</th>
+      </tr></thead>
+      <tbody>${udRows}</tbody>
+    </table>`;
+  }
+
+  // ── Mala Pipeline ─────────────────────────────────────────────
   const malaRows=CT.filter(r=>r['ETA in Mala']&&r['Tracking']!=='Arrived')
     .map(r=>{
       const malaDt=parseDate(r['ETA in Mala']);
