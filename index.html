@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OWENZ Shipment Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#1F3864;--blue:#2E5FA3;--bg:#F4F6FA;--card:#fff;
+  --border:#DDE3EE;--text:#1a2340;--muted:#6b7a9a;--rad:10px;
+  --hi:#FFF9C4; /* highlight: arrival missing */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+
+/* NAV TABS */
+header{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;
+  padding:0 24px;display:flex;align-items:stretch;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.brand{font-size:16px;font-weight:700;padding:16px 0;white-space:nowrap}
+nav{display:flex;gap:0}
+nav button{background:none;border:none;color:rgba(255,255,255,.7);
+  padding:0 20px;font-size:13px;font-weight:600;cursor:pointer;
+  border-bottom:3px solid transparent;transition:all .15s}
+nav button:hover{color:#fff}
+nav button.active{color:#fff;border-bottom-color:#fff}
+.hbtns{display:flex;align-items:center;gap:8px;padding:10px 0}
+.btn{padding:6px 13px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-green{background:#43A047;color:#fff}
+.btn-blue{background:#1565C0;color:#fff}
+.btn-ghost{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.btn:hover{opacity:.85}
+
+main{padding:20px 24px;max-width:1800px;margin:0 auto}
+
+/* PAGES */
+.page{display:none}.page.active{display:block}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--card);border-radius:var(--rad);padding:13px 16px;
+  border-left:5px solid var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;transition:transform .12s}
+.kpi:hover{transform:translateY(-2px)}
+.kl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px}
+.kv{font-size:26px;font-weight:800}
+.ks{font-size:11px;color:var(--muted);margin-top:2px}
+.kpi.k-arr{border-color:#43A047}.kpi.k-arr .kv{color:#2e7d32}
+.kpi.k-t1 {border-color:#1976D2}.kpi.k-t1  .kv{color:#1565c0}
+.kpi.k-hi {border-color:#F9A825}.kpi.k-hi  .kv{color:#8a6800}
+
+/* CHART */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:var(--card);border-radius:var(--rad);padding:16px 18px;
+  box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.chart-card h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px}
+.chart-wrap{position:relative;height:220px}
+
+/* TOOLBAR */
+.toolbar{background:var(--card);border-radius:var(--rad);padding:11px 14px;
+  display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;
+  box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:14px}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600}
+select,input[type=text]{border:1px solid var(--border);border-radius:6px;padding:5px 9px;
+  font-size:12px;color:var(--text);background:#fff;outline:none;min-width:120px}
+select:focus,input:focus{border-color:var(--blue)}
+.ml{margin-left:auto}
+.btn-reset{background:#e8eaf6;color:var(--navy);padding:6px 13px;border:none;
+  border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+
+/* MULTI-SELECT DROPDOWNS */
+.ms-wrap{position:relative;display:inline-flex;flex-direction:column;gap:3px}
+.ms-wrap .ms-label{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600}
+.ms-btn{height:32px;padding:4px 28px 4px 10px;border:1px solid var(--border);border-radius:6px;
+  background:#fff;cursor:pointer;min-width:130px;text-align:left;font-size:12px;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;font-family:inherit}
+.ms-btn::after{content:'▾';position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  pointer-events:none;color:var(--muted);font-size:11px}
+.ms-btn.has-sel{border-color:var(--blue);background:#EEF3FF;font-weight:600;color:var(--blue)}
+.ms-menu{display:none;position:absolute;top:calc(100% + 3px);left:0;z-index:9999;
+  background:#fff;border:1px solid var(--border);border-radius:7px;padding:5px 0;
+  min-width:170px;max-height:260px;overflow-y:auto;
+  box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.ms-menu.open{display:block}
+.ms-menu label{display:flex;align-items:center;gap:8px;padding:6px 13px;
+  cursor:pointer;font-size:12px;white-space:nowrap;color:var(--text);user-select:none}
+.ms-menu label:hover{background:#f0f4ff}
+.ms-menu label input[type=checkbox]{width:13px;height:13px;cursor:pointer;accent-color:var(--blue);flex-shrink:0}
+
+/* TABLE */
+.tbl-card{background:var(--card);border-radius:var(--rad);box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
+.tbl-top{padding:11px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.tbl-top h3{font-size:13px;font-weight:700}
+#ct-count,#vt-count{font-size:12px;color:var(--muted)}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:var(--navy);color:#fff}
+thead th{padding:8px 10px;text-align:left;font-weight:600;font-size:11px;
+  letter-spacing:.4px;white-space:nowrap;user-select:none;cursor:pointer}
+thead th:hover{background:var(--blue)}
+thead th.no-sort{cursor:default}
+thead th.no-sort:hover{background:var(--navy)}
+tbody tr{border-bottom:1px solid rgba(0,0,0,.04)}
+tbody tr.hi-missing{background:var(--hi)}
+tbody td{padding:0;vertical-align:middle;position:relative}
+/* ── Frozen columns ─────────────────────────────────────── */
+/* left: values are injected dynamically by updateFrozenOffsets() after render */
+th.fc-1,td.fc-1,th.fc-2,td.fc-2,th.fc-3,td.fc-3,th.fc-4,td.fc-4{
+  position:sticky;z-index:3}
+/* Headers need higher z-index than sticky-header-patch (z-index:10) */
+thead th.fc-1,thead th.fc-2,thead th.fc-3,thead th.fc-4{
+  z-index:20;top:0;background:var(--navy)}
+/* Last frozen column shadow injected by updateFrozenOffsets() */
+/* Solid backgrounds so scrolling rows don't show through */
+td.fc-1,td.fc-2,td.fc-3,td.fc-4{background:#fff}
+tbody tr.hi-missing td.fc-1,tbody tr.hi-missing td.fc-2,
+tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
+/* Broker badge */
+.broker-wispex{display:inline-block;background:#E3F2FD;color:#1565C0;
+  border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700}
+.broker-self{display:inline-block;background:#E8F5E9;color:#2E7D32;
+  border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700}
+
+/* INLINE EDIT CELLS */
+.cell-view{padding:7px 10px;min-height:32px;display:flex;align-items:center;white-space:nowrap;cursor:pointer;min-width:60px}
+.cell-view:hover{background:rgba(0,0,0,.04);border-radius:4px}
+.cell-edit{display:none;padding:2px 4px}
+.cell-edit input,.cell-edit select{width:100%;border:2px solid var(--blue);border-radius:4px;
+  padding:4px 6px;font-size:12px;background:#fff;outline:none}
+td.editing .cell-view{display:none}
+td.editing .cell-edit{display:block}
+
+/* Tracking badge */
+.track-t1{display:inline-block;padding:2px 9px;border-radius:10px;
+  background:#E3F2FD;color:#1565C0;font-weight:700;font-size:11px;border:1px solid #90CAF9}
+.track-arr{display:inline-block;padding:2px 9px;border-radius:10px;
+  background:#E8F5E9;color:#2e7d32;font-weight:700;font-size:11px;border:1px solid #A5D6A7}
+.track-none{display:inline-block;padding:2px 9px;border-radius:10px;
+  background:#F5F5F5;color:#757575;font-weight:700;font-size:11px;border:1px solid #BDBDBD}
+.cmr-cb{width:15px;height:15px;cursor:pointer}
+.btn-del-row{background:none;border:none;color:#bbb;font-size:14px;cursor:pointer;padding:2px 6px}
+.btn-del-row:hover{color:#e53935}
+.no-data{padding:40px;text-align:center;color:var(--muted)}
+
+/* VESSEL TABLE */
+.v-dep{background:#C6EFCE}.v-soon{background:#FFEB9C}.v-late{background:#FFC7CE}
+/* Vessel expand rows */
+.vt-expand-btn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--navy);
+  width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:4px;transition:background .15s;user-select:none}
+.vt-expand-btn:hover{background:rgba(0,0,0,.09)}
+.vt-containers-row{display:none}
+.vt-containers-row.open{display:table-row}
+.vt-containers-cell{padding:8px 14px 12px 44px;background:#f4f8ff;border-bottom:2px solid #d0dcf0}
+.vt-cn-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;min-height:24px}
+.vt-cn-tag{display:inline-flex;align-items:center;gap:3px;background:#dce8f8;color:var(--navy);
+  border-radius:14px;padding:3px 10px 3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.vt-cn-tag .vt-cn-rm{background:none;border:none;cursor:pointer;color:#7a9cc5;font-size:12px;
+  line-height:1;padding:0 0 0 3px;margin:0}
+.vt-cn-tag .vt-cn-rm:hover{color:#e53935}
+.vt-cn-add{display:flex;gap:6px;align-items:center}
+.vt-cn-add input{height:28px;padding:0 9px;border:1px solid var(--border);border-radius:5px;
+  font-size:12px;width:200px;text-transform:uppercase}
+.vt-cn-add button{height:28px;padding:0 13px;background:var(--navy);color:#fff;
+  border:none;border-radius:5px;font-size:12px;cursor:pointer;font-weight:600}
+.vt-cn-add button:hover{opacity:.85}
+.vt-cn-empty{font-size:12px;color:var(--muted);font-style:italic}
+/* Search match highlight */
+.vt-search-highlight td{box-shadow:inset 0 0 0 2px #F9A825 !important}
+/* Vessel search bar */
+.vt-toolbar{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--card);border-radius:var(--rad);margin-bottom:8px}
+.vt-search-wrap{position:relative;display:flex;align-items:center;gap:6px}
+.vt-search-wrap input{height:32px;padding:0 10px 0 30px;border:1px solid var(--border);
+  border-radius:6px;font-size:13px;width:240px}
+.vt-search-wrap .vt-si{position:absolute;left:8px;color:var(--muted);font-size:13px;pointer-events:none}
+.vt-search-msg{font-size:12px;color:var(--muted);margin-left:4px}
+
+/* OVERLAY */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;
+  align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:620px;max-width:95vw;
+  max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.modal h2{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--navy)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.form-group input,.form-group select{border:1px solid var(--border);border-radius:7px;
+  padding:8px 11px;font-size:13px;color:var(--text);outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;
+  padding-top:14px;border-top:1px solid var(--border)}
+.mbtn-save{background:var(--navy);color:#fff;padding:8px 20px;border:none;
+  border-radius:7px;font-size:13px;font-weight:700;cursor:pointer}
+.mbtn-save:hover{background:var(--blue)}
+.mbtn-cancel{background:#f5f5f5;color:var(--text);padding:8px 16px;
+  border:1px solid var(--border);border-radius:7px;font-size:13px;font-weight:600;cursor:pointer}
+.info-box{padding:9px 13px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
+.info-ok{background:#E8F5E9;color:#2e7d32;font-weight:600}
+.info-err{background:#FFEBEE;color:#c62828}
+.confirm-inner{background:#fff;border-radius:12px;padding:26px;width:340px;text-align:center;
+  box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.confirm-inner h3{font-size:15px;margin-bottom:8px;color:var(--navy)}
+.confirm-inner p{color:var(--muted);font-size:13px;margin-bottom:20px}
+.confirm-btns{display:flex;gap:10px;justify-content:center}
+.btn-del-c{background:#e53935;color:#fff;padding:8px 20px;border:none;
+  border-radius:7px;font-size:13px;font-weight:700;cursor:pointer}
+/* CLOUD SYNC */
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+.sync-dot.ok{background:#43A047}.sync-dot.err{background:#e53935}.sync-dot.off{background:#9e9e9e}.sync-dot.busy{background:#FB8C00}
+.sync-status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;margin-top:6px}
+.sync-key-wrap{position:relative}
+.sync-key-wrap input{padding-right:32px;font-family:monospace;font-size:12px}
+.sync-toggle-vis{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted)}
+.sync-row{display:flex;gap:8px;align-items:flex-end}
+.sync-row .form-group{flex:1}
+/* SELECTION BAR */
+.sel-bar{display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--navy);color:#fff;border-radius:30px;padding:10px 20px;
+  box-shadow:0 4px 20px rgba(0,0,0,.35);z-index:100;align-items:center;gap:14px;
+  font-size:13px;font-weight:600;white-space:nowrap}
+.sel-bar.show{display:flex}
+.sel-bar-count{background:rgba(255,255,255,.2);border-radius:12px;padding:2px 10px;font-size:12px}
+.btn-be{background:#fff;color:var(--navy);border:none;border-radius:20px;
+  padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-be:hover{background:#e8eaf6}
+.btn-be-clear{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);
+  border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.be-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+.be-tab{background:none;border:none;padding:8px 18px;font-size:13px;font-weight:600;
+  color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.be-tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+.be-panel{display:none}.be-panel.active{display:block}
+.be-hint{font-size:11px;color:var(--muted);margin-bottom:14px;
+  background:#f8f9ff;border:1px solid var(--border);border-radius:7px;padding:8px 12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">🚢 OWENZ Shipment Tracker</div>
+  <nav>
+    <button class="active" onclick="showPage('dashboard')">Dashboard</button>
+    <button onclick="showPage('containers')">Containers</button>
+    <button onclick="showPage('vessels')">Vessels</button>
+  </nav>
+  <div class="hbtns">
+    <button class="btn btn-green" onclick="openAdd()">+ Add</button>
+    <button class="btn btn-blue"  onclick="openBulk()">⊞ Bulk</button>
+    <button class="btn btn-ghost" onclick="openImport()">↑ Import</button>
+    <button class="btn btn-ghost" onclick="exportCSV()">↓ Export</button>
+    <button class="btn btn-ghost" id="sync-btn" onclick="openSync()" title="Cloud Sync">☁️ Sync</button>
+    <input type="file" id="xl-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)"/>
+  </div>
+</header>
+
+<main>
+
+<!-- ══ DASHBOARD ══ -->
+<div id="page-dashboard" class="page active">
+  <div class="kpi-row">
+    <div class="kpi" onclick="showPage('containers')">
+      <div class="kl">Total Containers</div><div class="kv" id="kv-total">—</div><div class="ks">all batches</div>
+    </div>
+    <div class="kpi k-arr" onclick="gotoFilter('Tracking','Arrived')">
+      <div class="kl">Arrived</div><div class="kv" id="kv-arr">—</div><div class="ks">tracking = Arrived</div>
+    </div>
+    <div class="kpi k-t1" onclick="gotoFilter('Tracking','T1')">
+      <div class="kl">T1 (In Transit)</div><div class="kv" id="kv-t1">—</div><div class="ks">tracking = T1</div>
+    </div>
+    <div class="kpi k-hi" onclick="gotoFilter('_missing_arrival','')">
+      <div class="kl">OTW</div><div class="kv" id="kv-hi">—</div><div class="ks">arrival not filled</div>
+    </div>
+    <div class="kpi" style="border-color:#7B1FA2;cursor:pointer" onclick="showPage('vessels')">
+      <div class="kl">Vessels</div><div class="kv" id="kv-vessels" style="color:#6a1b9a">—</div><div class="ks">total bookings</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>Containers Delivered by Month (Actual Arrival)</h3>
+      <div class="chart-wrap"><canvas id="monthly-chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Containers by Batch</h3>
+      <div class="chart-wrap"><canvas id="batch-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Analytics row 2 -->
+  <div class="charts-row" style="margin-top:0">
+    <div class="chart-card">
+      <h3>Tracking Status Breakdown</h3>
+      <div class="chart-wrap"><canvas id="tracking-chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Vessel Status Overview</h3>
+      <div class="chart-wrap"><canvas id="vessel-status-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Analytics row 3: Slot–ETA -->
+  <div class="charts-row" style="margin-top:0">
+    <div class="chart-card">
+      <h3>Slot–ETA Lead Time Distribution (days)</h3>
+      <div class="chart-wrap"><canvas id="slot-eta-dist-chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Avg Slot–ETA Lead Time by Batch (days)</h3>
+      <div class="chart-wrap"><canvas id="slot-eta-batch-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Analytics row 4: Price comparison -->
+  <div class="charts-row" style="margin-top:0">
+    <div class="chart-card">
+      <h3>Avg Price vs Avg Price T1 by Trucker (€)</h3>
+      <div class="chart-wrap"><canvas id="price-trucker-avg-chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Total Freight Cost by Trucker — Price vs Price T1 (€)</h3>
+      <div class="chart-wrap"><canvas id="price-trucker-total-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONTAINERS ══ -->
+<div id="page-containers" class="page">
+  <div class="toolbar">
+    <div class="fg"><label>Search</label>
+      <input type="text" id="f-search" placeholder="Container, B/L, consignee…" oninput="renderCT()"/></div>
+    <div class="ms-wrap" id="wrap-batch">
+      <span class="ms-label">Batch</span>
+      <button class="ms-btn" id="btn-batch" onclick="msOpen('batch')">All Batches</button>
+      <div class="ms-menu" id="menu-batch"></div>
+    </div>
+    <div class="ms-wrap" id="wrap-trucker">
+      <span class="ms-label">Trucker</span>
+      <button class="ms-btn" id="btn-trucker" onclick="msOpen('trucker')">All Truckers</button>
+      <div class="ms-menu" id="menu-trucker"></div>
+    </div>
+    <div class="ms-wrap" id="wrap-tracking">
+      <span class="ms-label">Tracking</span>
+      <button class="ms-btn" id="btn-tracking" onclick="msOpen('tracking')">All Tracking</button>
+      <div class="ms-menu" id="menu-tracking">
+        <label><input type="checkbox" value="None"    onchange="msChange('tracking','All Tracking')"> None</label>
+        <label><input type="checkbox" value="T1"      onchange="msChange('tracking','All Tracking')"> T1</label>
+        <label><input type="checkbox" value="Arrived" onchange="msChange('tracking','All Tracking')"> Arrived</label>
+      </div>
+    </div>
+    <div class="ms-wrap" id="wrap-arrival">
+      <span class="ms-label">Arrival</span>
+      <button class="ms-btn" id="btn-arrival" onclick="msOpen('arrival')">All Arrivals</button>
+      <div class="ms-menu" id="menu-arrival">
+        <label><input type="checkbox" value="missing" onchange="msChange('arrival','All Arrivals')"> Missing only</label>
+        <label><input type="checkbox" value="filled"  onchange="msChange('arrival','All Arrivals')"> Filled only</label>
+      </div>
+    </div>
+    <div class="ms-wrap" id="wrap-broker">
+      <span class="ms-label">Broker</span>
+      <button class="ms-btn" id="btn-broker" onclick="msOpen('broker')">All Brokers</button>
+      <div class="ms-menu" id="menu-broker">
+        <label><input type="checkbox" value="Wispex" onchange="msChange('broker','All Brokers')"> Wispex</label>
+        <label><input type="checkbox" value="Self"   onchange="msChange('broker','All Brokers')"> Self</label>
+        <label><input type="checkbox" value=""       onchange="msChange('broker','All Brokers')"> Not set</label>
+      </div>
+    </div>
+    <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
+  </div>
+
+  <div class="tbl-card">
+    <div class="tbl-top">
+      <h3>Container List</h3><span id="ct-count"></span>
+    </div>
+    <div class="tbl-scroll">
+      <table id="ct-table">
+        <thead><tr>
+          <th class="fc-1" onclick="ctSort('Batch / Train')">Batch ↕</th>
+          <th class="fc-2" onclick="ctSort('Container No.')">Container No. ↕</th>
+          <th class="fc-3" onclick="ctSort('Master B/L')">Master B/L ↕</th>
+          <th class="fc-4" onclick="ctSort('Consignee')">Consignee ↕</th>
+          <th onclick="ctSort('Trucker')">Trucker ↕</th>
+          <th class="no-sort">Broker</th>
+          <th onclick="ctSort('ETA at Hub')">ETA at Hub ↕</th>
+          <th onclick="ctSort('Scheduled Slot')">Scheduled Slot ↕</th>
+          <th onclick="ctSort('Actual Arrival')">Actual Arrival ↕</th>
+          <th onclick="ctSort('Deadline')">Deadline ↕</th>
+          <th>Days (Slot–ETA)</th>
+          <th class="no-sort">CMR</th>
+          <th class="no-sort">Tracking</th>
+          <th onclick="ctSort('Pickup Ref')">Pickup Ref ↕</th>
+          <th onclick="ctSort('Price')">Price ↕</th>
+          <th onclick="ctSort('Price T1')">Price T1 ↕</th>
+          <th onclick="ctSort('Remark')">Remark ↕</th>
+          <th class="no-sort"></th>
+          <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="ct-sel-all" onchange="ctSelAll(this.checked)" title="Select all" style="width:14px;height:14px;cursor:pointer"/></th>
+        </tr></thead>
+        <tbody id="ct-body"></tbody>
+      </table>
+      <div id="ct-nodata" class="no-data" style="display:none">No containers match the filters.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VESSELS ══ -->
+<div id="page-vessels" class="page">
+  <div class="vt-toolbar">
+    <div class="vt-search-wrap">
+      <span class="vt-si">🔍</span>
+      <input id="vt-search" type="text" placeholder="Search container no. in bookings…" oninput="vtSearchContainer(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtSearchContainer('');}"/>
+    </div>
+    <span id="vt-search-msg" class="vt-search-msg"></span>
+    <button class="btn btn-green" style="margin-left:auto;padding:5px 12px;font-size:12px" onclick="openAddVessel()">+ Add Vessel</button>
+  </div>
+  <div class="tbl-card">
+    <div class="tbl-top">
+      <h3>Vessel Tracker</h3><span id="vt-count"></span>
+    </div>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr>
+          <th class="no-sort" style="width:32px"></th>
+          <th>Port</th><th>Carrier</th><th>Booking / BC No.</th><th>Container Qty</th>
+          <th>Vessel Name</th><th>ETS (Departure)</th><th>Port Cut-Off</th>
+          <th>Barge Date</th><th>Days to Cut-Off</th><th>Delay (days)</th>
+          <th>Status</th><th>Remark</th><th class="no-sort"></th>
+          <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="vt-sel-all" onchange="vtSelAll(this.checked)" title="Select all" style="width:14px;height:14px;cursor:pointer"/></th>
+        </tr></thead>
+        <tbody id="vt-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- ADD / EDIT MODAL -->
+<div class="overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-title">Add Container</h2>
+    <div class="form-grid">
+      <div class="form-group"><label>Container No.</label><input type="text" id="f_no"/></div>
+      <div class="form-group"><label>Master B/L</label><input type="text" id="f_bl"/></div>
+      <div class="form-group"><label>Batch / Train</label><input type="text" id="f_batch" list="dl-batch"/><datalist id="dl-batch"></datalist></div>
+      <div class="form-group"><label>Consignee</label><input type="text" id="f_con" list="dl-con"/><datalist id="dl-con"></datalist></div>
+      <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/><datalist id="dl-truck"></datalist></div>
+      <div class="form-group"><label>Broker</label>
+        <select id="f_broker"><option value="">—</option><option value="Wispex">Wispex</option><option value="Self">Self</option></select></div>
+      <div class="form-group"><label>Tracking</label>
+        <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
+      <div class="form-group"><label>ETA at Hub</label><input type="text" id="f_eta" placeholder="yyyy/mm/dd"/></div>
+      <div class="form-group"><label>Scheduled Slot</label><input type="text" id="f_slot" placeholder="yyyy/mm/dd HH:MM"/></div>
+      <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr" placeholder="yyyy/mm/dd"/></div>
+      <div class="form-group"><label>Deadline</label><input type="text" id="f_dl" placeholder="yyyy/mm/dd"/></div>
+      <div class="form-group"><label>Pickup Ref</label><input type="text" id="f_ref"/></div>
+      <div class="form-group"><label>Price (€)</label><input type="number" min="0" step="0.01" id="f_price" placeholder="0.00"/></div>
+      <div class="form-group"><label>Price T1 (€)</label><input type="number" min="0" step="0.01" id="f_price_t1" placeholder="0.00"/></div>
+      <div class="form-group"><label>Remark</label><input type="text" id="f_rmk"/></div>
+      <div class="form-group" style="align-items:flex-start;padding-top:18px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
+          <input type="checkbox" id="f_cmr" style="width:16px;height:16px;cursor:pointer"/> CMR Received
+        </label>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="mbtn-save" onclick="saveRow()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK ADD MODAL -->
+<div class="overlay" id="bulk-overlay">
+  <div class="modal" style="width:660px">
+    <h2>⊞ Bulk Add Containers</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Fill shared fields, then paste container numbers (one per line).</p>
+    <div class="form-grid">
+      <div class="form-group"><label>Batch / Train *</label><input type="text" id="b_batch" list="dl-batch"/></div>
+      <div class="form-group"><label>Consignee</label><input type="text" id="b_con" list="dl-con"/></div>
+      <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
+      <div class="form-group"><label>Tracking</label>
+        <select id="b_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
+      <div class="form-group"><label>ETA at Hub</label><input type="text" id="b_eta" placeholder="yyyy/mm/dd"/></div>
+      <div class="form-group"><label>Scheduled Slot</label><input type="text" id="b_slot" placeholder="yyyy/mm/dd HH:MM"/></div>
+      <div class="form-group"><label>Deadline</label><input type="text" id="b_dl" placeholder="yyyy/mm/dd"/></div>
+      <div class="form-group" style="align-items:flex-start;padding-top:18px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
+          <input type="checkbox" id="b_cmr" style="width:16px;height:16px;cursor:pointer"/> CMR Received
+        </label>
+      </div>
+      <div class="form-group full">
+        <label>Container Numbers — one per line</label>
+        <textarea id="b_nos" rows="8" style="border:1px solid var(--border);border-radius:7px;padding:8px;font-family:monospace;font-size:12px" placeholder="NEPU4592465&#10;SEKU6528621&#10;…" oninput="bulkPreview()"></textarea>
+      </div>
+    </div>
+    <div id="b_ok"  class="info-box info-ok"></div>
+    <div id="b_err" class="info-box info-err"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeBulk()">Cancel</button>
+      <button class="mbtn-save" onclick="saveBulk()">⊞ Add All</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="overlay" id="import-overlay">
+  <div class="modal" style="width:700px">
+    <h2>↑ Import from Excel / CSV</h2>
+    <div id="drop-zone" style="border:2px dashed var(--border);border-radius:10px;padding:28px;
+      text-align:center;cursor:pointer;margin-bottom:14px"
+      onclick="document.getElementById('xl-input').click()"
+      ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+      ondragleave="this.style.borderColor='var(--border)'"
+      ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleImport({target:{files:event.dataTransfer.files}})">
+      <div style="font-size:30px;margin-bottom:6px">📂</div>
+      <div style="font-weight:600;color:var(--navy)">Click or drag &amp; drop your Excel file here</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">.xlsx · .xls · .csv</div>
+    </div>
+    <div id="imp-sheet" style="display:none;margin-bottom:12px">
+      <div class="fg"><label>Select sheet</label>
+        <select id="imp-sheet-sel" onchange="renderImportPreview()"></select></div>
+    </div>
+    <div id="imp-mapinfo" style="display:none;font-size:12px;color:var(--muted);
+      background:#f8f9ff;border:1px solid var(--border);border-radius:8px;padding:9px 13px;margin-bottom:12px"></div>
+    <div id="imp-preview-wrap" style="display:none">
+      <div id="imp-preview-title" style="font-weight:600;font-size:13px;margin-bottom:7px"></div>
+      <div style="overflow-x:auto;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead id="imp-head" style="position:sticky;top:0;background:var(--navy);color:#fff"></thead>
+          <tbody id="imp-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="imp-opts" style="display:none;margin-top:12px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="imp-replace" style="width:15px;height:15px"/>
+        <span><strong>Replace all existing containers</strong> (uncheck = merge, skips duplicates)</span>
+      </label>
+    </div>
+    <div id="imp-ok"  class="info-box info-ok"></div>
+    <div id="imp-err" class="info-box info-err"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeImport()">Cancel</button>
+      <button class="mbtn-save" id="imp-btn" style="display:none" onclick="confirmImport()">↑ Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOUD SYNC MODAL -->
+<div class="overlay" id="sync-overlay">
+  <div class="modal" style="width:520px">
+    <h2>☁️ Cloud Sync</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+      Syncs your data across all devices using <strong>JSONBin.io</strong> (free).<br>
+      <a href="https://jsonbin.io" target="_blank" style="color:var(--blue)">Create a free account →</a>
+      then copy your <strong>Master Key</strong> from the API Keys page.
+    </p>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Master Key</label>
+      <div class="sync-key-wrap">
+        <input type="password" id="sync-key" placeholder="$2a$10$..." oninput="syncKeyChanged()"/>
+        <button class="sync-toggle-vis" onclick="toggleSyncKeyVis()" id="sync-vis-btn">👁</button>
+      </div>
+    </div>
+    <div class="sync-row" style="margin-bottom:12px">
+      <div class="form-group">
+        <label>Bin ID <span style="font-weight:400;text-transform:none;letter-spacing:0">(auto-created on first connect)</span></label>
+        <input type="text" id="sync-binid" placeholder="Leave blank to create new" style="font-family:monospace;font-size:12px"/>
+      </div>
+      <button class="mbtn-save" style="height:36px;white-space:nowrap" onclick="connectSync()">Connect</button>
+    </div>
+    <div class="sync-status" id="sync-status-row">
+      <span class="sync-dot off" id="sync-dot"></span>
+      <span id="sync-status-txt">Not connected</span>
+    </div>
+    <div id="sync-ok"  class="info-box info-ok"  style="margin-top:10px"></div>
+    <div id="sync-err" class="info-box info-err" style="margin-top:10px"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeSync()">Close</button>
+      <button class="mbtn-save" onclick="pushToCloud(true)">↑ Push (overwrite cloud)</button>
+      <button class="mbtn-save" style="background:#388e3c" onclick="pullFromCloud(true)">↓ Pull (overwrite local)</button>
+    </div>
+  </div>
+</div>
+
+<!-- SELECTION BAR -->
+<div class="sel-bar" id="sel-bar">
+  <span>Selected: </span>
+  <span class="sel-bar-count" id="sel-bar-count">0</span>
+  <button class="btn-be" onclick="openBulkEdit()">✏️ Bulk Edit</button>
+  <button class="btn-be-clear" onclick="clearAllSel()">✕ Clear</button>
+</div>
+
+<!-- BULK EDIT MODAL -->
+<div class="overlay" id="be-overlay">
+  <div class="modal" style="width:680px">
+    <h2>✏️ Bulk Edit</h2>
+    <div class="be-tabs">
+      <button class="be-tab active" onclick="switchBETab('ct',this)">📦 Containers <span id="be-ct-badge" style="font-size:11px;background:#e3f2fd;color:#1565c0;border-radius:8px;padding:1px 7px;margin-left:4px">0</span></button>
+      <button class="be-tab" onclick="switchBETab('vt',this)">🚢 Vessels <span id="be-vt-badge" style="font-size:11px;background:#f3e5f5;color:#6a1b9a;border-radius:8px;padding:1px 7px;margin-left:4px">0</span></button>
+    </div>
+    <!-- Container fields -->
+    <div class="be-panel active" id="be-panel-ct">
+      <div class="be-hint">Only filled fields will be updated. Leave blank to keep existing values.</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Batch / Train</label><input type="text" id="be_batch" list="dl-batch"/></div>
+        <div class="form-group"><label>Trucker</label><input type="text" id="be_truck" list="dl-truck"/></div>
+        <div class="form-group"><label>Broker</label>
+          <select id="be_broker"><option value="">— no change —</option><option value="Wispex">Wispex</option><option value="Self">Self</option></select></div>
+        <div class="form-group"><label>Consignee</label><input type="text" id="be_con" list="dl-con"/></div>
+        <div class="form-group"><label>Tracking</label>
+          <select id="be_track"><option value="">— no change —</option><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
+        <div class="form-group"><label>ETA at Hub</label><input type="text" id="be_eta" placeholder="yyyy/mm/dd"/></div>
+        <div class="form-group"><label>Actual Arrival</label><input type="text" id="be_arr" placeholder="yyyy/mm/dd"/></div>
+        <div class="form-group"><label>Deadline</label><input type="text" id="be_dl" placeholder="yyyy/mm/dd"/></div>
+        <div class="form-group"><label>Pickup Ref</label><input type="text" id="be_ref"/></div>
+        <div class="form-group"><label>Price (€)</label><input type="number" min="0" step="0.01" id="be_price" placeholder="0.00"/></div>
+        <div class="form-group"><label>Price T1 (€)</label><input type="number" min="0" step="0.01" id="be_price_t1" placeholder="0.00"/></div>
+        <div class="form-group full"><label>Remark</label><input type="text" id="be_rmk"/></div>
+      </div>
+    </div>
+    <!-- Vessel fields -->
+    <div class="be-panel" id="be-panel-vt">
+      <div class="be-hint">Only filled fields will be updated. Leave blank to keep existing values.</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Port</label><input type="text" id="be_port"/></div>
+        <div class="form-group"><label>Carrier</label><input type="text" id="be_carrier"/></div>
+        <div class="form-group"><label>Status</label>
+          <select id="be_vstatus"><option value="">— no change —</option><option>Scheduled</option><option>Cut-Off Soon</option><option>Cut-Off Passed</option><option>Departed</option><option>TBD</option></select></div>
+        <div class="form-group"><label>ETS (Departure)</label><input type="text" id="be_ets" placeholder="yyyy/mm/dd"/></div>
+        <div class="form-group"><label>Port Cut-Off</label><input type="text" id="be_pco" placeholder="yyyy/mm/dd"/></div>
+        <div class="form-group full"><label>Remark</label><input type="text" id="be_notes"/></div>
+      </div>
+    </div>
+    <div id="be-ok"  class="info-box info-ok"></div>
+    <div id="be-err" class="info-box info-err"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeBE()">Cancel</button>
+      <button class="mbtn-save" onclick="applyBulkEdit()">✏️ Apply to Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="overlay" id="del-overlay">
+  <div class="confirm-inner">
+    <h3>Delete Container?</h3>
+    <p id="del-msg"></p>
+    <div class="confirm-btns">
+      <button class="mbtn-cancel" onclick="closeDel()">Cancel</button>
+      <button class="btn-del-c" onclick="confirmDel()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SEED DATA ─────────────────────────────────────────────────────
+const CT_SEED = [{"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4592465", "Master B/L": "OyTM202512230561", "Consignee": "HSH World Logistics", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "24-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 1.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "SEKU6528621", "Master B/L": "OyTM202512232159", "Consignee": "HSH World Logistics", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "24-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 2.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4517585", "Master B/L": "OyTM202512262687", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "21-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 3.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "SEKU6555268", "Master B/L": "OyTM202512277025", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "21-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 4.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4592300", "Master B/L": "OyTM202512265720", "Consignee": "VIA EUROPE", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "25-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 5.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4589923", "Master B/L": "OyTM202512268621", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "27-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 6.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU6003420", "Master B/L": "OyTM202512234616", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "27-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 7.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4534319", "Master B/L": "OyTM202512260767", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "22-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 8.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "SEKU6549305", "Master B/L": "OyTM202512263585", "Consignee": "VIA EUROPE", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "30-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 9.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4551759", "Master B/L": "OyTM202512260183", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "24-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 10.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "KSBU0129657", "Master B/L": "OyTM202512260282", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "24-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 11.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4551810", "Master B/L": "OyTM202512267480", "Consignee": "VIA EUROPE", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "25-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 12.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4578277", "Master B/L": "OyTM202512264605", "Consignee": "VIA EUROPE", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "25-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 13.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "CICU2248944", "Master B/L": "OyTM202512267585", "Consignee": "VIA EUROPE", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "25-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 14.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NPTU4503696", "Master B/L": "OyTM202512263095", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "27-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 15.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4546243", "Master B/L": "OyTM202512263257", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "23-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 16.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "NEPU4528297", "Master B/L": "OyTM202512266434", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "23-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 17.0}, {"Batch / Train": "Chengdu 12/28", "Container No.": "SEKU6212248", "Master B/L": "OyTM202512274061", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "23-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 18.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "SEKU6518346", "Master B/L": "OyTM202512312734", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "29-Jan 07:00", "Actual Arrival": "29-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 19.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU6008334", "Master B/L": "OyTM202512302688", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "29-Jan 09:00", "Actual Arrival": "29-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 20.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "SEKU6533166", "Master B/L": "OyTM202512309470", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "29-Jan 17:00", "Actual Arrival": "29-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 21.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "SEGU4833690", "Master B/L": "OyTM202512312741", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "29-Jan 13:00", "Actual Arrival": "29-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 22.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU4518935", "Master B/L": "OyTM202512315178", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "29-Jan 15:00", "Actual Arrival": "29-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 23.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "BURU6738853", "Master B/L": "OyTM202512303763", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "29-Jan 19:00", "Actual Arrival": "29-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 24.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU4564170", "Master B/L": "OyTM202512312350", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "27-Jan 21:00", "Actual Arrival": "27-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 25.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU4553643", "Master B/L": "OyTM202512312447", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "29-Jan 20:00", "Actual Arrival": "29-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 26.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "BURU6682712", "Master B/L": "OyTM202512318219", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "30-Jan 09:00", "Actual Arrival": "30-Jan-2026", "Deadline": "01-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 27.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU4580989", "Master B/L": "OyTM202512313763", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "30-Jan 08:00", "Actual Arrival": "30-Jan-2026", "Deadline": "01-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 28.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU4555667", "Master B/L": "OyTM202512318693", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "26-Jan 14:00", "Actual Arrival": "26-Jan-2026", "Deadline": "30-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 29.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU4597410", "Master B/L": "OyTM202512305099", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "26-Jan 16:00", "Actual Arrival": "26-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 30.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "BURU6718707", "Master B/L": "OyTM202512304563", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "27-Jan 09:00", "Actual Arrival": "27-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 31.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU4565048", "Master B/L": "OyTM202512306616", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "27-Jan 10:00", "Actual Arrival": "27-Jan-2026", "Deadline": "31-Jan-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 32.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU4546963", "Master B/L": "OyTM202512318239", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "27-Jan 11:00", "Actual Arrival": "27-Jan-2026", "Deadline": "01-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 33.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "CICU2029463", "Master B/L": "OyTM202512319112", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "27-Jan 12:00", "Actual Arrival": "27-Jan-2026", "Deadline": "01-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 34.0}, {"Batch / Train": "Chengdu 1/6", "Container No.": "NEPU4547620", "Master B/L": "OyTM202512319934", "Consignee": "Flying Logistics SPRL", "Trucker": "Avrom", "ETA at Hub": "24-Jan-2026", "Scheduled Slot": "27-Jan 14:00", "Actual Arrival": "27-Jan-2026", "Deadline": "01-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 35.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4587598", "Master B/L": "OyTM202601126500", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "Pinzari", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 09:00", "Actual Arrival": "06-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "", "Pickup Ref": "", "Tracking": "Arrived", "_id": 36.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU6292942", "Master B/L": "OyTM202601112891", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 08:00", "Actual Arrival": "05-Feb-2026", "Deadline": "11-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 37.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEGU5406500", "Master B/L": "OyTM202601117704", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 10:00", "Actual Arrival": "05-Feb-2026", "Deadline": "11-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 38.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4532785", "Master B/L": "OyTM202601119202", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 11:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 39.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU5556300", "Master B/L": "OyTM202601121026", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 07:00", "Actual Arrival": "06-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 40.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEGU4494153", "Master B/L": "OyTM202601129447", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 12:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 41.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU6246084", "Master B/L": "OyTM202601121423", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 11:00", "Actual Arrival": "06-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 42.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU6002296", "Master B/L": "OyTM202601129251", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 13:00", "Actual Arrival": "06-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 43.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4530210", "Master B/L": "OyTM202601116455", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 09:00", "Actual Arrival": "06-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 44.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU6567422", "Master B/L": "OyTM202601110217", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 14:00", "Actual Arrival": "06-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 45.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4581687", "Master B/L": "OyTM202601112374", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 08:00", "Actual Arrival": "06-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 46.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4596650", "Master B/L": "OyTM202601115860", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 07:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 47.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU5557820", "Master B/L": "OyTM202601114811", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "04-Feb 08:00", "Actual Arrival": "04-Feb-2026", "Deadline": "11-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 48.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4557510", "Master B/L": "OyTM202601115505", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "04-Feb 09:00", "Actual Arrival": "04-Feb-2026", "Deadline": "11-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 49.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4515026", "Master B/L": "OyTM202601114224", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "04-Feb 10:00", "Actual Arrival": "04-Feb-2026", "Deadline": "11-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 50.0}, {"Batch / Train": "Xian 1/15", "Container No.": "BURU6718883", "Master B/L": "OyTM202601114382", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "04-Feb 11:00", "Actual Arrival": "04-Feb-2026", "Deadline": "11-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 51.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEGU6129170", "Master B/L": "OyTM202601114789", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 09:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 52.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NPTU4506437", "Master B/L": "OyTM202601111561", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 08:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 53.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU6579254", "Master B/L": "OyTM202601115692", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 09:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 54.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU6007092", "Master B/L": "OyTM202601115091", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 10:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 55.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4536796", "Master B/L": "OyTM202601117259", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 11:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 56.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEGU5515414", "Master B/L": "OyTM202601117203", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 12:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 57.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU6614761", "Master B/L": "OyTM202601125970", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 09:00", "Actual Arrival": "06-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 58.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEGU4685421", "Master B/L": "OyTM202601123432", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 10:00", "Actual Arrival": "06-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 59.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4545627", "Master B/L": "OyTM202601123836", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 11:00", "Actual Arrival": "06-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 60.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU6581930", "Master B/L": "OyTM202601127261", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 12:00", "Actual Arrival": "06-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 61.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU6526573", "Master B/L": "OyTM202601111511", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "Pinzari", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 08:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 62.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEKU6209516", "Master B/L": "OyTM202601113411", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "Pinzari", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 10:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 63.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEGU4658468", "Master B/L": "OyTM202601120579", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "Pinzari", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 11:00", "Actual Arrival": "05-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 64.0}, {"Batch / Train": "Xian 1/15", "Container No.": "NEPU4574435", "Master B/L": "OyTM202601110964", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "Pinzari", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "06-Feb 08:00", "Actual Arrival": "06-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 65.0}, {"Batch / Train": "Xian 1/15", "Container No.": "SEGU5083603", "Master B/L": "OyTM202601116352", "Consignee": "HSH World Logistics", "Trucker": "Pinzari", "ETA at Hub": "02-Feb-2026", "Scheduled Slot": "05-Feb 10:00", "Actual Arrival": "05-Feb-2026", "Deadline": "12-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 66.0}, {"Batch / Train": "Xian 1/16", "Container No.": "NEPU4541637", "Master B/L": "OyTM202601136942", "Consignee": "VIA EUROPE", "Trucker": "MCL", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 15:00", "Actual Arrival": "12-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 67.0}, {"Batch / Train": "Xian 1/16", "Container No.": "NEPU6008308", "Master B/L": "OyTM202601128102", "Consignee": "VIA EUROPE", "Trucker": "MCL", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 17:00", "Actual Arrival": "12-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 68.0}, {"Batch / Train": "Xian 1/16", "Container No.": "NEPU6003760", "Master B/L": "OyTM202601124901", "Consignee": "Flying Logistics SPRL", "Trucker": "MCL", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "09-Feb 15:00", "Actual Arrival": "09-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 69.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEGU4667011", "Master B/L": "OyTM202601138151", "Consignee": "Flying Logistics SPRL", "Trucker": "MCS", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "11-Feb 11:00", "Actual Arrival": "11-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 70.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "KSBU0129940", "Master B/L": "OyTM202601133630", "Consignee": "Flying Logistics SPRL", "Trucker": "MCS", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 08:00", "Actual Arrival": "12-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 71.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEKU6555416", "Master B/L": "OyTM202601135989", "Consignee": "Flying Logistics SPRL", "Trucker": "MCS", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 08:00", "Actual Arrival": "12-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 72.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU4572181", "Master B/L": "OyTM202601155186", "Consignee": "Flying Logistics SPRL", "Trucker": "BFI", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "10-Feb 12:00", "Actual Arrival": "10-Feb-2026", "Deadline": "13-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 73.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU4518175", "Master B/L": "OyTM202601150828", "Consignee": "Flying Logistics SPRL", "Trucker": "BFI", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "11-Feb 09:00", "Actual Arrival": "10-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 74.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEKU6520894", "Master B/L": "OyTM202601151053", "Consignee": "Flying Logistics SPRL", "Trucker": "BFI", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "11-Feb 10:00", "Actual Arrival": "11-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 75.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU4569418", "Master B/L": "OyTM202601151397", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "10-Feb 09:00", "Actual Arrival": "10-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 76.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU4520228", "Master B/L": "OyTM202601156042", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "10-Feb 10:00", "Actual Arrival": "10-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 77.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEKU6569786", "Master B/L": "OyTM202601156005", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 09:00", "Actual Arrival": "12-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 78.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEGU5270841", "Master B/L": "OyTM202601139587", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "11-Feb 17:00", "Actual Arrival": "11-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 79.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU6012530", "Master B/L": "OyTM202601157015", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "11-Feb 19:00", "Actual Arrival": "11-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 80.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEKU6553500", "Master B/L": "OyTM202601158836", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 07:00", "Actual Arrival": "12-Feb-2026", "Deadline": "14-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 81.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEGU6291387", "Master B/L": "OyTM202601154151", "Consignee": "VIA EUROPE", "Trucker": "Avrom", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 12:00", "Actual Arrival": "12-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 82.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "MCCU3010651", "Master B/L": "OyTM202601154690", "Consignee": "VIA EUROPE", "Trucker": "Avrom", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 10:00", "Actual Arrival": "12-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 83.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEGU5604790", "Master B/L": "OyTM202601156922", "Consignee": "VIA EUROPE", "Trucker": "Avrom", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 13:00", "Actual Arrival": "12-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 84.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEKU6247943", "Master B/L": "OyTM202601131781", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "11-Feb 06:00", "Actual Arrival": "11-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 85.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU4560750", "Master B/L": "OyTM202601152626", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "KK", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "09-Feb 16:00", "Actual Arrival": "10-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 86.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU4558917", "Master B/L": "OyTM202601136684", "Consignee": "Flying Logistics SPRL", "Trucker": "MCS", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "10-Feb 13:00", "Actual Arrival": "10-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 87.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEKU6528447", "Master B/L": "OyTM202601137805", "Consignee": "Flying Logistics SPRL", "Trucker": "MCS", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "11-Feb 08:00", "Actual Arrival": "11-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 88.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NPTU4505810", "Master B/L": "OyTM202601156527", "Consignee": "Flying Logistics SPRL", "Trucker": "BFI", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "10-Feb 15:00", "Actual Arrival": "10-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 89.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU4556935", "Master B/L": "OyTM202601152195", "Consignee": "Flying Logistics SPRL", "Trucker": "BFI", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "10-Feb 16:00", "Actual Arrival": "10-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 90.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU6010310", "Master B/L": "OyTM202601152935", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "10-Feb 12:00", "Actual Arrival": "10-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 91.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEKU6531950", "Master B/L": "OyTM202601135036", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 18:00", "Actual Arrival": "12-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 92.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU6011528", "Master B/L": "OyTM202601139375", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 20:00", "Actual Arrival": "12-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 93.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "CICU2514751", "Master B/L": "OyTM202601131700", "Consignee": "VIA EUROPE", "Trucker": "Avrom", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 11:00", "Actual Arrival": "12-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 94.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU6002676", "Master B/L": "OyTM202601131685", "Consignee": "VIA EUROPE", "Trucker": "Avrom", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 09:00", "Actual Arrival": "12-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 95.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NPTU4506669", "Master B/L": "OyTM202601130118", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "12-Feb 16:00", "Actual Arrival": "12-Feb-2026", "Deadline": "15-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 96.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "SEGU4514347", "Master B/L": "OyTM202601152613", "Consignee": "VIA EUROPE", "Trucker": "CTV", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "11-Feb 21:00", "Actual Arrival": "11-Feb-2026", "Deadline": "16-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 97.0}, {"Batch / Train": "Guangzhou 1/17", "Container No.": "NEPU4533457", "Master B/L": "OyTM202601132410", "Consignee": "HSH World Logistics", "Trucker": "Avrom", "ETA at Hub": "05-Feb-2026", "Scheduled Slot": "09-Feb 16:00", "Actual Arrival": "10-Feb-2026", "Deadline": "16-Feb-2026", "CMR": "✅", "Pickup Ref": "", "Tracking": "Arrived", "_id": 98.0}, {"Batch / Train": "Chengdu 1/31", "Container No.": "NEPU4552930", "Master B/L": "OyTM202601265895", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "25-Feb-2026", "Scheduled Slot": "02-Mar 13:00", "Actual Arrival": "02-Mar-2026", "Deadline": "28-Feb-2026", "CMR": "", "Pickup Ref": "WB045125RHDY", "Tracking": "Arrived", "_id": 99.0}, {"Batch / Train": "Chengdu 1/31", "Container No.": "NEPU6004072", "Master B/L": "OyTM202601268379", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "25-Feb-2026", "Scheduled Slot": "03-Mar 08:00", "Actual Arrival": "03-Mar-2026", "Deadline": "27-Feb-2026", "CMR": "", "Pickup Ref": "WB045123RHDY", "Tracking": "Arrived", "_id": 100.0}, {"Batch / Train": "Chengdu 1/31", "Container No.": "NEPU6002402", "Master B/L": "OyTM202601262639", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "25-Feb-2026", "Scheduled Slot": "03-Mar 06:00", "Actual Arrival": "03-Mar-2026", "Deadline": "26-Feb-2026", "CMR": "", "Pickup Ref": "WB045127RHDY", "Tracking": "Arrived", "_id": 101.0}, {"Batch / Train": "Chengdu 1/31", "Container No.": "SEKU6525366", "Master B/L": "OyTM202601261672", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "25-Feb-2026", "Scheduled Slot": "02-Mar 15:00", "Actual Arrival": "02-Mar-2026", "Deadline": "26-Feb-2026", "CMR": "", "Pickup Ref": "WB045130CDHOT", "Tracking": "Arrived", "_id": 102.0}, {"Batch / Train": "Chengdu 1/31", "Container No.": "NEPU4584270", "Master B/L": "OyTM202601265830", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "25-Feb-2026", "Scheduled Slot": "02-Mar 12:00", "Actual Arrival": "02-Mar-2026", "Deadline": "27-Feb-2026", "CMR": "", "Pickup Ref": "WB045126RHDY", "Tracking": "Arrived", "_id": 103.0}, {"Batch / Train": "Chengdu 1/31", "Container No.": "SEGU5304330", "Master B/L": "OyTM202601267952", "Consignee": "Flying Logistics SPRL", "Trucker": "Pinzari", "ETA at Hub": "25-Feb-2026", "Scheduled Slot": "02-Mar 12:00", "Actual Arrival": "02-Mar-2026", "Deadline": "26-Feb-2026", "CMR": "", "Pickup Ref": "WB045130CDHOT", "Tracking": "Arrived", "_id": 104.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU4512177", "Master B/L": "OyTM202602041714", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "03-Mar 17:00", "Actual Arrival": "03-Mar-2026", "Deadline": "07-Mar-2026", "CMR": "", "Pickup Ref": "4512177A", "Tracking": "Arrived", "_id": 105.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "SEGU5315890", "Master B/L": "OyTM202602049289", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "03-Mar 19:00", "Actual Arrival": "03-Mar-2026", "Deadline": "08-Mar-2026", "CMR": "", "Pickup Ref": "5315890A", "Tracking": "Arrived", "_id": 106.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "SEKU6534075", "Master B/L": "OyTM202602050800", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "", "Actual Arrival": "04-Mar-2026", "Deadline": "07-Mar-2026", "CMR": "", "Pickup Ref": "6534075A", "Tracking": "Arrived", "_id": 107.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU4560257", "Master B/L": "OyTM202602054478", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "03-Mar 21:00", "Actual Arrival": "03-Mar-2026", "Deadline": "07-Mar-2026", "CMR": "", "Pickup Ref": "4560257A", "Tracking": "Arrived", "_id": 108.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU4551614", "Master B/L": "OyTM202602058897", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "", "Actual Arrival": "04-Mar-2026", "Deadline": "07-Mar-2026", "CMR": "", "Pickup Ref": "4551614A", "Tracking": "Arrived", "_id": 109.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU6003517", "Master B/L": "OyTM202602048990", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "05-Mar 10:00", "Actual Arrival": "05-Mar-2026", "Deadline": "08-Mar-2026", "CMR": "", "Pickup Ref": "6003517B", "Tracking": "Arrived", "_id": 110.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU4558080", "Master B/L": "OyTM202602045705", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "", "Actual Arrival": "04-Mar-2026", "Deadline": "08-Mar-2026", "CMR": "", "Pickup Ref": "4558080B", "Tracking": "Arrived", "_id": 111.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "SEKU6540756", "Master B/L": "OyTM202602059151", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "05-Mar 11:00", "Actual Arrival": "05-Mar-2026", "Deadline": "09-Mar-2026", "CMR": "", "Pickup Ref": "6540756B", "Tracking": "Arrived", "_id": 112.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU6007106", "Master B/L": "OyTM202602058859", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "05-Mar 12:00", "Actual Arrival": "05-Mar-2026", "Deadline": "09-Mar-2026", "CMR": "", "Pickup Ref": "6007106B", "Tracking": "Arrived", "_id": 113.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "SEKU6285516", "Master B/L": "OyTM202602045050", "Consignee": "VIA EUROPE", "Trucker": "KK", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "04-Mar 18:00", "Actual Arrival": "04-Mar-2026", "Deadline": "08-Mar-2026", "CMR": "✅", "Pickup Ref": "6285516A", "Tracking": "Arrived", "_id": 114.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "BURU6633615", "Master B/L": "OyTM202602048155", "Consignee": "Flying Logistics SPRL", "Trucker": "Flying", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "04-Mar 09:00", "Actual Arrival": "04-Mar-2026", "Deadline": "08-Mar-2026", "CMR": "✅", "Pickup Ref": "6633615A", "Tracking": "Arrived", "_id": 115.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "BURU6686702", "Master B/L": "OyTM202602040730", "Consignee": "Flying Logistics SPRL", "Trucker": "Flying", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "04-Mar 09:00", "Actual Arrival": "04-Mar-2026", "Deadline": "08-Mar-2026", "CMR": "✅", "Pickup Ref": "6686702A", "Tracking": "Arrived", "_id": 116.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU4548117", "Master B/L": "OyTM202602048702", "Consignee": "Flying Logistics SPRL", "Trucker": "Flying", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "04-Mar 10:00", "Actual Arrival": "04-Mar-2026", "Deadline": "08-Mar-2026", "CMR": "✅", "Pickup Ref": "4548117A", "Tracking": "Arrived", "_id": 117.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU4542361", "Master B/L": "OyTM202602041608", "Consignee": "Flying Logistics SPRL", "Trucker": "Flying", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "04-Mar 10:00", "Actual Arrival": "04-Mar-2026", "Deadline": "08-Mar-2026", "CMR": "✅", "Pickup Ref": "4542361A", "Tracking": "Arrived", "_id": 118.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU4563976", "Master B/L": "OyTM202602053113", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "08-Mar-2026", "CMR": "", "Pickup Ref": "4563976A", "Tracking": "T1", "_id": 119.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU6005931", "Master B/L": "OyTM202602048413", "Consignee": "VIA EUROPE", "Trucker": "KK", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "05-Mar 16:00", "Actual Arrival": "", "Deadline": "07-Mar-2026", "CMR": "", "Pickup Ref": "6005931B", "Tracking": "Arrived", "_id": 120.0}, {"Batch / Train": "Guangzhou 2/7", "Container No.": "NEPU4563894", "Master B/L": "OyTM202602057323", "Consignee": "VIA EUROPE", "Trucker": "KK", "ETA at Hub": "03-Mar-2026", "Scheduled Slot": "05-Mar 18:00", "Actual Arrival": "", "Deadline": "07-Mar-2026", "CMR": "", "Pickup Ref": "4563894B", "Tracking": "Arrived", "_id": 121.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU4551790", "Master B/L": "OyTM202602115365", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "12-Mar 17:00", "Actual Arrival": "", "Deadline": "14-Mar-2026", "CMR": "", "Pickup Ref": "4551790B", "Tracking": "Arrived", "_id": 122.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "KSBU0129467", "Master B/L": "OyTM202602114807", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "12-Mar 21:00", "Actual Arrival": "", "Deadline": "15-Mar-2026", "CMR": "", "Pickup Ref": "0129467B", "Tracking": "Arrived", "_id": 123.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU6005090", "Master B/L": "OyTM202602118832", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 08:00", "Actual Arrival": "", "Deadline": "15-Mar-2026", "CMR": "", "Pickup Ref": "6005090B", "Tracking": "Arrived", "_id": 124.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "SEKU6569560", "Master B/L": "OyTM202602121515", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 12:00", "Actual Arrival": "", "Deadline": "16-Mar-2026", "CMR": "", "Pickup Ref": "6569560D", "Tracking": "Arrived", "_id": 125.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU4573995", "Master B/L": "OyTM202602121674", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 14:00", "Actual Arrival": "", "Deadline": "16-Mar-2026", "CMR": "", "Pickup Ref": "4573995D", "Tracking": "Arrived", "_id": 126.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU4550407", "Master B/L": "OyTM202602112384", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "12-Mar 19:00", "Actual Arrival": "", "Deadline": "14-Mar-2026", "CMR": "", "Pickup Ref": "4550407B", "Tracking": "Arrived", "_id": 127.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU4573207", "Master B/L": "OyTM202602123686", "Consignee": "VIA EUROPE", "Trucker": "Pinzari", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 10:00", "Actual Arrival": "", "Deadline": "16-Mar-2026", "CMR": "", "Pickup Ref": "4573207D", "Tracking": "Arrived", "_id": 128.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU4542443", "Master B/L": "OyTM202602118274", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "12-Mar 16:00", "Actual Arrival": "", "Deadline": "14-Mar-2026", "CMR": "", "Pickup Ref": "4542443B", "Tracking": "Arrived", "_id": 129.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU4596060", "Master B/L": "OyTM202602112650", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 08:00", "Actual Arrival": "", "Deadline": "15-Mar-2026", "CMR": "", "Pickup Ref": "4596060B", "Tracking": "Arrived", "_id": 130.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU6001849", "Master B/L": "OyTM202602129115", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 09:00", "Actual Arrival": "", "Deadline": "15-Mar-2026", "CMR": "", "Pickup Ref": "6001849B", "Tracking": "Arrived", "_id": 131.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU4552138", "Master B/L": "OyTM202602111443", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 10:00", "Actual Arrival": "", "Deadline": "15-Mar-2026", "CMR": "", "Pickup Ref": "4552138B", "Tracking": "Arrived", "_id": 132.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "SEGU5900283", "Master B/L": "OyTM202602112405", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 11:00", "Actual Arrival": "", "Deadline": "15-Mar-2026", "CMR": "", "Pickup Ref": "5900283B", "Tracking": "Arrived", "_id": 133.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU4542905", "Master B/L": "OyTM202602117655", "Consignee": "SKYLINE LOGISTICS SRL", "Trucker": "KK", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "12-Mar 18:00", "Actual Arrival": "", "Deadline": "15-Mar-2026", "CMR": "", "Pickup Ref": "4542905D", "Tracking": "Arrived", "_id": 134.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "KSBU0044729", "Master B/L": "OyTM202602127216", "Consignee": "Flying Logistics SPRL", "Trucker": "Albert", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 12:00", "Actual Arrival": "", "Deadline": "15-Mar-2026", "CMR": "", "Pickup Ref": "0044729D", "Tracking": "Arrived", "_id": 135.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "SEKU6564402", "Master B/L": "OyTM202602116768", "Consignee": "Flying Logistics SPRL", "Trucker": "Albert", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 13:00", "Actual Arrival": "", "Deadline": "15-Mar-2026", "CMR": "", "Pickup Ref": "6564402D", "Tracking": "Arrived", "_id": 136.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "NEPU4541581", "Master B/L": "OyTM202602120196", "Consignee": "Flying Logistics SPRL", "Trucker": "Albert", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 14:00", "Actual Arrival": "", "Deadline": "16-Mar-2026", "CMR": "", "Pickup Ref": "4541581D", "Tracking": "Arrived", "_id": 137.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "SEGU4878966", "Master B/L": "OyTM202602120707", "Consignee": "Flying Logistics SPRL", "Trucker": "Albert", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 15:00", "Actual Arrival": "", "Deadline": "16-Mar-2026", "CMR": "", "Pickup Ref": "4878966D", "Tracking": "Arrived", "_id": 138.0}, {"Batch / Train": "Guangzhou 2/14", "Container No.": "SEKU6518135", "Master B/L": "OyTM202602124884", "Consignee": "Flying Logistics SPRL", "Trucker": "Albert", "ETA at Hub": "11-Mar-2026", "Scheduled Slot": "13-Mar 16:00", "Actual Arrival": "", "Deadline": "16-Mar-2026", "CMR": "", "Pickup Ref": "6518135D", "Tracking": "Arrived", "_id": 139.0}, {"Batch / Train": "Batch 2/22", "Container No.": "SEGU4642862", "Master B/L": "OyTM202602151562", "Consignee": "HSH World Logistics", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 140.0}, {"Batch / Train": "Batch 2/22", "Container No.": "NEPU4534263", "Master B/L": "OyTM202602152859", "Consignee": "HSH World Logistics", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 141.0}, {"Batch / Train": "Batch 2/22", "Container No.": "SEGU5605457", "Master B/L": "OyTM202602158817", "Consignee": "HSH World Logistics", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 142.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "SEKU6589648", "Master B/L": "OyTM202602244141", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "27-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 143.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "SEGU4483539", "Master B/L": "OyTM202602243569", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "29-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 144.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NEPU4512602", "Master B/L": "OyTM202602254401", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "30-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 145.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "SEKU6585128", "Master B/L": "OyTM202602254708", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "30-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 146.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NEPU5000365", "Master B/L": "OyTM202602248780", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "27-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 147.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NEPU6005844", "Master B/L": "OyTM202602247582", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "28-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 148.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "SEKU6563788", "Master B/L": "OyTM202602248261", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "29-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 149.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NPTU4503546", "Master B/L": "OyTM202602254802", "Consignee": "VIA EUROPE", "Trucker": "MCS", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "29-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 150.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "KSBU0046505", "Master B/L": "OyTM202602244576", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "30-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 151.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "CICU2050898", "Master B/L": "OyTM202602256492", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "30-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 152.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NEPU4523720", "Master B/L": "OyTM202602254223", "Consignee": "VIA EUROPE", "Trucker": "globaltl.pl", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "31-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 153.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NEPU4507740", "Master B/L": "OyTM202602258290", "Consignee": "HSH World Logistics", "Trucker": "Pinzari", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "31-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 154.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NEPU4572601", "Master B/L": "OyTM202602258198", "Consignee": "HSH World Logistics", "Trucker": "Pinzari", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "31-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 155.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NEPU4529610", "Master B/L": "OyTM202602241310", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "29-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 156.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NPTU4600166", "Master B/L": "OyTM202602245567", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "28-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 157.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "KSBU0130703", "Master B/L": "OyTM202602256896", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "29-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 158.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NEPU4571101", "Master B/L": "OyTM202602256022", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "29-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 159.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "SEKU6508332", "Master B/L": "OyTM202602240009", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "29-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 160.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "SEGU4746893", "Master B/L": "OyTM202602257868", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "29-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 161.0}, {"Batch / Train": "Guangzhou 2/28", "Container No.": "NEPU4577769", "Master B/L": "OyTM202602257326", "Consignee": "Flying Logistics SPRL", "Trucker": "KK", "ETA at Hub": "", "Scheduled Slot": "", "Actual Arrival": "", "Deadline": "30-Mar-2026", "CMR": "", "Pickup Ref": "", "Tracking": "T1", "_id": 162.0}];
+const VT_SEED = [{"Port": "ANTWERP", "Carrier": "RHENUS", "Booking / BC No.": "530500138693", "Container Qty": 77.0, "Vessel Name": "CMA CGM Rivoli", "ETS (Departure)": "20-Jan-2026", "Port Cut-Off": "15-Jan-2026", "Barge Date": "", "Days to Cut-Off": -50.0, "Delay (days)": NaN, "Status": "Departed", "Remark": "", "_id": 1}, {"Port": "ANTWERP", "Carrier": "RHENUS", "Booking / BC No.": "530600006862", "Container Qty": 1.0, "Vessel Name": "CMA CGM SORBONNE", "ETS (Departure)": "28-Jan-2026", "Port Cut-Off": "27-Jan-2026", "Barge Date": "", "Days to Cut-Off": -38.0, "Delay (days)": NaN, "Status": "Departed", "Remark": "", "_id": 2}, {"Port": "ANTWERP", "Carrier": "", "Booking / BC No.": "530500139673 (Lot 2)", "Container Qty": 100.0, "Vessel Name": "Govern", "ETS (Departure)": "05-Feb-2026", "Port Cut-Off": "03-Feb-2026", "Barge Date": "28-Jan-2026", "Days to Cut-Off": -31.0, "Delay (days)": 6.0, "Status": "Departed", "Remark": "", "_id": 3}, {"Port": "ANTWERP", "Carrier": "", "Booking / BC No.": "530500139665 (Lot 3)", "Container Qty": 50.0, "Vessel Name": "Govern", "ETS (Departure)": "05-Feb-2026", "Port Cut-Off": "03-Feb-2026", "Barge Date": "30-Jan-2026", "Days to Cut-Off": -31.0, "Delay (days)": 4.0, "Status": "Departed", "Remark": "", "_id": 4}, {"Port": "ANTWERP", "Carrier": "RHENUS", "Booking / BC No.": "530600006896", "Container Qty": 22.0, "Vessel Name": "EVER TOP", "ETS (Departure)": "20-Feb-2026", "Port Cut-Off": "17-Feb-2026", "Barge Date": "19-Feb-2026", "Days to Cut-Off": -17.0, "Delay (days)": -2.0, "Status": "Departed", "Remark": "Next possible barge transport would be ETD 17-02 > ETA 1700 19-02", "_id": 5}, {"Port": "ANTWERP", "Carrier": "RHENUS", "Booking / BC No.": "530600009020 (Lot 3)", "Container Qty": 50.0, "Vessel Name": "EVER TOP", "ETS (Departure)": "24-Feb-2026", "Port Cut-Off": "22-Feb-2026", "Barge Date": "", "Days to Cut-Off": -12.0, "Delay (days)": NaN, "Status": "Departed", "Remark": "", "_id": 6}, {"Port": "ANTWERP", "Carrier": "", "Booking / BC No.": "", "Container Qty": NaN, "Vessel Name": "Concorde", "ETS (Departure)": "26-Feb-2026", "Port Cut-Off": "23-Feb-2026", "Barge Date": "19-Feb-2026", "Days to Cut-Off": -11.0, "Delay (days)": 4.0, "Status": "Departed", "Remark": "", "_id": 7}, {"Port": "ANTWERP", "Carrier": "RHENUS", "Booking / BC No.": "530600014392", "Container Qty": 65.0, "Vessel Name": "CMA CGM SAINT GERMAIN", "ETS (Departure)": "03-Mar-2026", "Port Cut-Off": "28-Feb-2026", "Barge Date": "", "Days to Cut-Off": -6.0, "Delay (days)": NaN, "Status": "Departed", "Remark": "更改BC", "_id": 8}, {"Port": "ANTWERP", "Carrier": "RHENUS", "Booking / BC No.": "530600022972\nDGT- Rotterdam- Nansha", "Container Qty": 50.0, "Vessel Name": "EVER ACT", "ETS (Departure)": "20-Mar-2026", "Port Cut-Off": "16-Mar-2026", "Barge Date": "", "Days to Cut-Off": 10.0, "Delay (days)": NaN, "Status": "Scheduled", "Remark": "3/12-3/20", "_id": 9}, {"Port": "GDANSK", "Carrier": "", "Booking / BC No.": "", "Container Qty": NaN, "Vessel Name": "OOCL Felixstowe", "ETS (Departure)": "21-Feb-2026", "Port Cut-Off": "17-Feb-2026", "Barge Date": "", "Days to Cut-Off": -17.0, "Delay (days)": NaN, "Status": "Departed", "Remark": "I've applied for three unloading slots on BH. We'll likely receive a response around February 12th.", "_id": 10}, {"Port": "GDANSK", "Carrier": "", "Booking / BC No.": "", "Container Qty": NaN, "Vessel Name": "OOCL GERMANY", "ETS (Departure)": "01-Mar-2026", "Port Cut-Off": "24-Feb-2026", "Barge Date": "", "Days to Cut-Off": -10.0, "Delay (days)": NaN, "Status": "Departed", "Remark": "Due to difficult weather conditions, the allocation of windows to the Baltic Hub has been suspended, which results in th", "_id": 11}, {"Port": "GDANSK", "Carrier": "", "Booking / BC No.": "", "Container Qty": 54.0, "Vessel Name": "OOCL Spain", "ETS (Departure)": "15-Mar-2026", "Port Cut-Off": "11-Mar-2026", "Barge Date": "", "Days to Cut-Off": 5.0, "Delay (days)": NaN, "Status": "Scheduled", "Remark": "Due to difficult weather conditions, the allocation of windows to the Baltic Hub has been suspended, which results in th", "_id": 12}, {"Port": "KLAIPEDA", "Carrier": "", "Booking / BC No.": "530600011369", "Container Qty": 3.0, "Vessel Name": "X-PRESS GODAVARI / 26005S", "ETS (Departure)": "08-Feb-2026", "Port Cut-Off": "06-Feb-2026", "Barge Date": "", "Days to Cut-Off": -28.0, "Delay (days)": NaN, "Status": "Departed", "Remark": "KLAIPEDA--NINGBO", "_id": 13}, {"Port": "KLAIPEDA", "Carrier": "", "Booking / BC No.": "KLP0166078", "Container Qty": 6.0, "Vessel Name": "CONTAINERSHIPS VIII", "ETS (Departure)": "02-Mar-2026", "Port Cut-Off": "26-Feb-2026", "Barge Date": "", "Days to Cut-Off": -8.0, "Delay (days)": NaN, "Status": "Departed", "Remark": "KLAIPEDA--NINGBO", "_id": 14}, {"Port": "KLAIPEDA", "Carrier": "", "Booking / BC No.": "KLP0166189", "Container Qty": 50.0, "Vessel Name": "CONTAINERSHIPS VIII", "ETS (Departure)": "TBD", "Port Cut-Off": "", "Barge Date": "", "Days to Cut-Off": NaN, "Delay (days)": NaN, "Status": "TBD", "Remark": "KLAIPEDA--NINGBO", "_id": 15}];
+
+const LS_CT = 'owenz_ct_v3';
+const LS_VT = 'owenz_vt_v1';
+let CT = [], VT = [], nextId = 1, vtNextId = 1;
+let ctSortCol = 'Batch / Train', ctSortDir = 1;
+let editId = null, delId = null;
+let importWB = null, importRows = [];
+let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null;
+
+// ── PERSISTENCE ───────────────────────────────────────────────────
+function loadData(){
+  try {
+    const s = localStorage.getItem(LS_CT);
+    if(s){ CT = JSON.parse(s); nextId = Math.max(0,...CT.map(r=>r._id||0))+1; }
+    else initSeed();
+  } catch(e){ initSeed(); }
+  try {
+    const sv = localStorage.getItem(LS_VT);
+    if(sv){ VT = JSON.parse(sv); vtNextId = Math.max(0,...VT.map(r=>r._id||0))+1; }
+    else { VT = VT_SEED.map((r,i)=>({...r, _id:i+1})); vtNextId = VT.length+1; }
+  } catch(e){ VT = VT_SEED.map((r,i)=>({...r, _id:i+1})); vtNextId = VT.length+1; }
+}
+function initSeed(){
+  CT = CT_SEED.map((r,i)=>({...r, _id:i+1}));
+  nextId = CT.length+1;
+  saveData();
+}
+function saveData(){ try{ localStorage.setItem(LS_CT, JSON.stringify(CT)); }catch(e){} cloudAutoSave(); }
+function saveVT(){ try{ localStorage.setItem(LS_VT, JSON.stringify(VT)); }catch(e){} cloudAutoSave(); }
+
+// ── PAGE NAV ──────────────────────────────────────────────────────
+function showPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('nav button')[['dashboard','containers','vessels'].indexOf(p)].classList.add('active');
+  if(p==='dashboard') renderDashboard();
+  if(p==='containers') renderCT();
+  if(p==='vessels') renderVT();
+}
+function gotoFilter(col, val){
+  // Clear all multi-selects first
+  msClear('batch','All Batches');
+  msClear('trucker','All Truckers');
+  msClear('tracking','All Tracking');
+  msClear('arrival','All Arrivals');
+  msClear('broker','All Brokers');
+  // Then set the specific filter
+  if(col==='Tracking')          msSetValues('tracking',[val],'All Tracking');
+  if(col==='_missing_arrival')  msSetValues('arrival',['missing'],'All Arrivals');
+  showPage('containers');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function parseDate(s){
+  if(!s||typeof s!=='string') return null;
+  // yyyy/mm/dd (new preferred format)
+  const my=s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if(my) return new Date(+my[1],+my[2]-1,+my[3]);
+  const m1=s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
+  if(m1) return new Date(+m1[3],+m1[2]-1,+m1[1]);
+  // DD-Jan-YYYY or DD-MMM-YYYY
+  const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  const m2=s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+  if(m2){ const mo=months[m2[2].toLowerCase()]; if(mo!==undefined) return new Date(+m2[3],mo,+m2[1]); }
+  const m3=s.match(/^(\d{1,2})-([A-Za-z]{3})(?:\s|$)/);
+  if(m3){ const mo=months[m3[2].toLowerCase()]; if(mo!==undefined) return new Date(new Date().getFullYear(),mo,+m3[1]); }
+  const m4=s.match(/^(\d{1,2})-(\d{1,2})(?:\s|$)/);
+  if(m4) return new Date(new Date().getFullYear(),+m4[2]-1,+m4[1]);
+  return null;
+}
+function formatDate(d){
+  if(!d||isNaN(d)) return '';
+  return d.getFullYear()+'/'
+    +String(d.getMonth()+1).padStart(2,'0')+'/'
+    +String(d.getDate()).padStart(2,'0');
+}
+function fmtDateStr(s){
+  // Normalize any stored date string → yyyy/mm/dd display
+  if(!s) return '';
+  const d=parseDate(s); return d?formatDate(d):s;
+}
+function computeDays(r){
+  const slot=parseDate(r['Scheduled Slot']); if(!slot) return null;
+  const eta=parseDate(r['ETA at Hub']); if(!eta) return null;
+  return Math.round((slot-eta)/864e5);
+}
+function daysClass(v){ const n=parseFloat(v); if(isNaN(n)) return ''; return n<0?'days-ok':n<=3?'days-warn':'days-hot'; }
+
+// ── DASHBOARD ─────────────────────────────────────────────────────
+function renderDashboard(){
+  document.getElementById('kv-total').textContent = CT.length;
+  document.getElementById('kv-arr').textContent   = CT.filter(r=>r['Tracking']==='Arrived').length;
+  document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
+  document.getElementById('kv-hi').textContent    = CT.filter(r=>!r['Actual Arrival']).length;
+  document.getElementById('kv-vessels').textContent = VT.length;
+
+  // Monthly deliveries
+  const monthly = {};
+  CT.forEach(r=>{
+    const d=parseDate(r['Actual Arrival']); if(!d) return;
+    const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    monthly[k]=(monthly[k]||0)+1;
+  });
+  const mKeys=Object.keys(monthly).sort();
+  const mLabels=mKeys.map(k=>{ const [y,m]=k.split('-'); return ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m]+' '+y; });
+
+  if(monthChart) monthChart.destroy();
+  monthChart = new Chart(document.getElementById('monthly-chart'),{
+    type:'bar',
+    data:{ labels:mLabels, datasets:[{
+      label:'Containers Delivered',
+      data:mKeys.map(k=>monthly[k]),
+      backgroundColor:'#43A047',borderColor:'#2e7d32',borderWidth:1,borderRadius:4
+    }]},
+    options:{ responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{ticks:{stepSize:5},grid:{color:'rgba(0,0,0,.06)'}},x:{grid:{display:false}}} }
+  });
+
+  // Batch bar
+  const bCounts={};
+  CT.forEach(r=>{ const b=r['Batch / Train']||'?'; bCounts[b]=(bCounts[b]||0)+1; });
+  const bKeys=Object.keys(bCounts).sort();
+  if(batchChart) batchChart.destroy();
+  batchChart = new Chart(document.getElementById('batch-chart'),{
+    type:'bar',
+    data:{ labels:bKeys, datasets:[{
+      label:'Containers',
+      data:bKeys.map(k=>bCounts[k]),
+      backgroundColor:'#1976D2',borderRadius:4
+    }]},
+    options:{ responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{stepSize:5}},y:{grid:{display:false}}} }
+  });
+
+  // Tracking status donut
+  const tCounts={Arrived:0,T1:0,None:0};
+  CT.forEach(r=>{ const t=r['Tracking']||'None'; if(tCounts[t]!==undefined) tCounts[t]++; else tCounts['None']++; });
+  if(window.trackingChart) window.trackingChart.destroy();
+  window.trackingChart = new Chart(document.getElementById('tracking-chart'),{
+    type:'doughnut',
+    data:{
+      labels:['Arrived','T1 (In Transit)','None'],
+      datasets:[{
+        data:[tCounts['Arrived'],tCounts['T1'],tCounts['None']],
+        backgroundColor:['#43A047','#1976D2','#9E9E9E'],
+        borderWidth:2,borderColor:'#fff'
+      }]
+    },
+    options:{ responsive:true,maintainAspectRatio:false,
+      plugins:{ legend:{position:'right',labels:{font:{size:12},padding:14}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} containers`}} } }
+  });
+
+  // Vessel status bar
+  const vsCounts={};
+  VT.forEach(r=>{ const s=r['Status']||'Unknown'; vsCounts[s]=(vsCounts[s]||0)+1; });
+  const vsKeys=Object.keys(vsCounts).sort();
+  const vsColors=vsKeys.map(k=>k==='Departed'?'#43A047':k==='Scheduled'?'#1976D2':k==='Cut-Off Soon'?'#F9A825':k==='Cut-Off Passed'?'#e53935':'#9E9E9E');
+  if(window.vesselStatusChart) window.vesselStatusChart.destroy();
+  window.vesselStatusChart = new Chart(document.getElementById('vessel-status-chart'),{
+    type:'bar',
+    data:{ labels:vsKeys, datasets:[{ label:'Vessels', data:vsKeys.map(k=>vsCounts[k]), backgroundColor:vsColors, borderRadius:4 }] },
+    options:{ responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{ticks:{stepSize:1},grid:{color:'rgba(0,0,0,.06)'}},x:{grid:{display:false}}} }
+  });
+
+  // ── Slot–ETA lead time analysis ──────────────────────────────────
+  // Compute Slot–ETA (days) for every container that has both dates
+  const slotEtaDays = CT.map(r=>{
+    const slot=parseDate(r['Scheduled Slot']), eta=parseDate(r['ETA at Hub']);
+    return (slot&&eta) ? { days: Math.round((slot-eta)/864e5), batch: r['Batch / Train']||'?' } : null;
+  }).filter(Boolean);
+
+  // Distribution: buckets ≤−1, 0, 1, 2, 3, 4, 5, 6–10, 11+
+  const buckets=[
+    {label:'< 0',  min:-Infinity, max:-1,  color:'#e53935'},
+    {label:'0',    min:0,         max:0,   color:'#FF7043'},
+    {label:'1',    min:1,         max:1,   color:'#F9A825'},
+    {label:'2',    min:2,         max:2,   color:'#FDD835'},
+    {label:'3',    min:3,         max:3,   color:'#9CCC65'},
+    {label:'4',    min:4,         max:4,   color:'#66BB6A'},
+    {label:'5',    min:5,         max:5,   color:'#43A047'},
+    {label:'6–10', min:6,         max:10,  color:'#2E7D32'},
+    {label:'> 10', min:11,        max:Infinity, color:'#1B5E20'},
+  ];
+  const distCounts = buckets.map(b=> slotEtaDays.filter(x=>x.days>=b.min&&x.days<=b.max).length);
+  if(window.slotEtaDistChart) window.slotEtaDistChart.destroy();
+  window.slotEtaDistChart = new Chart(document.getElementById('slot-eta-dist-chart'),{
+    type:'bar',
+    data:{ labels:buckets.map(b=>b.label), datasets:[{
+      label:'Containers', data:distCounts,
+      backgroundColor:buckets.map(b=>b.color), borderRadius:4
+    }]},
+    options:{ responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.raw+' container'+(ctx.raw!==1?'s':'')}}},
+      scales:{y:{ticks:{stepSize:1},grid:{color:'rgba(0,0,0,.06)'},title:{display:true,text:'Containers',font:{size:11}}},
+              x:{grid:{display:false},title:{display:true,text:'Days (Slot − ETA)',font:{size:11}}}} }
+  });
+
+  // ── Price vs Price T1 comparison by Trucker ──────────────────────
+  const priceTruckers={};
+  CT.forEach(r=>{
+    const t=r['Trucker']||'Unknown';
+    const p=parseFloat(r['Price']), p1=parseFloat(r['Price T1']);
+    const hasP=!isNaN(p)&&p>0, hasP1=!isNaN(p1)&&p1>0;
+    if(!hasP&&!hasP1) return;
+    if(!priceTruckers[t]) priceTruckers[t]={pSum:0,pCount:0,p1Sum:0,p1Count:0};
+    if(hasP){ priceTruckers[t].pSum+=p; priceTruckers[t].pCount++; }
+    if(hasP1){ priceTruckers[t].p1Sum+=p1; priceTruckers[t].p1Count++; }
+  });
+  const ptKeys=Object.keys(priceTruckers).sort();
+
+  // Avg Price vs Avg Price T1
+  if(priceTruckerAvgChart) priceTruckerAvgChart.destroy();
+  priceTruckerAvgChart = new Chart(document.getElementById('price-trucker-avg-chart'),{
+    type:'bar',
+    data:{
+      labels:ptKeys,
+      datasets:[
+        { label:'Avg Price (€)',
+          data:ptKeys.map(k=>priceTruckers[k].pCount?+(priceTruckers[k].pSum/priceTruckers[k].pCount).toFixed(0):null),
+          backgroundColor:'#1976D2', borderRadius:4 },
+        { label:'Avg Price T1 (€)',
+          data:ptKeys.map(k=>priceTruckers[k].p1Count?+(priceTruckers[k].p1Sum/priceTruckers[k].p1Count).toFixed(0):null),
+          backgroundColor:'#F9A825', borderRadius:4 }
+      ]
+    },
+    options:{ responsive:true,maintainAspectRatio:false,
+      plugins:{ legend:{position:'top',labels:{font:{size:11},padding:12}},
+        tooltip:{callbacks:{label:ctx=>ctx.raw!=null?' €'+ctx.raw.toLocaleString()+' avg/container':' —'}} },
+      scales:{
+        y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
+            title:{display:true,text:'Avg Price (€)',font:{size:11}} },
+        x:{ grid:{display:false} }
+      }
+    }
+  });
+
+  // Total Price vs Total Price T1
+  if(priceTruckerTotalChart) priceTruckerTotalChart.destroy();
+  priceTruckerTotalChart = new Chart(document.getElementById('price-trucker-total-chart'),{
+    type:'bar',
+    data:{
+      labels:ptKeys,
+      datasets:[
+        { label:'Total Price (€)',
+          data:ptKeys.map(k=>priceTruckers[k].pCount?+priceTruckers[k].pSum.toFixed(0):null),
+          backgroundColor:'#1976D2', borderRadius:4 },
+        { label:'Total Price T1 (€)',
+          data:ptKeys.map(k=>priceTruckers[k].p1Count?+priceTruckers[k].p1Sum.toFixed(0):null),
+          backgroundColor:'#F9A825', borderRadius:4 }
+      ]
+    },
+    options:{ responsive:true,maintainAspectRatio:false,
+      plugins:{ legend:{position:'top',labels:{font:{size:11},padding:12}},
+        tooltip:{callbacks:{label:ctx=>{
+          if(ctx.raw==null) return ' —';
+          const k=ptKeys[ctx.dataIndex];
+          const isT1=ctx.datasetIndex===1;
+          const count=isT1?priceTruckers[k].p1Count:priceTruckers[k].pCount;
+          return [' €'+ctx.raw.toLocaleString()+' total',' ('+count+' containers)'];
+        }}} },
+      scales:{
+        y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
+            title:{display:true,text:'Total (€)',font:{size:11}} },
+        x:{ grid:{display:false} }
+      }
+    }
+  });
+
+  // Per-batch average Slot–ETA
+  const seBatchDays={};
+  slotEtaDays.forEach(({days,batch})=>{
+    if(!seBatchDays[batch]) seBatchDays[batch]={sum:0,count:0};
+    seBatchDays[batch].sum+=days; seBatchDays[batch].count++;
+  });
+  const seKeys=Object.keys(seBatchDays).sort();
+  const seAvgs=seKeys.map(b=>+(seBatchDays[b].sum/seBatchDays[b].count).toFixed(1));
+  const seColors=seAvgs.map(v=>v<0?'#e53935':v<=2?'#F9A825':v<=5?'#9CCC65':'#43A047');
+  if(window.slotEtaBatchChart) window.slotEtaBatchChart.destroy();
+  window.slotEtaBatchChart = new Chart(document.getElementById('slot-eta-batch-chart'),{
+    type:'bar',
+    data:{ labels:seKeys, datasets:[{
+      label:'Avg Days', data:seAvgs,
+      backgroundColor:seColors, borderRadius:4
+    }]},
+    options:{ responsive:true,maintainAspectRatio:false, indexAxis:'y',
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>' Avg '+ctx.raw+' days'}}},
+      scales:{x:{grid:{color:'rgba(0,0,0,.06)'},title:{display:true,text:'Avg days (Slot − ETA)',font:{size:11}},
+               ticks:{callback:v=>v+'d'}},
+              y:{grid:{display:false}}} }
+  });
+}
+
+// ── CONTAINER TABLE ───────────────────────────────────────────────
+function fillSel(id,key){
+  const sel=document.getElementById(id), cur=sel.value;
+  while(sel.options.length>1) sel.remove(1);
+  [...new Set(CT.map(r=>r[key]).filter(Boolean))].sort().forEach(v=>sel.add(new Option(v,v)));
+  sel.value=cur;
+}
+function fillDL(id,key){
+  const dl=document.getElementById(id); dl.innerHTML='';
+  [...new Set(CT.map(r=>r[key]).filter(Boolean))].sort()
+    .forEach(v=>{const o=document.createElement('option');o.value=v;dl.appendChild(o);});
+}
+function refreshDLs(){ fillDL('dl-batch','Batch / Train'); fillDL('dl-truck','Trucker'); fillDL('dl-con','Consignee'); }
+
+// ── MULTI-SELECT HELPERS ──────────────────────────────────────────
+function msOpen(id){
+  const menu=document.getElementById('menu-'+id);
+  const wasOpen=menu.classList.contains('open');
+  document.querySelectorAll('.ms-menu.open').forEach(m=>m.classList.remove('open'));
+  if(!wasOpen) menu.classList.add('open');
+}
+function msGetValues(id){
+  return Array.from(document.querySelectorAll('#menu-'+id+' input[type=checkbox]:checked')).map(cb=>cb.value);
+}
+function msChange(id, placeholder){
+  const vals=msGetValues(id);
+  const btn=document.getElementById('btn-'+id);
+  if(vals.length){ btn.textContent=vals.join(', '); btn.classList.add('has-sel'); }
+  else { btn.textContent=placeholder; btn.classList.remove('has-sel'); }
+  renderCT();
+}
+function msSetValues(id, vals, placeholder){
+  document.querySelectorAll('#menu-'+id+' input[type=checkbox]').forEach(cb=>{ cb.checked=vals.includes(cb.value); });
+  const btn=document.getElementById('btn-'+id);
+  if(btn){ if(vals.length){ btn.textContent=vals.join(', '); btn.classList.add('has-sel'); }
+           else { btn.textContent=placeholder; btn.classList.remove('has-sel'); } }
+}
+function msClear(id, placeholder){
+  document.querySelectorAll('#menu-'+id+' input[type=checkbox]').forEach(cb=>cb.checked=false);
+  const btn=document.getElementById('btn-'+id);
+  if(btn){ btn.textContent=placeholder; btn.classList.remove('has-sel'); }
+}
+function fillMultiSel(id, key, placeholder){
+  const menu=document.getElementById('menu-'+id);
+  if(!menu) return;
+  const checkedVals=msGetValues(id);
+  const vals=[...new Set(CT.map(r=>r[key]).filter(Boolean))].sort();
+  menu.innerHTML=vals.map(v=>`<label><input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${checkedVals.includes(v)?'checked':''} onchange="msChange('${id}','${placeholder}')"> ${v}</label>`).join('');
+}
+// Close dropdowns when clicking outside
+document.addEventListener('click',function(e){ if(!e.target.closest('.ms-wrap')) document.querySelectorAll('.ms-menu.open').forEach(m=>m.classList.remove('open')); });
+
+function getCTRows(){
+  const q=(document.getElementById('f-search').value||'').toLowerCase();
+  const fbs=msGetValues('batch');
+  const fts=msGetValues('trucker');
+  const ftrs=msGetValues('tracking');
+  const fars=msGetValues('arrival');
+  const fbrs=msGetValues('broker');
+  return CT.filter(r=>{
+    if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
+    if(fts.length&&!fts.includes(r['Trucker'])) return false;
+    if(ftrs.length&&!ftrs.includes(r['Tracking'])) return false;
+    if(fars.length){
+      const miss=fars.includes('missing'), fill=fars.includes('filled');
+      if(miss&&!fill&&r['Actual Arrival']) return false;
+      if(fill&&!miss&&!r['Actual Arrival']) return false;
+    }
+    if(fbrs.length&&!fbrs.includes(r['Broker']||'')) return false;
+    if(q){
+      const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
+               r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
+      if(!h.includes(q)) return false;
+    }
+    return true;
+  }).sort((a,b)=>{
+    let av=a[ctSortCol]??'', bv=b[ctSortCol]??'';
+    if(typeof av==='number'&&typeof bv==='number') return (av-bv)*ctSortDir;
+    return String(av).localeCompare(String(bv))*ctSortDir;
+  });
+}
+
+function ctSort(col){ ctSortCol===col?ctSortDir*=-1:(ctSortCol=col,ctSortDir=1); renderCT(); }
+function resetFilters(){
+  const s=document.getElementById('f-search'); if(s) s.value='';
+  msClear('batch','All Batches');
+  msClear('trucker','All Truckers');
+  msClear('tracking','All Tracking');
+  msClear('arrival','All Arrivals');
+  msClear('broker','All Brokers');
+  renderCT();
+}
+
+function renderCT(){
+  fillMultiSel('batch','Batch / Train','All Batches');
+  fillMultiSel('trucker','Trucker','All Truckers');
+  const rows=getCTRows();
+  document.getElementById('ct-count').textContent=rows.length+' of '+CT.length+' containers';
+  const tbody=document.getElementById('ct-body');
+  const nodata=document.getElementById('ct-nodata');
+  if(!rows.length){ tbody.innerHTML=''; nodata.style.display='block'; return; }
+  nodata.style.display='none';
+
+  const EDITABLE=['ETA at Hub','Scheduled Slot','Actual Arrival','Deadline','Master B/L','Consignee','Trucker'];
+  // Frozen column class map by col name
+  const FC_CLASS={'Master B/L':'fc-3','Consignee':'fc-4'};
+
+  tbody.innerHTML=rows.map(r=>{
+    const missing=!r['Actual Arrival'];
+    const rowCls=missing?'hi-missing':'';
+    const dl=computeDays(r);
+    const dlStr=dl!==null?(dl>0?'+'+dl:String(dl)):'—';
+    const trackBadge=r['Tracking']==='Arrived'?'<span class="track-arr">Arrived</span>':r['Tracking']==='T1'?'<span class="track-t1">T1</span>':'<span class="track-none">None</span>';
+    const cmrChecked=r['CMR']==='✅';
+
+    const editCells=EDITABLE.map(col=>{
+      const v=r[col]||'';
+      const fc=FC_CLASS[col]?` ${FC_CLASS[col]}`:'';
+      return `<td class="${fc.trim()}" data-id="${r._id}" data-col="${col.replace(/"/g,'&quot;')}">
+        <div class="cell-view" onclick="startEdit(this)">${v||'<span style="color:#ccc">—</span>'}</div>
+        <div class="cell-edit"><input value="${v.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+      </td>`;
+    });
+
+    // Tracking cell (dropdown)
+    const trackCell=`<td data-id="${r._id}" data-col="Tracking">
+      <div class="cell-view" onclick="startEdit(this)">${trackBadge}</div>
+      <div class="cell-edit"><select onblur="commitEditSelect(this,'Tracking',${r._id})" onchange="commitEditSelect(this,'Tracking',${r._id})">
+        <option value="None" ${r['Tracking']==='None'||!r['Tracking']?'selected':''}>None</option>
+        <option ${r['Tracking']==='T1'?'selected':''}>T1</option>
+        <option ${r['Tracking']==='Arrived'?'selected':''}>Arrived</option>
+      </select></div>
+    </td>`;
+
+    // Broker cell (dropdown: Wispex / Self)
+    const brokerVal=r['Broker']||'';
+    const brokerBadge=brokerVal==='Wispex'?'<span class="broker-wispex">Wispex</span>':brokerVal==='Self'?'<span class="broker-self">Self</span>':'<span style="color:#ccc">—</span>';
+    const brokerCell=`<td data-id="${r._id}" data-col="Broker">
+      <div class="cell-view" onclick="startEdit(this)">${brokerBadge}</div>
+      <div class="cell-edit"><select onblur="commitEditSelect(this,'Broker',${r._id})" onchange="commitEditSelect(this,'Broker',${r._id})">
+        <option value="" ${!brokerVal?'selected':''}>—</option>
+        <option ${brokerVal==='Wispex'?'selected':''}>Wispex</option>
+        <option ${brokerVal==='Self'?'selected':''}>Self</option>
+      </select></div>
+    </td>`;
+
+    // split editCells into groups
+    const [etaC,slotC,arrC,dlC,blC,conC,truckC]=editCells;
+
+    const rmkV=r['Remark']||'';
+    const rmkCell=`<td data-id="${r._id}" data-col="Remark">
+      <div class="cell-view" onclick="startEdit(this)">${rmkV||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input value="${rmkV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Remark',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+    </td>`;
+    return `<tr class="${rowCls}" id="row-${r._id}">
+      <td class="fc-1" style="padding:7px 10px;white-space:nowrap">${r['Batch / Train']||''}</td>
+      <td class="fc-2" style="padding:7px 10px"><strong>${r['Container No.']||''}</strong></td>
+      ${blC}
+      ${conC}
+      ${truckC}
+      ${brokerCell}
+      ${etaC}
+      ${slotC}
+      ${arrC}
+      ${dlC}
+      <td style="padding:7px 10px;white-space:nowrap" class="${daysClass(dl)}">${dlStr}</td>
+      <td style="text-align:center;padding:4px 10px">
+        <input type="checkbox" class="cmr-cb" ${cmrChecked?'checked':''} onchange="toggleCMR(${r._id},this.checked)"/>
+      </td>
+      ${trackCell}
+      <td data-id="${r._id}" data-col="Pickup Ref">
+        <div class="cell-view" onclick="startEdit(this)">${r['Pickup Ref']||'<span style="color:#ccc">—</span>'}</div>
+        <div class="cell-edit"><input value="${(r['Pickup Ref']||'').replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Pickup Ref',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+      </td>
+      <td data-id="${r._id}" data-col="Price">
+        <div class="cell-view" onclick="startEdit(this)">${r['Price']?'€'+r['Price']:'<span style="color:#ccc">—</span>'}</div>
+        <div class="cell-edit"><input type="number" min="0" step="0.01" value="${(r['Price']||'').toString().replace(/"/g,'&quot;')}" placeholder="0.00" onblur="commitEdit(this,'Price',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:90px"/></div>
+      </td>
+      <td data-id="${r._id}" data-col="Price T1">
+        <div class="cell-view" onclick="startEdit(this)">${r['Price T1']?'€'+r['Price T1']:'<span style="color:#ccc">—</span>'}</div>
+        <div class="cell-edit"><input type="number" min="0" step="0.01" value="${(r['Price T1']||'').toString().replace(/"/g,'&quot;')}" placeholder="0.00" onblur="commitEdit(this,'Price T1',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:90px"/></div>
+      </td>
+      ${rmkCell}
+      <td style="padding:4px 6px;text-align:center">
+        <button class="btn-del-row" onclick="openDel(${r._id})" title="Delete">✕</button>
+      </td>
+      <td style="text-align:center;padding:4px 6px">
+        <input type="checkbox" class="ct-sel-cb" data-id="${r._id}" onchange="ctSelChange()" style="width:14px;height:14px;cursor:pointer"/>
+      </td>
+    </tr>`;
+  }).join('');
+  // Dynamically set left offsets for frozen columns based on actual rendered widths
+  requestAnimationFrame(updateFrozenOffsets);
+}
+
+function updateFrozenOffsets(){
+  const table=document.getElementById('ct-table');
+  if(!table) return;
+  const ths=Array.from(table.querySelectorAll('thead th'));
+  let offset=0;
+  for(let i=0;i<4;i++){
+    const th=ths[i]; if(!th) break;
+    const left=offset+'px';
+    th.style.left=left;
+    // Set same left on every body cell in this column position
+    table.querySelectorAll('tbody tr').forEach(tr=>{
+      const td=tr.children[i];
+      if(td) td.style.left=left;
+    });
+    offset+=th.offsetWidth;
+  }
+  // Apply separator shadow only on the 4th column (index 3) after layout
+  [ths[3],...Array.from(table.querySelectorAll('tbody tr td:nth-child(4)'))].forEach(el=>{
+    if(el) el.style.boxShadow='3px 0 6px -2px rgba(0,0,0,.18)';
+  });
+}
+
+// ── INLINE EDIT ───────────────────────────────────────────────────
+function startEdit(viewEl){
+  const td=viewEl.closest('td');
+  td.classList.add('editing');
+  const inp=td.querySelector('.cell-edit input, .cell-edit select');
+  if(inp){ inp.focus(); if(inp.tagName==='INPUT') inp.select(); }
+}
+function commitEdit(inp, col, id){
+  const td=inp.closest('td'); td.classList.remove('editing');
+  const val=inp.value.trim();
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  CT[i][col]=val;
+  saveData(); renderCT();
+}
+function commitEditSelect(sel, col, id){
+  const td=sel.closest('td'); td.classList.remove('editing');
+  const val=sel.value;
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  CT[i][col]=val;
+  saveData(); renderCT();
+}
+function cancelEdit(inp){ inp.closest('td').classList.remove('editing'); }
+
+function toggleCMR(id, checked){
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  CT[i]['CMR']=checked?'✅':''; saveData();
+}
+
+// ── VESSEL TABLE ──────────────────────────────────────────────────
+function vtCell(r, col, opts){
+  const v = r[col]===undefined||r[col]===null||isNaN_safe(r[col]) ? '' : String(r[col]);
+  const disp = (['ETS (Departure)','Port Cut-Off','Barge Date'].includes(col)) ? fmtDateStr(v) : v;
+  if(opts && opts.select){
+    const selOpts = opts.select.map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('');
+    return `<td data-vtid="${r._id}" data-col="${col}">
+      <div class="cell-view" onclick="startEdit(this)">${disp?`<strong>${disp}</strong>`:'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><select onblur="commitVTSelect(this,'${col}',${r._id})" onchange="commitVTSelect(this,'${col}',${r._id})">${selOpts}</select></div>
+    </td>`;
+  }
+  const ph = ['ETS (Departure)','Port Cut-Off','Barge Date'].includes(col)?'placeholder="yyyy/mm/dd"':'';
+  return `<td data-vtid="${r._id}" data-col="${col}">
+    <div class="cell-view" onclick="startEdit(this)">${disp||'<span style="color:#ccc">—</span>'}</div>
+    <div class="cell-edit"><input value="${v.replace(/"/g,'&quot;')}" ${ph} onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+  </td>`;
+}
+function isNaN_safe(v){ return typeof v==='number'&&isNaN(v); }
+function commitVTEdit(inp, col, id){
+  const td=inp.closest('td'); td.classList.remove('editing');
+  const val=inp.value.trim();
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  VT[i][col]=val; saveVT(); renderVT(); renderDashboard();
+}
+function commitVTSelect(sel, col, id){
+  const td=sel.closest('td'); td.classList.remove('editing');
+  const val=sel.value;
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  VT[i][col]=val; saveVT(); renderVT(); renderDashboard();
+}
+function openAddVessel(){
+  const v={Port:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
+    'ETS (Departure)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
+    'Delay (days)':'',Status:'Scheduled','Remark':'',containers:[],_id:vtNextId++};
+  VT.push(v); saveVT(); renderVT(); renderDashboard();
+}
+function openDelVessel(id){
+  if(!confirm('Delete this vessel booking?')) return;
+  VT=VT.filter(r=>r._id!==id); saveVT(); renderVT(); renderDashboard();
+}
+function renderVT(){
+  document.getElementById('vt-count').textContent=VT.length+' vessels';
+  const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','TBD'];
+  const TOTAL_COLS=15; // expand + 12 data + del + sel
+  document.getElementById('vt-body').innerHTML=VT.map(r=>{
+    // Auto-calculate Days to Cut-Off = Port Cut-Off − Barge Date
+    const _pc=parseDate(r['Port Cut-Off']), _bd=parseDate(r['Barge Date']);
+    const _days=(_pc&&_bd)?Math.round((_pc-_bd)/864e5):null;
+    const _daysDisp=_days!==null?String(_days):'<span style="color:#ccc">—</span>';
+    const _daysColor=_days===null?'':_days<0?'#e53935':_days<=2?'#F9A825':'#2e7d32';
+
+    const cls=r['Status']==='Departed'?'v-dep':r['Status']==='Cut-Off Soon'?'v-soon':r['Status']==='Cut-Off Passed'?'v-late':'';
+    const cns=Array.isArray(r.containers)?r.containers:[];
+    const cnCount=cns.length;
+    const isOpen=vtExpanded.has(r._id);
+
+    // Container tags in sub-row
+    const tags=cns.map(cn=>`<span class="vt-cn-tag">${cn}<button class="vt-cn-rm" onclick="vtRemoveContainer(${r._id},'${cn}')" title="Remove">✕</button></span>`).join('');
+    const tagsHtml=cnCount?`<div class="vt-cn-tags">${tags}</div>`:`<div class="vt-cn-tags"><span class="vt-cn-empty">No containers linked yet</span></div>`;
+
+    return `<tr class="${cls}" id="vrow-${r._id}">
+      <td style="padding:4px 6px;text-align:center;white-space:nowrap">
+        <button class="vt-expand-btn" onclick="vtToggleExpand(${r._id})" title="${isOpen?'Collapse':'Expand'}">${isOpen?'▼':'▶'}</button>
+        ${cnCount?`<span style="font-size:10px;color:var(--blue);font-weight:700">${cnCount}</span>`:''}
+      </td>
+      ${vtCell(r,'Port')}
+      ${vtCell(r,'Carrier')}
+      ${vtCell(r,'Booking / BC No.')}
+      ${vtCell(r,'Container Qty')}
+      ${vtCell(r,'Vessel Name')}
+      ${vtCell(r,'ETS (Departure)')}
+      ${vtCell(r,'Port Cut-Off')}
+      ${vtCell(r,'Barge Date')}
+      <td style="padding:7px 10px;text-align:center;font-weight:700;color:${_daysColor};white-space:nowrap">${_daysDisp}</td>
+      ${vtCell(r,'Delay (days)')}
+      ${vtCell(r,'Status',{select:STATUS_OPTS})}
+      ${vtCell(r,'Remark')}
+      <td style="padding:4px 6px;text-align:center">
+        <button class="btn-del-row" onclick="openDelVessel(${r._id})" title="Delete">✕</button>
+      </td>
+      <td style="text-align:center;padding:4px 6px">
+        <input type="checkbox" class="vt-sel-cb" data-id="${r._id}" onchange="vtSelChange()" style="width:14px;height:14px;cursor:pointer"/>
+      </td>
+    </tr>
+    <tr class="vt-containers-row${isOpen?' open':''}" id="vexp-${r._id}">
+      <td class="vt-containers-cell" colspan="${TOTAL_COLS}">
+        ${tagsHtml}
+        <div class="vt-cn-add">
+          <input id="vt-cn-inp-${r._id}" type="text" placeholder="Container No. (e.g. MSCU1234567)"
+            onkeydown="if(event.key==='Enter'){vtAddContainer(${r._id});event.preventDefault();}"/>
+          <button onclick="vtAddContainer(${r._id})">+ Add</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── VESSEL EXPAND / CONTAINERS ────────────────────────────────────
+const vtExpanded = new Set();
+
+function vtToggleExpand(id){
+  if(vtExpanded.has(id)) vtExpanded.delete(id); else vtExpanded.add(id);
+  renderVT();
+}
+
+function vtAddContainer(id){
+  const inp=document.getElementById('vt-cn-inp-'+id);
+  const cn=(inp.value||'').trim().toUpperCase();
+  if(!cn) return;
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  if(!Array.isArray(VT[i].containers)) VT[i].containers=[];
+  if(VT[i].containers.includes(cn)){ inp.value=''; return; }
+  VT[i].containers.push(cn);
+  saveVT(); renderVT();
+  // re-focus after re-render
+  const newInp=document.getElementById('vt-cn-inp-'+id);
+  if(newInp) newInp.focus();
+}
+
+function vtRemoveContainer(id, cn){
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  if(!Array.isArray(VT[i].containers)) return;
+  VT[i].containers=VT[i].containers.filter(c=>c!==cn);
+  saveVT(); renderVT();
+}
+
+function vtSearchContainer(q){
+  const msg=document.getElementById('vt-search-msg');
+  // Clear previous highlights
+  document.querySelectorAll('.vt-search-highlight').forEach(el=>el.classList.remove('vt-search-highlight'));
+  if(!q||!q.trim()){ msg.textContent=''; return; }
+  const needle=q.trim().toUpperCase();
+  // Find matching booking
+  const match=VT.find(r=>Array.isArray(r.containers)&&r.containers.some(cn=>cn.toUpperCase().includes(needle)));
+  if(!match){
+    msg.textContent='No booking found for "'+q.trim()+'"';
+    return;
+  }
+  // Expand that row
+  vtExpanded.add(match._id);
+  renderVT();
+  // Highlight main row
+  const row=document.getElementById('vrow-'+match._id);
+  if(row){
+    row.classList.add('vt-search-highlight');
+    row.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+  const booking=match['Booking / BC No.']||'ID '+match._id;
+  const matchedCns=match.containers.filter(cn=>cn.toUpperCase().includes(needle));
+  msg.textContent='Found in booking: '+booking+' ('+matchedCns.join(', ')+')';
+}
+
+// ── ADD / EDIT MODAL ──────────────────────────────────────────────
+function openAdd(){
+  editId=null;
+  document.getElementById('modal-title').textContent='+ Add Container';
+  ['f_no','f_bl','f_batch','f_con','f_truck','f_eta','f_slot','f_arr','f_dl','f_ref','f_rmk','f_price','f_price_t1']
+    .forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_broker').value='';
+  document.getElementById('f_track').value='None';
+  document.getElementById('f_cmr').checked=false;
+  refreshDLs();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function openEdit(id){
+  editId=id; const r=CT.find(x=>x._id===id); if(!r) return;
+  document.getElementById('modal-title').textContent='Edit — '+r['Container No.'];
+  document.getElementById('f_no').value   =r['Container No.']||'';
+  document.getElementById('f_bl').value   =r['Master B/L']||'';
+  document.getElementById('f_batch').value=r['Batch / Train']||'';
+  document.getElementById('f_con').value  =r['Consignee']||'';
+  document.getElementById('f_truck').value =r['Trucker']||'';
+  document.getElementById('f_broker').value=r['Broker']||'';
+  document.getElementById('f_track').value =r['Tracking']||'None';
+  document.getElementById('f_eta').value  =r['ETA at Hub']||'';
+  document.getElementById('f_slot').value =r['Scheduled Slot']||'';
+  document.getElementById('f_arr').value  =r['Actual Arrival']||'';
+  document.getElementById('f_dl').value   =r['Deadline']||'';
+  document.getElementById('f_ref').value  =r['Pickup Ref']||'';
+  document.getElementById('f_price').value   =r['Price']||'';
+  document.getElementById('f_price_t1').value=r['Price T1']||'';
+  document.getElementById('f_rmk').value     =r['Remark']||'';
+  document.getElementById('f_cmr').checked=(r['CMR']==='✅');
+  refreshDLs();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
+function saveRow(){
+  const g=id=>document.getElementById(id).value.trim();
+  const u={
+    'Container No.':g('f_no'),'Master B/L':g('f_bl'),'Batch / Train':g('f_batch'),
+    'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Tracking':g('f_track'),
+    'ETA at Hub':g('f_eta'),'Scheduled Slot':g('f_slot'),'Actual Arrival':g('f_arr'),
+    'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),'Remark':g('f_rmk'),
+    'CMR':document.getElementById('f_cmr').checked?'✅':'',
+  };
+  if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0) CT[i]={...CT[i],...u}; }
+  else { u._id=nextId++; CT.push(u); }
+  saveData(); closeModal(); renderCT();
+}
+
+// ── BULK ADD ──────────────────────────────────────────────────────
+function openBulk(){
+  ['b_batch','b_con','b_truck','b_eta','b_slot','b_dl','b_nos'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('b_track').value='T1';
+  document.getElementById('b_cmr').checked=false;
+  document.getElementById('b_ok').style.display='none';
+  document.getElementById('b_err').style.display='none';
+  refreshDLs();
+  document.getElementById('bulk-overlay').classList.add('open');
+}
+function closeBulk(){ document.getElementById('bulk-overlay').classList.remove('open'); }
+function parseBulkNos(){ return document.getElementById('b_nos').value.split(/[\n,;\t]+/).map(s=>s.trim().toUpperCase()).filter(Boolean); }
+function bulkPreview(){
+  const nums=parseBulkNos(), ok=document.getElementById('b_ok'), err=document.getElementById('b_err');
+  err.style.display='none';
+  if(!nums.length){ ok.style.display='none'; return; }
+  const exist=new Set(CT.map(r=>(r['Container No.']||'').toUpperCase()));
+  const dupes=nums.filter(n=>exist.has(n));
+  if(dupes.length){ err.textContent='⚠️ Already in tracker: '+dupes.slice(0,5).join(', ')+(dupes.length>5?' + '+(dupes.length-5)+' more':''); err.style.display='block'; }
+  ok.textContent='✓ '+nums.length+' container'+(nums.length!==1?'s':'')+' ready to add';
+  ok.style.display='block';
+}
+function saveBulk(){
+  const nums=parseBulkNos(), err=document.getElementById('b_err');
+  if(!nums.length){ err.textContent='Please enter at least one container number.'; err.style.display='block'; return; }
+  const batch=document.getElementById('b_batch').value.trim();
+  if(!batch){ err.textContent='Batch / Train is required.'; err.style.display='block'; return; }
+  const g=id=>document.getElementById(id).value.trim();
+  const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),
+    'Tracking':g('b_track'),'ETA at Hub':g('b_eta'),'Scheduled Slot':g('b_slot'),
+    'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
+    'Master B/L':'','Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Broker':'','Remark':''};
+  nums.forEach(cn=>CT.push({...shared,'Container No.':cn,_id:nextId++}));
+  saveData(); closeBulk(); renderCT();
+}
+
+// ── DELETE ────────────────────────────────────────────────────────
+function openDel(id){ delId=id; const r=CT.find(x=>x._id===id);
+  document.getElementById('del-msg').textContent='Delete container '+(r?.['Container No.']||id)+'? This cannot be undone.';
+  document.getElementById('del-overlay').classList.add('open'); }
+function closeDel(){ document.getElementById('del-overlay').classList.remove('open'); delId=null; }
+function confirmDel(){ if(delId!==null){ CT=CT.filter(x=>x._id!==delId); saveData(); } closeDel(); renderCT(); }
+
+// ── EXPORT ────────────────────────────────────────────────────────
+function exportCSV(){
+  const cols=['Batch / Train','Container No.','Master B/L','Consignee','Trucker',
+    'ETA at Hub','Scheduled Slot','Actual Arrival','Deadline','CMR','Tracking','Pickup Ref','Price','Price T1','Broker'];
+  const csv=[cols.join(','),...CT.map(r=>cols.map(c=>'"'+(String(r[c]??'').replace(/"/g,'""'))+'"').join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='OWENZ_Containers_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+// ── IMPORT ────────────────────────────────────────────────────────
+const COL_MAP={
+  'batch':'Batch / Train','batch / train':'Batch / Train','batch/train':'Batch / Train',
+  'container no':'Container No.','container no.':'Container No.','container number':'Container No.','container':'Container No.',
+  'master b/l':'Master B/L','mbl':'Master B/L','b/l':'Master B/L','master bl':'Master B/L',
+  'consignee':'Consignee','trucker':'Trucker','carrier':'Trucker',
+  'eta at hub':'ETA at Hub','eta':'ETA at Hub',
+  'scheduled slot':'Scheduled Slot','slot':'Scheduled Slot',
+  'actual arrival':'Actual Arrival','arrival':'Actual Arrival',
+  'deadline':'Deadline','cmr':'CMR','tracking':'Tracking',
+  'pickup ref':'Pickup Ref','ref':'Pickup Ref',
+};
+const IMP_FIELDS=['Batch / Train','Container No.','Master B/L','Consignee','Trucker',
+  'ETA at Hub','Scheduled Slot','Actual Arrival','Deadline','CMR','Tracking','Pickup Ref'];
+
+function openImport(){ importWB=null; importRows=[];
+  ['imp-sheet','imp-mapinfo','imp-preview-wrap','imp-opts','imp-ok','imp-err'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('imp-btn').style.display='none';
+  document.getElementById('xl-input').value='';
+  document.getElementById('import-overlay').classList.add('open'); }
+function closeImport(){ document.getElementById('import-overlay').classList.remove('open'); }
+
+function handleImport(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      importWB=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellDates:true});
+      const sheets=importWB.SheetNames;
+      const sel=document.getElementById('imp-sheet-sel'); sel.innerHTML='';
+      sheets.forEach(s=>sel.add(new Option(s,s)));
+      const pref=sheets.find(s=>s.toLowerCase().includes('container'))||sheets[0];
+      sel.value=pref;
+      document.getElementById('imp-sheet').style.display=sheets.length>1?'block':'none';
+      renderImportPreview();
+    }catch(err){ showImpErr('Could not read file: '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function renderImportPreview(){
+  if(!importWB) return;
+  const ws=importWB.Sheets[document.getElementById('imp-sheet-sel').value||importWB.SheetNames[0]];
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  if(!raw||raw.length<2){ showImpErr('Sheet is empty.'); return; }
+  let hi=0;
+  for(let i=0;i<Math.min(5,raw.length);i++){ if(raw[i].filter(Boolean).length>=3){hi=i;break;} }
+  const headers=raw[hi].map(h=>String(h||'').trim());
+  const mapping={};
+  const mapped=[], unmapped=[];
+  headers.forEach((h,i)=>{ const c=COL_MAP[h.toLowerCase()]; if(c){mapping[i]=c;mapped.push(h);}else if(h) unmapped.push(h); });
+  importRows=raw.slice(hi+1).filter(r=>r.some(c=>c!=='')).map(row=>{
+    const obj={};
+    IMP_FIELDS.forEach(f=>obj[f]='');
+    Object.entries(mapping).forEach(([ci,f])=>{
+      let v=row[ci];
+      if(v instanceof Date) v=formatDate(v);
+      obj[f]=v===undefined||v===null?'':String(v).trim();
+    });
+    if(!obj['Tracking']) obj['Tracking']='T1';
+    return obj;
+  }).filter(r=>r['Container No.']||r['Batch / Train']);
+  if(!importRows.length){ showImpErr('No valid rows found.'); return; }
+  document.getElementById('imp-mapinfo').textContent=mapped.length+' columns matched'+(unmapped.length?' · skipped: '+unmapped.slice(0,5).join(', '):'');
+  document.getElementById('imp-mapinfo').style.display='block';
+  const pc=['Batch / Train','Container No.','Consignee','Trucker','ETA at Hub','Deadline','Tracking'];
+  document.getElementById('imp-preview-title').textContent='Preview — '+importRows.length+' rows (showing first 8)';
+  document.getElementById('imp-head').innerHTML='<tr>'+pc.map(c=>`<th style="padding:6px 10px;font-size:11px">${c}</th>`).join('')+'</tr>';
+  document.getElementById('imp-body').innerHTML=importRows.slice(0,8).map(r=>'<tr>'+pc.map(c=>`<td style="padding:5px 10px;border-bottom:1px solid #eee">${r[c]||'—'}</td>`).join('')+'</tr>').join('');
+  ['imp-preview-wrap','imp-opts'].forEach(id=>document.getElementById(id).style.display='block');
+  document.getElementById('imp-err').style.display='none';
+  document.getElementById('imp-ok').style.display='none';
+  document.getElementById('imp-btn').textContent='↑ Import '+importRows.length+' Rows';
+  document.getElementById('imp-btn').style.display='inline-block';
+}
+function confirmImport(){
+  if(!importRows.length) return;
+  if(document.getElementById('imp-replace').checked){
+    CT=importRows.map((r,i)=>({...r,_id:i+1})); nextId=CT.length+1;
+  } else {
+    const exist=new Set(CT.map(r=>(r['Container No.']||'').toUpperCase()));
+    let added=0,skipped=0;
+    importRows.forEach(r=>{ const cn=(r['Container No.']||'').toUpperCase();
+      if(cn&&exist.has(cn)){skipped++;return;} CT.push({...r,_id:nextId++}); added++; });
+    const ok=document.getElementById('imp-ok');
+    ok.textContent='✓ Added '+added+(skipped?' · '+skipped+' duplicates skipped':'')+'.';
+    ok.style.display='block';
+    document.getElementById('imp-btn').style.display='none';
+    saveData(); renderCT(); return;
+  }
+  saveData(); renderCT(); closeImport();
+}
+function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textContent=msg; e.style.display='block';
+  ['imp-preview-wrap','imp-opts'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('imp-btn').style.display='none'; }
+
+// ── INIT ──────────────────────────────────────────────────────────
+['modal-overlay','bulk-overlay','del-overlay','import-overlay','sync-overlay','be-overlay'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
+});
+loadData();
+
+// ── CLOUD SYNC ───────────────────────────────────────────────────
+const JBIN = 'https://api.jsonbin.io/v3/b';
+let cloudSaveTimer = null;
+
+function cloudAutoSave(){
+  if(!localStorage.getItem('owenz_sync_key')||!localStorage.getItem('owenz_bin_id')) return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(()=>pushToCloud(false), 2000);
+  setSyncDot('busy','Saving…');
+}
+
+function openSync(){
+  document.getElementById('sync-key').value  = localStorage.getItem('owenz_sync_key')||'';
+  document.getElementById('sync-binid').value = localStorage.getItem('owenz_bin_id')||'';
+  document.getElementById('sync-ok').style.display='none';
+  document.getElementById('sync-err').style.display='none';
+  refreshSyncStatus();
+  document.getElementById('sync-overlay').classList.add('open');
+}
+function closeSync(){ document.getElementById('sync-overlay').classList.remove('open'); }
+function toggleSyncKeyVis(){
+  const inp=document.getElementById('sync-key');
+  inp.type = inp.type==='password'?'text':'password';
+}
+function syncKeyChanged(){
+  // clear saved binid if key changes
+}
+function setSyncDot(state, txt){
+  const dot=document.getElementById('sync-dot'), t=document.getElementById('sync-status-txt');
+  if(dot){ dot.className='sync-dot '+state; }
+  if(t) t.textContent=txt;
+  // also update header button
+  const btn=document.getElementById('sync-btn');
+  if(btn) btn.textContent = state==='ok'?'☁️✓ Sync':state==='busy'?'☁️… Sync':'☁️ Sync';
+}
+function refreshSyncStatus(){
+  const key=localStorage.getItem('owenz_sync_key');
+  const bin=localStorage.getItem('owenz_bin_id');
+  if(key&&bin) setSyncDot('ok','Connected — Bin: '+bin);
+  else setSyncDot('off','Not connected');
+}
+
+async function connectSync(){
+  const key=document.getElementById('sync-key').value.trim();
+  const binInput=document.getElementById('sync-binid').value.trim();
+  const ok=document.getElementById('sync-ok'), err=document.getElementById('sync-err');
+  ok.style.display='none'; err.style.display='none';
+  if(!key){ err.textContent='Please enter your Master Key.'; err.style.display='block'; return; }
+  setSyncDot('busy','Connecting…');
+  try{
+    let binId=binInput;
+    if(!binId){
+      // Create new bin
+      const res=await fetch(JBIN,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'OWENZ Shipment Tracker'},
+        body:JSON.stringify({CT,VT})
+      });
+      if(!res.ok) throw new Error('Failed to create bin (HTTP '+res.status+'). Check your Master Key.');
+      const data=await res.json();
+      binId=data.metadata.id;
+    } else {
+      // Test existing bin
+      const res=await fetch(JBIN+'/'+binId+'/latest',{headers:{'X-Master-Key':key}});
+      if(!res.ok) throw new Error('Could not read bin (HTTP '+res.status+'). Check your Master Key and Bin ID.');
+    }
+    localStorage.setItem('owenz_sync_key', key);
+    localStorage.setItem('owenz_bin_id', binId);
+    document.getElementById('sync-binid').value=binId;
+    setSyncDot('ok','Connected — Bin: '+binId);
+    ok.textContent='✓ Connected! Your data will now sync automatically across all devices.';
+    ok.style.display='block';
+  } catch(e){
+    setSyncDot('err','Connection failed');
+    err.textContent='✗ '+e.message; err.style.display='block';
+  }
+}
+
+async function pushToCloud(manual=false){
+  const key=localStorage.getItem('owenz_sync_key');
+  const bin=localStorage.getItem('owenz_bin_id');
+  if(!key||!bin) return;
+  setSyncDot('busy','Saving…');
+  try{
+    const res=await fetch(JBIN+'/'+bin,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':key},
+      body:JSON.stringify({CT,VT})
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    setSyncDot('ok','Saved — '+(new Date().toLocaleTimeString()));
+    if(manual){
+      const ok=document.getElementById('sync-ok');
+      ok.textContent='✓ Data pushed to cloud successfully.'; ok.style.display='block';
+      setTimeout(()=>ok.style.display='none',3000);
+    }
+  } catch(e){
+    setSyncDot('err','Save failed: '+e.message);
+    if(manual){
+      const err=document.getElementById('sync-err');
+      err.textContent='✗ Push failed: '+e.message; err.style.display='block';
+    }
+  }
+}
+
+async function pullFromCloud(manual=false){
+  const key=localStorage.getItem('owenz_sync_key');
+  const bin=localStorage.getItem('owenz_bin_id');
+  if(!key||!bin) return;
+  setSyncDot('busy','Loading…');
+  try{
+    const res=await fetch(JBIN+'/'+bin+'/latest',{headers:{'X-Master-Key':key}});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const rec=data.record;
+    if(rec&&rec.CT){ CT=rec.CT; nextId=Math.max(0,...CT.map(r=>r._id||0))+1; saveData(); }
+    if(rec&&rec.VT){ VT=rec.VT; vtNextId=Math.max(0,...VT.map(r=>r._id||0))+1; saveVT(); }
+    setSyncDot('ok','Loaded — '+(new Date().toLocaleTimeString()));
+    renderCT(); renderVT(); renderDashboard();
+    if(manual){
+      const ok=document.getElementById('sync-ok');
+      ok.textContent='✓ Data pulled from cloud successfully.'; ok.style.display='block';
+      setTimeout(()=>ok.style.display='none',3000);
+    }
+  } catch(e){
+    setSyncDot('err','Load failed: '+e.message);
+  }
+}
+
+// ── SELECTION ─────────────────────────────────────────────────────
+let ctSel=new Set(), vtSel=new Set();
+function ctSelChange(){
+  ctSel=new Set([...document.querySelectorAll('.ct-sel-cb:checked')].map(cb=>+cb.dataset.id));
+  updateSelBar();
+}
+function vtSelChange(){
+  vtSel=new Set([...document.querySelectorAll('.vt-sel-cb:checked')].map(cb=>+cb.dataset.id));
+  updateSelBar();
+}
+function ctSelAll(checked){
+  document.querySelectorAll('.ct-sel-cb').forEach(cb=>{cb.checked=checked;});
+  ctSelChange();
+}
+function vtSelAll(checked){
+  document.querySelectorAll('.vt-sel-cb').forEach(cb=>{cb.checked=checked;});
+  vtSelChange();
+}
+function clearAllSel(){
+  ctSel.clear(); vtSel.clear();
+  document.querySelectorAll('.ct-sel-cb,.vt-sel-cb').forEach(cb=>cb.checked=false);
+  const all=document.getElementById('ct-sel-all'); if(all) all.checked=false;
+  const vAll=document.getElementById('vt-sel-all'); if(vAll) vAll.checked=false;
+  updateSelBar();
+}
+function updateSelBar(){
+  const total=ctSel.size+vtSel.size;
+  const bar=document.getElementById('sel-bar');
+  bar.classList.toggle('show', total>0);
+  document.getElementById('sel-bar-count').textContent=
+    (ctSel.size?ctSel.size+' container'+(ctSel.size!==1?'s':''):'')
+    +(ctSel.size&&vtSel.size?' + ':'')
+    +(vtSel.size?vtSel.size+' vessel'+(vtSel.size!==1?'s':''):'');
+}
+
+// ── BULK EDIT ─────────────────────────────────────────────────────
+function openBulkEdit(){
+  ['be_batch','be_truck','be_con','be_eta','be_arr','be_dl','be_ref','be_price','be_price_t1','be_rmk','be_broker',
+   'be_port','be_carrier','be_ets','be_pco','be_notes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('be_broker').value='';
+  document.getElementById('be_track').value='';
+  document.getElementById('be_vstatus').value='';
+  document.getElementById('be-ct-badge').textContent=ctSel.size;
+  document.getElementById('be-vt-badge').textContent=vtSel.size;
+  document.getElementById('be-ok').style.display='none';
+  document.getElementById('be-err').style.display='none';
+  // show container tab by default if any ct selected, else vessel tab
+  if(ctSel.size) switchBETab('ct', document.querySelector('.be-tab'));
+  else if(vtSel.size){ const tabs=document.querySelectorAll('.be-tab'); switchBETab('vt',tabs[1]); }
+  refreshDLs();
+  document.getElementById('be-overlay').classList.add('open');
+}
+function closeBE(){ document.getElementById('be-overlay').classList.remove('open'); }
+function switchBETab(tab, btn){
+  document.querySelectorAll('.be-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.be-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('be-panel-'+tab).classList.add('active');
+}
+function applyBulkEdit(){
+  const g=id=>document.getElementById(id).value.trim();
+  let ctCount=0, vtCount=0;
+  // Apply to containers
+  if(ctSel.size){
+    const fields={
+      'Batch / Train':g('be_batch'),'Trucker':g('be_truck'),'Consignee':g('be_con'),
+      'ETA at Hub':g('be_eta'),'Actual Arrival':g('be_arr'),'Deadline':g('be_dl'),
+      'Pickup Ref':g('be_ref'),'Price':g('be_price'),'Price T1':g('be_price_t1'),'Remark':g('be_rmk'),'Broker':g('be_broker')
+    };
+    const tracking=g('be_track');
+    CT.forEach(r=>{
+      if(!ctSel.has(r._id)) return;
+      Object.entries(fields).forEach(([k,v])=>{ if(v) r[k]=v; });
+      if(tracking) r['Tracking']=tracking;
+      ctCount++;
+    });
+    saveData();
+  }
+  // Apply to vessels
+  if(vtSel.size){
+    const vfields={
+      'Port':g('be_port'),'Carrier':g('be_carrier'),
+      'ETS (Departure)':g('be_ets'),'Port Cut-Off':g('be_pco'),'Remark':g('be_notes')
+    };
+    const vstatus=g('be_vstatus');
+    VT.forEach(r=>{
+      if(!vtSel.has(r._id)) return;
+      Object.entries(vfields).forEach(([k,v])=>{ if(v) r[k]=v; });
+      if(vstatus) r['Status']=vstatus;
+      vtCount++;
+    });
+    saveVT();
+  }
+  if(!ctCount&&!vtCount){
+    document.getElementById('be-err').textContent='No changes to apply (all fields blank).';
+    document.getElementById('be-err').style.display='block'; return;
+  }
+  const ok=document.getElementById('be-ok');
+  ok.textContent='✓ Updated '+[ctCount?ctCount+' container'+(ctCount!==1?'s':''):'',
+    vtCount?vtCount+' vessel'+(vtCount!==1?'s':''):''].filter(Boolean).join(' and ')+'.'
+  ok.style.display='block';
+  renderCT(); renderVT(); renderDashboard();
+  setTimeout(()=>{ closeBE(); clearAllSel(); }, 900);
+}
+renderDashboard();
+</script>
+
+<style id="sticky-header-patch">
+  /* Sticky header fix:
+     overflow-x:auto implicitly creates a scroll container which breaks viewport-relative sticky.
+     Solution: give .tbl-scroll explicit height + both-axis overflow so thead th sticks
+     at top:0 within the scroll box itself. */
+  .tbl-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 155px);
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--navy);
+    box-shadow: 0 2px 0 rgba(0,0,0,.15);
+  }
+</style>
+
+
+</body>
+</html>
