@@ -327,6 +327,14 @@ td.editing .cell-edit{display:block}
       <div class="chart-wrap"><canvas id="price-trucker-total-chart"></canvas></div>
     </div>
   </div>
+
+  <!-- Analytics row 5: Containers by Consignee -->
+  <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+    <div class="chart-card">
+      <h3>Total Containers by Consignee</h3>
+      <div class="chart-wrap" style="height:260px"><canvas id="consignee-chart"></canvas></div>
+    </div>
+  </div>
 </div>
 
 <!-- ══ CONTAINERS ══ -->
@@ -674,7 +682,7 @@ let CT = [], VT = [], nextId = 1, vtNextId = 1;
 let ctSortCol = 'Batch / Train', ctSortDir = 1;
 let editId = null, delId = null;
 let importWB = null, importRows = [];
-let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null;
+let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null;
 
 // ── PERSISTENCE ───────────────────────────────────────────────────
 function loadData(){
@@ -965,6 +973,37 @@ function renderDashboard(){
       scales:{x:{grid:{color:'rgba(0,0,0,.06)'},title:{display:true,text:'Avg days (Slot − ETA)',font:{size:11}},
                ticks:{callback:v=>v+'d'}},
               y:{grid:{display:false}}} }
+  });
+
+  // ── Containers by Consignee ──────────────────────────────────────
+  const conCounts={};
+  CT.forEach(r=>{ const c=r['Consignee']||'(Unknown)'; conCounts[c]=(conCounts[c]||0)+1; });
+  // Sort descending by count
+  const conKeys=Object.keys(conCounts).sort((a,b)=>conCounts[b]-conCounts[a]);
+  const conVals=conKeys.map(k=>conCounts[k]);
+  const conPalette=['#1976D2','#43A047','#F9A825','#e53935','#7B1FA2','#00838F',
+                    '#E64A19','#5D4037','#546E7A','#2E7D32','#0288D1','#C62828'];
+  const conColors=conKeys.map((_,i)=>conPalette[i%conPalette.length]);
+
+  if(consigneeChart) consigneeChart.destroy();
+  consigneeChart = new Chart(document.getElementById('consignee-chart'),{
+    type:'bar',
+    data:{ labels:conKeys, datasets:[{
+      label:'Containers',
+      data:conVals,
+      backgroundColor:conColors,
+      borderRadius:4
+    }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.raw} container${ctx.raw!==1?'s':''}`}} },
+      scales:{
+        y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{stepSize:1},
+            title:{display:true,text:'Containers',font:{size:11}} },
+        x:{ grid:{display:false},
+            ticks:{maxRotation:35,minRotation:0,font:{size:11}} }
+      }
+    }
   });
 }
 
