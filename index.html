@@ -658,11 +658,22 @@ td.editing .cell-edit{display:block}
         </table>
       </div>
     </div>
-    <div id="imp-opts" style="display:none;margin-top:12px">
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-        <input type="checkbox" id="imp-replace" style="width:15px;height:15px"/>
-        <span><strong>Replace all existing containers</strong> (uncheck = merge, skips duplicates)</span>
-      </label>
+    <div id="imp-opts" style="display:none;margin-top:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Import Mode</div>
+      <div style="display:flex;flex-direction:column;gap:6px" id="imp-mode-radios">
+        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:8px 12px;border-radius:7px;border:2px solid #43A047;background:#F1F8E9">
+          <input type="radio" name="imp_mode" value="add" checked style="margin-top:2px;accent-color:#43A047"/>
+          <span><strong style="color:#2E7D32">Add new only</strong><br><span style="font-size:11px;color:#558B2F">Skip containers already in the tracker (matched by Container No.) — existing data is untouched</span></span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid var(--border);background:#fff">
+          <input type="radio" name="imp_mode" value="upsert" style="margin-top:2px;accent-color:#1565C0"/>
+          <span><strong style="color:#1565C0">Update existing + add new</strong><br><span style="font-size:11px;color:var(--muted)">Update fields for matching containers and add any new ones — no data is deleted</span></span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid var(--border);background:#fff">
+          <input type="radio" name="imp_mode" value="replace" style="margin-top:2px;accent-color:#C62828"/>
+          <span><strong style="color:#C62828">Replace all</strong><br><span style="font-size:11px;color:var(--muted)">⚠ Removes all existing containers and imports fresh from this file</span></span>
+        </label>
+      </div>
     </div>
     <div id="imp-ok"  class="info-box info-ok"></div>
     <div id="imp-err" class="info-box info-err"></div>
@@ -2049,6 +2060,9 @@ function openImport(){ importWB=null; importRows=[];
   ['imp-sheet','imp-mapinfo','imp-preview-wrap','imp-opts','imp-ok','imp-err'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('imp-btn').style.display='none';
   document.getElementById('xl-input').value='';
+  // Always default to safe "Add new only" mode
+  const addRadio=document.querySelector('input[name="imp_mode"][value="add"]');
+  if(addRadio) addRadio.checked=true;
   document.getElementById('import-overlay').classList.add('open'); }
 function closeImport(){ document.getElementById('import-overlay').classList.remove('open'); }
 
@@ -2106,21 +2120,58 @@ function renderImportPreview(){
 }
 function confirmImport(){
   if(!importRows.length) return;
-  if(document.getElementById('imp-replace').checked){
+  const mode=(document.querySelector('input[name="imp_mode"]:checked')||{value:'add'}).value;
+  const ok=document.getElementById('imp-ok');
+
+  if(mode==='replace'){
     CT=importRows.map((r,i)=>({...r,_id:i+1})); nextId=CT.length+1;
-  } else {
-    const exist=new Set(CT.map(r=>(r['Container No.']||'').toUpperCase()));
-    let added=0,skipped=0;
-    importRows.forEach(r=>{ const cn=(r['Container No.']||'').toUpperCase();
-      if(cn&&exist.has(cn)){skipped++;return;} CT.push({...r,_id:nextId++}); added++; });
-    const ok=document.getElementById('imp-ok');
-    ok.textContent='✓ Added '+added+(skipped?' · '+skipped+' duplicates skipped':'')+'.';
-    ok.style.display='block';
-    document.getElementById('imp-btn').style.display='none';
-    saveData(); renderCT(); return;
+    saveData(); renderCT(); closeImport(); return;
   }
-  saveData(); renderCT(); closeImport();
+
+  if(mode==='add'){
+    // Skip any container already tracked (by Container No.)
+    const exist=new Set(CT.map(r=>(r['Container No.']||'').toUpperCase()));
+    let added=0, skipped=0;
+    importRows.forEach(r=>{
+      const cn=(r['Container No.']||'').toUpperCase();
+      if(cn&&exist.has(cn)){skipped++;return;}
+      CT.push({...r,_id:nextId++}); added++;
+    });
+    ok.textContent='✓ Added '+added+' new container'+(added!==1?'s':'')+
+      (skipped?' · '+skipped+' already existed (skipped)':'')+'.';
+  } else if(mode==='upsert'){
+    // Update matching containers; add new ones
+    const existMap={};
+    CT.forEach((r,i)=>{ if(r['Container No.']) existMap[(r['Container No.']||'').toUpperCase()]=i; });
+    let updated=0, added=0;
+    importRows.forEach(r=>{
+      const cn=(r['Container No.']||'').toUpperCase();
+      if(cn&&existMap[cn]!==undefined){
+        // Merge: only overwrite non-empty imported fields, keep existing data for blank ones
+        const idx=existMap[cn];
+        Object.entries(r).forEach(([k,v])=>{ if(v!==''&&v!==null&&v!==undefined) CT[idx][k]=v; });
+        updated++;
+      } else {
+        CT.push({...r,_id:nextId++}); added++;
+      }
+    });
+    ok.textContent='✓ Updated '+updated+' existing + added '+added+' new container'+(added!==1?'s':'')+'.';
+  }
+
+  ok.style.display='block';
+  document.getElementById('imp-btn').style.display='none';
+  saveData(); renderCT();
 }
+// Highlight selected radio card
+document.addEventListener('change',function(e){
+  if(e.target.name==='imp_mode'){
+    document.querySelectorAll('#imp-mode-radios label').forEach(l=>{
+      const r=l.querySelector('input');
+      if(r.checked){ l.style.border='2px solid '+(r.value==='replace'?'#C62828':r.value==='upsert'?'#1565C0':'#43A047'); l.style.background=r.value==='replace'?'#FFEBEE':r.value==='upsert'?'#E3F2FD':'#F1F8E9'; }
+      else{ l.style.border='1px solid var(--border)'; l.style.background='#fff'; }
+    });
+  }
+});
 function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textContent=msg; e.style.display='block';
   ['imp-preview-wrap','imp-opts'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('imp-btn').style.display='none'; }
