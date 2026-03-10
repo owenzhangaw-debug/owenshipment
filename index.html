@@ -348,17 +348,6 @@ td.editing .cell-edit{display:block}
     </div>
   </div>
 
-  <!-- Analytics row 2 -->
-  <div class="charts-row" style="margin-top:0">
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Tracking Status Breakdown<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap"><canvas id="tracking-chart"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Vessel Status Overview<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap"><canvas id="vessel-status-chart"></canvas></div>
-    </div>
-  </div>
 
   <!-- Analytics row 3: Slot–ETA -->
   <div class="charts-row" style="margin-top:0">
@@ -1086,38 +1075,6 @@ function renderDashboard(){
       scales:{x:{ticks:{stepSize:5}},y:{grid:{display:false}}} }
   });
 
-  // Tracking status donut
-  const tCounts={Arrived:0,T1:0,None:0};
-  CT.forEach(r=>{ const t=r['Tracking']||'None'; if(tCounts[t]!==undefined) tCounts[t]++; else tCounts['None']++; });
-  if(window.trackingChart) window.trackingChart.destroy();
-  window.trackingChart = new Chart(document.getElementById('tracking-chart'),{
-    type:'doughnut',
-    data:{
-      labels:['Arrived','T1 (In Transit)','None'],
-      datasets:[{
-        data:[tCounts['Arrived'],tCounts['T1'],tCounts['None']],
-        backgroundColor:['#43A047','#1976D2','#9E9E9E'],
-        borderWidth:2,borderColor:'#fff'
-      }]
-    },
-    options:{ responsive:true,maintainAspectRatio:false,
-      plugins:{ legend:{position:'right',labels:{font:{size:12},padding:14}},
-        tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} containers`}} } }
-  });
-
-  // Vessel status bar
-  const vsCounts={};
-  VT.forEach(r=>{ const s=r['Status']||'Unknown'; vsCounts[s]=(vsCounts[s]||0)+1; });
-  const vsKeys=Object.keys(vsCounts).sort();
-  const vsColors=vsKeys.map(k=>k==='Departed'?'#43A047':k==='Scheduled'?'#1976D2':k==='Cut-Off Soon'?'#F9A825':k==='Cut-Off Passed'?'#e53935':'#9E9E9E');
-  if(window.vesselStatusChart) window.vesselStatusChart.destroy();
-  window.vesselStatusChart = new Chart(document.getElementById('vessel-status-chart'),{
-    type:'bar',
-    data:{ labels:vsKeys, datasets:[{ label:'Vessels', data:vsKeys.map(k=>vsCounts[k]), backgroundColor:vsColors, borderRadius:4 }] },
-    options:{ responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{y:{ticks:{stepSize:1},grid:{color:'rgba(0,0,0,.06)'}},x:{grid:{display:false}}} }
-  });
 
   // ── Slot–ETA lead time analysis ──────────────────────────────────
   // Compute Slot–ETA (days) for every container that has both dates
