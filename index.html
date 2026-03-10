@@ -370,6 +370,11 @@ td.editing .cell-edit{display:block}
         <label><input type="checkbox" value=""       onchange="msChange('broker','All Brokers')"> Not set</label>
       </div>
     </div>
+    <div class="ms-wrap" id="wrap-consignee">
+      <span class="ms-label">Consignee</span>
+      <button class="ms-btn" id="btn-consignee" onclick="msOpen('consignee')">All Consignees</button>
+      <div class="ms-menu" id="menu-consignee"></div>
+    </div>
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
@@ -709,6 +714,7 @@ function gotoFilter(col, val){
   msClear('tracking','All Tracking');
   msClear('arrival','All Arrivals');
   msClear('broker','All Brokers');
+  msClear('consignee','All Consignees');
   // Then set the specific filter
   if(col==='Tracking')          msSetValues('tracking',[val],'All Tracking');
   if(col==='_missing_arrival')  msSetValues('arrival',['missing'],'All Arrivals');
@@ -1021,9 +1027,11 @@ function getCTRows(){
   const ftrs=msGetValues('tracking');
   const fars=msGetValues('arrival');
   const fbrs=msGetValues('broker');
+  const fcons=msGetValues('consignee');
   return CT.filter(r=>{
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
+    if(fcons.length&&!fcons.includes(r['Consignee']||'')) return false;
     if(ftrs.length&&!ftrs.includes(r['Tracking'])) return false;
     if(fars.length){
       const miss=fars.includes('missing'), fill=fars.includes('filled');
@@ -1052,12 +1060,14 @@ function resetFilters(){
   msClear('tracking','All Tracking');
   msClear('arrival','All Arrivals');
   msClear('broker','All Brokers');
+  msClear('consignee','All Consignees');
   renderCT();
 }
 
 function renderCT(){
   fillMultiSel('batch','Batch / Train','All Batches');
   fillMultiSel('trucker','Trucker','All Truckers');
+  fillMultiSel('consignee','Consignee','All Consignees');
   const rows=getCTRows();
   document.getElementById('ct-count').textContent=rows.length+' of '+CT.length+' containers';
   const tbody=document.getElementById('ct-body');
