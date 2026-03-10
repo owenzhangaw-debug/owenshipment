@@ -793,7 +793,24 @@ function gotoFilter(col, val){
   // Then set the specific filter
   if(col==='Tracking')          msSetValues('tracking',[val],'All Tracking');
   if(col==='_missing_arrival')  msSetValues('arrival',['missing'],'All Arrivals');
+  if(col==='Batch / Train')     msSetValues('batch',[val],val);
   showPage('containers');
+}
+function gotoBatch(batchName){
+  msClear('batch','All Batches');
+  msClear('trucker','All Truckers');
+  msClear('tracking','All Tracking');
+  msClear('arrival','All Arrivals');
+  msClear('broker','All Brokers');
+  msClear('consignee','All Consignees');
+  document.getElementById('f-search').value='';
+  msSetValues('batch',[batchName],batchName);
+  showPage('containers');
+  // Scroll to the first matching row after render
+  requestAnimationFrame(()=>{
+    const first=document.querySelector('#ct-body tr');
+    if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
+  });
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────
@@ -1214,7 +1231,10 @@ function renderDashboard(){
   // ── Undelivered by Batch ──────────────────────────────────────
   const today=new Date(); today.setHours(0,0,0,0);
   const undelivered=CT.filter(r=>r['Tracking']!=='Arrived');
-  // Group by batch
+  // Total per batch (all containers, delivered + undelivered)
+  const batchTotal={};
+  CT.forEach(r=>{ const b=r['Batch / Train']||'(No Batch)'; batchTotal[b]=(batchTotal[b]||0)+1; });
+  // Group undelivered by batch
   const batchMap={};
   undelivered.forEach(r=>{
     const b=r['Batch / Train']||'(No Batch)';
@@ -1228,7 +1248,6 @@ function renderDashboard(){
     if(!r['ETA at Hub']) batchMap[b].noETA++;
   });
   const batchKeys=Object.keys(batchMap).sort((a,b)=>batchMap[b].total-batchMap[a].total);
-  const maxBatch=batchKeys.length?batchMap[batchKeys[0]].total:1;
 
   document.getElementById('undelivered-total-badge').textContent=
     undelivered.length+' undelivered';
@@ -1239,16 +1258,20 @@ function renderDashboard(){
   } else {
     const udRows=batchKeys.map(b=>{
       const m=batchMap[b];
-      const pct=Math.round(m.total/maxBatch*100);
+      const btotal=batchTotal[b]||m.total;
+      const pct=Math.round(m.total/btotal*100);
+      // bar colour: green→yellow→red by percentage undelivered
+      const barColor=pct===100?'#e53935':pct>=50?'#F9A825':'#43A047';
       const overdueBadge=m.overdue?`<span class="ud-pill" style="background:#FFEBEE;color:#C62828">⚠ ${m.overdue} overdue</span>`:'';
       const noETABadge=m.noETA?`<span class="ud-pill" style="background:#F3E5F5;color:#7B1FA2">📡 ${m.noETA} no ETA</span>`:'';
-      return `<tr onclick="gotoFilter('Batch / Train','${b.replace(/'/g,"\\'")}')">
+      const bEsc=b.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return `<tr onclick="gotoBatch('${bEsc}')" title="Click to view in Containers tab">
         <td style="font-weight:700;color:var(--navy)">${b}</td>
-        <td style="font-size:15px;font-weight:800;color:#C62828;text-align:center">${m.total}</td>
+        <td style="font-size:15px;font-weight:800;color:#C62828;text-align:center">${m.total} <span style="font-size:10px;font-weight:400;color:var(--muted)">/ ${btotal}</span></td>
         <td>
           <div class="ud-bar-wrap">
-            <div class="ud-bar-bg"><div class="ud-bar-fill" style="width:${pct}%;background:#e53935"></div></div>
-            <span style="font-size:11px;color:var(--muted);min-width:28px">${pct}%</span>
+            <div class="ud-bar-bg"><div class="ud-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+            <span style="font-size:11px;font-weight:700;color:${barColor};min-width:34px">${pct}%</span>
           </div>
         </td>
         <td><span class="ud-pill ud-pill-none">${m.none} None</span></td>
