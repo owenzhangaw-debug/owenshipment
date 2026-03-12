@@ -418,6 +418,17 @@ td.editing .cell-edit{display:block}
     </div>
   </div>
 
+  <!-- Unpaid by Batch -->
+  <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+    <div class="chart-card" style="padding:16px 18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3 style="margin:0">💳 Unpaid by Batch</h3>
+        <span id="unpaid-total-badge" style="font-size:12px;font-weight:700;color:#856404;background:#fff3cd;border-radius:8px;padding:3px 10px"></span>
+      </div>
+      <div id="unpaid-batch" style="overflow-x:auto"></div>
+    </div>
+  </div>
+
   <!-- Mala Pipeline -->
   <div id="mala-pipeline-row" class="charts-row" style="margin-top:0;grid-template-columns:1fr;display:none">
     <div class="chart-card" style="padding:16px 18px">
@@ -525,6 +536,7 @@ td.editing .cell-edit{display:block}
           <th onclick="ctSort('Surcharge')">Surcharge ↕</th>
           <th class="no-sort">Surcharge Reason</th>
           <th class="no-sort">Payment Status</th>
+          <th class="no-sort">T1 Payment Status</th>
           <th onclick="ctSort('Remark')">Remark ↕</th>
           <th class="no-sort"></th>
           <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="ct-sel-all" onchange="ctSelAll(this.checked)" title="Select all" style="width:14px;height:14px;cursor:pointer"/></th>
@@ -595,6 +607,8 @@ td.editing .cell-edit{display:block}
         <select id="f_surcharge_reason"><option value="">—</option><option value="unloading">Unloading</option><option value="ATA delayed">ATA Delayed</option><option value="other">Other</option></select></div>
       <div class="form-group"><label>Payment Status</label>
         <select id="f_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option><option value="Done">Done</option></select></div>
+      <div class="form-group"><label>T1 Payment Status</label>
+        <select id="f_t1_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option><option value="Done">Done</option></select></div>
       <div class="form-group"><label>Remark</label><input type="text" id="f_rmk"/></div>
       <div class="form-group" style="align-items:flex-start;padding-top:18px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
@@ -1419,6 +1433,56 @@ function renderDashboard(){
     </table>`;
   }
 
+  // ── Unpaid by Batch ───────────────────────────────────────────
+  const PAID_STATES=new Set(['Submitted','Done']);
+  const unpaidMap={};
+  CT.forEach(r=>{
+    const b=r['Batch / Train']||'(No Batch)';
+    if(!unpaidMap[b]) unpaidMap[b]={total:0,payUnpaid:0,t1Unpaid:0};
+    unpaidMap[b].total++;
+    if(!PAID_STATES.has(r['Payment Status']||'')) unpaidMap[b].payUnpaid++;
+    if(!PAID_STATES.has(r['T1 Payment Status']||'')) unpaidMap[b].t1Unpaid++;
+  });
+  const unpaidKeys=Object.keys(unpaidMap).sort();
+  const totalUnpaid=unpaidKeys.reduce((s,b)=>s+(unpaidMap[b].payUnpaid>0||unpaidMap[b].t1Unpaid>0?unpaidMap[b].payUnpaid:0),0);
+  document.getElementById('unpaid-total-badge').textContent=
+    unpaidKeys.reduce((s,b)=>s+unpaidMap[b].payUnpaid,0)+' unpaid units';
+  const upEl=document.getElementById('unpaid-batch');
+  if(!unpaidKeys.length){
+    upEl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0">No data yet.</div>';
+  } else {
+    const psLabel=v=>v==='Pending invoice'?'<span class="ps-pending">Pending</span>':v==='Invoice received'?'<span class="ps-received">Invoiced</span>':v==='Submitted'?'<span class="ps-submitted">Submitted</span>':v==='Done'?'<span class="ps-done">Done</span>':'<span style="color:#aaa">—</span>';
+    const upRows=unpaidKeys.map(b=>{
+      const m=unpaidMap[b];
+      const payPct=Math.round(m.payUnpaid/m.total*100);
+      const t1Pct=Math.round(m.t1Unpaid/m.total*100);
+      const payColor=payPct===0?'#43A047':payPct<50?'#F9A825':'#e53935';
+      const t1Color=t1Pct===0?'#43A047':t1Pct<50?'#F9A825':'#e53935';
+      const bEsc=b.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return `<tr onclick="gotoBatch('${bEsc}')" title="Click to view in Containers tab" style="cursor:pointer">
+        <td style="font-weight:700;color:var(--navy)">${b}</td>
+        <td style="text-align:center;font-size:13px">${m.total}</td>
+        <td style="text-align:center">
+          <span style="font-size:15px;font-weight:800;color:${payColor}">${m.payUnpaid}</span>
+          <span style="font-size:10px;color:var(--muted)"> / ${m.total}</span>
+        </td>
+        <td style="text-align:center">
+          <span style="font-size:15px;font-weight:800;color:${t1Color}">${m.t1Unpaid}</span>
+          <span style="font-size:10px;color:var(--muted)"> / ${m.total}</span>
+        </td>
+      </tr>`;
+    }).join('');
+    upEl.innerHTML=`<table class="ud-tbl">
+      <thead><tr>
+        <th>Batch / Train</th>
+        <th style="text-align:center">Total</th>
+        <th style="text-align:center">Unpaid (Payment)</th>
+        <th style="text-align:center">Unpaid (T1 Payment)</th>
+      </tr></thead>
+      <tbody>${upRows}</tbody>
+    </table>`;
+  }
+
   // ── Mala Pipeline ─────────────────────────────────────────────
   const malaRows=CT.filter(r=>r['ETA in Mala']&&r['Tracking']!=='Arrived')
     .map(r=>{
@@ -1842,6 +1906,20 @@ function renderCT(){
           </select></div>`;
         })()}
       </td>
+      <td data-id="${r._id}" data-col="T1 Payment Status">
+        ${(()=>{
+          const tv=r['T1 Payment Status']||'';
+          const badge=tv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:tv==='Invoice received'?`<span class="ps-received">Invoice Received</span>`:tv==='Submitted'?`<span class="ps-submitted">Submitted</span>`:tv==='Done'?`<span class="ps-done">Done</span>`:'<span style="color:#ccc">—</span>';
+          return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
+          <div class="cell-edit"><select onblur="commitEditSelect(this,'T1 Payment Status',${r._id})" onchange="commitEditSelect(this,'T1 Payment Status',${r._id})">
+            <option value="" ${!tv?'selected':''}>—</option>
+            <option value="Pending invoice" ${tv==='Pending invoice'?'selected':''}>Pending invoice</option>
+            <option value="Invoice received" ${tv==='Invoice received'?'selected':''}>Invoice received</option>
+            <option value="Submitted" ${tv==='Submitted'?'selected':''}>Submitted</option>
+            <option value="Done" ${tv==='Done'?'selected':''}>Done</option>
+          </select></div>`;
+        })()}
+      </td>
       ${rmkCell}
       <td style="padding:4px 6px;text-align:center">
         <button class="btn-del-row" onclick="openDel(${r._id})" title="Delete">✕</button>
@@ -2111,6 +2189,7 @@ function openAdd(){
     .forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_surcharge_reason').value='';
   document.getElementById('f_pay_status').value='';
+  document.getElementById('f_t1_pay_status').value='';
   document.getElementById('f_broker').value='';
   document.getElementById('f_track').value='None';
   document.getElementById('f_cmr').checked=false;
@@ -2141,6 +2220,7 @@ function openEdit(id){
   document.getElementById('f_surcharge').value      =r['Surcharge']||'';
   document.getElementById('f_surcharge_reason').value=r['Surcharge Reason']||'';
   document.getElementById('f_pay_status').value      =r['Payment Status']||'';
+  document.getElementById('f_t1_pay_status').value   =r['T1 Payment Status']||'';
   document.getElementById('f_rmk').value            =r['Remark']||'';
   document.getElementById('f_cmr').checked=(r['CMR']==='✅');
   refreshDLs();
@@ -2157,7 +2237,7 @@ function saveRow(){
     'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Tracking':g('f_track'),
     'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'Scheduled Slot':g('f_slot'),
     'Actual Arrival':g('f_arr'),'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
-    'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'Remark':g('f_rmk'),
+    'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
   if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0) CT[i]={...CT[i],...u}; }
@@ -2219,7 +2299,7 @@ function saveBulk(){
   const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),
     'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),
     'Scheduled Slot':g('b_slot'),'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
-    'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','Broker':'','Remark':''};
+    'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','T1 Payment Status':'','Broker':'','Remark':''};
   pairs.forEach(p=>CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,_id:nextId++}));
   saveData(); closeBulk(); renderCT();
 }
