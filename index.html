@@ -358,6 +358,21 @@ td.editing .cell-edit{display:block}
   .ud-tbl td,.ud-tbl th,.sur-tbl td,.sur-tbl th,.mala-tbl td,.mala-tbl th{
     padding:5px 8px;font-size:11px}
 
+  /* ── Disable frozen columns on mobile so full table scrolls ── */
+  th.fc-1,td.fc-1,th.fc-2,td.fc-2,
+  th.fc-3,td.fc-3,th.fc-4,td.fc-4{
+    position:static !important;
+    left:auto !important;
+    z-index:auto !important;
+    box-shadow:none !important;
+  }
+  /* Keep table header readable while scrolling */
+  #ct-table thead tr,#ct-table thead th{
+    position:sticky !important;
+    top:0 !important;
+    z-index:5 !important;
+  }
+
   /* ── Bulk-edit modal wider ── */
   .be-tabs .be-tab{padding:7px 12px;font-size:12px}
 }
