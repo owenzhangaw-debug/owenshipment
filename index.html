@@ -178,6 +178,7 @@ tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
 .ps-pending{background:#fff3cd;color:#856404;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .ps-received{background:#cce5ff;color:#004085;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .ps-submitted{background:#d4edda;color:#155724;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-done{background:#343a40;color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .broker-wispex{display:inline-block;background:#E3F2FD;color:#1565C0;
   border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700}
 .broker-self{display:inline-block;background:#E8F5E9;color:#2E7D32;
@@ -490,6 +491,7 @@ td.editing .cell-edit{display:block}
         <label><input type="checkbox" value="Pending invoice" onchange="msChange('payment','All')"> Pending invoice</label>
         <label><input type="checkbox" value="Invoice received" onchange="msChange('payment','All')"> Invoice received</label>
         <label><input type="checkbox" value="Submitted"       onchange="msChange('payment','All')"> Submitted</label>
+        <label><input type="checkbox" value="Done"           onchange="msChange('payment','All')"> Done</label>
         <label><input type="checkbox" value=""               onchange="msChange('payment','All')"> Not set</label>
       </div>
     </div>
@@ -592,7 +594,7 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>Surcharge Reason</label>
         <select id="f_surcharge_reason"><option value="">—</option><option value="unloading">Unloading</option><option value="ATA delayed">ATA Delayed</option><option value="other">Other</option></select></div>
       <div class="form-group"><label>Payment Status</label>
-        <select id="f_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option></select></div>
+        <select id="f_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option><option value="Done">Done</option></select></div>
       <div class="form-group"><label>Remark</label><input type="text" id="f_rmk"/></div>
       <div class="form-group" style="align-items:flex-start;padding-top:18px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
@@ -1829,13 +1831,14 @@ function renderCT(){
       <td data-id="${r._id}" data-col="Payment Status">
         ${(()=>{
           const pv=r['Payment Status']||'';
-          const badge=pv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:pv==='Invoice received'?`<span class="ps-received">Invoice Received</span>`:pv==='Submitted'?`<span class="ps-submitted">Submitted</span>`:'<span style="color:#ccc">—</span>';
+          const badge=pv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:pv==='Invoice received'?`<span class="ps-received">Invoice Received</span>`:pv==='Submitted'?`<span class="ps-submitted">Submitted</span>`:pv==='Done'?`<span class="ps-done">Done</span>`:'<span style="color:#ccc">—</span>';
           return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
           <div class="cell-edit"><select onblur="commitEditSelect(this,'Payment Status',${r._id})" onchange="commitEditSelect(this,'Payment Status',${r._id})">
             <option value="" ${!pv?'selected':''}>—</option>
             <option value="Pending invoice" ${pv==='Pending invoice'?'selected':''}>Pending invoice</option>
             <option value="Invoice received" ${pv==='Invoice received'?'selected':''}>Invoice received</option>
             <option value="Submitted" ${pv==='Submitted'?'selected':''}>Submitted</option>
+            <option value="Done" ${pv==='Done'?'selected':''}>Done</option>
           </select></div>`;
         })()}
       </td>
