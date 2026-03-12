@@ -1588,10 +1588,27 @@ function resetFilters(){
   renderCT();
 }
 
+// Grey-out options in static menus that have no matches given other active filters
+function cascadeStaticMenu(id, hasValueFn){
+  const rows=getCTRowsExcept(id);
+  document.querySelectorAll('#menu-'+id+' label').forEach(label=>{
+    const cb=label.querySelector('input[type=checkbox]');
+    if(!cb) return;
+    const hasMatch=hasValueFn(rows, cb.value);
+    label.style.opacity=hasMatch?'1':'0.35';
+  });
+}
+
 function renderCT(){
   fillMultiSel('batch','Batch / Train','All Batches');
   fillMultiSel('trucker','Trucker','All Truckers');
   fillMultiSel('consignee','Consignee','All Consignees');
+  // Cascade static menus: grey out options with no matches in current filter context
+  cascadeStaticMenu('tracking',(rows,v)=>rows.some(r=>r['Tracking']===v));
+  cascadeStaticMenu('arrival',(rows,v)=>v==='missing'?rows.some(r=>!r['Actual Arrival']):rows.some(r=>!!r['Actual Arrival']));
+  cascadeStaticMenu('broker',(rows,v)=>rows.some(r=>(r['Broker']||'')===v));
+  cascadeStaticMenu('surcharge',(rows,v)=>v==='missing'?rows.some(r=>!(r['Surcharge']&&String(r['Surcharge']).trim())):rows.some(r=>!!(r['Surcharge']&&String(r['Surcharge']).trim())));
+  cascadeStaticMenu('payment',(rows,v)=>rows.some(r=>(r['Payment Status']||'')===v));
   const rows=getCTRows();
   document.getElementById('ct-count').textContent=rows.length+' of '+CT.length+' containers';
   const tbody=document.getElementById('ct-body');
