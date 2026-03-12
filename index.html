@@ -580,7 +580,7 @@ td.editing .cell-edit{display:block}
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="date" id="f_eta_mala" title="ETA at Port of Malaysia"/></div>
       <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+5d)</span></label><input type="date" id="f_eta"/></div>
-      <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: same as Hub)</span></label><input type="datetime-local" id="f_slot"/></div>
+      <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: same as Hub)</span></label><input type="datetime-local" step="1800" id="f_slot"/></div>
       <div class="form-group"><label>Actual Arrival</label><input type="date" id="f_arr"/></div>
       <div class="form-group"><label>Deadline</label><input type="date" id="f_dl"/></div>
       <div class="form-group"><label>Pickup Ref</label><input type="text" id="f_ref"/></div>
@@ -618,7 +618,7 @@ td.editing .cell-edit{display:block}
         <select id="b_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="date" id="b_eta_mala" title="ETA at Port of Malaysia"/></div>
       <div class="form-group"><label>ETA at Hub</label><input type="date" id="b_eta"/></div>
-      <div class="form-group"><label>Scheduled Slot</label><input type="datetime-local" id="b_slot"/></div>
+      <div class="form-group"><label>Scheduled Slot</label><input type="datetime-local" step="1800" id="b_slot"/></div>
       <div class="form-group"><label>Deadline</label><input type="date" id="b_dl"/></div>
       <div class="form-group" style="align-items:flex-start;padding-top:18px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
@@ -926,7 +926,7 @@ function toInputDate(v){
 }
 function fromInputDate(v){ return v?v.replace(/-/g,'/'):''; }
 function toInputDatetime(v){
-  // YYYY/MM/DD HH:MM (or plain date) → YYYY-MM-DDTHH:MM for <input type="datetime-local">
+  // YYYY/MM/DD HH:MM (or plain date) → YYYY-MM-DDTHH:MM for <input type="datetime-local" step="1800">
   if(!v) return '';
   const m=String(v).match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})(?:[T\s](\d{2}:\d{2}))?/);
   if(!m) return '';
@@ -1712,7 +1712,7 @@ function renderCT(){
     const slotV=r['Scheduled Slot']||'';
     const slotC=`<td data-id="${r._id}" data-col="Scheduled Slot">
       <div class="cell-view" onclick="startEdit(this)">${slotV||'<span style="color:#ccc">—</span>'}</div>
-      <div class="cell-edit"><input type="datetime-local" value="${toInputDatetime(slotV)}" onchange="commitDatetimeEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:175px"/></div>
+      <div class="cell-edit"><input type="datetime-local" step="1800" value="${toInputDatetime(slotV)}" onchange="commitDatetimeEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:175px"/></div>
     </td>`;
     const arrV=r['Actual Arrival']||'';
     const arrC=`<td data-id="${r._id}" data-col="Actual Arrival">
@@ -1755,7 +1755,7 @@ function renderCT(){
       if(hubParsed){
         slotCell=`<td data-id="${r._id}" data-col="Scheduled Slot">
           <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-slot" onclick="event.stopPropagation();applySmartSlot(${r._id})" title="Book slot on same day as ETA at Hub">📅 ${formatDate(hubParsed)}</span></div>
-          <div class="cell-edit"><input type="datetime-local" value="" onchange="commitDatetimeEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:175px"/></div>
+          <div class="cell-edit"><input type="datetime-local" step="1800" value="" onchange="commitDatetimeEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:175px"/></div>
         </td>`;
       }
     }
