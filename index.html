@@ -578,11 +578,11 @@ td.editing .cell-edit{display:block}
         <select id="f_broker"><option value="">—</option><option value="Wispex">Wispex</option><option value="Self">Self</option></select></div>
       <div class="form-group"><label>Tracking</label>
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
-      <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="yyyy/mm/dd" title="ETA at Port of Malaysia"/></div>
-      <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+5d)</span></label><input type="text" id="f_eta" placeholder="yyyy/mm/dd"/></div>
-      <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: same as Hub)</span></label><input type="text" id="f_slot" placeholder="yyyy/mm/dd HH:MM"/></div>
-      <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr" placeholder="yyyy/mm/dd"/></div>
-      <div class="form-group"><label>Deadline</label><input type="text" id="f_dl" placeholder="yyyy/mm/dd"/></div>
+      <div class="form-group"><label>ETA in Mala</label><input type="date" id="f_eta_mala" title="ETA at Port of Malaysia"/></div>
+      <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+5d)</span></label><input type="date" id="f_eta"/></div>
+      <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: same as Hub)</span></label><input type="datetime-local" id="f_slot"/></div>
+      <div class="form-group"><label>Actual Arrival</label><input type="date" id="f_arr"/></div>
+      <div class="form-group"><label>Deadline</label><input type="date" id="f_dl"/></div>
       <div class="form-group"><label>Pickup Ref</label><input type="text" id="f_ref"/></div>
       <div class="form-group"><label>Price (€)</label><input type="number" min="0" step="0.01" id="f_price" placeholder="0.00"/></div>
       <div class="form-group"><label>Price T1 (€)</label><input type="number" min="0" step="0.01" id="f_price_t1" placeholder="0.00"/></div>
@@ -616,10 +616,10 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
       <div class="form-group"><label>Tracking</label>
         <select id="b_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
-      <div class="form-group"><label>ETA in Mala</label><input type="text" id="b_eta_mala" placeholder="yyyy/mm/dd" title="ETA at Port of Malaysia"/></div>
-      <div class="form-group"><label>ETA at Hub</label><input type="text" id="b_eta" placeholder="yyyy/mm/dd"/></div>
-      <div class="form-group"><label>Scheduled Slot</label><input type="text" id="b_slot" placeholder="yyyy/mm/dd HH:MM"/></div>
-      <div class="form-group"><label>Deadline</label><input type="text" id="b_dl" placeholder="yyyy/mm/dd"/></div>
+      <div class="form-group"><label>ETA in Mala</label><input type="date" id="b_eta_mala" title="ETA at Port of Malaysia"/></div>
+      <div class="form-group"><label>ETA at Hub</label><input type="date" id="b_eta"/></div>
+      <div class="form-group"><label>Scheduled Slot</label><input type="datetime-local" id="b_slot"/></div>
+      <div class="form-group"><label>Deadline</label><input type="date" id="b_dl"/></div>
       <div class="form-group" style="align-items:flex-start;padding-top:18px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
           <input type="checkbox" id="b_cmr" style="width:16px;height:16px;cursor:pointer"/> CMR Received
@@ -917,6 +917,47 @@ function fmtDateStr(s){
   // Normalize any stored date string → yyyy/mm/dd display
   if(!s) return '';
   const d=parseDate(s); return d?formatDate(d):s;
+}
+// ── Date picker helpers ────────────────────────────────────────────
+function toInputDate(v){
+  // any stored date → YYYY-MM-DD for <input type="date">
+  if(!v) return '';
+  const d=parseDate(String(v)); return d?formatDate(d).replace(/\//g,'-'):'';
+}
+function fromInputDate(v){ return v?v.replace(/-/g,'/'):''; }
+function toInputDatetime(v){
+  // YYYY/MM/DD HH:MM (or plain date) → YYYY-MM-DDTHH:MM for <input type="datetime-local">
+  if(!v) return '';
+  const m=String(v).match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})(?:[T\s](\d{2}:\d{2}))?/);
+  if(!m) return '';
+  const base=`${m[1]}-${m[2]}-${m[3]}`;
+  return m[4]?`${base}T${m[4]}`:`${base}T00:00`;
+}
+function fromInputDatetime(v){
+  // YYYY-MM-DDTHH:MM → YYYY/MM/DD HH:MM (drops time if 00:00)
+  if(!v) return '';
+  const m=String(v).match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}:\d{2}))?/);
+  if(!m) return '';
+  const base=`${m[1]}/${m[2]}/${m[3]}`;
+  return (m[4]&&m[4]!=='00:00')?`${base} ${m[4]}`:base;
+}
+function commitDateEdit(inp, col, id){
+  const td=inp.closest('td'); td.classList.remove('editing');
+  const val=fromInputDate(inp.value);
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  CT[i][col]=val; saveData(); _smartData=null; renderCT();
+}
+function commitDatetimeEdit(inp, col, id){
+  const td=inp.closest('td'); td.classList.remove('editing');
+  const val=fromInputDatetime(inp.value);
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  CT[i][col]=val; saveData(); _smartData=null; renderCT();
+}
+function commitVTDate(inp, col, id){
+  const td=inp.closest('td'); td.classList.remove('editing');
+  const val=fromInputDate(inp.value);
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  VT[i][col]=val; saveVT(); renderVT(); renderDashboard();
 }
 function computeDays(r){
   const slot=parseDate(r['Scheduled Slot']); if(!slot) return null;
@@ -1616,7 +1657,7 @@ function renderCT(){
   if(!rows.length){ tbody.innerHTML=''; nodata.style.display='block'; return; }
   nodata.style.display='none';
 
-  const EDITABLE=['ETA in Mala','ETA at Hub','Scheduled Slot','Actual Arrival','Deadline','Master B/L','Consignee','Trucker'];
+  const EDITABLE=['ETA in Mala','Master B/L','Consignee','Trucker'];
   // Frozen column class map by col name
   const FC_CLASS={'Master B/L':'fc-3','Consignee':'fc-4'};
 
@@ -1660,7 +1701,29 @@ function renderCT(){
     </td>`;
 
     // split editCells into groups
-    const [etaMalaC,etaC,slotC,arrC,dlC,blC,conC,truckC]=editCells;
+    const [etaMalaC,blC,conC,truckC]=editCells;
+
+    // ── Date picker cells ─────────────────────────────────────────
+    const etaV=r['ETA at Hub']||'';
+    const etaC=`<td data-id="${r._id}" data-col="ETA at Hub">
+      <div class="cell-view" onclick="startEdit(this)">${etaV||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input type="date" value="${toInputDate(etaV)}" onchange="commitDateEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:140px"/></div>
+    </td>`;
+    const slotV=r['Scheduled Slot']||'';
+    const slotC=`<td data-id="${r._id}" data-col="Scheduled Slot">
+      <div class="cell-view" onclick="startEdit(this)">${slotV||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input type="datetime-local" value="${toInputDatetime(slotV)}" onchange="commitDatetimeEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:175px"/></div>
+    </td>`;
+    const arrV=r['Actual Arrival']||'';
+    const arrC=`<td data-id="${r._id}" data-col="Actual Arrival">
+      <div class="cell-view" onclick="startEdit(this)">${arrV||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input type="date" value="${toInputDate(arrV)}" onchange="commitDateEdit(this,'Actual Arrival',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:140px"/></div>
+    </td>`;
+    const dlV=r['Deadline']||'';
+    const dlC=`<td data-id="${r._id}" data-col="Deadline">
+      <div class="cell-view" onclick="startEdit(this)">${dlV||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input type="date" value="${toInputDate(dlV)}" onchange="commitDateEdit(this,'Deadline',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:140px"/></div>
+    </td>`;
 
     // ── Smart hint overrides ──────────────────────────────────────
     const sd=_smartData||computeSmartData();
@@ -1674,13 +1737,13 @@ function renderCT(){
         const hubEst=new Date(malaDate.getTime()+5*864e5);
         etaCell=`<td data-id="${r._id}" data-col="ETA at Hub">
           <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-eta" onclick="event.stopPropagation();applyMalaHub(${r._id})" title="Apply: ETA in Mala + 5 days transit">📍 ${formatDate(hubEst)}</span></div>
-          <div class="cell-edit"><input value="" onblur="commitEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+          <div class="cell-edit"><input type="date" value="" onchange="commitDateEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:140px"/></div>
         </td>`;
       } else if(sd.etaFromVessel[cn]){
         const v=sd.etaFromVessel[cn];
         etaCell=`<td data-id="${r._id}" data-col="ETA at Hub">
           <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-eta" onclick="event.stopPropagation();applySmartETA(${r._id})" title="Apply ETA from vessel ${v.vessel}">📡 ${v.date}</span></div>
-          <div class="cell-edit"><input value="" onblur="commitEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+          <div class="cell-edit"><input type="date" value="" onchange="commitDateEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:140px"/></div>
         </td>`;
       }
     }
@@ -1692,7 +1755,7 @@ function renderCT(){
       if(hubParsed){
         slotCell=`<td data-id="${r._id}" data-col="Scheduled Slot">
           <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-slot" onclick="event.stopPropagation();applySmartSlot(${r._id})" title="Book slot on same day as ETA at Hub">📅 ${formatDate(hubParsed)}</span></div>
-          <div class="cell-edit"><input value="" onblur="commitEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+          <div class="cell-edit"><input type="datetime-local" value="" onchange="commitDatetimeEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:175px"/></div>
         </td>`;
       }
     }
@@ -1814,7 +1877,12 @@ function startEdit(viewEl){
   const td=viewEl.closest('td');
   td.classList.add('editing');
   const inp=td.querySelector('.cell-edit input, .cell-edit select');
-  if(inp){ inp.focus(); if(inp.tagName==='INPUT') inp.select(); }
+  if(inp){
+    inp.focus();
+    if(inp.type==='date'||inp.type==='datetime-local'){
+      try{ inp.showPicker(); }catch(e){}
+    } else if(inp.tagName==='INPUT') inp.select();
+  }
 }
 function commitEdit(inp, col, id){
   const td=inp.closest('td'); td.classList.remove('editing');
@@ -1840,7 +1908,8 @@ function toggleCMR(id, checked){
 // ── VESSEL TABLE ──────────────────────────────────────────────────
 function vtCell(r, col, opts){
   const v = r[col]===undefined||r[col]===null||isNaN_safe(r[col]) ? '' : String(r[col]);
-  const disp = (['ETS (Departure)','Port Cut-Off','Barge Date'].includes(col)) ? fmtDateStr(v) : v;
+  const IS_DATE=['ETS (Departure)','Port Cut-Off','Barge Date'].includes(col);
+  const disp = IS_DATE ? fmtDateStr(v) : v;
   if(opts && opts.select){
     const selOpts = opts.select.map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('');
     return `<td data-vtid="${r._id}" data-col="${col}">
@@ -1848,10 +1917,15 @@ function vtCell(r, col, opts){
       <div class="cell-edit"><select onblur="commitVTSelect(this,'${col}',${r._id})" onchange="commitVTSelect(this,'${col}',${r._id})">${selOpts}</select></div>
     </td>`;
   }
-  const ph = ['ETS (Departure)','Port Cut-Off','Barge Date'].includes(col)?'placeholder="yyyy/mm/dd"':'';
+  if(IS_DATE){
+    return `<td data-vtid="${r._id}" data-col="${col}">
+      <div class="cell-view" onclick="startEdit(this)">${disp||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input type="date" value="${toInputDate(v)}" onchange="commitVTDate(this,'${col}',${r._id})" onkeydown="if(event.key==='Escape')cancelEdit(this)" style="width:140px"/></div>
+    </td>`;
+  }
   return `<td data-vtid="${r._id}" data-col="${col}">
     <div class="cell-view" onclick="startEdit(this)">${disp||'<span style="color:#ccc">—</span>'}</div>
-    <div class="cell-edit"><input value="${v.replace(/"/g,'&quot;')}" ${ph} onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
+    <div class="cell-edit"><input value="${v.replace(/"/g,'&quot;')}" onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
   </td>`;
 }
 function isNaN_safe(v){ return typeof v==='number'&&isNaN(v); }
@@ -2026,11 +2100,11 @@ function openEdit(id){
   document.getElementById('f_truck').value =r['Trucker']||'';
   document.getElementById('f_broker').value=r['Broker']||'';
   document.getElementById('f_track').value =r['Tracking']||'None';
-  document.getElementById('f_eta_mala').value=r['ETA in Mala']||'';
-  document.getElementById('f_eta').value  =r['ETA at Hub']||'';
-  document.getElementById('f_slot').value =r['Scheduled Slot']||'';
-  document.getElementById('f_arr').value  =r['Actual Arrival']||'';
-  document.getElementById('f_dl').value   =r['Deadline']||'';
+  document.getElementById('f_eta_mala').value=toInputDate(r['ETA in Mala']||'');
+  document.getElementById('f_eta').value  =toInputDate(r['ETA at Hub']||'');
+  document.getElementById('f_slot').value =toInputDatetime(r['Scheduled Slot']||'');
+  document.getElementById('f_arr').value  =toInputDate(r['Actual Arrival']||'');
+  document.getElementById('f_dl').value   =toInputDate(r['Deadline']||'');
   document.getElementById('f_ref').value  =r['Pickup Ref']||'';
   document.getElementById('f_price').value          =r['Price']||'';
   document.getElementById('f_price_t1').value       =r['Price T1']||'';
@@ -2048,8 +2122,9 @@ function saveRow(){
   const u={
     'Container No.':g('f_no'),'Master B/L':g('f_bl'),'Batch / Train':g('f_batch'),
     'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Tracking':g('f_track'),
-    'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'Scheduled Slot':g('f_slot'),'Actual Arrival':g('f_arr'),
-    'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
+    'ETA in Mala':fromInputDate(g('f_eta_mala')),'ETA at Hub':fromInputDate(g('f_eta')),
+    'Scheduled Slot':fromInputDatetime(document.getElementById('f_slot').value),
+    'Actual Arrival':fromInputDate(g('f_arr')),'Deadline':fromInputDate(g('f_dl')),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
@@ -2108,8 +2183,11 @@ function saveBulk(){
   if(!batch){ err.textContent='Batch / Train is required.'; err.style.display='block'; return; }
   const g=id=>document.getElementById(id).value.trim();
   const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),
-    'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'Scheduled Slot':g('b_slot'),
-    'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
+    'Tracking':g('b_track'),
+    'ETA in Mala':fromInputDate(g('b_eta_mala')),
+    'ETA at Hub':fromInputDate(g('b_eta')),
+    'Scheduled Slot':fromInputDatetime(document.getElementById('b_slot').value),
+    'Deadline':fromInputDate(g('b_dl')),'CMR':document.getElementById('b_cmr').checked?'✅':'',
     'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','Broker':'','Remark':''};
   pairs.forEach(p=>CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,_id:nextId++}));
   saveData(); closeBulk(); renderCT();
