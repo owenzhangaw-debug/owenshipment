@@ -173,6 +173,9 @@ tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
 .sr-unloading{background:#FFF3E0;color:#E65100;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .sr-ata{background:#FCE4EC;color:#880E4F;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .sr-other{background:#F3E5F5;color:#6A1B9A;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-pending{background:#fff3cd;color:#856404;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-received{background:#cce5ff;color:#004085;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-submitted{background:#d4edda;color:#155724;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .broker-wispex{display:inline-block;background:#E3F2FD;color:#1565C0;
   border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700}
 .broker-self{display:inline-block;background:#E8F5E9;color:#2E7D32;
@@ -478,6 +481,16 @@ td.editing .cell-edit{display:block}
         <label><input type="checkbox" value="filled"  onchange="msChange('surcharge','All')"> Filled only</label>
       </div>
     </div>
+    <div class="ms-wrap" id="wrap-payment">
+      <span class="ms-label">Payment</span>
+      <button class="ms-btn" id="btn-payment" onclick="msOpen('payment')">All</button>
+      <div class="ms-menu" id="menu-payment">
+        <label><input type="checkbox" value="Pending invoice" onchange="msChange('payment','All')"> Pending invoice</label>
+        <label><input type="checkbox" value="Invoice received" onchange="msChange('payment','All')"> Invoice received</label>
+        <label><input type="checkbox" value="Submitted"       onchange="msChange('payment','All')"> Submitted</label>
+        <label><input type="checkbox" value=""               onchange="msChange('payment','All')"> Not set</label>
+      </div>
+    </div>
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
@@ -507,6 +520,7 @@ td.editing .cell-edit{display:block}
           <th onclick="ctSort('Price T1')">Price T1 ↕</th>
           <th onclick="ctSort('Surcharge')">Surcharge ↕</th>
           <th class="no-sort">Surcharge Reason</th>
+          <th class="no-sort">Payment Status</th>
           <th onclick="ctSort('Remark')">Remark ↕</th>
           <th class="no-sort"></th>
           <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="ct-sel-all" onchange="ctSelAll(this.checked)" title="Select all" style="width:14px;height:14px;cursor:pointer"/></th>
@@ -575,6 +589,8 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>Surcharge (€)</label><input type="number" min="0" step="0.01" id="f_surcharge" placeholder="0.00"/></div>
       <div class="form-group"><label>Surcharge Reason</label>
         <select id="f_surcharge_reason"><option value="">—</option><option value="unloading">Unloading</option><option value="ATA delayed">ATA Delayed</option><option value="other">Other</option></select></div>
+      <div class="form-group"><label>Payment Status</label>
+        <select id="f_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option></select></div>
       <div class="form-group"><label>Remark</label><input type="text" id="f_rmk"/></div>
       <div class="form-group" style="align-items:flex-start;padding-top:18px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
@@ -843,6 +859,8 @@ function gotoFilter(col, val){
   msClear('arrival','All Arrivals');
   msClear('broker','All Brokers');
   msClear('consignee','All Consignees');
+  msClear('surcharge','All');
+  msClear('payment','All');
   // Then set the specific filter
   if(col==='Tracking')          msSetValues('tracking',[val],'All Tracking');
   if(col==='_missing_arrival')  msSetValues('arrival',['missing'],'All Arrivals');
@@ -860,6 +878,7 @@ function gotoBatch(batchName){
   msClear('broker','All Brokers');
   msClear('consignee','All Consignees');
   msClear('surcharge','All');
+  msClear('payment','All');
   document.getElementById('f-search').value='';
   msSetValues('batch',[batchName],batchName);
   showPage('containers');
@@ -1466,26 +1485,17 @@ function msClear(id, placeholder){
   _msSyncDOM(id);
   _msUpdateBtn(id,[],placeholder);
 }
-function fillMultiSel(id, key, placeholder){
-  const menu=document.getElementById('menu-'+id); if(!menu) return;
-  const checkedVals=msGetValues(id); // reads JS state — survives DOM rebuild
-  const vals=[...new Set(CT.map(r=>r[key]).filter(Boolean))].sort();
-  menu.innerHTML=vals.map(v=>`<label><input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${checkedVals.includes(v)?'checked':''} onchange="msChange('${id}','${placeholder}')"> ${v}</label>`).join('');
-  // Re-sync any hardcoded menus that share this id (e.g. arrival, tracking)
-  _msSyncDOM(id);
-}
-// Close dropdowns when clicking outside
-document.addEventListener('click',function(e){ if(!e.target.closest('.ms-wrap')) document.querySelectorAll('.ms-menu.open').forEach(m=>m.classList.remove('open')); });
-
-function getCTRows(){
-  const q=(document.getElementById('f-search').value||'').toLowerCase();
-  const fbs=msGetValues('batch');
-  const fts=msGetValues('trucker');
-  const ftrs=msGetValues('tracking');
-  const fars=msGetValues('arrival');
-  const fbrs=msGetValues('broker');
-  const fcons=msGetValues('consignee');
-  const fsur=msGetValues('surcharge');
+// Returns CT rows filtered by all filters EXCEPT the one specified (for cascading menus)
+function getCTRowsExcept(excludeId){
+  const q=(document.getElementById('f-search')?document.getElementById('f-search').value||'':'').toLowerCase();
+  const fbs=excludeId==='batch'?[]:msGetValues('batch');
+  const fts=excludeId==='trucker'?[]:msGetValues('trucker');
+  const ftrs=excludeId==='tracking'?[]:msGetValues('tracking');
+  const fars=excludeId==='arrival'?[]:msGetValues('arrival');
+  const fbrs=excludeId==='broker'?[]:msGetValues('broker');
+  const fcons=excludeId==='consignee'?[]:msGetValues('consignee');
+  const fsur=excludeId==='surcharge'?[]:msGetValues('surcharge');
+  const fpay=excludeId==='payment'?[]:msGetValues('payment');
   return CT.filter(r=>{
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
@@ -1502,6 +1512,55 @@ function getCTRows(){
       if(fsur.includes('missing')&&!fsur.includes('filled')&&hasSur) return false;
       if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
     }
+    if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
+    if(q){
+      const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
+               r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
+      if(!h.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function fillMultiSel(id, key, placeholder){
+  const menu=document.getElementById('menu-'+id); if(!menu) return;
+  const checkedVals=msGetValues(id); // reads JS state — survives DOM rebuild
+  // Use only rows passing all OTHER filters (cascading behaviour)
+  const sourceRows=getCTRowsExcept(id);
+  const vals=[...new Set(sourceRows.map(r=>r[key]).filter(Boolean))].sort();
+  menu.innerHTML=vals.map(v=>`<label><input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${checkedVals.includes(v)?'checked':''} onchange="msChange('${id}','${placeholder}')"> ${v}</label>`).join('');
+  // Re-sync any hardcoded menus that share this id (e.g. arrival, tracking)
+  _msSyncDOM(id);
+}
+// Close dropdowns when clicking outside
+document.addEventListener('click',function(e){ if(!e.target.closest('.ms-wrap')) document.querySelectorAll('.ms-menu.open').forEach(m=>m.classList.remove('open')); });
+
+function getCTRows(){
+  const q=(document.getElementById('f-search').value||'').toLowerCase();
+  const fbs=msGetValues('batch');
+  const fts=msGetValues('trucker');
+  const ftrs=msGetValues('tracking');
+  const fars=msGetValues('arrival');
+  const fbrs=msGetValues('broker');
+  const fcons=msGetValues('consignee');
+  const fsur=msGetValues('surcharge');
+  const fpay=msGetValues('payment');
+  return CT.filter(r=>{
+    if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
+    if(fts.length&&!fts.includes(r['Trucker'])) return false;
+    if(fcons.length&&!fcons.includes(r['Consignee']||'')) return false;
+    if(ftrs.length&&!ftrs.includes(r['Tracking'])) return false;
+    if(fars.length){
+      const miss=fars.includes('missing'), fill=fars.includes('filled');
+      if(miss&&!fill&&r['Actual Arrival']) return false;
+      if(fill&&!miss&&!r['Actual Arrival']) return false;
+    }
+    if(fbrs.length&&!fbrs.includes(r['Broker']||'')) return false;
+    if(fsur.length){
+      const hasSur=!!(r['Surcharge']&&String(r['Surcharge']).trim()!=='');
+      if(fsur.includes('missing')&&!fsur.includes('filled')&&hasSur) return false;
+      if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
+    }
+    if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
     if(q){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
                r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
@@ -1525,6 +1584,7 @@ function resetFilters(){
   msClear('broker','All Brokers');
   msClear('consignee','All Consignees');
   msClear('surcharge','All');
+  msClear('payment','All');
   renderCT();
 }
 
@@ -1681,6 +1741,19 @@ function renderCT(){
             <option ${sv==='unloading'?'selected':''}>unloading</option>
             <option ${sv==='ATA delayed'?'selected':''}>ATA delayed</option>
             <option ${sv==='other'?'selected':''}>other</option>
+          </select></div>`;
+        })()}
+      </td>
+      <td data-id="${r._id}" data-col="Payment Status">
+        ${(()=>{
+          const pv=r['Payment Status']||'';
+          const badge=pv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:pv==='Invoice received'?`<span class="ps-received">Invoice Received</span>`:pv==='Submitted'?`<span class="ps-submitted">Submitted</span>`:'<span style="color:#ccc">—</span>';
+          return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
+          <div class="cell-edit"><select onblur="commitEditSelect(this,'Payment Status',${r._id})" onchange="commitEditSelect(this,'Payment Status',${r._id})">
+            <option value="" ${!pv?'selected':''}>—</option>
+            <option value="Pending invoice" ${pv==='Pending invoice'?'selected':''}>Pending invoice</option>
+            <option value="Invoice received" ${pv==='Invoice received'?'selected':''}>Invoice received</option>
+            <option value="Submitted" ${pv==='Submitted'?'selected':''}>Submitted</option>
           </select></div>`;
         })()}
       </td>
@@ -1919,6 +1992,7 @@ function openAdd(){
   ['f_no','f_bl','f_batch','f_con','f_truck','f_eta_mala','f_eta','f_slot','f_arr','f_dl','f_ref','f_rmk','f_price','f_price_t1','f_surcharge']
     .forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_surcharge_reason').value='';
+  document.getElementById('f_pay_status').value='';
   document.getElementById('f_broker').value='';
   document.getElementById('f_track').value='None';
   document.getElementById('f_cmr').checked=false;
@@ -1945,6 +2019,7 @@ function openEdit(id){
   document.getElementById('f_price_t1').value       =r['Price T1']||'';
   document.getElementById('f_surcharge').value      =r['Surcharge']||'';
   document.getElementById('f_surcharge_reason').value=r['Surcharge Reason']||'';
+  document.getElementById('f_pay_status').value      =r['Payment Status']||'';
   document.getElementById('f_rmk').value            =r['Remark']||'';
   document.getElementById('f_cmr').checked=(r['CMR']==='✅');
   refreshDLs();
@@ -1958,7 +2033,7 @@ function saveRow(){
     'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Tracking':g('f_track'),
     'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'Scheduled Slot':g('f_slot'),'Actual Arrival':g('f_arr'),
     'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
-    'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Remark':g('f_rmk'),
+    'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
   if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0) CT[i]={...CT[i],...u}; }
@@ -2018,7 +2093,7 @@ function saveBulk(){
   const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),
     'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'Scheduled Slot':g('b_slot'),
     'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
-    'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Broker':'','Remark':''};
+    'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','Broker':'','Remark':''};
   pairs.forEach(p=>CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,_id:nextId++}));
   saveData(); closeBulk(); renderCT();
 }
