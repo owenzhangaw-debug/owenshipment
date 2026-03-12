@@ -788,6 +788,10 @@ td.editing .cell-edit{display:block}
         <div class="form-group"><label>Pickup Ref</label><input type="text" id="be_ref"/></div>
         <div class="form-group"><label>Price (€)</label><input type="number" min="0" step="0.01" id="be_price" placeholder="0.00"/></div>
         <div class="form-group"><label>Price T1 (€)</label><input type="number" min="0" step="0.01" id="be_price_t1" placeholder="0.00"/></div>
+        <div class="form-group"><label>Payment Status</label>
+          <select id="be_pay_status"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option><option value="Done">Done</option></select></div>
+        <div class="form-group"><label>T1 Payment Status</label>
+          <select id="be_t1_pay_status"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option><option value="Done">Done</option></select></div>
         <div class="form-group full"><label>Remark</label><input type="text" id="be_rmk"/></div>
       </div>
     </div>
@@ -2636,6 +2640,8 @@ function openBulkEdit(){
   document.getElementById('be_broker').value='';
   document.getElementById('be_track').value='';
   document.getElementById('be_vstatus').value='';
+  document.getElementById('be_pay_status').value='';
+  document.getElementById('be_t1_pay_status').value='';
   document.getElementById('be-ct-badge').textContent=ctSel.size;
   document.getElementById('be-vt-badge').textContent=vtSel.size;
   document.getElementById('be-ok').style.display='none';
@@ -2664,10 +2670,14 @@ function applyBulkEdit(){
       'Pickup Ref':g('be_ref'),'Price':g('be_price'),'Price T1':g('be_price_t1'),'Remark':g('be_rmk'),'Broker':g('be_broker')
     };
     const tracking=g('be_track');
+    const payStatus=g('be_pay_status');
+    const t1PayStatus=g('be_t1_pay_status');
     CT.forEach(r=>{
       if(!ctSel.has(r._id)) return;
       Object.entries(fields).forEach(([k,v])=>{ if(v) r[k]=v; });
       if(tracking) r['Tracking']=tracking;
+      if(payStatus) r['Payment Status']=payStatus;
+      if(t1PayStatus) r['T1 Payment Status']=t1PayStatus;
       ctCount++;
     });
     saveData();
