@@ -337,6 +337,32 @@ td.editing .cell-edit{display:block}
   background:#f8f9ff;border:1px solid var(--border);border-radius:7px;padding:8px 12px}
 
 /* ═══════════════════════════════════════════════════
+   DASHBOARD SPLIT LAYOUT
+   ═══════════════════════════════════════════════════ */
+.dash-split{display:grid;grid-template-columns:1.55fr 1fr;gap:20px;align-items:start}
+/* Critical: prevent children from overflowing their grid column */
+.dash-col{display:flex;flex-direction:column;gap:0;min-width:0;overflow:hidden}
+.dash-col .charts-row{min-width:0}
+.dash-col .chart-card{min-width:0;overflow:hidden}
+.dash-col-hdr{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;
+  padding:7px 12px;border-radius:8px 8px 0 0;margin-bottom:12px;
+  display:flex;align-items:center;gap:6px}
+.dash-col-hdr-ct{background:#EEF4FF;color:#1B3A6B;border-bottom:3px solid #1B3A6B}
+.dash-col-hdr-vt{background:#F3E5F5;color:#6a1b9a;border-bottom:3px solid #7B1FA2}
+.kpi-row-ct{grid-template-columns:repeat(4,1fr);margin-bottom:12px}
+.kpi-row-vt{grid-template-columns:1fr 1fr;margin-bottom:12px}
+.vt-right-card{margin-bottom:12px}
+/* Mid-size breakpoint: narrower than ~1280px → stack inner chart pairs to 1 column */
+@media (max-width:1280px){
+  .dash-split{grid-template-columns:1.3fr 1fr}
+  .dash-col .charts-row{grid-template-columns:1fr !important}
+  .kpi-row-ct{grid-template-columns:repeat(2,1fr) !important}
+}
+@media (max-width:1024px){
+  .dash-split{grid-template-columns:1fr 1fr}
+}
+
+/* ═══════════════════════════════════════════════════
    RESPONSIVE — tablet & phone (portrait + landscape)
    ═══════════════════════════════════════════════════ */
 @media (max-width:768px){
@@ -360,6 +386,8 @@ td.editing .cell-edit{display:block}
 
   /* ── Charts — single column ── */
   .charts-row{grid-template-columns:1fr !important;gap:10px;margin-bottom:12px}
+  .dash-split{grid-template-columns:1fr !important}
+  .kpi-row-ct,.kpi-row-vt{grid-template-columns:1fr 1fr !important}
   .chart-wrap{height:180px}
 
   /* ── Toolbar ── */
@@ -463,157 +491,186 @@ td.editing .cell-edit{display:block}
 <!-- ══ DASHBOARD ══ -->
 <div id="page-dashboard" class="page active">
   <div id="smart-panel" class="smart-panel"></div>
-  <div class="kpi-row">
-    <div class="kpi" onclick="showPage('containers')">
-      <div class="kl">Total Containers</div><div class="kv" id="kv-total">—</div><div class="ks">all batches</div>
-    </div>
-    <div class="kpi k-arr" onclick="gotoFilter('Tracking','Arrived')">
-      <div class="kl">Arrived</div><div class="kv" id="kv-arr">—</div><div class="ks">tracking = Arrived</div>
-    </div>
-    <div class="kpi k-t1" onclick="gotoFilter('Tracking','T1')">
-      <div class="kl">T1 (In Transit)</div><div class="kv" id="kv-t1">—</div><div class="ks">tracking = T1</div>
-    </div>
-    <div class="kpi k-hi" onclick="gotoFilter('_missing_arrival','')">
-      <div class="kl">OTW</div><div class="kv" id="kv-hi">—</div><div class="ks">arrival not filled</div>
-    </div>
-    <div class="kpi" style="border-color:#7B1FA2;cursor:pointer" onclick="showPage('vessels')">
-      <div class="kl">Vessels</div><div class="kv" id="kv-vessels" style="color:#6a1b9a">—</div><div class="ks">total bookings</div>
-    </div>
-  </div>
 
-  <div class="charts-row">
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Containers Delivered by Month (Actual Arrival)<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap"><canvas id="monthly-chart"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Containers by Batch<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap"><canvas id="batch-chart"></canvas></div>
-    </div>
-  </div>
+  <div class="dash-split">
 
+    <!-- ════ LEFT: CONTAINER SECTION ════ -->
+    <div class="dash-col">
+      <div class="dash-col-hdr dash-col-hdr-ct">📦 Containers</div>
 
-  <!-- Analytics row 3: Slot–ETA -->
-  <div class="charts-row" style="margin-top:0">
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Slot–ETA Lead Time Distribution (days)<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap"><canvas id="slot-eta-dist-chart"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Avg Slot–ETA Lead Time by Batch (days)<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap"><canvas id="slot-eta-batch-chart"></canvas></div>
-    </div>
-  </div>
-
-  <!-- Analytics row 3b: Slot–ETA by Trucker -->
-  <div class="charts-row" style="margin-top:0">
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Avg Slot–ETA Lead Time by Trucker (days)<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap"><canvas id="slot-eta-trucker-chart"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Slot–ETA by Trucker &amp; Batch (days)<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap" style="height:260px"><canvas id="slot-eta-trucker-batch-chart"></canvas></div>
-    </div>
-  </div>
-
-  <!-- Analytics row 4: Price comparison -->
-  <div class="charts-row" style="margin-top:0">
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Avg Price vs Avg Price T1 by Trucker (€)<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap"><canvas id="price-trucker-avg-chart"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Total Freight Cost by Trucker — Price vs Price T1 (€)<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap"><canvas id="price-trucker-total-chart"></canvas></div>
-    </div>
-  </div>
-
-  <!-- Analytics row 5: Containers by Consignee -->
-  <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-    <div class="chart-card">
-      <h3 onclick="toggleChart(this)">Total Containers by Consignee<span class="ch-toggle">▼</span></h3>
-      <div class="chart-wrap" style="height:260px"><canvas id="consignee-chart"></canvas></div>
-    </div>
-  </div>
-
-  <!-- Surcharge Summary -->
-  <div id="surcharge-summary-row" class="charts-row" style="margin-top:0;display:none">
-    <div class="chart-card" style="padding:16px 18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <h3 style="margin:0">💸 Surcharge Summary</h3>
-        <span id="surcharge-total-badge" style="font-size:12px;font-weight:700;color:#880E4F;background:#FCE4EC;border-radius:8px;padding:3px 10px"></span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Batch</div>
-          <div id="surcharge-by-batch"></div>
+      <!-- Container KPIs -->
+      <div class="kpi-row kpi-row-ct">
+        <div class="kpi" onclick="showPage('containers')">
+          <div class="kl">Total</div><div class="kv" id="kv-total">—</div><div class="ks">all batches</div>
         </div>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Reason</div>
-          <div id="surcharge-by-reason"></div>
+        <div class="kpi k-arr" onclick="gotoFilter('Tracking','Arrived')">
+          <div class="kl">Arrived</div><div class="kv" id="kv-arr">—</div><div class="ks">tracking = Arrived</div>
+        </div>
+        <div class="kpi k-t1" onclick="gotoFilter('Tracking','T1')">
+          <div class="kl">T1 Transit</div><div class="kv" id="kv-t1">—</div><div class="ks">tracking = T1</div>
+        </div>
+        <div class="kpi k-hi" onclick="gotoFilter('_missing_arrival','')">
+          <div class="kl">OTW</div><div class="kv" id="kv-hi">—</div><div class="ks">arrival not filled</div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Undelivered by Batch -->
-  <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-    <div class="chart-card" style="padding:16px 18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <h3 style="margin:0">🚚 Undelivered Containers by Batch</h3>
-        <span id="undelivered-total-badge" style="font-size:12px;font-weight:700;color:#C62828;background:#FFEBEE;border-radius:8px;padding:3px 10px"></span>
+      <!-- Monthly + By Batch -->
+      <div class="charts-row" style="margin-top:0">
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Delivered by Month<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap"><canvas id="monthly-chart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Containers by Batch<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap"><canvas id="batch-chart"></canvas></div>
+        </div>
       </div>
-      <div id="undelivered-batch" style="overflow-x:auto"></div>
-    </div>
-  </div>
 
-  <!-- Unpaid by Batch -->
-  <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-    <div class="chart-card" style="padding:16px 18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <h3 style="margin:0">💳 Unpaid by Batch</h3>
-        <span id="unpaid-total-badge" style="font-size:12px;font-weight:700;color:#856404;background:#fff3cd;border-radius:8px;padding:3px 10px"></span>
+      <!-- Slot–ETA -->
+      <div class="charts-row" style="margin-top:0">
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Slot–ETA Distribution (days)<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap"><canvas id="slot-eta-dist-chart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Avg Slot–ETA by Batch<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap"><canvas id="slot-eta-batch-chart"></canvas></div>
+        </div>
       </div>
-      <div id="unpaid-batch" style="overflow-x:auto"></div>
-    </div>
-  </div>
 
-  <!-- VT Alerts: Port Cut-Off / VGM / Custom -->
-  <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr 1fr">
-    <div class="chart-card" style="padding:14px 16px">
-      <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-        <span style="font-size:16px">⚠️</span> Port Cut-Off Alert
-        <span id="cutoff-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
-      </h3>
-      <div id="cutoff-alert-list" style="font-size:12px"></div>
-    </div>
-    <div class="chart-card" style="padding:14px 16px">
-      <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-        <span style="font-size:16px">📋</span> VGM Not Filed
-        <span id="vgm-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
-      </h3>
-      <div id="vgm-alert-list" style="font-size:12px"></div>
-    </div>
-    <div class="chart-card" style="padding:14px 16px">
-      <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-        <span style="font-size:16px">📦</span> Custom Not Filed
-        <span id="custom-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
-      </h3>
-      <div id="custom-alert-list" style="font-size:12px"></div>
-    </div>
-  </div>
-
-  <!-- Mala Pipeline -->
-  <div id="mala-pipeline-row" class="charts-row" style="margin-top:0;grid-template-columns:1fr;display:none">
-    <div class="chart-card" style="padding:16px 18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <h3 style="margin:0">📍 Mala Pipeline — Projected Hub Arrivals</h3>
-        <span style="font-size:11px;color:var(--muted)">ETA in Mala → Hub (+5 days) → Slot (same day)</span>
+      <!-- Slot–ETA by Trucker -->
+      <div class="charts-row" style="margin-top:0">
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Avg Slot–ETA by Trucker (days)<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap"><canvas id="slot-eta-trucker-chart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Slot–ETA by Trucker &amp; Batch<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap" style="height:260px"><canvas id="slot-eta-trucker-batch-chart"></canvas></div>
+        </div>
       </div>
-      <div id="mala-pipeline" style="overflow-x:auto"></div>
-    </div>
-  </div>
+
+      <!-- Price comparison -->
+      <div class="charts-row" style="margin-top:0">
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Avg Price vs Price T1 by Trucker (€)<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap"><canvas id="price-trucker-avg-chart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Total Freight Cost by Trucker (€)<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap"><canvas id="price-trucker-total-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Consignee -->
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Total Containers by Consignee<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap" style="height:260px"><canvas id="consignee-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Surcharge Summary -->
+      <div id="surcharge-summary-row" class="charts-row" style="margin-top:0;display:none">
+        <div class="chart-card" style="padding:16px 18px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="margin:0">💸 Surcharge Summary</h3>
+            <span id="surcharge-total-badge" style="font-size:12px;font-weight:700;color:#880E4F;background:#FCE4EC;border-radius:8px;padding:3px 10px"></span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Batch</div>
+              <div id="surcharge-by-batch"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Reason</div>
+              <div id="surcharge-by-reason"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Undelivered by Batch -->
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+        <div class="chart-card" style="padding:16px 18px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="margin:0">🚚 Undelivered by Batch</h3>
+            <span id="undelivered-total-badge" style="font-size:12px;font-weight:700;color:#C62828;background:#FFEBEE;border-radius:8px;padding:3px 10px"></span>
+          </div>
+          <div id="undelivered-batch" style="overflow-x:auto"></div>
+        </div>
+      </div>
+
+      <!-- Unpaid by Batch -->
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+        <div class="chart-card" style="padding:16px 18px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="margin:0">💳 Unpaid by Batch</h3>
+            <span id="unpaid-total-badge" style="font-size:12px;font-weight:700;color:#856404;background:#fff3cd;border-radius:8px;padding:3px 10px"></span>
+          </div>
+          <div id="unpaid-batch" style="overflow-x:auto"></div>
+        </div>
+      </div>
+
+      <!-- Mala Pipeline -->
+      <div id="mala-pipeline-row" class="charts-row" style="margin-top:0;grid-template-columns:1fr;display:none">
+        <div class="chart-card" style="padding:16px 18px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="margin:0">📍 Mala Pipeline</h3>
+            <span style="font-size:11px;color:var(--muted)">ETA in Mala → Hub (+5d) → Slot</span>
+          </div>
+          <div id="mala-pipeline" style="overflow-x:auto"></div>
+        </div>
+      </div>
+    </div><!-- end dash-col LEFT -->
+
+    <!-- ════ RIGHT: VESSEL SECTION ════ -->
+    <div class="dash-col">
+      <div class="dash-col-hdr dash-col-hdr-vt">🚢 Vessels</div>
+
+      <!-- Vessel KPI -->
+      <div class="kpi-row kpi-row-vt">
+        <div class="kpi" style="border-color:#7B1FA2;cursor:pointer;flex:1" onclick="showPage('vessels')">
+          <div class="kl">Total Bookings</div>
+          <div class="kv" id="kv-vessels" style="color:#6a1b9a">—</div>
+          <div class="ks">click to view all</div>
+        </div>
+        <div class="kpi" id="kv-cutoff-soon-card" style="border-color:#e53935;cursor:pointer;flex:1" onclick="showPage('vessels')">
+          <div class="kl">Cut-Off ≤3d</div>
+          <div class="kv" id="kv-cutoff-soon" style="color:#c62828">—</div>
+          <div class="ks">needs attention</div>
+        </div>
+      </div>
+
+      <!-- Port Cut-Off Alert -->
+      <div class="chart-card vt-right-card" style="padding:14px 16px">
+        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:16px">⚠️</span> Port Cut-Off Alert
+          <span id="cutoff-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
+        </h3>
+        <div id="cutoff-alert-list" style="font-size:12px"></div>
+      </div>
+
+      <!-- VGM Not Filed -->
+      <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
+        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:16px">📋</span> VGM Not Filed
+          <span id="vgm-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
+        </h3>
+        <div id="vgm-alert-list" style="font-size:12px"></div>
+      </div>
+
+      <!-- Custom Not Filed -->
+      <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
+        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:16px">📦</span> Custom Not Filed
+          <span id="custom-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
+        </h3>
+        <div id="custom-alert-list" style="font-size:12px"></div>
+      </div>
+    </div><!-- end dash-col RIGHT -->
+
+  </div><!-- end dash-split -->
 </div>
 
 <!-- ══ CONTAINERS ══ -->
@@ -1758,6 +1815,10 @@ function renderDashboard(){
   coBadge.textContent=cutoffRows.length?cutoffRows.length+' vessel'+(cutoffRows.length>1?'s':''):'All clear';
   coBadge.style.background=cutoffRows.length?'#fdecea':'#e8f5e9';
   coBadge.style.color=cutoffRows.length?'#c62828':'#2e7d32';
+  // Update the mini KPI card in vessel header row
+  const kvCutoff=document.getElementById('kv-cutoff-soon');
+  if(kvCutoff){ kvCutoff.textContent=cutoffRows.length||'0';
+    kvCutoff.style.color=cutoffRows.length?'#c62828':'#2e7d32'; }
   if(!cutoffRows.length){
     coEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No vessels with cut-off within 3 days</div>';
   } else {
