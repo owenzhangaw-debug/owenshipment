@@ -228,6 +228,42 @@ td.editing .cell-edit{display:block}
   border:none;border-radius:5px;font-size:12px;cursor:pointer;font-weight:600}
 .vt-cn-add button:hover{opacity:.85}
 .vt-cn-empty{font-size:12px;color:var(--muted);font-style:italic}
+/* Vessel history section */
+.vt-history-section{margin-top:14px;padding-top:12px;border-top:1px dashed #c5d5e8}
+.vt-history-label{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:10px;opacity:.65}
+.vt-hist-chain{display:flex;flex-wrap:wrap;align-items:flex-start;gap:0;margin-bottom:10px}
+/* Each card */
+.vt-hist-entry{display:flex;flex-direction:column;background:#fff;
+  border:1.5px solid #ffcc80;border-radius:10px;padding:7px 11px 6px;
+  box-shadow:0 2px 6px rgba(230,81,0,.08);min-width:120px;max-width:200px;
+  position:relative;font-size:12px}
+.vt-hist-date{color:#e65100;font-weight:800;font-size:11px;margin-bottom:2px;letter-spacing:.3px}
+.vt-hist-vessel{color:#222;font-weight:700;font-size:13px;margin-bottom:2px;line-height:1.3}
+.vt-hist-remark{color:#777;font-size:11px;font-style:italic;margin-top:1px;word-break:break-word}
+.vt-hist-rm{position:absolute;top:4px;right:5px;background:none;border:none;cursor:pointer;
+  color:#ccc;font-size:11px;line-height:1;padding:0}
+.vt-hist-rm:hover{color:#e53935}
+/* Arrow connector between cards */
+.vt-hist-arrow-wrap{display:flex;align-items:center;padding:0 6px;align-self:center;flex-shrink:0}
+.vt-hist-arrow-wrap svg{display:block}
+.vt-hist-empty{font-size:12px;color:var(--muted);font-style:italic;margin-bottom:8px}
+.vt-hist-add{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px}
+.vt-hist-add input{height:28px;padding:0 9px;border:1px solid var(--border);border-radius:5px;font-size:12px}
+.vt-hist-add input.vhi-date{width:105px}
+.vt-hist-add input.vhi-vessel{width:140px}
+.vt-hist-add input.vhi-remark{width:150px}
+.vt-hist-add button{height:28px;padding:0 13px;background:#e65100;color:#fff;
+  border:none;border-radius:5px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap}
+.vt-hist-add button:hover{opacity:.85}
+/* Dashboard alert cards */
+.vt-alert-card{border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:4px}
+.vt-alert-row{display:flex;align-items:center;gap:8px;padding:5px 0;
+  border-bottom:1px solid rgba(0,0,0,.05);cursor:pointer}
+.vt-alert-row:last-child{border-bottom:none}
+.vt-alert-row:hover{background:rgba(0,0,0,.03);border-radius:5px}
+.vt-alert-badge{display:inline-block;min-width:22px;text-align:center;
+  border-radius:10px;padding:2px 7px;font-weight:800;font-size:13px}
 /* Search match highlight */
 .vt-search-highlight td{box-shadow:inset 0 0 0 2px #F9A825 !important}
 /* Vessel search bar */
@@ -531,6 +567,31 @@ td.editing .cell-edit{display:block}
     </div>
   </div>
 
+  <!-- VT Alerts: Port Cut-Off / VGM / Custom -->
+  <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr 1fr">
+    <div class="chart-card" style="padding:14px 16px">
+      <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:16px">⚠️</span> Port Cut-Off Alert
+        <span id="cutoff-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
+      </h3>
+      <div id="cutoff-alert-list" style="font-size:12px"></div>
+    </div>
+    <div class="chart-card" style="padding:14px 16px">
+      <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:16px">📋</span> VGM Not Filed
+        <span id="vgm-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
+      </h3>
+      <div id="vgm-alert-list" style="font-size:12px"></div>
+    </div>
+    <div class="chart-card" style="padding:14px 16px">
+      <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:16px">📦</span> Custom Not Filed
+        <span id="custom-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
+      </h3>
+      <div id="custom-alert-list" style="font-size:12px"></div>
+    </div>
+  </div>
+
   <!-- Mala Pipeline -->
   <div id="mala-pipeline-row" class="charts-row" style="margin-top:0;grid-template-columns:1fr;display:none">
     <div class="chart-card" style="padding:16px 18px">
@@ -670,7 +731,9 @@ td.editing .cell-edit{display:block}
           <th class="no-sort" style="width:32px"></th>
           <th>Port</th><th>Carrier</th><th>Booking / BC No.</th><th>Container Qty</th>
           <th>Vessel Name</th><th>ETS (Departure)</th><th>Port Cut-Off</th>
-          <th>Barge Date</th><th>Days to Cut-Off</th><th>Delay (days)</th>
+          <th>Barge Date</th><th>Days to Cut-Off</th>
+          <th class="no-sort" style="text-align:center">VGM</th>
+          <th class="no-sort" style="text-align:center">Custom</th>
           <th>Status</th><th>Remark</th><th class="no-sort"></th>
           <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="vt-sel-all" onchange="vtSelAll(this.checked)" title="Select all" style="width:14px;height:14px;cursor:pointer"/></th>
         </tr></thead>
@@ -1590,6 +1653,58 @@ function renderDashboard(){
     </table>`;
   }
 
+  // ── VT Alerts: Port Cut-Off / VGM / Custom ────────────────────
+  const vtToday=new Date(); vtToday.setHours(0,0,0,0);
+  const NON_DEP=['Scheduled','Cut-Off Soon','Cut-Off Passed','TBD'];
+  const activeVT=VT.filter(r=>NON_DEP.includes(r['Status'])||!r['Status']);
+
+  // Port Cut-Off within 3 days
+  const cutoffRows=activeVT.map(r=>{
+    const pc=parseDate(r['Port Cut-Off']);
+    if(!pc) return null;
+    const diff=Math.round((pc-vtToday)/864e5);
+    return diff<=3?{r,diff,pc}:null;
+  }).filter(Boolean).sort((a,b)=>a.diff-b.diff);
+  const coEl=document.getElementById('cutoff-alert-list');
+  const coBadge=document.getElementById('cutoff-alert-badge');
+  coBadge.textContent=cutoffRows.length?cutoffRows.length+' vessel'+(cutoffRows.length>1?'s':''):'All clear';
+  coBadge.style.background=cutoffRows.length?'#fdecea':'#e8f5e9';
+  coBadge.style.color=cutoffRows.length?'#c62828':'#2e7d32';
+  if(!cutoffRows.length){
+    coEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No vessels with cut-off within 3 days</div>';
+  } else {
+    coEl.innerHTML=cutoffRows.map(({r,diff})=>{
+      const diffTxt=diff<0?`<span style="color:#c62828;font-weight:700">${Math.abs(diff)}d overdue</span>`:diff===0?'<span style="color:#e65100;font-weight:700">TODAY</span>':`<span style="color:#e65100;font-weight:700">${diff}d left</span>`;
+      return `<div class="vt-alert-row"><span>${diffTxt}</span><span style="flex:1;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted)">${r['Port Cut-Off']||''}</span></div>`;
+    }).join('');
+  }
+
+  // VGM not filed (active vessels where VGM is falsy)
+  const vgmRows=activeVT.filter(r=>!r['VGM']);
+  const vgmEl=document.getElementById('vgm-alert-list');
+  const vgmBadge=document.getElementById('vgm-alert-badge');
+  vgmBadge.textContent=vgmRows.length?vgmRows.length+' vessel'+(vgmRows.length>1?'s':''):'All filed';
+  vgmBadge.style.background=vgmRows.length?'#fdecea':'#e8f5e9';
+  vgmBadge.style.color=vgmRows.length?'#c62828':'#2e7d32';
+  if(!vgmRows.length){
+    vgmEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All active vessels have VGM filed</div>';
+  } else {
+    vgmEl.innerHTML=vgmRows.map(r=>`<div class="vt-alert-row"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
+  }
+
+  // Custom not filed
+  const customRows=activeVT.filter(r=>!r['Custom']);
+  const custEl=document.getElementById('custom-alert-list');
+  const custBadge=document.getElementById('custom-alert-badge');
+  custBadge.textContent=customRows.length?customRows.length+' vessel'+(customRows.length>1?'s':''):'All filed';
+  custBadge.style.background=customRows.length?'#fdecea':'#e8f5e9';
+  custBadge.style.color=customRows.length?'#c62828':'#2e7d32';
+  if(!customRows.length){
+    custEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All active vessels have Custom filed</div>';
+  } else {
+    custEl.innerHTML=customRows.map(r=>`<div class="vt-alert-row"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
+  }
+
   // ── Mala Pipeline ─────────────────────────────────────────────
   const malaRows=CT.filter(r=>r['ETA in Mala']&&r['Tracking']!=='Arrived')
     .map(r=>{
@@ -2156,7 +2271,7 @@ function commitVTSelect(sel, col, id){
 function openAddVessel(){
   const v={Port:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
     'ETS (Departure)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
-    'Delay (days)':'',Status:'Scheduled','Remark':'',containers:[],_id:vtNextId++};
+    Status:'Scheduled','Remark':'','VGM':false,'Custom':false,containers:[],vesselHistory:[],_id:vtNextId++};
   VT.push(v); saveVT(); renderVT(); renderDashboard();
 }
 function openDelVessel(id){
@@ -2166,7 +2281,7 @@ function openDelVessel(id){
 function renderVT(){
   document.getElementById('vt-count').textContent=VT.length+' vessels';
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','TBD'];
-  const TOTAL_COLS=15; // expand + 12 data + del + sel
+  const TOTAL_COLS=16; // expand + 13 data cols + del + sel
   document.getElementById('vt-body').innerHTML=VT.map(r=>{
     // Auto-calculate Days to Cut-Off = Port Cut-Off − Barge Date
     const _pc=parseDate(r['Port Cut-Off']), _bd=parseDate(r['Barge Date']);
@@ -2210,7 +2325,8 @@ function renderVT(){
       ${vtCell(r,'Port Cut-Off')}
       ${vtCell(r,'Barge Date')}
       <td style="padding:7px 10px;text-align:center;font-weight:700;color:${_daysColor};white-space:nowrap">${_daysDisp}</td>
-      ${vtCell(r,'Delay (days)')}
+      <td style="text-align:center;padding:6px"><input type="checkbox" title="VGM" ${r['VGM']?'checked':''} onchange="vtToggleFlag(${r._id},'VGM',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--blue)"/></td>
+      <td style="text-align:center;padding:6px"><input type="checkbox" title="Custom" ${r['Custom']?'checked':''} onchange="vtToggleFlag(${r._id},'Custom',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#8B4513"/></td>
       ${vtCell(r,'Status',{select:STATUS_OPTS})}
       ${vtCell(r,'Remark')}
       <td style="padding:4px 6px;text-align:center">
@@ -2228,6 +2344,37 @@ function renderVT(){
             onkeydown="if(event.key==='Enter'){vtAddContainer(${r._id});event.preventDefault();}"/>
           <button onclick="vtAddContainer(${r._id})">+ Add</button>
         </div>
+        ${(()=>{
+          const hist=Array.isArray(r.vesselHistory)?r.vesselHistory:[];
+          const arrow=`<div class="vt-hist-arrow-wrap"><svg width="28" height="18" viewBox="0 0 28 18"><line x1="0" y1="9" x2="20" y2="9" stroke="#ffaa55" stroke-width="2"/><polyline points="14,4 22,9 14,14" fill="none" stroke="#ffaa55" stroke-width="2" stroke-linejoin="round"/></svg></div>`;
+          let chainHtml='';
+          if(hist.length>0){
+            chainHtml='<div class="vt-hist-chain">';
+            hist.forEach((h,idx)=>{
+              chainHtml+=`<div class="vt-hist-entry">
+                <span class="vt-hist-date">${h.date||'—'}</span>
+                <span class="vt-hist-vessel">${h.vessel||'—'}</span>
+                ${h.remark?`<span class="vt-hist-remark">${h.remark}</span>`:''}
+                <button class="vt-hist-rm" onclick="vtRemoveVesselHistory(${r._id},${idx})" title="Remove">✕</button>
+              </div>`;
+              if(idx<hist.length-1) chainHtml+=arrow;
+            });
+            chainHtml+='</div>';
+          } else {
+            chainHtml='<div class="vt-hist-empty">No vessel change history yet</div>';
+          }
+          return `<div class="vt-history-section">
+            <div class="vt-history-label">🔄 Vessel Roll History</div>
+            ${chainHtml}
+            <div class="vt-hist-add">
+              <input id="vt-hist-date-${r._id}" class="vhi-date" type="text" placeholder="YYYY/MM/DD"/>
+              <input id="vt-hist-vessel-${r._id}" class="vhi-vessel" type="text" placeholder="Vessel Name"/>
+              <input id="vt-hist-remark-${r._id}" class="vhi-remark" type="text" placeholder="Remark (optional)"
+                onkeydown="if(event.key==='Enter'){vtAddVesselHistory(${r._id});event.preventDefault();}"/>
+              <button onclick="vtAddVesselHistory(${r._id})">+ Add Roll</button>
+            </div>
+          </div>`;
+        })()}
       </td>
     </tr>`;
   }).join('');
@@ -2259,6 +2406,36 @@ function vtRemoveContainer(id, cn){
   const i=VT.findIndex(r=>r._id===id); if(i<0) return;
   if(!Array.isArray(VT[i].containers)) return;
   VT[i].containers=VT[i].containers.filter(c=>c!==cn);
+  saveVT(); renderVT();
+}
+
+function vtToggleFlag(id, col, checked){
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  VT[i][col]=checked; saveVT();
+  // No full re-render needed — just update the checkbox state in DOM already done by browser
+}
+
+function vtAddVesselHistory(id){
+  const dateInp=document.getElementById('vt-hist-date-'+id);
+  const vesselInp=document.getElementById('vt-hist-vessel-'+id);
+  const remarkInp=document.getElementById('vt-hist-remark-'+id);
+  const date=(dateInp?dateInp.value:'').trim();
+  const vessel=(vesselInp?vesselInp.value:'').trim();
+  const remark=(remarkInp?remarkInp.value:'').trim();
+  if(!date&&!vessel) return;
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  if(!Array.isArray(VT[i].vesselHistory)) VT[i].vesselHistory=[];
+  VT[i].vesselHistory.push({date, vessel, remark});
+  saveVT(); renderVT();
+  // Re-focus the date input after re-render
+  const nd=document.getElementById('vt-hist-date-'+id);
+  if(nd) nd.focus();
+}
+
+function vtRemoveVesselHistory(id, idx){
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  if(!Array.isArray(VT[i].vesselHistory)) return;
+  VT[i].vesselHistory.splice(idx,1);
   saveVT(); renderVT();
 }
 
