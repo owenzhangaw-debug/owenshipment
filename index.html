@@ -884,6 +884,7 @@ td.editing .cell-edit{display:block}
         <div class="form-group"><label>Consignee</label><input type="text" id="be_con" list="dl-con"/></div>
         <div class="form-group"><label>Tracking</label>
           <select id="be_track"><option value="">— no change —</option><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
+        <div class="form-group"><label>ETA in Mala</label><input type="text" id="be_eta_mala" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>ETA at Hub</label><input type="text" id="be_eta" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>Actual Arrival</label><input type="text" id="be_arr" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>Deadline</label><input type="text" id="be_dl" placeholder="yyyy/mm/dd"/></div>
@@ -2735,7 +2736,7 @@ function updateSelBar(){
 
 // ── BULK EDIT ─────────────────────────────────────────────────────
 function openBulkEdit(){
-  ['be_batch','be_truck','be_con','be_eta','be_arr','be_dl','be_ref','be_price','be_price_t1','be_rmk','be_broker',
+  ['be_batch','be_truck','be_con','be_eta_mala','be_eta','be_arr','be_dl','be_ref','be_price','be_price_t1','be_rmk','be_broker',
    'be_port','be_carrier','be_ets','be_pco','be_notes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
@@ -2752,6 +2753,7 @@ function openBulkEdit(){
   if(ctSel.size) switchBETab('ct', document.querySelector('.be-tab'));
   else if(vtSel.size){ const tabs=document.querySelectorAll('.be-tab'); switchBETab('vt',tabs[1]); }
   refreshDLs();
+  ['be_eta_mala','be_eta','be_arr','be_dl'].forEach(id=>initFP(id,'date'));
   document.getElementById('be-overlay').classList.add('open');
 }
 function closeBE(){ document.getElementById('be-overlay').classList.remove('open'); }
@@ -2768,7 +2770,7 @@ function applyBulkEdit(){
   if(ctSel.size){
     const fields={
       'Batch / Train':g('be_batch'),'Trucker':g('be_truck'),'Consignee':g('be_con'),
-      'ETA at Hub':g('be_eta'),'Actual Arrival':g('be_arr'),'Deadline':g('be_dl'),
+      'ETA in Mala':g('be_eta_mala'),'ETA at Hub':g('be_eta'),'Actual Arrival':g('be_arr'),'Deadline':g('be_dl'),
       'Pickup Ref':g('be_ref'),'Price':g('be_price'),'Price T1':g('be_price_t1'),'Remark':g('be_rmk'),'Broker':g('be_broker')
     };
     const tracking=g('be_track');
