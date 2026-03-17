@@ -9,31 +9,40 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 :root{
-  --navy:#1F3864;--blue:#2E5FA3;--bg:#F4F6FA;--card:#fff;
-  --border:#DDE3EE;--text:#1a2340;--muted:#6b7a9a;--rad:10px;
-  --hi:#FFF9C4; /* highlight: arrival missing */
+  --navy:#004D4C;   /* Cathay Pacific green (dark) */
+  --blue:#004D4C;   /* Cathay Pacific green */
+  --bg:#F1F5F9;     /* slate-100 */
+  --card:#FFFFFF;
+  --border:#E2E8F0; /* slate-200 */
+  --text:#0F172A;
+  --muted:#64748B;  /* slate-500 */
+  --rad:12px;
+  --hi:#FFFBEB;     /* amber-50 */
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 16px rgba(0,0,0,.10);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px;-webkit-font-smoothing:antialiased}
 
-/* NAV TABS */
-header{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;
-  padding:0 24px;display:flex;align-items:stretch;justify-content:space-between;
-  box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.brand{font-size:16px;font-weight:700;padding:16px 0;white-space:nowrap}
+/* ── HEADER ── */
+header{background:#004D4C;color:#fff;
+  padding:0 28px;display:flex;align-items:stretch;justify-content:space-between;
+  box-shadow:0 1px 0 rgba(255,255,255,.06)}
+.brand{font-size:15px;font-weight:700;padding:16px 0;white-space:nowrap;letter-spacing:-.2px;color:#fff}
 nav{display:flex;gap:0}
-nav button{background:none;border:none;color:rgba(255,255,255,.7);
-  padding:0 20px;font-size:13px;font-weight:600;cursor:pointer;
-  border-bottom:3px solid transparent;transition:all .15s}
-nav button:hover{color:#fff}
-nav button.active{color:#fff;border-bottom-color:#fff}
-.hbtns{display:flex;align-items:center;gap:8px;padding:10px 0}
-.btn{padding:6px 13px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
-.btn-green{background:#43A047;color:#fff}
-.btn-blue{background:#1565C0;color:#fff}
-.btn-ghost{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35)}
-.btn:hover{opacity:.85}
+nav button{background:none;border:none;color:rgba(255,255,255,.5);
+  padding:0 18px;font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:.1px;
+  border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+nav button:hover{color:rgba(255,255,255,.85)}
+nav button.active{color:#fff;border-bottom-color:var(--blue)}
+.hbtns{display:flex;align-items:center;gap:6px;padding:10px 0}
+.btn{padding:6px 13px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.1px}
+.btn-green{background:#10B981;color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-ghost{background:rgba(255,255,255,.10);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.18)}
+.btn:hover{opacity:.85;transform:translateY(-1px)}
 
 main{padding:20px 24px;max-width:1800px;margin:0 auto}
 
@@ -43,272 +52,272 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 /* SMART INSIGHTS PANEL */
 /* SURCHARGE SUMMARY TABLE */
 .sur-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.sur-tbl th{background:var(--navy);color:#fff;padding:6px 10px;font-size:11px;font-weight:600;text-align:left}
-.sur-tbl td{padding:6px 10px;border-bottom:1px solid rgba(0,0,0,.05)}
-.sur-tbl tbody tr:hover td{background:#fef6f9}
-.sur-amt{font-weight:800;color:#880E4F}
+.sur-tbl th{background:#004D4C;color:#fff;padding:7px 10px;font-size:11px;font-weight:600;text-align:left;letter-spacing:.3px}
+.sur-tbl td{padding:7px 10px;border-bottom:1px solid var(--border)}
+.sur-tbl tbody tr:hover td{background:#F8FAFC}
+.sur-amt{font-weight:800;color:#DB2777}
 /* UNDELIVERED BATCH TABLE */
 .ud-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.ud-tbl th{background:var(--navy);color:#fff;padding:7px 12px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap}
-.ud-tbl td{padding:7px 12px;border-bottom:1px solid rgba(0,0,0,.05);vertical-align:middle}
-.ud-tbl tbody tr:hover td{background:#f0f4ff;cursor:pointer}
+.ud-tbl th{background:#004D4C;color:#fff;padding:7px 12px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap;letter-spacing:.3px}
+.ud-tbl td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.ud-tbl tbody tr:hover td{background:#F8FAFC;cursor:pointer}
 .ud-bar-wrap{display:flex;align-items:center;gap:8px;min-width:160px}
-.ud-bar-bg{flex:1;background:#eee;border-radius:4px;height:8px;overflow:hidden}
-.ud-bar-fill{height:8px;border-radius:4px;transition:width .3s}
-.ud-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap}
-.ud-pill-none{background:#E3F2FD;color:#1565C0}
-.ud-pill-t1{background:#FFF9C4;color:#F57F17}
-.ud-pill-arr{background:#E8F5E9;color:#2E7D32}
+.ud-bar-bg{flex:1;background:#E2E8F0;border-radius:4px;height:6px;overflow:hidden}
+.ud-bar-fill{height:6px;border-radius:4px;transition:width .3s}
+.ud-pill{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.ud-pill-none{background:#E0EFEF;color:#003A3A}
+.ud-pill-t1{background:#FFFBEB;color:#B45309}
+.ud-pill-arr{background:#ECFDF5;color:#059669}
 /* MALA PIPELINE TABLE */
 .mala-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.mala-tbl th{background:var(--navy);color:#fff;padding:6px 10px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap}
-.mala-tbl td{padding:6px 10px;border-bottom:1px solid rgba(0,0,0,.05);white-space:nowrap}
-.mala-tbl tr:hover td{background:#f0f4ff}
+.mala-tbl th{background:#004D4C;color:#fff;padding:7px 10px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap;letter-spacing:.3px}
+.mala-tbl td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.mala-tbl tr:hover td{background:#F8FAFC}
 .mala-arrow{color:var(--muted);padding:0 4px}
-.mala-date-mala{color:#1565C0;font-weight:600}
-.mala-date-hub{color:#2e7d32;font-weight:600}
-.mala-date-slot{color:#7B1FA2;font-weight:600}
-.mala-days-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px}
-.mala-days-ok{background:#E8F5E9;color:#2e7d32}
-.mala-days-soon{background:#FFF3E0;color:#E65100}
-.mala-days-overdue{background:#FFEBEE;color:#C62828}
+.mala-date-mala{color:#004D4C;font-weight:600}
+.mala-date-hub{color:#059669;font-weight:600}
+.mala-date-slot{color:#7C3AED;font-weight:600}
+.mala-days-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:4px}
+.mala-days-ok{background:#ECFDF5;color:#059669}
+.mala-days-soon{background:#FFFBEB;color:#D97706}
+.mala-days-overdue{background:#FEF2F2;color:#DC2626}
 .smart-panel{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
-.smart-card{display:flex;align-items:center;gap:10px;border-radius:9px;padding:10px 14px;
-  flex:1;min-width:170px;border-left:4px solid;cursor:pointer;transition:opacity .15s;
-  box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.smart-card:hover{opacity:.85}
-.smart-card .sc-icon{font-size:22px;line-height:1}
-.smart-card .sc-count{font-size:24px;font-weight:800;line-height:1}
+.smart-card{display:flex;align-items:center;gap:10px;border-radius:10px;padding:10px 14px;
+  flex:1;min-width:170px;border-left:3px solid;cursor:pointer;transition:transform .15s,box-shadow .15s;
+  background:var(--card);box-shadow:var(--shadow)}
+.smart-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.smart-card .sc-icon{font-size:20px;line-height:1}
+.smart-card .sc-count{font-size:22px;font-weight:800;line-height:1}
 .smart-card .sc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
-.smart-card .sc-desc{font-size:10px;color:#777;margin-top:3px}
-/* Hint badges shown in table cells when value is estimated/suggested */
+.smart-card .sc-desc{font-size:10px;color:var(--muted);margin-top:3px}
+/* Hint badges */
 .cell-hint{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;
-  border-radius:4px;padding:1px 6px;white-space:nowrap;cursor:pointer}
-.hint-slot{background:#E3F2FD;color:#1565C0;border:1px dashed #90CAF9}
-.hint-trucker{background:#F3E5F5;color:#7B1FA2;border:1px dashed #CE93D8}
-.hint-eta{background:#E8F5E9;color:#2E7D32;border:1px dashed #A5D6A7}
+  border-radius:5px;padding:1px 7px;white-space:nowrap;cursor:pointer}
+.hint-slot{background:#E0EFEF;color:#003A3A;border:1px dashed #4D9E9E}
+.as-batch-opt{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);
+  border-radius:8px;cursor:pointer;font-size:13px;transition:background .12s}
+.as-batch-opt:hover{background:#F8FAFC}
+.as-batch-opt input{width:15px;height:15px;cursor:pointer;accent-color:var(--blue);flex-shrink:0}
+.as-batch-lbl{font-weight:600;color:var(--text);flex:1}
+.as-batch-lbl em{font-style:normal;font-weight:400;color:var(--muted);margin-left:6px;font-size:11px}
+.slot-auto{display:inline-flex;align-items:center;gap:4px;background:#FFFBEB;color:#92400E;
+  border:1.5px dashed #F59E0B;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.slot-auto-icon{font-size:11px}
+.slot-manual{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--text)}
+.hint-trucker{background:#F5F3FF;color:#7C3AED;border:1px dashed #C4B5FD}
+.hint-eta{background:#ECFDF5;color:#059669;border:1px dashed #6EE7B7}
 /* KPI */
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:18px}
-.kpi{background:var(--card);border-radius:var(--rad);padding:13px 16px;
-  border-left:5px solid var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;transition:transform .12s}
-.kpi:hover{transform:translateY(-2px)}
-.kl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px}
-.kv{font-size:26px;font-weight:800}
-.ks{font-size:11px;color:var(--muted);margin-top:2px}
-.kpi.k-arr{border-color:#43A047}.kpi.k-arr .kv{color:#2e7d32}
-.kpi.k-t1 {border-color:#1976D2}.kpi.k-t1  .kv{color:#1565c0}
-.kpi.k-hi {border-color:#F9A825}.kpi.k-hi  .kv{color:#8a6800}
+.kpi{background:var(--card);border-radius:var(--rad);padding:14px 16px;
+  border-top:3px solid var(--blue);box-shadow:var(--shadow);cursor:pointer;transition:transform .12s,box-shadow .12s}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.kv{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.ks{font-size:11px;color:var(--muted);margin-top:3px}
+.kpi.k-arr{border-color:#10B981}.kpi.k-arr .kv{color:#059669}
+.kpi.k-t1 {border-color:#004D4C}.kpi.k-t1  .kv{color:#003A3A}
+.kpi.k-hi {border-color:#F59E0B}.kpi.k-hi  .kv{color:#B45309}
 
 /* CHART */
-.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.chart-card{background:var(--card);border-radius:var(--rad);padding:16px 18px;
-  box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.chart-card h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px;
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.chart-card{background:var(--card);border-radius:var(--rad);padding:16px 18px;box-shadow:var(--shadow)}
+.chart-card h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:14px;
   display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
 .chart-card h3:hover{color:var(--blue)}
-.chart-card h3 .ch-toggle{font-size:14px;transition:transform .2s;flex-shrink:0;margin-left:6px}
+.chart-card h3 .ch-toggle{font-size:13px;transition:transform .2s;flex-shrink:0;margin-left:6px}
 .chart-card.collapsed h3 .ch-toggle{transform:rotate(-90deg)}
 .chart-card.collapsed .chart-wrap,.chart-card.collapsed .chart-body{display:none}
 .chart-wrap{position:relative;height:220px}
 
 /* TOOLBAR */
-.toolbar{background:var(--card);border-radius:var(--rad);padding:11px 14px;
+.toolbar{background:var(--card);border-radius:var(--rad);padding:10px 14px;
   display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;
-  box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:14px}
+  box-shadow:var(--shadow);margin-bottom:14px}
 .fg{display:flex;flex-direction:column;gap:3px}
 .fg label{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600}
-select,input[type=text]{border:1px solid var(--border);border-radius:6px;padding:5px 9px;
-  font-size:12px;color:var(--text);background:#fff;outline:none;min-width:120px}
-select:focus,input:focus{border-color:var(--blue)}
+select,input[type=text]{border:1px solid var(--border);border-radius:7px;padding:5px 9px;
+  font-size:12px;color:var(--text);background:#fff;outline:none;min-width:120px;transition:border-color .15s}
+select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,77,76,.12)}
 .ml{margin-left:auto}
-.btn-reset{background:#e8eaf6;color:var(--navy);padding:6px 13px;border:none;
-  border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-reset{background:#E0EFEF;color:#003A3A;padding:6px 13px;border:none;
+  border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-reset:hover{background:#B8E3E3}
 
 /* MULTI-SELECT DROPDOWNS */
 .ms-wrap{position:relative;display:inline-flex;flex-direction:column;gap:3px}
 .ms-wrap .ms-label{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600}
-.ms-btn{height:32px;padding:4px 28px 4px 10px;border:1px solid var(--border);border-radius:6px;
+.ms-btn{height:32px;padding:4px 28px 4px 10px;border:1px solid var(--border);border-radius:7px;
   background:#fff;cursor:pointer;min-width:130px;text-align:left;font-size:12px;color:var(--text);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;font-family:inherit}
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;font-family:inherit;transition:border-color .15s}
 .ms-btn::after{content:'▾';position:absolute;right:8px;top:50%;transform:translateY(-50%);
   pointer-events:none;color:var(--muted);font-size:11px}
-.ms-btn.has-sel{border-color:var(--blue);background:#EEF3FF;font-weight:600;color:var(--blue)}
-.ms-menu{display:none;position:absolute;top:calc(100% + 3px);left:0;z-index:9999;
-  background:#fff;border:1px solid var(--border);border-radius:7px;padding:5px 0;
+.ms-btn.has-sel{border-color:var(--blue);background:#E0EFEF;font-weight:600;color:var(--blue)}
+.ms-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:9999;
+  background:#fff;border:1px solid var(--border);border-radius:10px;padding:5px 0;
   min-width:170px;max-height:260px;overflow-y:auto;
-  box-shadow:0 4px 16px rgba(0,0,0,.15)}
+  box-shadow:0 8px 24px rgba(0,0,0,.12)}
 .ms-menu.open{display:block}
 .ms-menu label{display:flex;align-items:center;gap:8px;padding:6px 13px;
   cursor:pointer;font-size:12px;white-space:nowrap;color:var(--text);user-select:none}
-.ms-menu label:hover{background:#f0f4ff}
+.ms-menu label:hover{background:#F8FAFC}
 .ms-menu label input[type=checkbox]{width:13px;height:13px;cursor:pointer;accent-color:var(--blue);flex-shrink:0}
 
 /* TABLE */
-.tbl-card{background:var(--card);border-radius:var(--rad);box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
-.tbl-top{padding:11px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
-.tbl-top h3{font-size:13px;font-weight:700}
-#ct-count,#vt-count{font-size:12px;color:var(--muted)}
+.tbl-card{background:var(--card);border-radius:var(--rad);box-shadow:var(--shadow);overflow:hidden}
+.tbl-top{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.tbl-top h3{font-size:13px;font-weight:700;letter-spacing:-.1px}
+#ct-count,#vt-count{font-size:11px;color:var(--muted);font-weight:500}
 .tbl-scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-thead tr{background:var(--navy);color:#fff}
-thead th{padding:8px 10px;text-align:left;font-weight:600;font-size:11px;
+thead tr{background:#004D4C;color:#fff}
+thead th{padding:9px 10px;text-align:left;font-weight:600;font-size:11px;
   letter-spacing:.4px;white-space:nowrap;user-select:none;cursor:pointer}
-thead th:hover{background:var(--blue)}
+thead th:hover{background:#005857}
 thead th.no-sort{cursor:default}
-thead th.no-sort:hover{background:var(--navy)}
-tbody tr{border-bottom:1px solid rgba(0,0,0,.04)}
+thead th.no-sort:hover{background:#004D4C}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:hover td{background:#F8FAFC}
 tbody tr.hi-missing{background:var(--hi)}
+tbody tr.hi-missing:hover td{background:#FFF3C4}
 tbody td{padding:0;vertical-align:middle;position:relative}
-/* ── Frozen columns ─────────────────────────────────────── */
-/* left: values are injected dynamically by updateFrozenOffsets() after render */
-th.fc-1,td.fc-1,th.fc-2,td.fc-2,th.fc-3,td.fc-3,th.fc-4,td.fc-4{
-  position:sticky;z-index:3}
-/* Headers need higher z-index than sticky-header-patch (z-index:10) */
-thead th.fc-1,thead th.fc-2,thead th.fc-3,thead th.fc-4{
-  z-index:20;top:0;background:var(--navy)}
-/* Last frozen column shadow injected by updateFrozenOffsets() */
-/* Solid backgrounds so scrolling rows don't show through */
+/* ── Frozen columns ── */
+th.fc-1,td.fc-1,th.fc-2,td.fc-2,th.fc-3,td.fc-3,th.fc-4,td.fc-4{position:sticky;z-index:3}
+thead th.fc-1,thead th.fc-2,thead th.fc-3,thead th.fc-4{z-index:20;top:0;background:#004D4C}
 td.fc-1,td.fc-2,td.fc-3,td.fc-4{background:#fff}
+tbody tr:hover td.fc-1,tbody tr:hover td.fc-2,tbody tr:hover td.fc-3,tbody tr:hover td.fc-4{background:#F8FAFC}
 tbody tr.hi-missing td.fc-1,tbody tr.hi-missing td.fc-2,
 tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
-/* Broker badge */
-.sr-unloading{background:#FFF3E0;color:#E65100;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.sr-ata{background:#FCE4EC;color:#880E4F;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.sr-other{background:#F3E5F5;color:#6A1B9A;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.ps-pending{background:#fff3cd;color:#856404;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.ps-received{background:#cce5ff;color:#004085;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.ps-submitted{background:#d4edda;color:#155724;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.ps-done{background:#343a40;color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.broker-wispex{display:inline-block;background:#E3F2FD;color:#1565C0;
-  border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700}
-.broker-self{display:inline-block;background:#E8F5E9;color:#2E7D32;
-  border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700}
+/* Badges */
+.sr-unloading{background:#FFF7ED;color:#C2410C;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.sr-ata{background:#FFF1F2;color:#BE123C;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.sr-other{background:#F5F3FF;color:#6D28D9;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-pending{background:#FFFBEB;color:#92400E;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-received{background:#E0EFEF;color:#003A3A;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-submitted{background:#ECFDF5;color:#065F46;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-done{background:#1E293B;color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.broker-wispex{display:inline-block;background:#E0EFEF;color:#003A3A;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.broker-self{display:inline-block;background:#ECFDF5;color:#065F46;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 
 /* INLINE EDIT CELLS */
 .cell-view{padding:7px 10px;min-height:32px;display:flex;align-items:center;white-space:nowrap;cursor:pointer;min-width:60px}
-.cell-view:hover{background:rgba(0,0,0,.04);border-radius:4px}
+.cell-view:hover{background:rgba(79,70,229,.06);border-radius:5px}
 .cell-edit{display:none;padding:2px 4px}
-.cell-edit input,.cell-edit select{width:100%;border:2px solid var(--blue);border-radius:4px;
+.cell-edit input,.cell-edit select{width:100%;border:2px solid var(--blue);border-radius:5px;
   padding:4px 6px;font-size:12px;background:#fff;outline:none}
 td.editing .cell-view{display:none}
 td.editing .cell-edit{display:block}
 
 /* Tracking badge */
-.track-t1{display:inline-block;padding:2px 9px;border-radius:10px;
-  background:#E3F2FD;color:#1565C0;font-weight:700;font-size:11px;border:1px solid #90CAF9}
-.track-arr{display:inline-block;padding:2px 9px;border-radius:10px;
-  background:#E8F5E9;color:#2e7d32;font-weight:700;font-size:11px;border:1px solid #A5D6A7}
-.track-none{display:inline-block;padding:2px 9px;border-radius:10px;
-  background:#F5F5F5;color:#757575;font-weight:700;font-size:11px;border:1px solid #BDBDBD}
+.track-t1{display:inline-block;padding:2px 9px;border-radius:20px;
+  background:#E0EFEF;color:#003A3A;font-weight:700;font-size:11px;border:1px solid #80BFBF}
+.track-arr{display:inline-block;padding:2px 9px;border-radius:20px;
+  background:#ECFDF5;color:#059669;font-weight:700;font-size:11px;border:1px solid #6EE7B7}
+.track-none{display:inline-block;padding:2px 9px;border-radius:20px;
+  background:#F8FAFC;color:#94A3B8;font-weight:600;font-size:11px;border:1px solid #E2E8F0}
 .cmr-cb{width:15px;height:15px;cursor:pointer}
-.btn-del-row{background:none;border:none;color:#bbb;font-size:14px;cursor:pointer;padding:2px 6px}
-.btn-del-row:hover{color:#e53935}
+.btn-del-row{background:none;border:none;color:#CBD5E1;font-size:14px;cursor:pointer;padding:2px 6px}
+.btn-del-row:hover{color:#EF4444}
 .no-data{padding:40px;text-align:center;color:var(--muted)}
 
 /* VESSEL TABLE */
-.v-dep{background:#C6EFCE}.v-soon{background:#FFEB9C}.v-late{background:#FFC7CE}
-/* Vessel expand rows */
+.v-dep{background:#D1FAE5}.v-soon{background:#FEF9C3}.v-late{background:#FEE2E2}
 .vt-expand-btn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--navy);
   width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;
-  border-radius:4px;transition:background .15s;user-select:none}
-.vt-expand-btn:hover{background:rgba(0,0,0,.09)}
+  border-radius:5px;transition:background .15s;user-select:none}
+.vt-expand-btn:hover{background:rgba(0,0,0,.07)}
 .vt-containers-row{display:none}
 .vt-containers-row.open{display:table-row}
-.vt-containers-cell{padding:8px 14px 12px 44px;background:#f4f8ff;border-bottom:2px solid #d0dcf0}
+.vt-containers-cell{padding:8px 14px 12px 44px;background:#F8FAFC;border-bottom:2px solid #E2E8F0}
 .vt-cn-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;min-height:24px}
-.vt-cn-tag{display:inline-flex;align-items:center;gap:3px;background:#dce8f8;color:var(--navy);
-  border-radius:10px;padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap;flex-wrap:wrap}
-.vt-cn-tag .vt-cn-rm{background:none;border:none;cursor:pointer;color:#7a9cc5;font-size:12px;
+.vt-cn-tag{display:inline-flex;align-items:center;gap:3px;background:#E0EFEF;color:#003A3A;
+  border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.vt-cn-tag .vt-cn-rm{background:none;border:none;cursor:pointer;color:#4D9E9E;font-size:12px;
   line-height:1;padding:0 0 0 3px;margin:0}
-.vt-cn-tag .vt-cn-rm:hover{color:#e53935}
+.vt-cn-tag .vt-cn-rm:hover{color:#EF4444}
 .vt-cn-add{display:flex;gap:6px;align-items:center}
-.vt-cn-add input{height:28px;padding:0 9px;border:1px solid var(--border);border-radius:5px;
+.vt-cn-add input{height:28px;padding:0 9px;border:1px solid var(--border);border-radius:6px;
   font-size:12px;width:200px;text-transform:uppercase}
 .vt-cn-add button{height:28px;padding:0 13px;background:var(--navy);color:#fff;
-  border:none;border-radius:5px;font-size:12px;cursor:pointer;font-weight:600}
+  border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600}
 .vt-cn-add button:hover{opacity:.85}
 .vt-cn-empty{font-size:12px;color:var(--muted);font-style:italic}
-/* Vessel history section */
-.vt-history-section{margin-top:14px;padding-top:12px;border-top:1px dashed #c5d5e8}
+/* Vessel history */
+.vt-history-section{margin-top:14px;padding-top:12px;border-top:1px dashed #CBD5E1}
 .vt-history-label{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;
   letter-spacing:.5px;margin-bottom:10px;opacity:.65}
 .vt-hist-chain{display:flex;flex-wrap:wrap;align-items:flex-start;gap:0;margin-bottom:10px}
-/* Each card */
 .vt-hist-entry{display:flex;flex-direction:column;background:#fff;
-  border:1.5px solid #ffcc80;border-radius:10px;padding:7px 11px 6px;
-  box-shadow:0 2px 6px rgba(230,81,0,.08);min-width:120px;max-width:200px;
+  border:1.5px solid #FDE68A;border-radius:10px;padding:7px 11px 6px;
+  box-shadow:0 2px 8px rgba(245,158,11,.1);min-width:120px;max-width:200px;
   position:relative;font-size:12px}
-.vt-hist-date{color:#e65100;font-weight:800;font-size:11px;margin-bottom:2px;letter-spacing:.3px}
-.vt-hist-vessel{color:#222;font-weight:700;font-size:13px;margin-bottom:2px;line-height:1.3}
-.vt-hist-remark{color:#777;font-size:11px;font-style:italic;margin-top:1px;word-break:break-word}
+.vt-hist-date{color:#D97706;font-weight:800;font-size:11px;margin-bottom:2px;letter-spacing:.3px}
+.vt-hist-vessel{color:#0F172A;font-weight:700;font-size:13px;margin-bottom:2px;line-height:1.3}
+.vt-hist-remark{color:#94A3B8;font-size:11px;font-style:italic;margin-top:1px;word-break:break-word}
 .vt-hist-rm{position:absolute;top:4px;right:5px;background:none;border:none;cursor:pointer;
-  color:#ccc;font-size:11px;line-height:1;padding:0}
-.vt-hist-rm:hover{color:#e53935}
-/* Arrow connector between cards */
+  color:#CBD5E1;font-size:11px;line-height:1;padding:0}
+.vt-hist-rm:hover{color:#EF4444}
 .vt-hist-arrow-wrap{display:flex;align-items:center;padding:0 6px;align-self:center;flex-shrink:0}
 .vt-hist-arrow-wrap svg{display:block}
 .vt-hist-empty{font-size:12px;color:var(--muted);font-style:italic;margin-bottom:8px}
 .vt-hist-add{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px}
-.vt-hist-add input{height:28px;padding:0 9px;border:1px solid var(--border);border-radius:5px;font-size:12px}
+.vt-hist-add input{height:28px;padding:0 9px;border:1px solid var(--border);border-radius:6px;font-size:12px}
 .vt-hist-add input.vhi-date{width:105px}
 .vt-hist-add input.vhi-vessel{width:140px}
 .vt-hist-add input.vhi-remark{width:150px}
-.vt-hist-add button{height:28px;padding:0 13px;background:#e65100;color:#fff;
-  border:none;border-radius:5px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap}
+.vt-hist-add button{height:28px;padding:0 13px;background:#D97706;color:#fff;
+  border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap}
 .vt-hist-add button:hover{opacity:.85}
 /* Dashboard alert cards */
 .vt-alert-card{border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:4px}
 .vt-alert-row{display:flex;align-items:center;gap:8px;padding:5px 0;
-  border-bottom:1px solid rgba(0,0,0,.05);cursor:pointer}
+  border-bottom:1px solid var(--border);cursor:pointer}
 .vt-alert-row:last-child{border-bottom:none}
-.vt-alert-row:hover{background:rgba(0,0,0,.03);border-radius:5px}
+.vt-alert-row:hover{background:rgba(0,0,0,.025);border-radius:6px}
 .vt-alert-badge{display:inline-block;min-width:22px;text-align:center;
-  border-radius:10px;padding:2px 7px;font-weight:800;font-size:13px}
-/* Search match highlight */
-.vt-search-highlight td{box-shadow:inset 0 0 0 2px #F9A825 !important}
-/* Vessel search bar */
+  border-radius:20px;padding:2px 7px;font-weight:800;font-size:13px}
+.vt-search-highlight td{box-shadow:inset 0 0 0 2px #F59E0B !important}
 .vt-toolbar{display:flex;align-items:center;gap:10px;padding:10px 14px;
-  background:var(--card);border-radius:var(--rad);margin-bottom:8px}
+  background:var(--card);border-radius:var(--rad);margin-bottom:10px;box-shadow:var(--shadow)}
 .vt-search-wrap{position:relative;display:flex;align-items:center;gap:6px}
 .vt-search-wrap input{height:32px;padding:0 10px 0 30px;border:1px solid var(--border);
-  border-radius:6px;font-size:13px;width:240px}
+  border-radius:7px;font-size:13px;width:240px}
 .vt-search-wrap .vt-si{position:absolute;left:8px;color:var(--muted);font-size:13px;pointer-events:none}
 .vt-search-msg{font-size:12px;color:var(--muted);margin-left:4px}
 
 /* OVERLAY */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;
-  align-items:center;justify-content:center}
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;
+  align-items:center;justify-content:center;backdrop-filter:blur(2px)}
 .overlay.open{display:flex}
-.modal{background:#fff;border-radius:14px;padding:24px;width:620px;max-width:95vw;
-  max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25)}
-.modal h2{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--navy)}
+.modal{background:#fff;border-radius:16px;padding:26px;width:620px;max-width:95vw;
+  max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h2{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--navy);letter-spacing:-.2px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-group{display:flex;flex-direction:column;gap:4px}
 .form-group.full{grid-column:1/-1}
 .form-group label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
-.form-group input,.form-group select{border:1px solid var(--border);border-radius:7px;
-  padding:8px 11px;font-size:13px;color:var(--text);outline:none}
-.form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+.form-group input,.form-group select{border:1px solid var(--border);border-radius:8px;
+  padding:8px 11px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,77,76,.12)}
 .modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;
   padding-top:14px;border-top:1px solid var(--border)}
 .mbtn-save{background:var(--navy);color:#fff;padding:8px 20px;border:none;
-  border-radius:7px;font-size:13px;font-weight:700;cursor:pointer}
-.mbtn-save:hover{background:var(--blue)}
-.mbtn-cancel{background:#f5f5f5;color:var(--text);padding:8px 16px;
-  border:1px solid var(--border);border-radius:7px;font-size:13px;font-weight:600;cursor:pointer}
+  border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
+.mbtn-save:hover{background:#1E293B}
+.mbtn-cancel{background:#F8FAFC;color:var(--text);padding:8px 16px;
+  border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
 .info-box{padding:9px 13px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
-.info-ok{background:#E8F5E9;color:#2e7d32;font-weight:600}
-.info-err{background:#FFEBEE;color:#c62828}
-.confirm-inner{background:#fff;border-radius:12px;padding:26px;width:340px;text-align:center;
-  box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.info-ok{background:#ECFDF5;color:#065F46;font-weight:600}
+.info-err{background:#FEF2F2;color:#DC2626}
+.confirm-inner{background:#fff;border-radius:14px;padding:28px;width:340px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .confirm-inner h3{font-size:15px;margin-bottom:8px;color:var(--navy)}
 .confirm-inner p{color:var(--muted);font-size:13px;margin-bottom:20px}
 .confirm-btns{display:flex;gap:10px;justify-content:center}
-.btn-del-c{background:#e53935;color:#fff;padding:8px 20px;border:none;
-  border-radius:7px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-del-c{background:#EF4444;color:#fff;padding:8px 20px;border:none;
+  border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
 /* CLOUD SYNC */
 .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
-.sync-dot.ok{background:#43A047}.sync-dot.err{background:#e53935}.sync-dot.off{background:#9e9e9e}.sync-dot.busy{background:#FB8C00}
+.sync-dot.ok{background:#10B981}.sync-dot.err{background:#EF4444}.sync-dot.off{background:#94A3B8}.sync-dot.busy{background:#F59E0B}
 .sync-status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;margin-top:6px}
 .sync-key-wrap{position:relative}
 .sync-key-wrap input{padding-right:32px;font-family:monospace;font-size:12px}
@@ -319,40 +328,38 @@ td.editing .cell-edit{display:block}
 /* SELECTION BAR */
 .sel-bar{display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
   background:var(--navy);color:#fff;border-radius:30px;padding:10px 20px;
-  box-shadow:0 4px 20px rgba(0,0,0,.35);z-index:100;align-items:center;gap:14px;
+  box-shadow:0 8px 32px rgba(15,23,42,.35);z-index:100;align-items:center;gap:14px;
   font-size:13px;font-weight:600;white-space:nowrap}
 .sel-bar.show{display:flex}
-.sel-bar-count{background:rgba(255,255,255,.2);border-radius:12px;padding:2px 10px;font-size:12px}
+.sel-bar-count{background:rgba(255,255,255,.15);border-radius:20px;padding:2px 10px;font-size:12px}
 .btn-be{background:#fff;color:var(--navy);border:none;border-radius:20px;
   padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer}
-.btn-be:hover{background:#e8eaf6}
-.btn-be-clear{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);
+.btn-be:hover{background:#F1F5F9}
+.btn-be-clear{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);
   border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
 .be-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
 .be-tab{background:none;border:none;padding:8px 18px;font-size:13px;font-weight:600;
   color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
-.be-tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+.be-tab.active{color:var(--navy);border-bottom-color:var(--blue)}
 .be-panel{display:none}.be-panel.active{display:block}
 .be-hint{font-size:11px;color:var(--muted);margin-bottom:14px;
-  background:#f8f9ff;border:1px solid var(--border);border-radius:7px;padding:8px 12px}
+  background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:8px 12px}
 
 /* ═══════════════════════════════════════════════════
    DASHBOARD SPLIT LAYOUT
    ═══════════════════════════════════════════════════ */
 .dash-split{display:grid;grid-template-columns:1.55fr 1fr;gap:20px;align-items:start}
-/* Critical: prevent children from overflowing their grid column */
 .dash-col{display:flex;flex-direction:column;gap:0;min-width:0;overflow:hidden}
 .dash-col .charts-row{min-width:0}
 .dash-col .chart-card{min-width:0;overflow:hidden}
-.dash-col-hdr{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;
-  padding:7px 12px;border-radius:8px 8px 0 0;margin-bottom:12px;
+.dash-col-hdr{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
+  padding:8px 14px;border-radius:9px 9px 0 0;margin-bottom:12px;
   display:flex;align-items:center;gap:6px}
-.dash-col-hdr-ct{background:#EEF4FF;color:#1B3A6B;border-bottom:3px solid #1B3A6B}
-.dash-col-hdr-vt{background:#F3E5F5;color:#6a1b9a;border-bottom:3px solid #7B1FA2}
+.dash-col-hdr-ct{background:#E0EFEF;color:#002E2E;border-bottom:2px solid #004D4C}
+.dash-col-hdr-vt{background:#F5F3FF;color:#5B21B6;border-bottom:2px solid #7C3AED}
 .kpi-row-ct{grid-template-columns:repeat(4,1fr);margin-bottom:12px}
 .kpi-row-vt{grid-template-columns:1fr 1fr;margin-bottom:12px}
 .vt-right-card{margin-bottom:12px}
-/* Mid-size breakpoint: narrower than ~1280px → stack inner chart pairs to 1 column */
 @media (max-width:1280px){
   .dash-split{grid-template-columns:1.3fr 1fr}
   .dash-col .charts-row{grid-template-columns:1fr !important}
@@ -466,6 +473,42 @@ td.editing .cell-edit{display:block}
   .chart-wrap{height:140px}
 }
 
+/* ── Slot Email Generator ── */
+.se-modal{width:860px;max-width:96vw}
+.se-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.se-toolbar label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.se-toolbar input[type=text]{min-width:180px;font-size:12px}
+.se-empty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+.se-batch-pill{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;
+  border:1.5px solid var(--border);background:#fff;color:var(--muted);transition:all .15s;white-space:nowrap}
+.se-batch-pill.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.se-batch-section{margin-bottom:16px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.se-batch-section-hdr{display:flex;align-items:center;gap:10px;padding:10px 16px;
+  background:#F0EFEF;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.se-batch-section-hdr:hover{background:#E8E8E8}
+.se-batch-section-name{font-size:12px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;flex:1}
+.se-batch-section-meta{font-size:11px;color:var(--muted)}
+.se-batch-toggle{font-size:13px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.se-batch-section.collapsed .se-batch-toggle{transform:rotate(-90deg)}
+.se-batch-section.collapsed .se-batch-content{display:none}
+.se-batch-content{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+.se-group{margin-bottom:20px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.se-group-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;
+  background:#F8FAFC;border-bottom:1px solid var(--border)}
+.se-group-title{font-size:13px;font-weight:700;color:var(--text)}
+.se-group-meta{font-size:11px;color:var(--muted)}
+.se-copy-btn{background:var(--blue);color:#fff;border:none;border-radius:7px;
+  padding:5px 13px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .15s}
+.se-copy-btn:hover{opacity:.85}
+.se-copy-btn.copied{background:#059669}
+.se-email-body{padding:14px 16px}
+.se-subject{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:6px}
+.se-subject span{font-weight:600;color:var(--text);text-transform:none;letter-spacing:0;font-size:12px;margin-left:6px}
+.se-pre{font-family:'Inter','Segoe UI',monospace;font-size:12.5px;line-height:1.7;
+  white-space:pre-wrap;color:var(--text);background:#FAFBFC;border:1px solid var(--border);
+  border-radius:8px;padding:14px 16px;margin-top:8px;user-select:all}
+
 /* ── Belgium Route Timeline (horizontal pipeline) ── */
 .bel-route-card{background:var(--card);border-radius:var(--rad);box-shadow:0 1px 6px rgba(0,0,0,.08);padding:20px 24px;margin-top:20px}
 .bel-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
@@ -513,6 +556,8 @@ td.editing .cell-edit{display:block}
     <button class="btn btn-blue"  onclick="openBulk()">⊞ Bulk</button>
     <button class="btn btn-ghost" onclick="openImport()">↑ Import</button>
     <button class="btn btn-ghost" onclick="exportCSV()">↓ Export</button>
+    <button class="btn btn-ghost" onclick="autoGenerateSlots()" title="Auto-assign time slots from ETA">⚡ Auto Slots</button>
+    <button class="btn btn-ghost" onclick="openSlotEmails()" title="Generate slot booking emails">📧 Slot Emails</button>
     <button class="btn btn-ghost" id="sync-btn" onclick="openSync()" title="Cloud Sync">☁️ Sync</button>
     <input type="file" id="xl-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)"/>
   </div>
@@ -871,6 +916,28 @@ td.editing .cell-edit{display:block}
 
 </main>
 
+<!-- SLOT EMAIL GENERATOR MODAL -->
+<div class="overlay" id="se-overlay" onclick="if(event.target===this)closeSlotEmails()">
+  <div class="modal se-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h2 style="margin:0">📧 Slot Booking Emails</h2>
+      <button class="mbtn-cancel" onclick="closeSlotEmails()" style="margin:0">✕ Close</button>
+    </div>
+    <div class="se-toolbar" style="margin-bottom:10px">
+      <label>Recipient</label>
+      <input type="text" id="se-recipient" placeholder="e.g. Warehouse Team" style="width:190px" oninput="buildSlotEmails()"/>
+      <label style="margin-left:8px">Sender</label>
+      <input type="text" id="se-sender" placeholder="e.g. Owen" style="width:120px" oninput="buildSlotEmails()"/>
+      <button class="se-copy-btn" id="se-copy-all-btn" onclick="copyAllSlotEmails()" style="margin-left:auto">⎘ Copy All</button>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Filter by Batch</div>
+      <div id="se-batch-pills" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+    <div id="se-body"></div>
+  </div>
+</div>
+
 <!-- ADD / EDIT MODAL -->
 <div class="overlay" id="modal-overlay">
   <div class="modal">
@@ -991,8 +1058,8 @@ td.editing .cell-edit{display:block}
           <span><strong style="color:#2E7D32">Add new only</strong><br><span style="font-size:11px;color:#558B2F">Skip containers already in the tracker (matched by Container No.) — existing data is untouched</span></span>
         </label>
         <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid var(--border);background:#fff">
-          <input type="radio" name="imp_mode" value="upsert" style="margin-top:2px;accent-color:#1565C0"/>
-          <span><strong style="color:#1565C0">Update existing + add new</strong><br><span style="font-size:11px;color:var(--muted)">Update fields for matching containers and add any new ones — no data is deleted</span></span>
+          <input type="radio" name="imp_mode" value="upsert" style="margin-top:2px;accent-color:#004D4C"/>
+          <span><strong style="color:#004D4C">Update existing + add new</strong><br><span style="font-size:11px;color:var(--muted)">Update fields for matching containers and add any new ones — no data is deleted</span></span>
         </label>
         <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid var(--border);background:#fff">
           <input type="radio" name="imp_mode" value="replace" style="margin-top:2px;accent-color:#C62828"/>
@@ -1354,7 +1421,7 @@ function renderSmartInsights(){
       action:'_filter_overdue'
     },
     d.needsSlot.length&&{
-      icon:'📅', count:d.needsSlot.length, color:'#1565C0', bg:'#E3F2FD',
+      icon:'📅', count:d.needsSlot.length, color:'#004D4C', bg:'#E0EFEF',
       label:'Slot Estimation', desc:`ETA set, avg lead ${d.avgLead}d → see table hints`,
       action:'_filter_needsslot'
     },
@@ -1472,7 +1539,7 @@ function renderDashboard(){
     data:{ labels:bKeys, datasets:[{
       label:'Containers',
       data:bKeys.map(k=>bCounts[k]),
-      backgroundColor:'#1976D2',borderRadius:4
+      backgroundColor:'#004D4C',borderRadius:4
     }]},
     options:{ responsive:true,maintainAspectRatio:false,indexAxis:'y',
       plugins:{legend:{display:false}},
@@ -1536,7 +1603,7 @@ function renderDashboard(){
       datasets:[
         { label:'Avg Price (€)',
           data:ptKeys.map(k=>priceTruckers[k].pCount?+(priceTruckers[k].pSum/priceTruckers[k].pCount).toFixed(0):null),
-          backgroundColor:'#1976D2', borderRadius:4 },
+          backgroundColor:'#004D4C', borderRadius:4 },
         { label:'Avg Price T1 (€)',
           data:ptKeys.map(k=>priceTruckers[k].p1Count?+(priceTruckers[k].p1Sum/priceTruckers[k].p1Count).toFixed(0):null),
           backgroundColor:'#F9A825', borderRadius:4 }
@@ -1562,7 +1629,7 @@ function renderDashboard(){
       datasets:[
         { label:'Total Price (€)',
           data:ptKeys.map(k=>priceTruckers[k].pCount?+priceTruckers[k].pSum.toFixed(0):null),
-          backgroundColor:'#1976D2', borderRadius:4 },
+          backgroundColor:'#004D4C', borderRadius:4 },
         { label:'Total Price T1 (€)',
           data:ptKeys.map(k=>priceTruckers[k].p1Count?+priceTruckers[k].p1Sum.toFixed(0):null),
           backgroundColor:'#F9A825', borderRadius:4 }
@@ -1647,7 +1714,7 @@ function renderDashboard(){
 
   // Per-trucker × batch grouped bars
   const allBatchesForSE=[...new Set(slotEtaFull.map(x=>x.batch))].sort();
-  const truckerBatchPalette=['#1976D2','#43A047','#F9A825','#e53935','#7B1FA2','#00838F','#E64A19','#5D4037'];
+  const truckerBatchPalette=['#004D4C','#43A047','#F9A825','#e53935','#7B1FA2','#00838F','#E64A19','#5D4037'];
   const seTruckerBatchDs=seTruckerKeys.map((trucker,ti)=>{
     const data=allBatchesForSE.map(batch=>{
       const items=slotEtaFull.filter(x=>x.trucker===trucker&&x.batch===batch);
@@ -1678,7 +1745,7 @@ function renderDashboard(){
   // Sort descending by count
   const conKeys=Object.keys(conCounts).sort((a,b)=>conCounts[b]-conCounts[a]);
   const conVals=conKeys.map(k=>conCounts[k]);
-  const conPalette=['#1976D2','#43A047','#F9A825','#e53935','#7B1FA2','#00838F',
+  const conPalette=['#004D4C','#43A047','#F9A825','#e53935','#7B1FA2','#00838F',
                     '#E64A19','#5D4037','#546E7A','#2E7D32','#0288D1','#C62828'];
   const conColors=conKeys.map((_,i)=>conPalette[i%conPalette.length]);
 
@@ -2206,8 +2273,14 @@ function renderCT(){
       <div class="cell-edit"><input type="text" data-fptype="date" value="${etaV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
     </td>`;
     const slotV=r['Scheduled Slot']||'';
-    const slotC=`<td data-id="${r._id}" data-col="Scheduled Slot">
-      <div class="cell-view" onclick="startEdit(this)">${slotV||'<span style="color:#ccc">—</span>'}</div>
+    const slotIsAuto = !!r._slotAuto;
+    const slotDisplay = slotV
+      ? (slotIsAuto
+          ? `<span class="slot-auto"><span class="slot-auto-icon">⚡</span>${slotV}</span>`
+          : `<span class="slot-manual">${slotV}</span>`)
+      : '<span style="color:#ccc">—</span>';
+    const slotC=`<td data-id="${r._id}" data-col="Scheduled Slot" style="${slotIsAuto?'background:#FFFBEB':''}" >
+      <div class="cell-view" onclick="startEdit(this)">${slotDisplay}</div>
       <div class="cell-edit"><input type="text" data-fptype="datetime" value="${slotV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD HH:MM" style="width:150px"/></div>
     </td>`;
     const arrV=r['Actual Arrival']||'';
@@ -2422,6 +2495,8 @@ function commitEdit(inp, col, id){
   const val=inp.value.trim();
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
   CT[i][col]=val;
+  // If user manually sets Scheduled Slot, clear auto flag
+  if(col==='Scheduled Slot') delete CT[i]._slotAuto;
   saveData(); renderCT();
 }
 function commitEditSelect(sel, col, id){
@@ -2508,7 +2583,7 @@ function renderVT(){
         const malaDt=parseDate(ctRow['ETA in Mala']);
         const hubDt=ctRow['ETA at Hub']?parseDate(ctRow['ETA at Hub']):(malaDt?new Date(malaDt.getTime()+5*864e5):null);
         const parts=[];
-        if(malaDt) parts.push(`<span style="color:#1565C0;font-size:10px" title="ETA in Mala">📍${formatDate(malaDt)}</span>`);
+        if(malaDt) parts.push(`<span style="color:#004D4C;font-size:10px" title="ETA in Mala">📍${formatDate(malaDt)}</span>`);
         if(hubDt)  parts.push(`<span style="color:#2e7d32;font-size:10px" title="ETA at Hub">🏭${formatDate(hubDt)}</span>`);
         if(ctRow['Scheduled Slot']) parts.push(`<span style="color:#7B1FA2;font-size:10px" title="Scheduled Slot">📅${ctRow['Scheduled Slot']}</span>`);
         if(parts.length) dateHints=`<span style="display:inline-flex;gap:5px;margin-left:6px">${parts.join('<span style="color:#ccc">›</span>')}</span>`;
@@ -2648,13 +2723,13 @@ function vtRemoveVesselHistory(id, idx){
 
 // ── BELGIUM ROUTE TIMELINE (horizontal pipeline) ───────────────────────────
 const BEL_STAGES = [
-  { icon:'🚉', label:'Depart China\nTerminal',      avg:0,    p70:0,  p85:0,  color:'#1565C0', bg:'#DBEAFE', dColor:'#1565C0' },
+  { icon:'🚉', label:'Depart China\nTerminal',      avg:0,    p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C' },
   { icon:'🛂', label:'Alashankou\nBorder',           avg:5.5,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100' },
   { icon:'🏔️', label:'Kazakhstan\nTransit Done',    avg:10.2, p70:11, p85:14, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A' },
   { icon:'🚩', label:'Russia\nBorder',               avg:14.1, p70:15, p85:20, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828' },
   { icon:'🏭', label:'Malaszewicze\nPoland',         avg:17.4, p70:18, p85:21, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0' },
   { icon:'🏗️', label:'Duisburg\nHub',               avg:22.4, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E' },
-  { icon:'📦', label:'Belgium\nCustoms Broker',      avg:27.2, p70:29, p85:31, color:'#1565C0', bg:'#DBEAFE', dColor:'#1D4ED8' },
+  { icon:'📦', label:'Belgium\nCustoms Broker',      avg:27.2, p70:29, p85:31, color:'#004D4C', bg:'#E0EFEF', dColor:'#003A3A' },
 ];
 
 function belAddDays(dateStr, days){
@@ -3035,7 +3110,7 @@ document.addEventListener('change',function(e){
   if(e.target.name==='imp_mode'){
     document.querySelectorAll('#imp-mode-radios label').forEach(l=>{
       const r=l.querySelector('input');
-      if(r.checked){ l.style.border='2px solid '+(r.value==='replace'?'#C62828':r.value==='upsert'?'#1565C0':'#43A047'); l.style.background=r.value==='replace'?'#FFEBEE':r.value==='upsert'?'#E3F2FD':'#F1F8E9'; }
+      if(r.checked){ l.style.border='2px solid '+(r.value==='replace'?'#C62828':r.value==='upsert'?'#004D4C':'#43A047'); l.style.background=r.value==='replace'?'#FFEBEE':r.value==='upsert'?'#E0EFEF':'#F1F8E9'; }
       else{ l.style.border='1px solid var(--border)'; l.style.background='#fff'; }
     });
   }
@@ -3070,6 +3145,311 @@ function openSync(){
   document.getElementById('sync-overlay').classList.add('open');
 }
 function closeSync(){ document.getElementById('sync-overlay').classList.remove('open'); }
+
+// ── AUTO SLOT GENERATION ───────────────────────────────────────────────────
+function getConsigneeSlotWindow(consignee){
+  const c = (consignee||'').toLowerCase();
+  if(c.includes('via europe') || c.includes('viaeurope'))
+    return [6,8,10,12,14,16,18,20,22];
+  if(c.includes('flying'))
+    return [8,10,12,14,16];
+  return [8,10,12,14,16,18,20]; // default: others 8-21 (last slot 20:00)
+}
+
+// Qualifying: Tracking=None AND no Actual Arrival AND has ETA at Hub
+function asQualifies(r){
+  return (!r['Tracking'] || r['Tracking']==='None') &&
+         (!r['Actual Arrival'] || !r['Actual Arrival'].toString().trim()) &&
+         r['ETA at Hub'] && r['ETA at Hub'].toString().trim();
+}
+
+function autoGenerateSlots(){
+  // All qualifying containers (no slot OR only auto-slot)
+  const pool = CT.filter(r => asQualifies(r) &&
+    (!r['Scheduled Slot'] || r['Scheduled Slot'].toString().trim()==='' || r._slotAuto)
+  );
+  if(!pool.length){
+    showToast('No qualifying containers — needs Tracking=None, no Actual Arrival, and ETA filled.');
+    return;
+  }
+
+  // Build batch list with counts
+  const batchMap = {};
+  pool.forEach(r => {
+    const b = (r['Batch / Train']||'No Batch').trim();
+    if(!batchMap[b]) batchMap[b] = 0;
+    batchMap[b]++;
+  });
+  const batches = Object.keys(batchMap).sort();
+
+  // Build and open picker modal
+  const existing = document.getElementById('as-overlay');
+  if(existing) existing.remove();
+
+  const pillsHtml = batches.map(b =>
+    `<label class="as-batch-opt">
+      <input type="checkbox" value="${b.replace(/"/g,'&quot;')}" checked/>
+      <span class="as-batch-lbl">${b} <em>${batchMap[b]} container${batchMap[b]>1?'s':''}</em></span>
+    </label>`
+  ).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'as-overlay';
+  overlay.className = 'overlay open';
+  overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="modal" style="width:480px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 style="margin:0">⚡ Auto Slot Generation</h2>
+        <button class="mbtn-cancel" onclick="document.getElementById('as-overlay').remove()">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;background:#F0EFEF;border-radius:8px;padding:9px 13px;line-height:1.6">
+        Applies to: <strong>Tracking = None</strong> · <strong>No Actual Arrival</strong> · <strong>ETA filled</strong><br>
+        Time rules: VIA EUROPE 6–22 · Flying 8–16 · Others 8–20 (2-hr intervals)
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Select Batches</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="mbtn-cancel" style="font-size:11px;padding:4px 10px" onclick="document.querySelectorAll('#as-overlay input[type=checkbox]').forEach(c=>c.checked=true)">All</button>
+        <button class="mbtn-cancel" style="font-size:11px;padding:4px 10px" onclick="document.querySelectorAll('#as-overlay input[type=checkbox]').forEach(c=>c.checked=false)">None</button>
+      </div>
+      <div id="as-batch-list" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;margin-bottom:18px">${pillsHtml}</div>
+      <div class="modal-btns">
+        <button class="mbtn-cancel" onclick="document.getElementById('as-overlay').remove()">Cancel</button>
+        <button class="mbtn-save" onclick="applyAutoSlots()">⚡ Generate Slots</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function applyAutoSlots(){
+  const overlay = document.getElementById('as-overlay');
+  const checked = [...overlay.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.value);
+  if(!checked.length){ showToast('No batches selected.'); return; }
+
+  const pool = CT.filter(r => asQualifies(r) &&
+    checked.includes((r['Batch / Train']||'No Batch').trim()) &&
+    (!r['Scheduled Slot'] || r['Scheduled Slot'].toString().trim()==='' || r._slotAuto)
+  );
+
+  // Group by consignee + ETA date
+  const groups = {};
+  pool.forEach(r => {
+    const consignee = (r['Consignee']||'').trim();
+    const etaDate = (r['ETA at Hub']||'').trim().split(' ')[0];
+    const key = consignee + '||' + etaDate;
+    if(!groups[key]) groups[key] = { consignee, etaDate, rows: [] };
+    groups[key].rows.push(r);
+  });
+
+  let assigned = 0;
+  Object.values(groups).forEach(g => {
+    const slots = getConsigneeSlotWindow(g.consignee);
+    g.rows.sort((a,b)=>{
+      const ba=(a['Batch / Train']||''), bb=(b['Batch / Train']||'');
+      if(ba<bb) return -1; if(ba>bb) return 1;
+      return (a['Container No.']||'').localeCompare(b['Container No.']||'');
+    });
+    g.rows.forEach((r, idx) => {
+      const hh = String(slots[idx % slots.length]).padStart(2,'0');
+      const i = CT.findIndex(x=>x._id===r._id);
+      if(i<0) return;
+      CT[i]['Scheduled Slot'] = g.etaDate + ' ' + hh + ':00';
+      CT[i]._slotAuto = true;
+      assigned++;
+    });
+  });
+
+  saveData(); renderCT();
+  overlay.remove();
+  if(assigned) showToast(`⚡ Auto-assigned slots for ${assigned} container${assigned>1?'s':''}`);
+}
+
+function showToast(msg){
+  let t = document.getElementById('toast-msg');
+  if(!t){ t=document.createElement('div'); t.id='toast-msg';
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#004D4C;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .3s';
+    document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(t._to); t._to=setTimeout(()=>{ t.style.opacity='0'; }, 2800);
+}
+
+// ── SLOT EMAIL GENERATOR ────────────────────────────────────────────────────
+const SE_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let seActiveBatches = new Set(); // empty = show all
+
+function seFormatSlotDate(slotStr){
+  if(!slotStr) return {date:'', time:'', monthDay:'', full:''};
+  const parts = slotStr.trim().split(' ');
+  const datePart = parts[0] || '';
+  const timePart = parts[1] || '';
+  const dp = datePart.split('/');
+  let monthDay = datePart;
+  if(dp.length >= 3){
+    const m = parseInt(dp[1], 10);
+    const d = parseInt(dp[2], 10);
+    monthDay = SE_MONTHS[m-1] + ' ' + d;
+  }
+  return { date: datePart, time: timePart, monthDay, full: slotStr.trim() };
+}
+
+function openSlotEmails(){
+  document.getElementById('se-overlay').classList.add('open');
+  seActiveBatches = new Set();
+  buildSlotEmails();
+}
+function closeSlotEmails(){ document.getElementById('se-overlay').classList.remove('open'); }
+
+function seToggleBatch(batch){
+  if(seActiveBatches.has(batch)) seActiveBatches.delete(batch);
+  else seActiveBatches.add(batch);
+  buildSlotEmails();
+}
+
+function seBatchCollapse(batchKey){
+  const sec = document.getElementById('se-sec-' + batchKey);
+  if(sec) sec.classList.toggle('collapsed');
+}
+
+function buildSlotEmails(){
+  const recipient = (document.getElementById('se-recipient').value||'').trim() || 'Warehouse Team';
+  const sender    = (document.getElementById('se-sender').value||'').trim() || '';
+  const bodyEl    = document.getElementById('se-body');
+  const pillsEl   = document.getElementById('se-batch-pills');
+
+  const slotted = CT.filter(r => r['Scheduled Slot'] && r['Scheduled Slot'].toString().trim());
+  if(!slotted.length){
+    pillsEl.innerHTML = '';
+    bodyEl.innerHTML = '<div class="se-empty">No containers with a Scheduled Slot found.<br>Fill in the Scheduled Slot column in the Containers tab first.</div>';
+    return;
+  }
+
+  // Collect all batches for filter pills
+  const allBatches = [...new Set(slotted.map(r=>(r['Batch / Train']||'No Batch').trim()))].sort();
+
+  // Build filter pills
+  pillsEl.innerHTML = allBatches.map(b => {
+    const active = seActiveBatches.size === 0 || seActiveBatches.has(b);
+    const isSelected = seActiveBatches.has(b);
+    return `<button class="se-batch-pill${isSelected?' active':''}" onclick="seToggleBatch('${b.replace(/'/g,"\'")}')">${b}</button>`;
+  }).join('');
+
+  // Filter containers by selected batches
+  const filtered = seActiveBatches.size === 0
+    ? slotted
+    : slotted.filter(r => seActiveBatches.has((r['Batch / Train']||'No Batch').trim()));
+
+  // Group by Batch → Consignee + date
+  const groups = {};
+  filtered.forEach(r => {
+    const batch     = (r['Batch / Train']||'No Batch').trim();
+    const consignee = (r['Consignee']||'Consignee').trim();
+    const slot = seFormatSlotDate(r['Scheduled Slot']);
+    const key = batch + '||' + consignee + '||' + slot.date;
+    if(!groups[key]) groups[key] = { batch, consignee, date: slot.date, monthDay: slot.monthDay, rows: [] };
+    groups[key].rows.push(r);
+  });
+
+  // Sort: batch, then date, then consignee
+  const sorted = Object.values(groups).sort((a,b)=>{
+    if(a.batch < b.batch) return -1; if(a.batch > b.batch) return 1;
+    const da = a.date.replace(/\//g,'-'), db = b.date.replace(/\//g,'-');
+    return da < db ? -1 : da > db ? 1 : a.consignee.localeCompare(b.consignee);
+  });
+
+  // Group into batch sections
+  const batchSections = {};
+  sorted.forEach(g => {
+    if(!batchSections[g.batch]) batchSections[g.batch] = [];
+    batchSections[g.batch].push(g);
+  });
+
+  let emailIdx = 0;
+  let html = '';
+  Object.entries(batchSections).forEach(([batch, gs]) => {
+    const batchTotal = gs.reduce((s,g)=>s+g.rows.length,0);
+    const batchKey = batch.replace(/[^a-z0-9]/gi,'_');
+    let emailsHtml = '';
+
+    gs.forEach(g => {
+      const gi = emailIdx++;
+      const qty = g.rows.length;
+      const slotLines = g.rows
+        .slice().sort((a,b)=>{
+          const sa=seFormatSlotDate(a['Scheduled Slot']), sb=seFormatSlotDate(b['Scheduled Slot']);
+          return (sa.time||'').localeCompare(sb.time||'');
+        })
+        .map(r => {
+          const s = seFormatSlotDate(r['Scheduled Slot']);
+          const time = s.time || '—';
+          const cn   = (r['Container No.']||'').trim();
+          const bl   = (r['Master B/L']||'').trim();
+          return `${s.date}  ${time}  ${cn}  ${bl}`;
+        }).join('\n');
+
+      const subject = `Pre-alert to ${g.consignee} – ${qty} container${qty>1?'s':''} ETA ${g.monthDay}`;
+      const emailText =
+`Dear ${recipient},
+
+I am writing to book unloading space for ${qty} container${qty>1?'s':''}.
+We would like to deliver these to your warehouse on ${g.monthDay}. Could you please confirm availability and advise on the available time slots?
+
+Slots:
+${slotLines}
+
+Thank you${sender ? ',\n'+sender : ''}`;
+
+      emailsHtml += `<div class="se-group" id="se-group-${gi}" style="margin:0">
+        <div class="se-group-hdr">
+          <div>
+            <div class="se-group-title">${g.consignee}</div>
+            <div class="se-group-meta">${qty} container${qty>1?'s':''} · ${g.monthDay}</div>
+          </div>
+          <button class="se-copy-btn" id="se-cbtn-${gi}" onclick="copySlotEmail(${gi})">⎘ Copy</button>
+        </div>
+        <div class="se-email-body">
+          <div class="se-subject">Subject <span>${subject}</span></div>
+          <div class="se-pre" id="se-pre-${gi}">${emailText}</div>
+        </div>
+      </div>`;
+    });
+
+    html += `<div class="se-batch-section" id="se-sec-${batchKey}">
+      <div class="se-batch-section-hdr" onclick="seBatchCollapse('${batchKey}')">
+        <span style="font-size:16px">📦</span>
+        <span class="se-batch-section-name">${batch}</span>
+        <span class="se-batch-section-meta">${batchTotal} container${batchTotal>1?'s':''} · ${gs.length} email${gs.length>1?'s':''}</span>
+        <span class="se-batch-toggle">▾</span>
+      </div>
+      <div class="se-batch-content">${emailsHtml}</div>
+    </div>`;
+  });
+
+  bodyEl.innerHTML = html || '<div class="se-empty">No emails to show for selected batches.</div>';
+}
+
+function copySlotEmail(gi){
+  const pre = document.getElementById('se-pre-'+gi);
+  const btn = document.getElementById('se-cbtn-'+gi);
+  if(!pre) return;
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    btn.textContent = '✓ Copied'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='⎘ Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function copyAllSlotEmails(){
+  const pres = document.querySelectorAll('.se-pre');
+  if(!pres.length) return;
+  const all = Array.from(pres).map((p,i)=>{
+    const hdr = document.querySelectorAll('.se-group-title')[i];
+    return (hdr ? '── '+hdr.textContent+' ──\n' : '') + p.innerText;
+  }).join('\n\n' + '─'.repeat(50) + '\n\n');
+  const btn = document.getElementById('se-copy-all-btn');
+  navigator.clipboard.writeText(all).then(()=>{
+    btn.textContent='✓ All Copied'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='⎘ Copy All'; btn.classList.remove('copied'); }, 2500);
+  });
+}
 function toggleSyncKeyVis(){
   const inp=document.getElementById('sync-key');
   inp.type = inp.type==='password'?'text':'password';
@@ -3309,7 +3689,7 @@ renderDashboard();
     position: sticky;
     top: 0;
     z-index: 10;
-    background: var(--navy);
+    background: #004D4C;
     box-shadow: 0 2px 0 rgba(0,0,0,.15);
   }
 </style>
