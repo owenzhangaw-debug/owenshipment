@@ -465,6 +465,38 @@ td.editing .cell-edit{display:block}
   .modal{border-radius:12px;max-width:94vw;width:600px}
   .chart-wrap{height:140px}
 }
+
+/* ── Belgium Route Timeline (horizontal pipeline) ── */
+.bel-route-card{background:var(--card);border-radius:var(--rad);box-shadow:0 1px 6px rgba(0,0,0,.08);padding:20px 24px;margin-top:20px}
+.bel-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.bel-card-top-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bel-card-top-left h3{font-size:14px;font-weight:800;color:var(--navy);margin:0;text-transform:uppercase;letter-spacing:.6px}
+.bel-card-top-right{font-size:11px;color:var(--muted);font-weight:600}
+.bel-input-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.bel-input-row label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.bel-input-row input[type=date]{border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--text);background:#fff;outline:none}
+.bel-input-row input[type=date]:focus{border-color:var(--blue)}
+.bel-clear-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--muted);cursor:pointer}
+.bel-clear-btn:hover{border-color:#999;color:var(--text)}
+/* horizontal pipeline */
+.bel-pipeline-wrap{overflow-x:auto;padding-bottom:6px}
+.bel-pipeline{display:flex;align-items:flex-start;min-width:700px;padding:10px 0 6px}
+.bel-node{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;text-align:center;padding:0 4px}
+.bel-icon-wrap{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,.13);flex-shrink:0;border:3px solid transparent;position:relative;z-index:1}
+.bel-node-name{font-size:11px;font-weight:700;color:var(--text);margin-top:8px;line-height:1.3;max-width:90px}
+.bel-node-d{font-size:22px;font-weight:900;margin-top:4px;line-height:1}
+.bel-node-date{font-size:11px;font-weight:700;color:#555;margin-top:3px}
+.bel-node-sub{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4}
+.bel-arrow{display:flex;align-items:center;padding-top:18px;color:#bbb;flex-shrink:0;font-size:18px;margin:0 -2px}
+/* bottom info bar */
+.bel-info-bar{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.bel-info-tile{flex:1;min-width:180px;background:#F8FAFF;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px}
+.bel-info-tile strong{font-weight:700;color:var(--text);display:block;margin-bottom:3px}
+.bel-info-tile span{color:var(--muted)}
+.bel-info-tile.bel-slot-tile{background:#FFFDE7;border-color:#FFE082}
+.bel-info-tile.bel-slot-tile strong{color:#6D4C41}
+.bel-placeholder{text-align:center;padding:36px 20px;color:var(--muted);font-size:13px}
+.bel-ph-icon{font-size:42px;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -491,6 +523,29 @@ td.editing .cell-edit{display:block}
 <!-- ══ DASHBOARD ══ -->
 <div id="page-dashboard" class="page active">
   <div id="smart-panel" class="smart-panel"></div>
+
+  <!-- ══ Belgium Route Timeline (full-width, top of dashboard) ══ -->
+  <div class="bel-route-card" style="margin-bottom:18px;margin-top:0">
+    <div class="bel-card-top">
+      <div class="bel-card-top-left">
+        <span style="font-size:22px">🚂</span>
+        <h3>Belgium Route — Stage-by-Stage Timing</h3>
+        <span style="font-size:10px;font-weight:700;background:#E8F5E9;color:#2E7D32;border-radius:20px;padding:3px 10px">based on 564 historical deliveries</span>
+      </div>
+      <div class="bel-card-top-right">Days from China terminal departure</div>
+    </div>
+    <div class="bel-input-row">
+      <label>🗓 China Departure Date</label>
+      <input type="date" id="bel-depart-date" onchange="renderBelgiumTimeline(this.value)" title="Date containers depart China terminal"/>
+      <button class="bel-clear-btn" onclick="document.getElementById('bel-depart-date').value='';renderBelgiumTimeline('')">✕ Clear</button>
+    </div>
+    <div id="bel-timeline-body">
+      <div class="bel-placeholder">
+        <div class="bel-ph-icon">🗺️</div>
+        <div>Enter the China departure date above to generate the full route timeline with projected dates</div>
+      </div>
+    </div>
+  </div>
 
   <div class="dash-split">
 
@@ -810,6 +865,8 @@ td.editing .cell-edit{display:block}
       </table>
     </div>
   </div>
+
+
 </div>
 
 </main>
@@ -2587,6 +2644,102 @@ function vtRemoveVesselHistory(id, idx){
   if(!Array.isArray(VT[i].vesselHistory)) return;
   VT[i].vesselHistory.splice(idx,1);
   saveVT(); renderVT();
+}
+
+// ── BELGIUM ROUTE TIMELINE (horizontal pipeline) ───────────────────────────
+const BEL_STAGES = [
+  { icon:'🚉', label:'Depart China\nTerminal',      avg:0,    p70:0,  p85:0,  color:'#1565C0', bg:'#DBEAFE', dColor:'#1565C0' },
+  { icon:'🛂', label:'Alashankou\nBorder',           avg:5.5,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100' },
+  { icon:'🏔️', label:'Kazakhstan\nTransit Done',    avg:10.2, p70:11, p85:14, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A' },
+  { icon:'🚩', label:'Russia\nBorder',               avg:14.1, p70:15, p85:20, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828' },
+  { icon:'🏭', label:'Malaszewicze\nPoland',         avg:17.4, p70:18, p85:21, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0' },
+  { icon:'🏗️', label:'Duisburg\nHub',               avg:22.4, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E' },
+  { icon:'📦', label:'Belgium\nCustoms Broker',      avg:27.2, p70:29, p85:31, color:'#1565C0', bg:'#DBEAFE', dColor:'#1D4ED8' },
+];
+
+function belAddDays(dateStr, days){
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + Math.round(days));
+  return d;
+}
+
+function belFmtDate(d){
+  const wds = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const ms = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return wds[d.getDay()] + ' ' + d.getDate() + ' ' + ms[d.getMonth()];
+}
+
+function renderBelgiumTimeline(departureDateStr){
+  const body = document.getElementById('bel-timeline-body');
+  if(!departureDateStr){
+    body.innerHTML = `<div class="bel-placeholder"><div class="bel-ph-icon">🗺️</div><div>Enter the China departure date above to generate the full route timeline with projected dates</div></div>`;
+    return;
+  }
+
+  // Build horizontal pipeline nodes
+  let nodesHtml = '';
+  BEL_STAGES.forEach((s, idx) => {
+    const avgDate = belAddDays(departureDateStr, s.avg);
+    const nameLines = s.label.split('\n');
+    const offsetStr = s.avg === 0 ? 'D+0' : `D+${s.avg}`;
+    const subLine = (s.p70 > 0)
+      ? `p70=D+${s.p70} · p85=D+${s.p85}`
+      : (idx === 0 ? `Book slot email →` : '');
+
+    // Special: show book-slot note under China departure
+    nodesHtml += `<div class="bel-node">
+      <div class="bel-icon-wrap" style="background:${s.bg};border-color:${s.color}">${s.icon}</div>
+      <div class="bel-node-name">${nameLines.join('<br>')}</div>
+      <div class="bel-node-d" style="color:${s.dColor}">${offsetStr}</div>
+      <div class="bel-node-date">${belFmtDate(avgDate)}</div>
+      ${subLine ? `<div class="bel-node-sub">${subLine}</div>` : ''}
+    </div>`;
+
+    if(idx < BEL_STAGES.length - 1){
+      nodesHtml += `<div class="bel-arrow">→</div>`;
+    }
+  });
+
+  // Color bars under each node (matching the Analysis screenshot)
+  const barColors = ['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488','#2563EB'];
+  let barsHtml = `<div style="display:flex;min-width:700px;margin-top:6px;padding:0">`;
+  BEL_STAGES.forEach((s, idx) => {
+    barsHtml += `<div style="flex:1;height:4px;background:${barColors[idx]};border-radius:2px;margin:0 2px"></div>`;
+    if(idx < BEL_STAGES.length - 1) barsHtml += `<div style="width:18px"></div>`;
+  });
+  barsHtml += `</div>`;
+
+  // Bottom info bar
+  const bookDate  = belAddDays(departureDateStr, 3);
+  const targetDate = belAddDays(departureDateStr, 29);
+  const backupDate = belAddDays(departureDateStr, 31);
+  const slaDate   = belAddDays(departureDateStr, 36);
+
+  const infoBar = `<div class="bel-info-bar">
+    <div class="bel-info-tile">
+      <strong>🚂 Mala → Duisburg</strong>
+      <span>avg 5.1d &nbsp;|&nbsp; p70=6d · p85=7d</span>
+    </div>
+    <div class="bel-info-tile">
+      <strong>🏗️ Duisburg → Customs</strong>
+      <span>avg 4.8d &nbsp;|&nbsp; p70=6d · p85=8d</span>
+    </div>
+    <div class="bel-info-tile bel-slot-tile">
+      <strong>📅 Book slot on D+3 &nbsp;→&nbsp; ${belFmtDate(bookDate)}</strong>
+      <span>Target slot D+29 (${belFmtDate(targetDate)}) · Backup D+31 (${belFmtDate(backupDate)})</span>
+    </div>
+    <div class="bel-info-tile" style="background:#F0FDF4;border-color:#86EFAC">
+      <strong style="color:#15803D">✅ SLA Deadline: ${belFmtDate(slaDate)} (D+36)</strong>
+      <span>99.8% compliance · 564 deliveries</span>
+    </div>
+  </div>`;
+
+  body.innerHTML = `
+    <div class="bel-pipeline-wrap">
+      <div class="bel-pipeline">${nodesHtml}</div>
+      ${barsHtml}
+    </div>
+    ${infoBar}`;
 }
 
 function vtSearchContainer(q){
