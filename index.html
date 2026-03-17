@@ -3242,6 +3242,8 @@ function applyAutoSlots(){
   });
 
   let assigned = 0;
+  let skipped = 0;
+  const skipDetails = [];
   Object.values(groups).forEach(g => {
     const slots = getConsigneeSlotWindow(g.consignee);
     g.rows.sort((a,b)=>{
@@ -3250,18 +3252,30 @@ function applyAutoSlots(){
       return (a['Container No.']||'').localeCompare(b['Container No.']||'');
     });
     g.rows.forEach((r, idx) => {
-      const hh = String(slots[idx % slots.length]).padStart(2,'0');
       const i = CT.findIndex(x=>x._id===r._id);
       if(i<0) return;
+      if(idx >= slots.length){
+        // No more unique slots available for this date — skip
+        skipped++;
+        return;
+      }
+      const hh = String(slots[idx]).padStart(2,'0');
       CT[i]['Scheduled Slot'] = g.etaDate + ' ' + hh + ':00';
       CT[i]._slotAuto = true;
       assigned++;
     });
+    if(g.rows.length > slots.length){
+      skipDetails.push(`${g.etaDate} (${g.consignee||'Other'}): ${g.rows.length - slots.length} unassigned`);
+    }
   });
 
   saveData(); renderCT();
   overlay.remove();
-  if(assigned) showToast(`⚡ Auto-assigned slots for ${assigned} container${assigned>1?'s':''}`);
+  if(assigned && !skipped) showToast(`⚡ Auto-assigned slots for ${assigned} container${assigned>1?'s':''}`);
+  else if(assigned && skipped){
+    showToast(`⚡ Assigned ${assigned} slot${assigned>1?'s':''}. ${skipped} container${skipped>1?'s':''} skipped — no remaining slots available.`);
+    console.warn('Auto Slots — skipped containers (slots exhausted):', skipDetails);
+  } else if(!assigned) showToast('No slots assigned.');
 }
 
 function showToast(msg){
