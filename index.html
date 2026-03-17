@@ -2494,6 +2494,11 @@ function commitEdit(inp, col, id){
   const td=inp.closest('td'); td.classList.remove('editing');
   const val=inp.value.trim();
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  // If ETA at Hub changes on a container with an auto-slot, clear the stale slot
+  if(col==='ETA at Hub' && CT[i]._slotAuto){
+    delete CT[i]._slotAuto;
+    CT[i]['Scheduled Slot'] = '';
+  }
   CT[i][col]=val;
   // If user manually sets Scheduled Slot, clear auto flag
   if(col==='Scheduled Slot') delete CT[i]._slotAuto;
@@ -3711,12 +3716,18 @@ function applyBulkEdit(){
     const tracking=g('be_track');
     const payStatus=g('be_pay_status');
     const t1PayStatus=g('be_t1_pay_status');
+    const newEta = fields['ETA at Hub']; // will be '' if not changed
     CT.forEach(r=>{
       if(!ctSel.has(r._id)) return;
       Object.entries(fields).forEach(([k,v])=>{ if(v) r[k]=v; });
       if(tracking) r['Tracking']=tracking;
       if(payStatus) r['Payment Status']=payStatus;
       if(t1PayStatus) r['T1 Payment Status']=t1PayStatus;
+      // If ETA at Hub changed and container had an auto-slot, clear it — it's now stale
+      if(newEta && r._slotAuto){
+        delete r._slotAuto;
+        r['Scheduled Slot'] = '';
+      }
       ctCount++;
     });
     saveData();
