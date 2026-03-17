@@ -3352,23 +3352,29 @@ function buildSlotEmails(){
     ? slotted
     : slotted.filter(r => seActiveBatches.has((r['Batch / Train']||'No Batch').trim()));
 
-  // Group by Batch → Consignee + date
+  // Group by Batch → Consignee only (multi-date rows go into ONE email)
   const groups = {};
   filtered.forEach(r => {
     const batch     = (r['Batch / Train']||'No Batch').trim();
     const consignee = (r['Consignee']||'Consignee').trim();
-    const slot = seFormatSlotDate(r['Scheduled Slot']);
-    const key = batch + '||' + consignee + '||' + slot.date;
-    if(!groups[key]) groups[key] = { batch, consignee, date: slot.date, monthDay: slot.monthDay, rows: [] };
+    const key = batch + '||' + consignee;
+    if(!groups[key]) groups[key] = { batch, consignee, rows: [] };
     groups[key].rows.push(r);
   });
 
-  // Sort: batch, then date, then consignee
+  // Sort groups: batch, then consignee
   const sorted = Object.values(groups).sort((a,b)=>{
     if(a.batch < b.batch) return -1; if(a.batch > b.batch) return 1;
-    const da = a.date.replace(/\//g,'-'), db = b.date.replace(/\//g,'-');
-    return da < db ? -1 : da > db ? 1 : a.consignee.localeCompare(b.consignee);
+    return a.consignee.localeCompare(b.consignee);
   });
+
+  // Helper: format a list of monthDay strings naturally ("March 19", "March 19 & March 20", etc.)
+  function formatDateList(monthDays){
+    const uniq = [...new Set(monthDays)];
+    if(uniq.length === 1) return uniq[0];
+    const last = uniq.pop();
+    return uniq.join(', ') + ' & ' + last;
+  }
 
   // Group into batch sections
   const batchSections = {};
@@ -3387,25 +3393,38 @@ function buildSlotEmails(){
     gs.forEach(g => {
       const gi = emailIdx++;
       const qty = g.rows.length;
-      const slotLines = g.rows
-        .slice().sort((a,b)=>{
-          const sa=seFormatSlotDate(a['Scheduled Slot']), sb=seFormatSlotDate(b['Scheduled Slot']);
-          return (sa.time||'').localeCompare(sb.time||'');
-        })
-        .map(r => {
-          const s = seFormatSlotDate(r['Scheduled Slot']);
-          const time = s.time || '—';
-          const cn   = (r['Container No.']||'').trim();
-          const bl   = (r['Master B/L']||'').trim();
-          return `${s.date}  ${time}  ${cn}  ${bl}`;
-        }).join('\n');
 
-      const subject = `Pre-alert to ${g.consignee} – ${qty} container${qty>1?'s':''} ETA ${g.monthDay}`;
+      // Sort all rows by date then time
+      const sortedRows = g.rows.slice().sort((a,b)=>{
+        const sa=seFormatSlotDate(a['Scheduled Slot']), sb=seFormatSlotDate(b['Scheduled Slot']);
+        const dateComp = (sa.date||'').localeCompare(sb.date||'');
+        return dateComp !== 0 ? dateComp : (sa.time||'').localeCompare(sb.time||'');
+      });
+
+      const slotLines = sortedRows.map(r => {
+        const s = seFormatSlotDate(r['Scheduled Slot']);
+        const time = s.time || '—';
+        const cn   = (r['Container No.']||'').trim();
+        const bl   = (r['Master B/L']||'').trim();
+        return `${s.date}  ${time}  ${cn}  ${bl}`;
+      }).join('\n');
+
+      // Collect unique dates (sorted) for subject/body
+      const uniqueDates = [...new Set(sortedRows.map(r => seFormatSlotDate(r['Scheduled Slot']).date))];
+      const monthDays = uniqueDates.map(d => {
+        const dp = d.split('/');
+        if(dp.length>=3){ const m=parseInt(dp[1],10),dy=parseInt(dp[2],10); return SE_MONTHS[m-1]+' '+dy; }
+        return d;
+      });
+      const dateLabel = formatDateList(monthDays);
+      const metaDates = monthDays.length > 1 ? monthDays.join(' · ') : monthDays[0]||'';
+
+      const subject = `Pre-alert to ${g.consignee} – ${qty} container${qty>1?'s':''} ETA ${dateLabel}`;
       const emailText =
 `Dear ${recipient},
 
 I am writing to book unloading space for ${qty} container${qty>1?'s':''}.
-We would like to deliver these to your warehouse on ${g.monthDay}. Could you please confirm availability and advise on the available time slots?
+We would like to deliver these to your warehouse on ${dateLabel}. Could you please confirm availability and advise on the available time slots?
 
 Slots:
 ${slotLines}
@@ -3416,7 +3435,7 @@ Thank you${sender ? ',\n'+sender : ''}`;
         <div class="se-group-hdr">
           <div>
             <div class="se-group-title">${g.consignee}</div>
-            <div class="se-group-meta">${qty} container${qty>1?'s':''} · ${g.monthDay}</div>
+            <div class="se-group-meta">${qty} container${qty>1?'s':''} · ${metaDates}</div>
           </div>
           <button class="se-copy-btn" id="se-cbtn-${gi}" onclick="copySlotEmail(${gi})">⎘ Copy</button>
         </div>
