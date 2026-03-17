@@ -3231,6 +3231,35 @@ function applyAutoSlots(){
     (!r['Scheduled Slot'] || r['Scheduled Slot'].toString().trim()==='' || r._slotAuto)
   );
 
+  // ── Date helpers ──────────────────────────────────────────────
+  function parseDateStr(s){
+    const p = s.split('/');
+    return new Date(+p[0], +p[1]-1, +p[2]);
+  }
+  function fmtDateStr(dt){
+    return dt.getFullYear() + '/' +
+           String(dt.getMonth()+1).padStart(2,'0') + '/' +
+           String(dt.getDate()).padStart(2,'0');
+  }
+  function skipSunday(dt){
+    // Advance past any Sunday
+    const d = new Date(dt);
+    while(d.getDay() === 0) d.setDate(d.getDate()+1);
+    return d;
+  }
+  function nextDay(dt){
+    const d = new Date(dt);
+    d.setDate(d.getDate()+1);
+    return d;
+  }
+  // First available date = ETA + 1 calendar day, skip Sunday
+  function firstAvailableDate(etaDateStr){
+    let d = parseDateStr(etaDateStr);
+    d.setDate(d.getDate()+1);  // +1 day (processing time)
+    d = skipSunday(d);
+    return d;
+  }
+
   // Group by consignee + ETA date
   const groups = {};
   pool.forEach(r => {
@@ -3242,40 +3271,53 @@ function applyAutoSlots(){
   });
 
   let assigned = 0;
-  let skipped = 0;
-  const skipDetails = [];
   Object.values(groups).forEach(g => {
-    const slots = getConsigneeSlotWindow(g.consignee);
+    const fullSlots = getConsigneeSlotWindow(g.consignee);
+    // First day: only slots from 16:00+ (afternoon; train still clearing in morning)
+    const firstDaySlots = fullSlots.filter(h => h >= 16);
+    const slotsFirstDay = firstDaySlots.length ? firstDaySlots : fullSlots;
+
     g.rows.sort((a,b)=>{
       const ba=(a['Batch / Train']||''), bb=(b['Batch / Train']||'');
       if(ba<bb) return -1; if(ba>bb) return 1;
       return (a['Container No.']||'').localeCompare(b['Container No.']||'');
     });
-    g.rows.forEach((r, idx) => {
+
+    // Start assigning from firstAvailableDate
+    let currentDate = firstAvailableDate(g.etaDate);
+    let isFirstDay  = true;
+    let slotIdx     = 0;
+
+    g.rows.forEach(r => {
       const i = CT.findIndex(x=>x._id===r._id);
       if(i<0) return;
-      if(idx >= slots.length){
-        // No more unique slots available for this date — skip
-        skipped++;
-        return;
+
+      // Roll over to next non-Sunday day when current day's slots are exhausted
+      let safety = 0;
+      while(true){
+        const daySlots = isFirstDay ? slotsFirstDay : fullSlots;
+        if(slotIdx < daySlots.length){
+          const hh = String(daySlots[slotIdx]).padStart(2,'0');
+          CT[i]['Scheduled Slot'] = fmtDateStr(currentDate) + ' ' + hh + ':00';
+          CT[i]._slotAuto = true;
+          assigned++;
+          slotIdx++;
+          break;
+        } else {
+          // Move to next calendar day, skip Sunday
+          currentDate = skipSunday(nextDay(currentDate));
+          isFirstDay  = false;
+          slotIdx     = 0;
+        }
+        if(++safety > 365) break; // guard against infinite loop
       }
-      const hh = String(slots[idx]).padStart(2,'0');
-      CT[i]['Scheduled Slot'] = g.etaDate + ' ' + hh + ':00';
-      CT[i]._slotAuto = true;
-      assigned++;
     });
-    if(g.rows.length > slots.length){
-      skipDetails.push(`${g.etaDate} (${g.consignee||'Other'}): ${g.rows.length - slots.length} unassigned`);
-    }
   });
 
   saveData(); renderCT();
   overlay.remove();
-  if(assigned && !skipped) showToast(`⚡ Auto-assigned slots for ${assigned} container${assigned>1?'s':''}`);
-  else if(assigned && skipped){
-    showToast(`⚡ Assigned ${assigned} slot${assigned>1?'s':''}. ${skipped} container${skipped>1?'s':''} skipped — no remaining slots available.`);
-    console.warn('Auto Slots — skipped containers (slots exhausted):', skipDetails);
-  } else if(!assigned) showToast('No slots assigned.');
+  if(assigned) showToast(`⚡ Auto-assigned slots for ${assigned} container${assigned>1?'s':''}`);
+  else showToast('No slots assigned.');
 }
 
 function showToast(msg){
