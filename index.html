@@ -376,7 +376,6 @@ td.editing .cell-edit{display:block}
   /* ── Header ── */
   header{flex-wrap:wrap;padding:0 12px;gap:0}
   .brand{font-size:14px;padding:10px 0;flex:1}
-  /* Buttons: single scrollable row, no wrapping */
   .hbtns{order:2;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;
     scrollbar-width:none;flex-wrap:nowrap;gap:5px;padding:6px 0;border-top:1px solid rgba(255,255,255,.1)}
   .hbtns::-webkit-scrollbar{display:none}
@@ -389,6 +388,16 @@ td.editing .cell-edit{display:block}
   /* ── Layout ── */
   main{padding:10px 10px 80px}
 
+  /* ── Prevent any text from spilling outside boxes ── */
+  .bel-route-card,.chart-card,.kpi,.smart-card,.ct-bp-card,.vt-voyage-card,
+  .tbl-card,.dash-col,.dash-col-hdr{overflow:hidden;word-break:break-word;overflow-wrap:break-word}
+  .bel-route-card{padding:14px 12px}
+  .bel-card-top{flex-direction:column;align-items:flex-start;gap:6px}
+  .bel-card-top-left h3{font-size:12px;white-space:normal}
+  .bel-card-top-right{font-size:10px}
+  .bel-input-row{flex-direction:column;align-items:flex-start;gap:6px}
+  .bel-input-row label{white-space:normal;font-size:10px;line-height:1.4}
+
   /* ── KPI ── */
   .kpi-row{gap:8px}
   .kv{font-size:20px}
@@ -400,96 +409,64 @@ td.editing .cell-edit{display:block}
   .kpi-row-ct,.kpi-row-vt{grid-template-columns:1fr 1fr !important}
   .chart-wrap{height:180px}
 
-  /* ── Toolbar ── */
+  /* ── Dashboard category tabs ── */
+  .dash-cat-tabs{gap:5px}
+  .dash-cat-tab{font-size:10px;padding:4px 10px}
+
+  /* ── Toolbar: filters wrap 2-per-row ── */
   .toolbar{padding:8px 10px;gap:7px}
-  .ms-btn{min-width:90px;font-size:11px;height:30px}
+  .toolbar .fg{flex:1 1 calc(50% - 10px)}
+  .ms-wrap{flex:1 1 calc(50% - 10px)}
+  .ms-btn{width:100%;min-width:0 !important;font-size:11px;height:30px}
   .ms-menu{min-width:140px}
-  select,input[type=text]{min-width:80px;font-size:11px;padding:4px 7px}
+  select,input[type=text]{min-width:0 !important;width:100%;font-size:11px;padding:4px 7px}
   .fg label,.ms-wrap .ms-label{font-size:9px}
 
   /* ── VT toolbar ── */
-  .vt-toolbar{flex-wrap:wrap;gap:8px;padding:8px 10px}
-  .vt-search-wrap{flex:1}
+  .vt-toolbar{flex-direction:column;align-items:stretch;gap:8px;padding:8px 10px}
+  .vt-search-wrap{width:100%}
   .vt-search-wrap input{width:100%}
 
-  /* ── Modals — bottom sheet on mobile ── */
+  /* ── Smart cards — 2 per row ── */
+  .smart-card{min-width:calc(50% - 5px);flex:1 1 calc(50% - 5px)}
+
+  /* ── CT batch progress cards ── */
+  .ct-bp-card{min-width:140px;max-width:none;flex:1 1 140px}
+
+  /* ── VT voyage progress cards ── */
+  #vt-progress-row{padding:0 0 10px !important;display:flex !important;flex-wrap:wrap !important}
+  .vt-voyage-card{min-width:0 !important;max-width:none !important;flex:1 1 160px !important}
+  .vt-voyage-ocean{height:22px !important;display:block !important}
+  .vt-voyage-info{gap:4px}
+  .vt-voyage-info-item{font-size:11px;padding:2px 6px}
+
+  /* ── Tables: horizontal scroll ── */
+  .tbl-card{border-radius:8px}
+  .tbl-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tbl-scroll table{min-width:600px}
+  .ud-bar-wrap{min-width:100px}
+  .ud-tbl td,.ud-tbl th,.sur-tbl td,.sur-tbl th{padding:5px 8px;font-size:11px}
+
+  /* ── Disable frozen columns on mobile so full table scrolls ── */
+  th.fc-1,td.fc-1,th.fc-2,td.fc-2,
+  th.fc-3,td.fc-3,th.fc-4,td.fc-4{
+    position:static !important;left:auto !important;z-index:auto !important;box-shadow:none !important}
+  #ct-table thead tr,#ct-table thead th{position:sticky !important;top:0 !important;z-index:5 !important}
+
+  /* ── Modals — bottom sheet ── */
   .overlay{align-items:flex-end}
   .modal{width:100%;max-width:100vw;max-height:92vh;
     border-radius:18px 18px 0 0;margin:0;padding:18px 14px 24px}
   .form-grid{grid-template-columns:1fr}
   .form-group.full{grid-column:1}
   .confirm-inner{width:92vw;border-radius:14px}
+  .be-tabs .be-tab{padding:7px 12px;font-size:12px}
 
   /* ── Selection bar ── */
   .sel-bar{left:10px;right:10px;transform:none;bottom:14px;
-    border-radius:16px;padding:9px 14px;gap:8px;font-size:12px;flex-wrap:wrap;
-    justify-content:center}
+    border-radius:16px;padding:9px 14px;gap:8px;font-size:12px;flex-wrap:wrap;justify-content:center}
   .sel-bar-count{font-size:11px}
   .btn-be,.btn-be-clear{padding:6px 12px;font-size:11px}
-
-  /* ── Belgium route label wrap ── */
-  .bel-input-row label{white-space:normal;font-size:10px}
-  .bel-route-card{padding:14px 12px}
-  .bel-card-top-left h3{font-size:12px}
-
-  /* ── Tables: scroll properly ── */
-  .tbl-card{border-radius:8px;overflow:hidden}
-  .tbl-scroll{display:block;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .tbl-scroll table{min-width:600px}
-  .ud-bar-wrap{min-width:100px}
-  .ud-tbl td,.ud-tbl th,.sur-tbl td,.sur-tbl th{
-    padding:5px 8px;font-size:11px}
-
-  /* ── Disable frozen columns on mobile so full table scrolls ── */
-  th.fc-1,td.fc-1,th.fc-2,td.fc-2,
-  th.fc-3,td.fc-3,th.fc-4,td.fc-4{
-    position:static !important;
-    left:auto !important;
-    z-index:auto !important;
-    box-shadow:none !important;
-  }
-  /* Keep table header readable while scrolling */
-  #ct-table thead tr,#ct-table thead th{
-    position:sticky !important;
-    top:0 !important;
-    z-index:5 !important;
-  }
-
-  /* ── Bulk-edit modal wider ── */
-  .be-tabs .be-tab{padding:7px 12px;font-size:12px}
-
-  /* ── CT batch progress cards ── */
-  .ct-bp-card{min-width:140px;max-width:none;flex:1 1 140px}
-
-  /* ── VT voyage progress cards ── */
-  #vt-progress-row{padding:0 0 10px !important}
-  .vt-voyage-card{min-width:0 !important;max-width:none !important;flex:1 1 160px}
-  .vt-voyage-info{gap:4px}
-  .vt-voyage-info-item{font-size:11px;padding:2px 6px}
-
-  /* ── Smart cards — 2 per row ── */
-  .smart-card{min-width:calc(50% - 5px);flex:1 1 calc(50% - 5px)}
-
-  /* ── Tables: force horizontal scroll ── */
-  .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-
-  /* ── Toolbar: wrap filters, shrink inputs ── */
-  .toolbar .fg{flex:1 1 calc(50% - 10px)}
-  select,input[type=text]{min-width:0 !important;width:100%}
-  .ms-wrap{flex:1 1 calc(50% - 10px)}
-  .ms-btn{width:100%;min-width:0 !important}
-
-  /* ── VT toolbar ── */
-  .vt-toolbar{flex-direction:column;align-items:stretch}
-  .vt-search-wrap{width:100%}
-  .vt-search-wrap input{width:100%}
-
-  /* ── Dashboard category tabs ── */
-  .dash-cat-tabs{gap:5px}
-  .dash-cat-tab{font-size:10px;padding:4px 10px}
-
-  /* ── KPI values ── */
-  .kv{font-size:22px}
 }
 
 /* ── Small phones (≤480 px) ── */
@@ -2317,24 +2294,51 @@ function renderCT(){
     const _bpBatches={};
     CT.forEach(r=>{
       const b=r['Batch / Train']||'(No Batch)';
-      if(!_bpBatches[b]) _bpBatches[b]={total:0,arrived:0,t1:0,none:0};
+      if(!_bpBatches[b]) _bpBatches[b]={total:0,arrived:0,t1:0,none:0,minDL:null};
       _bpBatches[b].total++;
       if(r['Tracking']==='Arrived') _bpBatches[b].arrived++;
       else if(r['Tracking']==='T1') _bpBatches[b].t1++;
       else _bpBatches[b].none++;
+      // Track earliest deadline
+      const _dl=parseDate(r['Deadline']);
+      if(_dl && (!_bpBatches[b].minDL || _dl < _bpBatches[b].minDL)) _bpBatches[b].minDL=_dl;
     });
     const _bpKeys=Object.keys(_bpBatches).sort();
+    const _bpToday=new Date(); _bpToday.setHours(0,0,0,0);
     if(!_bpKeys.length){ _bpEl.innerHTML=''; }
     else {
       _bpEl.innerHTML=`<div class="ct-bp-row">${_bpKeys.map(b=>{
         const m=_bpBatches[b];
         const pct=Math.round(m.arrived/m.total*100);
-        const fillColor=pct===100?'#16a34a':pct>=75?'#22c55e':pct>=40?'#F9A825':'#e53935';
+        const allDone=pct===100;
+        // Deadline urgency
+        let _dlColor='#6b7280',_dlBg='#f3f4f6',_dlLabel='',_dlDays=null,_urgency=0;
+        if(m.minDL){
+          _dlDays=Math.round((m.minDL-_bpToday)/864e5);
+          const _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          _dlLabel=`📅 ${m.minDL.getDate()} ${_mo[m.minDL.getMonth()]}`;
+          if(allDone){_dlColor='#15803d';_dlBg='#dcfce7';_urgency=0;}
+          else if(_dlDays<0){_dlColor='#b91c1c';_dlBg='#fee2e2';_dlLabel+=' ⚠️';_urgency=4;}
+          else if(_dlDays===0){_dlColor='#b91c1c';_dlBg='#fee2e2';_dlLabel+=' today!';_urgency=4;}
+          else if(_dlDays<=3){_dlColor='#c2410c';_dlBg='#ffedd5';_dlLabel+=` (${_dlDays}d)`;_urgency=3;}
+          else if(_dlDays<=7){_dlColor='#b45309';_dlBg='#fef3c7';_dlLabel+=` (${_dlDays}d)`;_urgency=2;}
+          else{_dlColor='#0369a1';_dlBg='#dbeafe';_dlLabel+=` (${_dlDays}d)`;_urgency=1;}
+        }
+        // Bar fill color: urgency overrides progress color when not all done
+        let fillColor;
+        if(allDone) fillColor='#16a34a';
+        else if(_urgency===4) fillColor='#e53935';
+        else if(_urgency===3) fillColor='#ea580c';
+        else if(_urgency===2) fillColor='#F9A825';
+        else fillColor=pct>=75?'#22c55e':pct>=40?'#F9A825':'#e53935';
         const shipLeft=Math.max(6,Math.min(92,pct));
-        const shipIcon=pct===100?'🏁':'🚛';
+        const shipIcon=allDone?'🏁':'🚛';
         const bEsc=b.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         return `<div class="ct-bp-card" onclick="gotoBatch('${bEsc}')" title="Click to filter this batch">
-          <div class="ct-bp-name">📦 ${b}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:6px">
+            <div class="ct-bp-name" style="margin-bottom:0">📦 ${b}</div>
+            ${_dlLabel?`<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:${_dlBg};color:${_dlColor};white-space:nowrap">${_dlLabel}</span>`:''}
+          </div>
           <div class="ct-bp-track">
             <div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}">
               ${pct<100?'<div class="ct-bp-fill-anim"></div>':''}
@@ -2342,7 +2346,7 @@ function renderCT(){
             <div class="ct-bp-ship" style="left:${shipLeft}%">${shipIcon}</div>
           </div>
           <div class="ct-bp-labels">
-            <span class="ct-bp-pct" style="background:${pct===100?'#dcfce7':pct>=75?'#f0fdf4':pct>=40?'#fef9c3':'#fef2f2'};color:${fillColor}">${pct}%</span>
+            <span class="ct-bp-pct" style="background:${allDone?'#dcfce7':_urgency>=3?'#ffedd5':_urgency===2?'#fef9c3':'#fef2f2'};color:${fillColor}">${pct}%</span>
             <span class="ct-bp-counts">${m.arrived} / ${m.total} arrived</span>
           </div>
           <div class="ct-bp-pills">
