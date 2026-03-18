@@ -2059,7 +2059,7 @@ function renderDashboard(){
   if(!tbdRows.length){
     tbdEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No vessels with TBD status</div>';
   } else {
-    tbdEl.innerHTML=tbdRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">❓</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
+    tbdEl.innerHTML=tbdRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">❓</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span>${r['Booking / BC No.']?`<span style="color:#7c3aed;font-size:10px;font-weight:600;background:#f3e8ff;padding:1px 7px;border-radius:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r['Booking / BC No.']}">${r['Booking / BC No.']}</span>`:''}  <span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
   // VGM not filed (active vessels where VGM is falsy)
@@ -2647,7 +2647,8 @@ function openDelVessel(id){
   VT=VT.filter(r=>r._id!==id); saveVT(); renderVT(); renderDashboard();
 }
 function renderVT(){
-  document.getElementById('vt-count').textContent=VT.length+' vessels';
+  const _vtTotalCt=VT.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0);
+  document.getElementById('vt-count').textContent=VT.length+' vessels · '+_vtTotalCt+' containers';
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'];
   const TOTAL_COLS=18; // expand + 14 data cols + del + sel
 
