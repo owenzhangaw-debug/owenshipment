@@ -154,7 +154,7 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,77
 .tbl-top{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
 .tbl-top h3{font-size:13px;font-weight:700;letter-spacing:-.1px}
 #ct-count,#vt-count{font-size:11px;color:var(--muted);font-weight:500}
-.tbl-scroll{overflow-x:auto}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:12px}
 thead tr{background:#004D4C;color:#fff}
 thead th{padding:9px 10px;text-align:left;font-weight:600;font-size:11px;
@@ -446,6 +446,39 @@ td.editing .cell-edit{display:block}
 
   /* ── Bulk-edit modal wider ── */
   .be-tabs .be-tab{padding:7px 12px;font-size:12px}
+
+  /* ── CT batch progress cards ── */
+  .ct-bp-card{min-width:140px;max-width:none;flex:1 1 140px}
+
+  /* ── VT voyage progress cards ── */
+  #vt-progress-row{padding:0 0 10px !important}
+  .vt-voyage-card{min-width:0 !important;max-width:none !important;flex:1 1 160px}
+  .vt-voyage-info{gap:4px}
+  .vt-voyage-info-item{font-size:11px;padding:2px 6px}
+
+  /* ── Smart cards — 2 per row ── */
+  .smart-card{min-width:calc(50% - 5px);flex:1 1 calc(50% - 5px)}
+
+  /* ── Tables: force horizontal scroll ── */
+  .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* ── Toolbar: wrap filters, shrink inputs ── */
+  .toolbar .fg{flex:1 1 calc(50% - 10px)}
+  select,input[type=text]{min-width:0 !important;width:100%}
+  .ms-wrap{flex:1 1 calc(50% - 10px)}
+  .ms-btn{width:100%;min-width:0 !important}
+
+  /* ── VT toolbar ── */
+  .vt-toolbar{flex-direction:column;align-items:stretch}
+  .vt-search-wrap{width:100%}
+  .vt-search-wrap input{width:100%}
+
+  /* ── Dashboard category tabs ── */
+  .dash-cat-tabs{gap:5px}
+  .dash-cat-tab{font-size:10px;padding:4px 10px}
+
+  /* ── KPI values ── */
+  .kv{font-size:22px}
 }
 
 /* ── Small phones (≤480 px) ── */
@@ -455,11 +488,29 @@ td.editing .cell-edit{display:block}
   .kv{font-size:17px}
   .kl{font-size:9px}
   .ks{font-size:10px}
-  .smart-card{min-width:130px;padding:8px 10px}
-  .smart-card .sc-count{font-size:20px}
   main{padding:8px 8px 80px}
   .toolbar{gap:5px}
-  .ms-btn{min-width:76px;font-size:10px;padding:3px 22px 3px 7px}
+  .ms-btn{min-width:0;font-size:10px;padding:3px 22px 3px 7px}
+
+  /* ── Smart cards: 2 per row, compact ── */
+  .smart-card{min-width:calc(50% - 5px);padding:8px 10px}
+  .smart-card .sc-count{font-size:18px}
+  .smart-card .sc-label{font-size:9px}
+
+  /* ── CT batch cards: 2 per row ── */
+  .ct-bp-card{min-width:calc(50% - 8px);max-width:none;padding:8px 10px}
+  .ct-bp-name{font-size:10px}
+
+  /* ── VT voyage cards: full width ── */
+  .vt-voyage-card{flex:1 1 100%;min-width:0 !important}
+  .vt-voyage-info-item{font-size:10px;padding:2px 5px}
+  .vt-voyage-title{font-size:11px}
+
+  /* ── Chart height ── */
+  .chart-wrap{height:160px}
+
+  /* ── Dashboard tabs ── */
+  .dash-cat-tab{font-size:10px;padding:4px 8px}
 }
 
 /* ── Landscape phone (short height) ── */
@@ -2822,7 +2873,7 @@ function renderVT(){
       if(_now<_e){_sp='⏳ Not Departed';_sc='#7c3aed';}else if(_now>=_a){_sp='⚠️ Overdue';_sc='#e53935';}else{_sp=`🌊 Day ${_gone} of ${_totD}`;_sc='#0369a1';}
     }
     const _fc=_now>=_a&&!_at?'#e53935':'#0284c7';
-    return `<div class="vt-voyage-card" style="flex:1;min-width:200px;max-width:300px">
+    return `<div class="vt-voyage-card" style="flex:1 1 200px;max-width:300px">
       <div class="vt-voyage-header">
         <div class="vt-voyage-title">🚢 ${r['Vessel Name']||'Vessel'}</div>
         <div class="vt-voyage-status-pill" style="color:${_sc}">${_sp}</div>
