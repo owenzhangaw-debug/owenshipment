@@ -609,6 +609,13 @@ td.editing .cell-edit{display:block}
 .fb-empty{text-align:center;padding:40px;color:#aaa;font-size:14px}
 .fb-tag-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .fb-tag{font-size:10px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:1px 7px}
+.fb-aspects{background:#f8fafc;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid #eaeff6;display:flex;flex-direction:column;gap:8px}
+.fb-aspect-block{display:flex;flex-direction:column;gap:4px}
+.fb-aspect-row{display:flex;align-items:center;gap:8px}
+.fb-aspect-lbl{font-size:11px;font-weight:700;color:#555;min-width:100px;white-space:nowrap}
+.fb-aspect-note{width:100%;box-sizing:border-box;border:1px solid #dde3ee;border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;color:#334;background:#fff;transition:border-color .2s}
+.fb-aspect-note:focus{outline:none;border-color:#004D4C}
+.fb-avg-stars{font-size:13px;color:#f59e0b;margin-left:4px}
 </style>
 </head>
 <body>
@@ -969,7 +976,7 @@ td.editing .cell-edit{display:block}
         <thead><tr>
           <th class="no-sort" style="width:32px"></th>
           <th>Port</th><th>Carrier</th><th>Booking / BC No.</th><th>Container Qty</th>
-          <th>Vessel Name</th><th>ETS (Departure)</th><th>ETA (Arrival)</th><th>Port Cut-Off</th>
+          <th>Vessel Name</th><th>ETS (Departure)</th><th>ETA (Arrival)</th><th>ATA (Actual)</th><th>Port Cut-Off</th>
           <th>Barge Date</th><th>Days to Cut-Off</th>
           <th class="no-sort" style="text-align:center">VGM</th>
           <th class="no-sort" style="text-align:center">Custom</th>
@@ -2612,22 +2619,23 @@ function toggleCMR(id, checked){
 // ── VESSEL TABLE ──────────────────────────────────────────────────
 function vtCell(r, col, opts){
   const v = r[col]===undefined||r[col]===null||isNaN_safe(r[col]) ? '' : String(r[col]);
-  const IS_DATE=['ETS (Departure)','ETA (Arrival)','Port Cut-Off','Barge Date'].includes(col);
+  const IS_DATE=['ETS (Departure)','ETA (Arrival)','ATA (Actual)','Port Cut-Off','Barge Date'].includes(col);
   const disp = IS_DATE ? fmtDateStr(v) : v;
+  const xStyle = (opts&&opts.extraStyle) ? ` style="${opts.extraStyle}"` : '';
   if(opts && opts.select){
     const selOpts = opts.select.map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('');
-    return `<td data-vtid="${r._id}" data-col="${col}">
+    return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
       <div class="cell-view" onclick="startEdit(this)">${disp?`<strong>${disp}</strong>`:'<span style="color:#ccc">—</span>'}</div>
       <div class="cell-edit"><select onblur="commitVTSelect(this,'${col}',${r._id})" onchange="commitVTSelect(this,'${col}',${r._id})">${selOpts}</select></div>
     </td>`;
   }
   if(IS_DATE){
-    return `<td data-vtid="${r._id}" data-col="${col}">
+    return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
       <div class="cell-view" onclick="startEdit(this)">${disp||'<span style="color:#ccc">—</span>'}</div>
       <div class="cell-edit"><input type="text" data-fptype="date" value="${disp.replace(/"/g,'&quot;')}" onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
     </td>`;
   }
-  return `<td data-vtid="${r._id}" data-col="${col}">
+  return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
     <div class="cell-view" onclick="startEdit(this)">${disp||'<span style="color:#ccc">—</span>'}</div>
     <div class="cell-edit"><input value="${v.replace(/"/g,'&quot;')}" onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
   </td>`;
@@ -2647,7 +2655,7 @@ function commitVTSelect(sel, col, id){
 }
 function openAddVessel(){
   const v={Port:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
-    'ETS (Departure)':'','ETA (Arrival)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
+    'ETS (Departure)':'','ETA (Arrival)':'','ATA (Actual)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
     Status:'Scheduled','Remark':'','VGM':false,'Custom':false,containers:[],vesselHistory:[],_id:vtNextId++};
   VT.push(v); saveVT(); renderVT(); renderDashboard();
 }
@@ -2658,7 +2666,7 @@ function openDelVessel(id){
 function renderVT(){
   document.getElementById('vt-count').textContent=VT.length+' vessels';
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','TBD'];
-  const TOTAL_COLS=17; // expand + 13 data cols + del + sel
+  const TOTAL_COLS=18; // expand + 14 data cols + del + sel
   document.getElementById('vt-body').innerHTML=VT.map(r=>{
     // Auto-calculate Days to Cut-Off = Port Cut-Off − Barge Date
     const _pc=parseDate(r['Port Cut-Off']), _bd=parseDate(r['Barge Date']);
@@ -2669,20 +2677,32 @@ function renderVT(){
     // Voyage progress bar computation (hoisted for use in both main row and expanded row)
     const _etsD = parseDate(r['ETS (Departure)']);
     const _etaD = parseDate(r['ETA (Arrival)']);
+    const _ataD = parseDate(r['ATA (Actual)']);
     const _vpNow = new Date(); _vpNow.setHours(0,0,0,0);
     const _vpHasProgress = !!((_etsD && _etaD) && (_etaD > _etsD));
-    let _vpPct=0, _vpDaysGone=0, _vpDaysLeft=0, _vpTotalDays=0, _vpStatusLabel='', _vpStatusColor='', _vpShipLeft=8;
+    let _vpPct=0, _vpDaysGone=0, _vpDaysLeft=0, _vpTotalDays=0, _vpStatusLabel='', _vpStatusColor='', _vpShipLeft=8, _vpArrived=false;
     if(_vpHasProgress){
       const _vpTotal=_etaD-_etsD;
-      const _vpElapsed=_vpNow-_etsD;
-      _vpPct=Math.min(1,Math.max(0,_vpElapsed/_vpTotal));
       _vpTotalDays=Math.round(_vpTotal/864e5);
-      _vpDaysGone=Math.max(0,Math.round(_vpElapsed/864e5));
-      _vpDaysLeft=Math.max(0,Math.round((_etaD-_vpNow)/864e5));
-      _vpShipLeft=8+_vpPct*84;
-      if(_vpNow<_etsD){_vpStatusLabel='Not Yet Departed';_vpStatusColor='#7c3aed';}
-      else if(_vpNow>=_etaD){_vpStatusLabel='Arrived ✓';_vpStatusColor='#15803d';}
-      else{_vpStatusLabel=`Day ${_vpDaysGone} of ${_vpTotalDays}`;_vpStatusColor='#0369a1';}
+      if(_ataD){
+        // Actual arrival known — voyage complete
+        _vpPct=1; _vpShipLeft=92; _vpArrived=true;
+        const actualDays=Math.round((_ataD-_etsD)/864e5);
+        const diff=Math.round((_ataD-_etaD)/864e5);
+        const diffStr=diff===0?'on time':diff<0?`${Math.abs(diff)}d early`:`${diff}d late`;
+        _vpStatusLabel=`Arrived · ${diffStr}`;
+        _vpStatusColor=diff<=0?'#15803d':'#e53935';
+        _vpDaysGone=actualDays; _vpDaysLeft=0;
+      } else {
+        const _vpElapsed=_vpNow-_etsD;
+        _vpPct=Math.min(1,Math.max(0,_vpElapsed/_vpTotal));
+        _vpDaysGone=Math.max(0,Math.round(_vpElapsed/864e5));
+        _vpDaysLeft=Math.max(0,Math.round((_etaD-_vpNow)/864e5));
+        _vpShipLeft=8+_vpPct*84;
+        if(_vpNow<_etsD){_vpStatusLabel='Not Yet Departed';_vpStatusColor='#7c3aed';}
+        else if(_vpNow>=_etaD){_vpStatusLabel='Overdue · awaiting ATA';_vpStatusColor='#e53935';}
+        else{_vpStatusLabel=`Day ${_vpDaysGone} of ${_vpTotalDays}`;_vpStatusColor='#0369a1';}
+      }
     }
 
     const cls=r['Status']==='Departed'?'v-dep':r['Status']==='Cut-Off Soon'?'v-soon':r['Status']==='Cut-Off Passed'?'v-late':'';
@@ -2719,6 +2739,12 @@ function renderVT(){
       ${vtCell(r,'Vessel Name')}
       ${vtCell(r,'ETS (Departure)')}
       ${vtCell(r,'ETA (Arrival)')}
+      ${(()=>{
+        const ata=r['ATA (Actual)'];
+        const hasAta=ata&&ata.trim();
+        const style=hasAta?'background:#f0fdf4;color:#166534;font-weight:700':'';
+        return vtCell(r,'ATA (Actual)',{extraStyle:style});
+      })()}
       ${vtCell(r,'Port Cut-Off')}
       ${vtCell(r,'Barge Date')}
       <td style="padding:7px 10px;text-align:center;font-weight:700;color:${_daysColor};white-space:nowrap">${_daysDisp}</td>
@@ -2736,15 +2762,15 @@ function renderVT(){
     ${_vpHasProgress ? `<tr class="vt-mini-prog-row" id="vprog-${r._id}">
       <td colspan="${TOTAL_COLS}" style="padding:0 0 2px;border-top:none;background:transparent">
         <div class="vt-mini-prog-wrap">
-          <div class="vt-mini-prog-track">
-            <div class="vt-mini-prog-fill" style="width:${Math.round(_vpPct*100)}%"></div>
-            <div class="vt-mini-prog-ship" style="left:${_vpShipLeft}%">🚢</div>
+          <div class="vt-mini-prog-track" style="${_vpArrived ? 'background:linear-gradient(90deg,#bbf7d0,#d1fae5)' : ''}">
+            <div class="vt-mini-prog-fill" style="width:${Math.round(_vpPct*100)}%;${_vpArrived ? 'background:linear-gradient(90deg,#16a34a,#22c55e,#4ade80)' : ''}"></div>
+            <div class="vt-mini-prog-ship" style="left:${_vpShipLeft}%">${_vpArrived ? '🏁' : '🚢'}</div>
             <div class="vt-mini-prog-anchor" title="Destination">⚓</div>
           </div>
           <div class="vt-mini-prog-labels">
             <span class="vt-mini-prog-status" style="color:${_vpStatusColor}">${_vpStatusLabel}</span>
-            <span class="vt-mini-prog-pct">${Math.round(_vpPct*100)}%</span>
-            <span class="vt-mini-prog-remaining">${_vpDaysLeft > 0 ? `${_vpDaysLeft}d remaining` : (_vpDaysLeft===0 && _vpNow < _etaD ? 'arriving today' : '')}</span>
+            <span class="vt-mini-prog-pct" style="${_vpArrived ? 'background:#dcfce7;color:#15803d;border-color:#86efac' : ''}">${_vpArrived ? '✓ Done' : Math.round(_vpPct*100)+'%'}</span>
+            <span class="vt-mini-prog-remaining">${_vpArrived ? '' : (_vpDaysLeft > 0 ? `${_vpDaysLeft}d remaining` : (_vpDaysLeft===0 && _vpNow < _etaD ? 'arriving today' : ''))}</span>
           </div>
         </div>
       </td>
@@ -2754,42 +2780,55 @@ function renderVT(){
         ${(()=>{
           const etsD = parseDate(r['ETS (Departure)']);
           const etaD = parseDate(r['ETA (Arrival)']);
+          const ataD = parseDate(r['ATA (Actual)']);
           if(!etsD || !etaD) return '';
           const now = new Date(); now.setHours(0,0,0,0);
           const total = etaD - etsD;
-          const elapsed = now - etsD;
-          const pct = Math.min(1, Math.max(0, elapsed / total));
-          const shipLeft = 8 + pct * 84; // 8%–92% range
-          const totalDays = Math.round(total / 864e5);
-          const daysGone  = Math.max(0, Math.round(elapsed / 864e5));
-          const daysLeft  = Math.max(0, Math.round((etaD - now) / 864e5));
           const wds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
           const ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
           const fmtD = d => wds[d.getDay()]+' '+d.getDate()+' '+ms[d.getMonth()];
-          let statusLabel, statusColor;
-          if(now < etsD){ statusLabel='⏳ Not Yet Departed'; statusColor='#7c3aed'; }
-          else if(now >= etaD){ statusLabel='✅ Arrived'; statusColor='#15803d'; }
-          else { statusLabel=`🌊 At Sea · Day ${daysGone} of ${totalDays}`; statusColor='#0369a1'; }
+          let pct, shipLeft, totalDays, daysGone, daysLeft, statusLabel, statusColor, extraInfoHtml='';
+          totalDays = Math.round(total/864e5);
+          if(ataD){
+            pct=1; shipLeft=92;
+            daysGone=Math.round((ataD-etsD)/864e5); daysLeft=0;
+            const diff=Math.round((ataD-etaD)/864e5);
+            const diffStr=diff===0?'On Time 🎯':diff<0?`${Math.abs(diff)}d Early 🚀`:`${diff}d Late ⚠️`;
+            statusLabel='🏁 Arrived · '+diffStr;
+            statusColor=diff<=0?'#15803d':'#e53935';
+            extraInfoHtml=`<div class="vt-voyage-info-item" style="background:rgba(220,252,231,.8);border-color:#86efac">🛬 ATA <span style="color:#15803d">${fmtD(ataD)}</span></div>`;
+          } else {
+            const elapsed = now - etsD;
+            pct = Math.min(1, Math.max(0, elapsed / total));
+            shipLeft = 8 + pct * 84;
+            daysGone = Math.max(0, Math.round(elapsed / 864e5));
+            daysLeft = Math.max(0, Math.round((etaD - now) / 864e5));
+            if(now < etsD){ statusLabel='⏳ Not Yet Departed'; statusColor='#7c3aed'; }
+            else if(now >= etaD){ statusLabel='⚠️ Overdue · awaiting ATA'; statusColor='#e53935'; }
+            else { statusLabel=`🌊 At Sea · Day ${daysGone} of ${totalDays}`; statusColor='#0369a1'; }
+          }
+          const oceanStyle=ataD?'background:linear-gradient(180deg,#4ade80 0%,#16a34a 50%,#166534 100%)':'';
           return `<div class="vt-voyage-card">
             <div class="vt-voyage-header">
-              <div class="vt-voyage-title">🚢 ${r['Vessel Name']||'Voyage'} — Sea Progress</div>
+              <div class="vt-voyage-title">${ataD?'🏁':'🚢'} ${r['Vessel Name']||'Voyage'} — Sea Progress</div>
               <div class="vt-voyage-status-pill" style="color:${statusColor}">${statusLabel}</div>
             </div>
-            <div class="vt-voyage-ocean">
+            <div class="vt-voyage-ocean" style="${oceanStyle}">
               <div class="vt-voyage-waves"></div>
               <div class="vt-voyage-waves2"></div>
               <div class="vt-voyage-track-line"></div>
               <div class="vt-voyage-port-start">🏭</div>
               <div class="vt-voyage-port-end">⚓</div>
-              <div class="vt-voyage-ship" style="left:${shipLeft}%">🚢</div>
+              <div class="vt-voyage-ship" style="left:${shipLeft}%">${ataD?'🏁':'🚢'}</div>
               <div class="vt-voyage-progress-bar" style="width:${shipLeft}%"></div>
             </div>
             <div class="vt-voyage-info">
               <div class="vt-voyage-info-item">🛫 ETS <span>${fmtD(etsD)}</span></div>
               <div class="vt-voyage-info-item">📍 Progress <span>${Math.round(pct*100)}%</span></div>
               <div class="vt-voyage-info-item">⏱ Elapsed <span>${daysGone}d</span></div>
-              <div class="vt-voyage-info-item">🕐 Remaining <span>${daysLeft}d</span></div>
-              <div class="vt-voyage-info-item">🛬 ETA <span>${fmtD(etaD)}</span></div>
+              ${ataD?'':(`<div class="vt-voyage-info-item">🕐 Remaining <span>${daysLeft}d</span></div>`)}
+              <div class="vt-voyage-info-item">📅 ETA <span>${fmtD(etaD)}</span></div>
+              ${extraInfoHtml}
             </div>
           </div>`;
         })()}
@@ -4048,53 +4087,94 @@ let FB = {};
 })();
 function saveFB(){ try{ localStorage.setItem(FB_KEY, JSON.stringify(FB)); }catch(e){} }
 
-function fbGet(batch, type, name){ // type = 'truckers' | 'consignees'
+// Safe element-id key: base64url-like encoding to avoid CSS/HTML special chars
+function fbSafeId(batch, type, name){
+  return btoa(unescape(encodeURIComponent(batch+'||'+type+'||'+name))).replace(/[+/=]/g,'_');
+}
+function fbGetData(batch, type, name){
   if(!FB[batch]) FB[batch]={};
   if(!FB[batch][type]) FB[batch][type]={};
-  if(!FB[batch][type][name]) FB[batch][type][name]={stars:0,note:''};
+  if(!FB[batch][type][name]){
+    if(type==='truckers') FB[batch][type][name]={prep:0,prepNote:'',delivery:0,deliveryNote:'',finishing:0,finishingNote:'',note:''};
+    else FB[batch][type][name]={stars:0,starsNote:'',note:''};
+  }
   return FB[batch][type][name];
 }
-function fbSet(batch, type, name, stars, note){
+function fbSetData(batch, type, name, data){
   if(!FB[batch]) FB[batch]={};
   if(!FB[batch][type]) FB[batch][type]={};
-  FB[batch][type][name]={stars,note};
+  FB[batch][type][name]=Object.assign(fbGetData(batch,type,name), data);
   saveFB();
 }
 
-function fbSetStar(batch, type, name, stars){
-  const d=fbGet(batch,type,name);
-  fbSet(batch,type,name,stars,d.note);
-  // re-render stars in place
-  const key=`${batch}|${type}|${name}`;
-  document.querySelectorAll(`.fb-star[data-key="${CSS.escape(key)}"]`).forEach(s=>{
-    s.classList.toggle('on', parseInt(s.dataset.v)<=stars);
+// Star click handler — aspect = 'prep'|'delivery'|'finishing'|'stars'
+function fbSetStar(sid, aspect, v){
+  const card=document.getElementById('fbcard_'+sid);
+  if(!card) return;
+  // Update stars display
+  card.querySelectorAll('.fb-star[data-aspect="'+aspect+'"]').forEach(s=>{
+    s.classList.toggle('on', parseInt(s.dataset.v)<=v);
   });
+  // Store in hidden input
+  const inp=document.getElementById('fbstar_'+sid+'_'+aspect);
+  if(inp) inp.value=v;
 }
-function fbSaveOne(batch, type, name){
-  const key=`${batch}|${type}|${name}`;
-  const starsOn=document.querySelectorAll(`.fb-star.on[data-key="${CSS.escape(key)}"]`).length;
-  const noteEl=document.getElementById('fbnote_'+CSS.escape(key).replace(/\|/g,'_'));
-  const note=noteEl?noteEl.value:'';
-  fbSet(batch,type,name,starsOn,note);
-  const badge=document.getElementById('fbsaved_'+CSS.escape(key).replace(/\|/g,'_'));
-  if(badge){ badge.style.display='inline'; setTimeout(()=>badge.style.display='none',2000); }
+
+function fbSaveCard(sid){
+  const card=document.getElementById('fbcard_'+sid);
+  if(!card) return;
+  const batch=card.dataset.batch, type=card.dataset.type, name=card.dataset.name;
+  const g=id=>{ const el=document.getElementById(id); return el?el.value:''; };
+  const gi=id=>parseInt(g(id))||0;
+  const data={};
+  if(type==='truckers'){
+    data.prep       =gi('fbstar_'+sid+'_prep');
+    data.prepNote   =g('fbasnote_'+sid+'_prep');
+    data.delivery   =gi('fbstar_'+sid+'_delivery');
+    data.deliveryNote=g('fbasnote_'+sid+'_delivery');
+    data.finishing  =gi('fbstar_'+sid+'_finishing');
+    data.finishingNote=g('fbasnote_'+sid+'_finishing');
+  } else {
+    data.stars     =gi('fbstar_'+sid+'_stars');
+    data.starsNote =g('fbasnote_'+sid+'_stars');
+  }
+  data.note=g('fbnote_'+sid);
+  fbSetData(batch,type,name,data);
+  const badge=document.getElementById('fbsaved_'+sid);
+  if(badge){ badge.style.display='inline'; setTimeout(()=>badge.style.display='none',2200); }
 }
 function fbSaveAll(){
-  document.querySelectorAll('.fb-save-btn').forEach(btn=>btn.click());
+  document.querySelectorAll('[id^="fbcard_"]').forEach(card=>{
+    const sid=card.id.replace('fbcard_','');
+    fbSaveCard(sid);
+  });
+}
+
+function fbMakeStarRow(sid, aspect, label, current, currentNote){
+  const starsHtml=[1,2,3,4,5].map(v=>
+    `<span class="fb-star${current>=v?' on':''}" data-aspect="${aspect}" data-v="${v}"
+      onclick="fbSetStar('${sid}','${aspect}',${v})" title="${v}★">★</span>`
+  ).join('');
+  return `<div class="fb-aspect-block">
+    <div class="fb-aspect-row">
+      <span class="fb-aspect-lbl">${label}</span>
+      <div class="fb-stars" style="margin:0">${starsHtml}</div>
+      <input type="hidden" id="fbstar_${sid}_${aspect}" value="${current}">
+    </div>
+    <input type="text" class="fb-aspect-note" id="fbasnote_${sid}_${aspect}"
+      placeholder="Note for ${label.replace(/[^a-zA-Z ]/g,'').trim()}…"
+      value="${(currentNote||'').replace(/"/g,'&quot;')}">
+  </div>`;
 }
 
 function renderFeedback(){
-  // Gather all batches from CT
   const batches=[...new Set(CT.map(r=>r['Batch / Train']||'').filter(Boolean))].sort();
-  const filterVal=document.getElementById('fb-batch-filter').value;
-
-  // Populate filter dropdown
   const sel=document.getElementById('fb-batch-filter');
   const prev=sel.value;
   sel.innerHTML='<option value="">All Batches</option>'+batches.map(b=>`<option value="${b}"${b===prev?' selected':''}>${b}</option>`).join('');
-
+  const filterVal=sel.value;
   const visibleBatches=filterVal?[filterVal]:batches;
-  document.getElementById('fb-count').textContent=batches.length+' batches';
+  document.getElementById('fb-count').textContent=batches.length+' batch'+(batches.length!==1?'es':'');
 
   if(!batches.length){
     document.getElementById('fb-content').innerHTML='<div class="fb-empty">No batch data found in the Containers tab yet.</div>';
@@ -4107,29 +4187,64 @@ function renderFeedback(){
     const consignees=[...new Set(rows.map(r=>r['Consignee']||'').filter(Boolean))].sort();
     const totalCt=rows.length;
 
-    const makeCard=(type,name)=>{
-      const d=fbGet(batch,type,name);
-      const key=`${batch}|${type}|${name}`;
-      const safeKey=key.replace(/[|]/g,'_');
-      // Which container nos are linked
-      const relRows=rows.filter(r=>{
-        if(type==='truckers') return (r['Trucker']||'')==name;
-        return (r['Consignee']||'')==name;
-      });
+    // Trucker card — 3 aspect ratings
+    const makeTruckerCard=(name)=>{
+      const d=fbGetData(batch,'truckers',name);
+      const sid=fbSafeId(batch,'truckers',name);
+      const relRows=rows.filter(r=>(r['Trucker']||'')==name);
       const cnList=relRows.map(r=>r['Container No.']||'').filter(Boolean);
       const tagsHtml=cnList.length?`<div class="fb-tag-row">${cnList.map(cn=>`<span class="fb-tag">${cn}</span>`).join('')}</div>`:'';
-      const starsHtml=[1,2,3,4,5].map(v=>`<span class="fb-star${d.stars>=v?' on':''}" data-key="${key}" data-v="${v}" onclick="fbSetStar('${batch.replace(/'/g,"\\'")}','${type}','${name.replace(/'/g,"\\'")}',${v})" title="${v} star${v>1?'s':''}">★</span>`).join('');
-      return `<div class="fb-card">
+      const avgStars=((d.prep||0)+(d.delivery||0)+(d.finishing||0))/3;
+      const avgDisp=avgStars>0?('★'.repeat(Math.round(avgStars))+`<span style="font-size:10px;color:#888;margin-left:4px">${avgStars.toFixed(1)} avg</span>`):'';
+      return `<div class="fb-card" id="fbcard_${sid}" data-batch="${batch.replace(/"/g,'&quot;')}" data-type="truckers" data-name="${name.replace(/"/g,'&quot;')}">
         <div class="fb-card-name">
-          ${name}
+          🚛 ${name}
+          <span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span>
+          ${avgDisp?`<span class="fb-avg-stars">${avgDisp}</span>`:''}
+        </div>
+        ${tagsHtml}
+        <div class="fb-aspects">
+          ${fbMakeStarRow(sid,'prep','📋 Preparation',d.prep||0,d.prepNote||'')}
+          ${fbMakeStarRow(sid,'delivery','🚚 Delivery',d.delivery||0,d.deliveryNote||'')}
+          ${fbMakeStarRow(sid,'finishing','✅ Finishing',d.finishing||0,d.finishingNote||'')}
+        </div>
+        <textarea class="fb-note" id="fbnote_${sid}" placeholder="Additional notes…" rows="2">${(d.note||'').replace(/</g,'&lt;')}</textarea>
+        <div class="fb-card-footer">
+          <button class="fb-save-btn" onclick="fbSaveCard('${sid}')">💾 Save</button>
+          <span class="fb-saved-badge" id="fbsaved_${sid}">✓ Saved!</span>
+        </div>
+      </div>`;
+    };
+
+    // Consignee card — single overall rating
+    const makeConsigneeCard=(name)=>{
+      const d=fbGetData(batch,'consignees',name);
+      const sid=fbSafeId(batch,'consignees',name);
+      const relRows=rows.filter(r=>(r['Consignee']||'')==name);
+      const cnList=relRows.map(r=>r['Container No.']||'').filter(Boolean);
+      const tagsHtml=cnList.length?`<div class="fb-tag-row">${cnList.map(cn=>`<span class="fb-tag">${cn}</span>`).join('')}</div>`:'';
+      return `<div class="fb-card" id="fbcard_${sid}" data-batch="${batch.replace(/"/g,'&quot;')}" data-type="consignees" data-name="${name.replace(/"/g,'&quot;')}">
+        <div class="fb-card-name">
+          🏢 ${name}
           <span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span>
         </div>
         ${tagsHtml}
-        <div class="fb-stars">${starsHtml}</div>
-        <textarea class="fb-note" id="fbnote_${safeKey}" placeholder="Add notes, comments, performance rating…" rows="2">${(d.note||'').replace(/</g,'&lt;')}</textarea>
+        <div class="fb-aspects">
+          <div class="fb-aspect-block">
+            <div class="fb-aspect-row">
+              <span class="fb-aspect-lbl">⭐ Overall</span>
+              <div class="fb-stars" style="margin:0">${[1,2,3,4,5].map(v=>`<span class="fb-star${(d.stars||0)>=v?' on':''}" data-aspect="stars" data-v="${v}" onclick="fbSetStar('${sid}','stars',${v})" title="${v}★">★</span>`).join('')}</div>
+              <input type="hidden" id="fbstar_${sid}_stars" value="${d.stars||0}">
+            </div>
+            <input type="text" class="fb-aspect-note" id="fbasnote_${sid}_stars"
+              placeholder="Note for Overall rating…"
+              value="${(d.starsNote||'').replace(/"/g,'&quot;')}">
+          </div>
+        </div>
+        <textarea class="fb-note" id="fbnote_${sid}" placeholder="Additional notes…" rows="2">${(d.note||'').replace(/</g,'&lt;')}</textarea>
         <div class="fb-card-footer">
-          <button class="fb-save-btn" onclick="fbSaveOne('${batch.replace(/'/g,"\\'")}','${type}','${name.replace(/'/g,"\\'")}')">💾 Save</button>
-          <span class="fb-saved-badge" id="fbsaved_${safeKey}">✓ Saved!</span>
+          <button class="fb-save-btn" onclick="fbSaveCard('${sid}')">💾 Save</button>
+          <span class="fb-saved-badge" id="fbsaved_${sid}">✓ Saved!</span>
         </div>
       </div>`;
     };
@@ -4144,12 +4259,12 @@ function renderFeedback(){
       </div>
       <div class="fb-two-col">
         <div class="fb-col">
-          <div class="fb-col-title">🚛 Truckers</div>
-          ${truckers.length?truckers.map(t=>makeCard('truckers',t)).join(''):'<div class="fb-empty" style="padding:20px;font-size:12px">No truckers assigned</div>'}
+          <div class="fb-col-title">🚛 Truckers <span style="font-size:10px;font-weight:400;color:#aaa;text-transform:none;letter-spacing:0">(3 aspects)</span></div>
+          ${truckers.length?truckers.map(makeTruckerCard).join(''):'<div class="fb-empty" style="padding:20px;font-size:12px">No truckers assigned</div>'}
         </div>
         <div class="fb-col">
           <div class="fb-col-title">🏢 Consignees</div>
-          ${consignees.length?consignees.map(c=>makeCard('consignees',c)).join(''):'<div class="fb-empty" style="padding:20px;font-size:12px">No consignees assigned</div>'}
+          ${consignees.length?consignees.map(makeConsigneeCard).join(''):'<div class="fb-empty" style="padding:20px;font-size:12px">No consignees assigned</div>'}
         </div>
       </div>
     </div>`;
