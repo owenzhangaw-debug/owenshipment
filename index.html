@@ -220,7 +220,7 @@ td.editing .cell-edit{display:block}
 .no-data{padding:40px;text-align:center;color:var(--muted)}
 
 /* VESSEL TABLE */
-.v-dep{background:#D1FAE5}.v-soon{background:#FEF9C3}.v-late{background:#FEE2E2}
+.v-dep{background:#D1FAE5}.v-soon{background:#FEF9C3}.v-late{background:#FEE2E2}.v-disc{background:#E0E7FF}
 .vt-expand-btn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--navy);
   width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;
   border-radius:5px;transition:background .15s;user-select:none}
@@ -1255,7 +1255,7 @@ td.editing .cell-edit{display:block}
         <div class="form-group"><label>Port</label><input type="text" id="be_port"/></div>
         <div class="form-group"><label>Carrier</label><input type="text" id="be_carrier"/></div>
         <div class="form-group"><label>Status</label>
-          <select id="be_vstatus"><option value="">— no change —</option><option>Scheduled</option><option>Cut-Off Soon</option><option>Cut-Off Passed</option><option>Departed</option><option>TBD</option></select></div>
+          <select id="be_vstatus"><option value="">— no change —</option><option>Scheduled</option><option>Cut-Off Soon</option><option>Cut-Off Passed</option><option>Departed</option><option>Discharged</option><option>TBD</option></select></div>
         <div class="form-group"><label>ETS (Departure)</label><input type="text" id="be_ets" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>Port Cut-Off</label><input type="text" id="be_pco" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group full"><label>Remark</label><input type="text" id="be_notes"/></div>
@@ -2021,7 +2021,7 @@ function renderDashboard(){
 
   // ── VT Alerts: Port Cut-Off / VGM / Custom ────────────────────
   const vtToday=new Date(); vtToday.setHours(0,0,0,0);
-  const NON_DEP=['Scheduled','Cut-Off Soon','Cut-Off Passed','TBD'];
+  const NON_DEP=['Scheduled','Cut-Off Soon','Cut-Off Passed','TBD','Discharged'];
   const activeVT=VT.filter(r=>NON_DEP.includes(r['Status'])||!r['Status']);
 
   // Port Cut-Off within 3 days
@@ -2664,7 +2664,7 @@ function openDelVessel(id){
 }
 function renderVT(){
   document.getElementById('vt-count').textContent=VT.length+' vessels';
-  const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','TBD'];
+  const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'];
   const TOTAL_COLS=18; // expand + 14 data cols + del + sel
   document.getElementById('vt-body').innerHTML=VT.map(r=>{
     // Auto-calculate Days to Cut-Off = Port Cut-Off − Barge Date
@@ -2704,7 +2704,7 @@ function renderVT(){
       }
     }
 
-    const cls=r['Status']==='Departed'?'v-dep':r['Status']==='Cut-Off Soon'?'v-soon':r['Status']==='Cut-Off Passed'?'v-late':'';
+    const cls=r['Status']==='Departed'?'v-dep':r['Status']==='Discharged'?'v-disc':r['Status']==='Cut-Off Soon'?'v-soon':r['Status']==='Cut-Off Passed'?'v-late':'';
     const cns=Array.isArray(r.containers)?r.containers:[];
     const cnCount=cns.length;
     const isOpen=vtExpanded.has(r._id);
