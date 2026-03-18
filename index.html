@@ -805,20 +805,20 @@ td.editing .cell-edit{display:block}
           <div class="kv" id="kv-vessels" style="color:#6a1b9a">—</div>
           <div class="ks">click to view all</div>
         </div>
-        <div class="kpi" id="kv-cutoff-soon-card" style="border-color:#e53935;cursor:pointer;flex:1" onclick="showPage('vessels')">
-          <div class="kl">Cut-Off ≤3d</div>
-          <div class="kv" id="kv-cutoff-soon" style="color:#c62828">—</div>
-          <div class="ks">needs attention</div>
+        <div class="kpi" id="kv-tbd-card" style="border-color:#7c3aed;cursor:pointer;flex:1" onclick="showPage('vessels')">
+          <div class="kl">Status TBD</div>
+          <div class="kv" id="kv-tbd" style="color:#7c3aed">—</div>
+          <div class="ks">pending confirmation</div>
         </div>
       </div>
 
-      <!-- Port Cut-Off Alert -->
+      <!-- Status TBD Alert -->
       <div class="chart-card vt-right-card" style="padding:14px 16px">
         <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-          <span style="font-size:16px">⚠️</span> Port Cut-Off Alert
-          <span id="cutoff-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
+          <span style="font-size:16px">❓</span> Status TBD
+          <span id="tbd-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#f3e8ff;color:#7c3aed;border-radius:8px;padding:2px 8px"></span>
         </h3>
-        <div id="cutoff-alert-list" style="font-size:12px"></div>
+        <div id="tbd-alert-list" style="font-size:12px"></div>
       </div>
 
       <!-- VGM Not Filed -->
@@ -2046,29 +2046,20 @@ function renderDashboard(){
   const NON_DEP=['Scheduled','Cut-Off Soon','Cut-Off Passed','TBD','Discharged'];
   const activeVT=VT.filter(r=>NON_DEP.includes(r['Status'])||!r['Status']);
 
-  // Port Cut-Off within 3 days
-  const cutoffRows=activeVT.map(r=>{
-    const pc=parseDate(r['Port Cut-Off']);
-    if(!pc) return null;
-    const diff=Math.round((pc-vtToday)/864e5);
-    return diff<=3?{r,diff,pc}:null;
-  }).filter(Boolean).sort((a,b)=>a.diff-b.diff);
-  const coEl=document.getElementById('cutoff-alert-list');
-  const coBadge=document.getElementById('cutoff-alert-badge');
-  coBadge.textContent=cutoffRows.length?cutoffRows.length+' vessel'+(cutoffRows.length>1?'s':''):'All clear';
-  coBadge.style.background=cutoffRows.length?'#fdecea':'#e8f5e9';
-  coBadge.style.color=cutoffRows.length?'#c62828':'#2e7d32';
-  // Update the mini KPI card in vessel header row
-  const kvCutoff=document.getElementById('kv-cutoff-soon');
-  if(kvCutoff){ kvCutoff.textContent=cutoffRows.length||'0';
-    kvCutoff.style.color=cutoffRows.length?'#c62828':'#2e7d32'; }
-  if(!cutoffRows.length){
-    coEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No vessels with cut-off within 3 days</div>';
+  // Status TBD vessels
+  const tbdRows=VT.filter(r=>r['Status']==='TBD');
+  const tbdEl=document.getElementById('tbd-alert-list');
+  const tbdBadge=document.getElementById('tbd-alert-badge');
+  tbdBadge.textContent=tbdRows.length?tbdRows.length+' vessel'+(tbdRows.length>1?'s':''):'None';
+  tbdBadge.style.background=tbdRows.length?'#f3e8ff':'#e8f5e9';
+  tbdBadge.style.color=tbdRows.length?'#7c3aed':'#2e7d32';
+  const kvTbd=document.getElementById('kv-tbd');
+  if(kvTbd){ kvTbd.textContent=tbdRows.length||'0';
+    kvTbd.style.color=tbdRows.length?'#7c3aed':'#2e7d32'; }
+  if(!tbdRows.length){
+    tbdEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No vessels with TBD status</div>';
   } else {
-    coEl.innerHTML=cutoffRows.map(({r,diff})=>{
-      const diffTxt=diff<0?`<span style="color:#c62828;font-weight:700">${Math.abs(diff)}d overdue</span>`:diff===0?'<span style="color:#e65100;font-weight:700">TODAY</span>':`<span style="color:#e65100;font-weight:700">${diff}d left</span>`;
-      return `<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span>${diffTxt}</span><span style="flex:1;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted)">${r['Port Cut-Off']||''}</span></div>`;
-    }).join('');
+    tbdEl.innerHTML=tbdRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">❓</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
   // VGM not filed (active vessels where VGM is falsy)
@@ -2769,79 +2760,43 @@ function renderVT(){
         <input type="checkbox" class="vt-sel-cb" data-id="${r._id}" onchange="vtSelChange()" style="width:14px;height:14px;cursor:pointer"/>
       </td>
     </tr>
-    ${_vpHasProgress ? `<tr class="vt-mini-prog-row" id="vprog-${r._id}">
-      <td colspan="${TOTAL_COLS}" style="padding:0 0 2px;border-top:none;background:transparent">
-        <div class="vt-mini-prog-wrap">
-          <div class="vt-mini-prog-track" style="${_vpArrived ? 'background:linear-gradient(90deg,#bbf7d0,#d1fae5)' : ''}">
-            <div class="vt-mini-prog-fill" style="width:${Math.round(_vpPct*100)}%;${_vpArrived ? 'background:linear-gradient(90deg,#16a34a,#22c55e,#4ade80)' : ''}"></div>
-            <div class="vt-mini-prog-ship" style="left:${_vpShipLeft}%">${_vpArrived ? '🏁' : '🚢'}</div>
-            <div class="vt-mini-prog-anchor" title="Destination">⚓</div>
-          </div>
-          <div class="vt-mini-prog-labels">
-            <span class="vt-mini-prog-status" style="color:${_vpStatusColor}">${_vpStatusLabel}</span>
-            <span class="vt-mini-prog-pct" style="${_vpArrived ? 'background:#dcfce7;color:#15803d;border-color:#86efac' : ''}">${_vpArrived ? '✓ Done' : Math.round(_vpPct*100)+'%'}</span>
-            <span class="vt-mini-prog-remaining">${_vpArrived ? '' : (_vpDaysLeft > 0 ? `${_vpDaysLeft}d remaining` : (_vpDaysLeft===0 && _vpNow < _etaD ? 'arriving today' : ''))}</span>
-          </div>
-        </div>
-      </td>
-    </tr>` : ''}
-    <tr class="vt-containers-row${isOpen?' open':''}" id="vexp-${r._id}">
-      <td class="vt-containers-cell" colspan="${TOTAL_COLS}">
+    ${_vpHasProgress ? `<tr id="vprog-${r._id}" style="background:transparent">
+      <td colspan="${TOTAL_COLS}" style="padding:0 8px 4px;border-top:none;background:transparent">
         ${(()=>{
-          const etsD = parseDate(r['ETS (Departure)']);
-          const etaD = parseDate(r['ETA (Arrival)']);
-          const ataD = parseDate(r['ATA (Actual)']);
-          if(!etsD || !etaD) return '';
-          const now = new Date(); now.setHours(0,0,0,0);
-          const total = etaD - etsD;
-          const wds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-          const ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          const fmtD = d => wds[d.getDay()]+' '+d.getDate()+' '+ms[d.getMonth()];
-          let pct, shipLeft, totalDays, daysGone, daysLeft, statusLabel, statusColor, extraInfoHtml='';
-          totalDays = Math.round(total/864e5);
-          if(ataD){
-            pct=1; shipLeft=92;
-            daysGone=Math.round((ataD-etsD)/864e5); daysLeft=0;
-            const diff=Math.round((ataD-etaD)/864e5);
-            const diffStr=diff===0?'On Time 🎯':diff<0?`${Math.abs(diff)}d Early 🚀`:`${diff}d Late ⚠️`;
-            statusLabel='🏁 Arrived · '+diffStr;
-            statusColor=diff<=0?'#15803d':'#e53935';
-            extraInfoHtml=`<div class="vt-voyage-info-item" style="background:rgba(220,252,231,.8);border-color:#86efac">🛬 ATA <span style="color:#15803d">${fmtD(ataD)}</span></div>`;
-          } else {
-            const elapsed = now - etsD;
-            pct = Math.min(1, Math.max(0, elapsed / total));
-            shipLeft = 8 + pct * 84;
-            daysGone = Math.max(0, Math.round(elapsed / 864e5));
-            daysLeft = Math.max(0, Math.round((etaD - now) / 864e5));
-            if(now < etsD){ statusLabel='⏳ Not Yet Departed'; statusColor='#7c3aed'; }
-            else if(now >= etaD){ statusLabel='⚠️ Overdue · awaiting ATA'; statusColor='#e53935'; }
-            else { statusLabel=`🌊 At Sea · Day ${daysGone} of ${totalDays}`; statusColor='#0369a1'; }
-          }
-          const oceanStyle=ataD?'background:linear-gradient(180deg,#4ade80 0%,#16a34a 50%,#166534 100%)':'';
-          return `<div class="vt-voyage-card">
+          const _wds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+          const _mns=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const _fD=d=>_wds[d.getDay()]+' '+d.getDate()+' '+_mns[d.getMonth()];
+          const _oceanSt=_ataD?'background:linear-gradient(180deg,#4ade80 0%,#16a34a 50%,#166534 100%)':'';
+          const _ataInfo=_ataD?`<div class="vt-voyage-info-item" style="background:rgba(220,252,231,.8);border-color:#86efac">🛬 ATA <span style="color:#15803d">${_fD(_ataD)}</span></div>`:'';
+          const _statusPill=_ataD?`🏁 Arrived`:(_vpNow<_etsD?`⏳ Not Yet Departed`:(_vpNow>=_etaD?`⚠️ Overdue`:(`🌊 Day ${_vpDaysGone} of ${_vpTotalDays}`)));
+          return `<div class="vt-voyage-card" style="margin:2px 0 2px">
             <div class="vt-voyage-header">
-              <div class="vt-voyage-title">${ataD?'🏁':'🚢'} ${r['Vessel Name']||'Voyage'} — Sea Progress</div>
-              <div class="vt-voyage-status-pill" style="color:${statusColor}">${statusLabel}</div>
+              <div class="vt-voyage-title">${_ataD?'🏁':'🚢'} ${r['Vessel Name']||'Voyage'} — Sea Progress</div>
+              <div class="vt-voyage-status-pill" style="color:${_vpStatusColor}">${_statusPill}</div>
             </div>
-            <div class="vt-voyage-ocean" style="${oceanStyle}">
+            <div class="vt-voyage-ocean" style="${_oceanSt}">
               <div class="vt-voyage-waves"></div>
               <div class="vt-voyage-waves2"></div>
               <div class="vt-voyage-track-line"></div>
               <div class="vt-voyage-port-start">🏭</div>
               <div class="vt-voyage-port-end">⚓</div>
-              <div class="vt-voyage-ship" style="left:${shipLeft}%">${ataD?'🏁':'🚢'}</div>
-              <div class="vt-voyage-progress-bar" style="width:${shipLeft}%"></div>
+              <div class="vt-voyage-ship" style="left:${_vpShipLeft}%">${_ataD?'🏁':'🚢'}</div>
+              <div class="vt-voyage-progress-bar" style="width:${_vpShipLeft}%"></div>
             </div>
             <div class="vt-voyage-info">
-              <div class="vt-voyage-info-item">🛫 ETS <span>${fmtD(etsD)}</span></div>
-              <div class="vt-voyage-info-item">📍 Progress <span>${Math.round(pct*100)}%</span></div>
-              <div class="vt-voyage-info-item">⏱ Elapsed <span>${daysGone}d</span></div>
-              ${ataD?'':(`<div class="vt-voyage-info-item">🕐 Remaining <span>${daysLeft}d</span></div>`)}
-              <div class="vt-voyage-info-item">📅 ETA <span>${fmtD(etaD)}</span></div>
-              ${extraInfoHtml}
+              <div class="vt-voyage-info-item">🛫 ETS <span>${_fD(_etsD)}</span></div>
+              <div class="vt-voyage-info-item">📍 Progress <span>${Math.round(_vpPct*100)}%</span></div>
+              <div class="vt-voyage-info-item">⏱ Elapsed <span>${_vpDaysGone}d</span></div>
+              ${_ataD?'':(`<div class="vt-voyage-info-item">🕐 Remaining <span>${_vpDaysLeft}d</span></div>`)}
+              <div class="vt-voyage-info-item">📅 ETA <span>${_fD(_etaD)}</span></div>
+              ${_ataInfo}
             </div>
           </div>`;
         })()}
+      </td>
+    </tr>` : ''}
+    <tr class="vt-containers-row${isOpen?' open':''}" id="vexp-${r._id}">
+      <td class="vt-containers-cell" colspan="${TOTAL_COLS}">
         ${tagsHtml}
         <div class="vt-cn-add">
           <input id="vt-cn-inp-${r._id}" type="text" placeholder="Container No. (e.g. MSCU1234567)"
