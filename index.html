@@ -538,22 +538,22 @@ td.editing .cell-edit{display:block}
 .bel-ph-icon{font-size:42px;margin-bottom:10px}
 
 /* ── Vessel Voyage Animation ── */
-.vt-voyage-card{background:linear-gradient(160deg,#e0f2fe 0%,#bae6fd 60%,#7dd3fc 100%);border-radius:12px;padding:14px 18px;margin:10px 4px 4px;border:1px solid #7dd3fc}
-.vt-voyage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.vt-voyage-card{background:linear-gradient(160deg,#e0f2fe 0%,#bae6fd 60%,#7dd3fc 100%);border-radius:10px;padding:7px 12px;margin:2px 4px 3px;border:1px solid #7dd3fc}
+.vt-voyage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
 .vt-voyage-title{font-size:12px;font-weight:800;color:#0c4a6e;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
 .vt-voyage-status-pill{font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;background:#fff;color:#0369a1;border:1px solid #7dd3fc}
-.vt-voyage-ocean{position:relative;height:64px;background:linear-gradient(180deg,#38bdf8 0%,#0284c7 50%,#0369a1 100%);border-radius:10px;overflow:hidden;margin:0 0 10px}
+.vt-voyage-ocean{position:relative;height:36px;background:linear-gradient(180deg,#38bdf8 0%,#0284c7 50%,#0369a1 100%);border-radius:8px;overflow:hidden;margin:0 0 6px}
 .vt-voyage-waves{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0,transparent 18px,rgba(255,255,255,.07) 18px,rgba(255,255,255,.07) 36px);animation:vt-wave-move 3s linear infinite}
 .vt-voyage-waves2{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0,transparent 28px,rgba(255,255,255,.05) 28px,rgba(255,255,255,.05) 56px);animation:vt-wave-move 5s linear infinite reverse}
 @keyframes vt-wave-move{0%{background-position:0}100%{background-position:72px}}
 .vt-voyage-track-line{position:absolute;top:50%;left:5%;right:5%;height:2px;background:rgba(255,255,255,.25);border-radius:2px;transform:translateY(-50%)}
-.vt-voyage-port-start{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:20px;z-index:3;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
-.vt-voyage-port-end{position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:20px;z-index:3;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
-.vt-voyage-ship{position:absolute;top:50%;transform:translate(-50%,-60%);font-size:28px;z-index:4;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));transition:left 1.2s cubic-bezier(.4,0,.2,1);animation:vt-ship-bob 2.5s ease-in-out infinite}
-@keyframes vt-ship-bob{0%,100%{margin-top:0}50%{margin-top:-5px}}
+.vt-voyage-port-start{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:14px;z-index:3;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+.vt-voyage-port-end{position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:14px;z-index:3;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+.vt-voyage-ship{position:absolute;top:50%;transform:translate(-50%,-60%);font-size:18px;z-index:4;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));transition:left 1.2s cubic-bezier(.4,0,.2,1);animation:vt-ship-bob 2.5s ease-in-out infinite}
+@keyframes vt-ship-bob{0%,100%{margin-top:0}50%{margin-top:-3px}}
 .vt-voyage-progress-bar{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,255,255,.5);transition:width 1.2s cubic-bezier(.4,0,.2,1);border-radius:0 2px 2px 0}
 .vt-voyage-info{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
-.vt-voyage-info-item{font-size:11px;font-weight:600;color:#0c4a6e;background:rgba(255,255,255,.7);padding:3px 10px;border-radius:8px;border:1px solid rgba(14,116,144,.2)}
+.vt-voyage-info-item{font-size:10px;font-weight:600;color:#0c4a6e;background:rgba(255,255,255,.7);padding:2px 8px;border-radius:6px;border:1px solid rgba(14,116,144,.2)}
 .vt-voyage-info-item span{color:#0369a1;font-weight:800}
 .vt-voyage-not-departed{background:rgba(255,255,255,.5);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:600;color:#7c3aed}
 /* ── Mini inline voyage progress bar ── */
