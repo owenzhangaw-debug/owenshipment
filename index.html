@@ -613,7 +613,7 @@ td.editing .cell-edit{display:block}
 .fb-aspect-block{display:flex;flex-direction:column;gap:4px}
 .fb-aspect-row{display:flex;align-items:center;gap:8px}
 .fb-aspect-lbl{font-size:11px;font-weight:700;color:#555;min-width:100px;white-space:nowrap}
-.fb-aspect-note{width:100%;box-sizing:border-box;border:1px solid #dde3ee;border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;color:#334;background:#fff;transition:border-color .2s}
+.fb-aspect-note{width:100%;box-sizing:border-box;border:1px solid #dde3ee;border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;color:#334;background:#fff;transition:border-color .2s;resize:vertical;min-height:42px}
 .fb-aspect-note:focus{outline:none;border-color:#004D4C}
 .fb-avg-stars{font-size:13px;color:#f59e0b;margin-left:4px}
 </style>
@@ -4161,9 +4161,9 @@ function fbMakeStarRow(sid, aspect, label, current, currentNote){
       <div class="fb-stars" style="margin:0">${starsHtml}</div>
       <input type="hidden" id="fbstar_${sid}_${aspect}" value="${current}">
     </div>
-    <input type="text" class="fb-aspect-note" id="fbasnote_${sid}_${aspect}"
+    <textarea class="fb-aspect-note" id="fbasnote_${sid}_${aspect}"
       placeholder="Note for ${label.replace(/[^a-zA-Z ]/g,'').trim()}…"
-      value="${(currentNote||'').replace(/"/g,'&quot;')}">
+      rows="2">${(currentNote||'').replace(/</g,'&lt;')}</textarea>
   </div>`;
 }
 
@@ -4229,17 +4229,11 @@ function renderFeedback(){
           <span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span>
         </div>
         ${tagsHtml}
-        <div class="fb-aspects">
-          <div class="fb-aspect-block">
-            <div class="fb-aspect-row">
-              <span class="fb-aspect-lbl">⭐ Overall</span>
-              <div class="fb-stars" style="margin:0">${[1,2,3,4,5].map(v=>`<span class="fb-star${(d.stars||0)>=v?' on':''}" data-aspect="stars" data-v="${v}" onclick="fbSetStar('${sid}','stars',${v})" title="${v}★">★</span>`).join('')}</div>
-              <input type="hidden" id="fbstar_${sid}_stars" value="${d.stars||0}">
-            </div>
-            <input type="text" class="fb-aspect-note" id="fbasnote_${sid}_stars"
-              placeholder="Note for Overall rating…"
-              value="${(d.starsNote||'').replace(/"/g,'&quot;')}">
-          </div>
+        <div class="fb-aspect-row" style="margin-bottom:10px">
+          <span class="fb-aspect-lbl">⭐ Overall</span>
+          <div class="fb-stars" style="margin:0">${[1,2,3,4,5].map(v=>`<span class="fb-star${(d.stars||0)>=v?' on':''}" data-aspect="stars" data-v="${v}" onclick="fbSetStar('${sid}','stars',${v})" title="${v}★">★</span>`).join('')}</div>
+          <input type="hidden" id="fbstar_${sid}_stars" value="${d.stars||0}">
+          <input type="hidden" id="fbasnote_${sid}_stars" value="">
         </div>
         <textarea class="fb-note" id="fbnote_${sid}" placeholder="Additional notes…" rows="2">${(d.note||'').replace(/</g,'&lt;')}</textarea>
         <div class="fb-card-footer">
