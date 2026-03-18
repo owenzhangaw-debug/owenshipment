@@ -681,51 +681,65 @@ td.editing .cell-edit{display:block}
         </div>
       </div>
 
-      <!-- Monthly + By Batch -->
-      <div class="charts-row" style="margin-top:0">
+      <!-- Monthly -->
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
         <div class="chart-card">
           <h3 onclick="toggleChart(this)">Delivered by Month<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap"><canvas id="monthly-chart"></canvas></div>
+          <div class="chart-wrap" style="height:320px"><canvas id="monthly-chart"></canvas></div>
         </div>
+      </div>
+
+      <!-- By Batch -->
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
         <div class="chart-card">
           <h3 onclick="toggleChart(this)">Containers by Batch<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap"><canvas id="batch-chart"></canvas></div>
+          <div class="chart-wrap" style="height:320px"><canvas id="batch-chart"></canvas></div>
         </div>
       </div>
 
-      <!-- Slot–ETA -->
-      <div class="charts-row" style="margin-top:0">
+      <!-- Slot–ETA Distribution -->
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
         <div class="chart-card">
           <h3 onclick="toggleChart(this)">Slot–ETA Distribution (days)<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap"><canvas id="slot-eta-dist-chart"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Avg Slot–ETA by Batch<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap"><canvas id="slot-eta-batch-chart"></canvas></div>
+          <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-dist-chart"></canvas></div>
         </div>
       </div>
 
-      <!-- Slot–ETA by Trucker -->
-      <div class="charts-row" style="margin-top:0">
+      <!-- Avg Slot–ETA by Batch -->
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+        <div class="chart-card">
+          <h3 onclick="toggleChart(this)">Avg Slot–ETA by Batch<span class="ch-toggle">▼</span></h3>
+          <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-batch-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Avg Slot–ETA by Trucker -->
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
         <div class="chart-card">
           <h3 onclick="toggleChart(this)">Avg Slot–ETA by Trucker (days)<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap"><canvas id="slot-eta-trucker-chart"></canvas></div>
+          <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-trucker-chart"></canvas></div>
         </div>
+      </div>
+
+      <!-- Slot–ETA by Trucker & Batch -->
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
         <div class="chart-card">
           <h3 onclick="toggleChart(this)">Slot–ETA by Trucker &amp; Batch<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:260px"><canvas id="slot-eta-trucker-batch-chart"></canvas></div>
+          <div class="chart-wrap" style="height:360px"><canvas id="slot-eta-trucker-batch-chart"></canvas></div>
         </div>
       </div>
 
       <!-- Price comparison -->
-      <div class="charts-row" style="margin-top:0">
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
         <div class="chart-card">
           <h3 onclick="toggleChart(this)">Avg Price vs Price T1 by Trucker (€)<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap"><canvas id="price-trucker-avg-chart"></canvas></div>
+          <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-avg-chart"></canvas></div>
         </div>
+      </div>
+      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
         <div class="chart-card">
           <h3 onclick="toggleChart(this)">Total Freight Cost by Trucker (€)<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap"><canvas id="price-trucker-total-chart"></canvas></div>
+          <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-total-chart"></canvas></div>
         </div>
       </div>
 
@@ -733,7 +747,7 @@ td.editing .cell-edit{display:block}
       <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
         <div class="chart-card">
           <h3 onclick="toggleChart(this)">Total Containers by Consignee<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:260px"><canvas id="consignee-chart"></canvas></div>
+          <div class="chart-wrap" style="height:320px"><canvas id="consignee-chart"></canvas></div>
         </div>
       </div>
 
