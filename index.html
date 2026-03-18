@@ -606,16 +606,15 @@ td.editing .cell-edit{display:block}
 .fb-save-btn{font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#004D4C;color:#fff;cursor:pointer;font-weight:700;transition:background .2s}
 .fb-save-btn:hover{background:#006b6a}
 .fb-saved-badge{font-size:10px;color:#2e7d32;font-weight:700;display:none}
+.fb-aspects{background:#f8fafc;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid #eaeff6;display:flex;flex-direction:column;gap:10px}
+.fb-aspect-block{display:flex;flex-direction:column;gap:4px}
+.fb-aspect-row{display:flex;align-items:center;gap:8px}
+.fb-aspect-lbl{font-size:11px;font-weight:700;color:#555;min-width:110px;white-space:nowrap}
+.fb-aspect-note{width:100%;box-sizing:border-box;border:1px solid #dde3ee;border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;color:#334;background:#fff;transition:border-color .2s;resize:vertical;min-height:48px}
+.fb-aspect-note:focus{outline:none;border-color:#004D4C}
 .fb-empty{text-align:center;padding:40px;color:#aaa;font-size:14px}
 .fb-tag-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .fb-tag{font-size:10px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:1px 7px}
-.fb-aspects{background:#f8fafc;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid #eaeff6;display:flex;flex-direction:column;gap:8px}
-.fb-aspect-block{display:flex;flex-direction:column;gap:4px}
-.fb-aspect-row{display:flex;align-items:center;gap:8px}
-.fb-aspect-lbl{font-size:11px;font-weight:700;color:#555;min-width:100px;white-space:nowrap}
-.fb-aspect-note{width:100%;box-sizing:border-box;border:1px solid #dde3ee;border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;color:#334;background:#fff;transition:border-color .2s;resize:vertical;min-height:42px}
-.fb-aspect-note:focus{outline:none;border-color:#004D4C}
-.fb-avg-stars{font-size:13px;color:#f59e0b;margin-left:4px}
 </style>
 </head>
 <body>
@@ -4096,7 +4095,7 @@ function fbGetData(batch, type, name){
   if(!FB[batch][type]) FB[batch][type]={};
   if(!FB[batch][type][name]){
     if(type==='truckers') FB[batch][type][name]={prep:0,prepNote:'',delivery:0,deliveryNote:'',finishing:0,finishingNote:'',note:''};
-    else FB[batch][type][name]={stars:0,starsNote:'',note:''};
+    else FB[batch][type][name]={stars:0,note:''};
   }
   return FB[batch][type][name];
 }
@@ -4107,15 +4106,12 @@ function fbSetData(batch, type, name, data){
   saveFB();
 }
 
-// Star click handler — aspect = 'prep'|'delivery'|'finishing'|'stars'
 function fbSetStar(sid, aspect, v){
   const card=document.getElementById('fbcard_'+sid);
   if(!card) return;
-  // Update stars display
   card.querySelectorAll('.fb-star[data-aspect="'+aspect+'"]').forEach(s=>{
     s.classList.toggle('on', parseInt(s.dataset.v)<=v);
   });
-  // Store in hidden input
   const inp=document.getElementById('fbstar_'+sid+'_'+aspect);
   if(inp) inp.value=v;
 }
@@ -4128,15 +4124,14 @@ function fbSaveCard(sid){
   const gi=id=>parseInt(g(id))||0;
   const data={};
   if(type==='truckers'){
-    data.prep       =gi('fbstar_'+sid+'_prep');
-    data.prepNote   =g('fbasnote_'+sid+'_prep');
-    data.delivery   =gi('fbstar_'+sid+'_delivery');
-    data.deliveryNote=g('fbasnote_'+sid+'_delivery');
-    data.finishing  =gi('fbstar_'+sid+'_finishing');
-    data.finishingNote=g('fbasnote_'+sid+'_finishing');
+    data.prep        =gi('fbstar_'+sid+'_prep');
+    data.prepNote    =g('fbnote_'+sid+'_prep');
+    data.delivery    =gi('fbstar_'+sid+'_delivery');
+    data.deliveryNote=g('fbnote_'+sid+'_delivery');
+    data.finishing   =gi('fbstar_'+sid+'_finishing');
+    data.finishingNote=g('fbnote_'+sid+'_finishing');
   } else {
-    data.stars     =gi('fbstar_'+sid+'_stars');
-    data.starsNote =g('fbasnote_'+sid+'_stars');
+    data.stars=gi('fbstar_'+sid+'_stars');
   }
   data.note=g('fbnote_'+sid);
   fbSetData(batch,type,name,data);
@@ -4150,10 +4145,9 @@ function fbSaveAll(){
   });
 }
 
-function fbMakeStarRow(sid, aspect, label, current, currentNote){
+function fbAspectBlock(sid, aspect, label, current, currentNote){
   const starsHtml=[1,2,3,4,5].map(v=>
-    `<span class="fb-star${current>=v?' on':''}" data-aspect="${aspect}" data-v="${v}"
-      onclick="fbSetStar('${sid}','${aspect}',${v})" title="${v}★">★</span>`
+    `<span class="fb-star${current>=v?' on':''}" data-aspect="${aspect}" data-v="${v}" onclick="fbSetStar('${sid}','${aspect}',${v})" title="${v}★">★</span>`
   ).join('');
   return `<div class="fb-aspect-block">
     <div class="fb-aspect-row">
@@ -4161,9 +4155,7 @@ function fbMakeStarRow(sid, aspect, label, current, currentNote){
       <div class="fb-stars" style="margin:0">${starsHtml}</div>
       <input type="hidden" id="fbstar_${sid}_${aspect}" value="${current}">
     </div>
-    <textarea class="fb-aspect-note" id="fbasnote_${sid}_${aspect}"
-      placeholder="Note for ${label.replace(/[^a-zA-Z ]/g,'').trim()}…"
-      rows="2">${(currentNote||'').replace(/</g,'&lt;')}</textarea>
+    <textarea class="fb-aspect-note" id="fbnote_${sid}_${aspect}" placeholder="Note for ${label.replace(/[^\w ]/g,'').trim()}…" rows="2">${(currentNote||'').replace(/</g,'&lt;')}</textarea>
   </div>`;
 }
 
@@ -4187,26 +4179,20 @@ function renderFeedback(){
     const consignees=[...new Set(rows.map(r=>r['Consignee']||'').filter(Boolean))].sort();
     const totalCt=rows.length;
 
-    // Trucker card — 3 aspect ratings
+    // Trucker: 3 aspects (Preparation / Delivery / Finishing) each with stars + note + overall note
     const makeTruckerCard=(name)=>{
       const d=fbGetData(batch,'truckers',name);
       const sid=fbSafeId(batch,'truckers',name);
       const relRows=rows.filter(r=>(r['Trucker']||'')==name);
       const cnList=relRows.map(r=>r['Container No.']||'').filter(Boolean);
       const tagsHtml=cnList.length?`<div class="fb-tag-row">${cnList.map(cn=>`<span class="fb-tag">${cn}</span>`).join('')}</div>`:'';
-      const avgStars=((d.prep||0)+(d.delivery||0)+(d.finishing||0))/3;
-      const avgDisp=avgStars>0?('★'.repeat(Math.round(avgStars))+`<span style="font-size:10px;color:#888;margin-left:4px">${avgStars.toFixed(1)} avg</span>`):'';
       return `<div class="fb-card" id="fbcard_${sid}" data-batch="${batch.replace(/"/g,'&quot;')}" data-type="truckers" data-name="${name.replace(/"/g,'&quot;')}">
-        <div class="fb-card-name">
-          🚛 ${name}
-          <span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span>
-          ${avgDisp?`<span class="fb-avg-stars">${avgDisp}</span>`:''}
-        </div>
+        <div class="fb-card-name">🚛 ${name}<span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span></div>
         ${tagsHtml}
         <div class="fb-aspects">
-          ${fbMakeStarRow(sid,'prep','📋 Preparation',d.prep||0,d.prepNote||'')}
-          ${fbMakeStarRow(sid,'delivery','🚚 Delivery',d.delivery||0,d.deliveryNote||'')}
-          ${fbMakeStarRow(sid,'finishing','✅ Finishing',d.finishing||0,d.finishingNote||'')}
+          ${fbAspectBlock(sid,'prep','📋 Preparation',d.prep||0,d.prepNote||'')}
+          ${fbAspectBlock(sid,'delivery','🚚 Delivery',d.delivery||0,d.deliveryNote||'')}
+          ${fbAspectBlock(sid,'finishing','✅ Finishing',d.finishing||0,d.finishingNote||'')}
         </div>
         <textarea class="fb-note" id="fbnote_${sid}" placeholder="Additional notes…" rows="2">${(d.note||'').replace(/</g,'&lt;')}</textarea>
         <div class="fb-card-footer">
@@ -4216,25 +4202,19 @@ function renderFeedback(){
       </div>`;
     };
 
-    // Consignee card — single overall rating
+    // Consignee: single 5-star + overall note only
     const makeConsigneeCard=(name)=>{
       const d=fbGetData(batch,'consignees',name);
       const sid=fbSafeId(batch,'consignees',name);
       const relRows=rows.filter(r=>(r['Consignee']||'')==name);
       const cnList=relRows.map(r=>r['Container No.']||'').filter(Boolean);
       const tagsHtml=cnList.length?`<div class="fb-tag-row">${cnList.map(cn=>`<span class="fb-tag">${cn}</span>`).join('')}</div>`:'';
+      const starsHtml=[1,2,3,4,5].map(v=>`<span class="fb-star${(d.stars||0)>=v?' on':''}" data-aspect="stars" data-v="${v}" onclick="fbSetStar('${sid}','stars',${v})" title="${v}★">★</span>`).join('');
       return `<div class="fb-card" id="fbcard_${sid}" data-batch="${batch.replace(/"/g,'&quot;')}" data-type="consignees" data-name="${name.replace(/"/g,'&quot;')}">
-        <div class="fb-card-name">
-          🏢 ${name}
-          <span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span>
-        </div>
+        <div class="fb-card-name">🏢 ${name}<span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span></div>
         ${tagsHtml}
-        <div class="fb-aspect-row" style="margin-bottom:10px">
-          <span class="fb-aspect-lbl">⭐ Overall</span>
-          <div class="fb-stars" style="margin:0">${[1,2,3,4,5].map(v=>`<span class="fb-star${(d.stars||0)>=v?' on':''}" data-aspect="stars" data-v="${v}" onclick="fbSetStar('${sid}','stars',${v})" title="${v}★">★</span>`).join('')}</div>
-          <input type="hidden" id="fbstar_${sid}_stars" value="${d.stars||0}">
-          <input type="hidden" id="fbasnote_${sid}_stars" value="">
-        </div>
+        <div class="fb-stars" style="margin-bottom:10px">${starsHtml}</div>
+        <input type="hidden" id="fbstar_${sid}_stars" value="${d.stars||0}">
         <textarea class="fb-note" id="fbnote_${sid}" placeholder="Additional notes…" rows="2">${(d.note||'').replace(/</g,'&lt;')}</textarea>
         <div class="fb-card-footer">
           <button class="fb-save-btn" onclick="fbSaveCard('${sid}')">💾 Save</button>
@@ -4253,7 +4233,7 @@ function renderFeedback(){
       </div>
       <div class="fb-two-col">
         <div class="fb-col">
-          <div class="fb-col-title">🚛 Truckers <span style="font-size:10px;font-weight:400;color:#aaa;text-transform:none;letter-spacing:0">(3 aspects)</span></div>
+          <div class="fb-col-title">🚛 Truckers</div>
           ${truckers.length?truckers.map(makeTruckerCard).join(''):'<div class="fb-empty" style="padding:20px;font-size:12px">No truckers assigned</div>'}
         </div>
         <div class="fb-col">
