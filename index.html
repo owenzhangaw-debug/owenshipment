@@ -2335,9 +2335,9 @@ function renderCT(){
         const shipIcon=allDone?'🏁':'🚛';
         const bEsc=b.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         return `<div class="ct-bp-card" onclick="gotoBatch('${bEsc}')" title="Click to filter this batch">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:6px">
-            <div class="ct-bp-name" style="margin-bottom:0">📦 ${b}</div>
-            ${_dlLabel?`<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:${_dlBg};color:${_dlColor};white-space:nowrap">${_dlLabel}</span>`:''}
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:6px">
+            <div class="ct-bp-name" style="margin-bottom:0;min-width:0;flex:1">📦 ${b}</div>
+            ${_dlLabel?`<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:${_dlBg};color:${_dlColor};white-space:nowrap;flex-shrink:0">${_dlLabel}</span>`:''}
           </div>
           <div class="ct-bp-track">
             <div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}">
