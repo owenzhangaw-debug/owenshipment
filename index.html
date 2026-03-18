@@ -376,8 +376,11 @@ td.editing .cell-edit{display:block}
   /* ── Header ── */
   header{flex-wrap:wrap;padding:0 12px;gap:0}
   .brand{font-size:14px;padding:10px 0;flex:1}
-  .hbtns{order:2;gap:5px;padding:7px 0;flex-wrap:wrap}
-  .hbtns .btn{padding:5px 9px;font-size:11px}
+  /* Buttons: single scrollable row, no wrapping */
+  .hbtns{order:2;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;flex-wrap:nowrap;gap:5px;padding:6px 0;border-top:1px solid rgba(255,255,255,.1)}
+  .hbtns::-webkit-scrollbar{display:none}
+  .hbtns .btn{padding:4px 9px;font-size:11px;white-space:nowrap;flex-shrink:0}
   nav{order:3;width:100%;overflow-x:auto;border-top:1px solid rgba(255,255,255,.15);
     -webkit-overflow-scrolling:touch;scrollbar-width:none}
   nav::-webkit-scrollbar{display:none}
@@ -406,7 +409,8 @@ td.editing .cell-edit{display:block}
 
   /* ── VT toolbar ── */
   .vt-toolbar{flex-wrap:wrap;gap:8px;padding:8px 10px}
-  .vt-search-wrap input{width:180px}
+  .vt-search-wrap{flex:1}
+  .vt-search-wrap input{width:100%}
 
   /* ── Modals — bottom sheet on mobile ── */
   .overlay{align-items:flex-end}
@@ -423,8 +427,15 @@ td.editing .cell-edit{display:block}
   .sel-bar-count{font-size:11px}
   .btn-be,.btn-be-clear{padding:6px 12px;font-size:11px}
 
-  /* ── Tables (already scroll, just ensure card fits) ── */
-  .tbl-card{border-radius:8px}
+  /* ── Belgium route label wrap ── */
+  .bel-input-row label{white-space:normal;font-size:10px}
+  .bel-route-card{padding:14px 12px}
+  .bel-card-top-left h3{font-size:12px}
+
+  /* ── Tables: scroll properly ── */
+  .tbl-card{border-radius:8px;overflow:hidden}
+  .tbl-scroll{display:block;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tbl-scroll table{min-width:600px}
   .ud-bar-wrap{min-width:100px}
   .ud-tbl td,.ud-tbl th,.sur-tbl td,.sur-tbl th{
     padding:5px 8px;font-size:11px}
