@@ -351,6 +351,13 @@ td.editing .cell-edit{display:block}
 .dash-col-hdr-ct{background:#E0EFEF;color:#002E2E;border-bottom:2px solid #004D4C}
 .dash-col-hdr-vt{background:#F5F3FF;color:#5B21B6;border-bottom:2px solid #7C3AED}
 .kpi-row-ct{grid-template-columns:repeat(4,1fr);margin-bottom:12px}
+/* ── Dashboard Chart Category Tabs ── */
+.dash-cat-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.dash-cat-tab{font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;border:1.5px solid #d1d5db;background:#f9fafb;color:#6b7280;cursor:pointer;transition:all .15s;letter-spacing:.3px}
+.dash-cat-tab:hover{border-color:#004D4C;color:#004D4C;background:#e8f5f5}
+.dash-cat-tab.active{background:#004D4C;color:#fff;border-color:#004D4C}
+.dash-cat-section{display:none}
+.dash-cat-section.active{display:block}
 .kpi-row-vt{grid-template-columns:1fr 1fr;margin-bottom:12px}
 .vt-right-card{margin-bottom:12px}
 @media (max-width:1280px){
@@ -556,6 +563,22 @@ td.editing .cell-edit{display:block}
 .vt-voyage-info-item{font-size:10px;font-weight:600;color:#0c4a6e;background:rgba(255,255,255,.7);padding:2px 8px;border-radius:6px;border:1px solid rgba(14,116,144,.2)}
 .vt-voyage-info-item span{color:#0369a1;font-weight:800}
 .vt-voyage-not-departed{background:rgba(255,255,255,.5);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:600;color:#7c3aed}
+/* ── CT Batch Progress Bars ── */
+.ct-bp-row{display:flex;flex-wrap:wrap;gap:10px}
+.ct-bp-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;flex:1;min-width:160px;max-width:260px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s}
+.ct-bp-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.1)}
+.ct-bp-name{font-size:11px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;letter-spacing:.2px}
+.ct-bp-track{position:relative;height:22px;background:#e5e7eb;border-radius:30px;overflow:hidden;margin-bottom:5px}
+.ct-bp-fill{position:absolute;left:0;top:0;bottom:0;border-radius:30px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.ct-bp-fill-anim{background:repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0,rgba(255,255,255,.18) 12px,transparent 12px,transparent 24px);position:absolute;inset:0;border-radius:30px;animation:ct-bp-stripe 1.4s linear infinite}
+@keyframes ct-bp-stripe{0%{background-position:0}100%{background-position:48px}}
+.ct-bp-ship{position:absolute;top:50%;transform:translate(-50%,-55%);font-size:13px;z-index:3;transition:left 1s cubic-bezier(.4,0,.2,1);animation:ct-bp-bob 2.2s ease-in-out infinite}
+@keyframes ct-bp-bob{0%,100%{margin-top:0}50%{margin-top:-2px}}
+.ct-bp-labels{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.ct-bp-pct{font-size:11px;font-weight:800;padding:1px 7px;border-radius:10px;min-width:38px;text-align:center}
+.ct-bp-counts{font-size:10px;color:var(--muted)}
+.ct-bp-pills{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap}
+.ct-bp-pill{font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px}
 /* ── Mini inline voyage progress bar ── */
 .vt-mini-prog-row td{padding:0 8px 4px!important;border-top:none!important}
 .vt-mini-prog-wrap{display:flex;flex-direction:column;gap:2px;padding:0 4px 0}
@@ -681,117 +704,107 @@ td.editing .cell-edit{display:block}
         </div>
       </div>
 
-      <!-- Monthly -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Delivered by Month<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:320px"><canvas id="monthly-chart"></canvas></div>
-        </div>
+      <!-- Category Tabs -->
+      <div class="dash-cat-tabs">
+        <button class="dash-cat-tab active" onclick="switchDashCat('time',this)">⏱ Time</button>
+        <button class="dash-cat-tab" onclick="switchDashCat('price',this)">💰 Price</button>
+        <button class="dash-cat-tab" onclick="switchDashCat('qty',this)">📦 Quantity</button>
       </div>
 
-      <!-- By Batch -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Containers by Batch<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:320px"><canvas id="batch-chart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Slot–ETA Distribution -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Slot–ETA Distribution (days)<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-dist-chart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Avg Slot–ETA by Batch -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Avg Slot–ETA by Batch<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-batch-chart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Avg Slot–ETA by Trucker -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Avg Slot–ETA by Trucker (days)<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-trucker-chart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Slot–ETA by Trucker & Batch -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Slot–ETA by Trucker &amp; Batch<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:360px"><canvas id="slot-eta-trucker-batch-chart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Price comparison -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Avg Price vs Price T1 by Trucker (€)<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-avg-chart"></canvas></div>
-        </div>
-      </div>
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Total Freight Cost by Trucker (€)<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-total-chart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Consignee -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card">
-          <h3 onclick="toggleChart(this)">Total Containers by Consignee<span class="ch-toggle">▼</span></h3>
-          <div class="chart-wrap" style="height:320px"><canvas id="consignee-chart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Surcharge Summary -->
-      <div id="surcharge-summary-row" class="charts-row" style="margin-top:0;grid-template-columns:1fr;display:none">
-        <div class="chart-card" style="padding:16px 18px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <h3 style="margin:0">💸 Surcharge Summary</h3>
-            <span id="surcharge-total-badge" style="font-size:12px;font-weight:700;color:#880E4F;background:#FCE4EC;border-radius:8px;padding:3px 10px"></span>
+      <!-- ── TIME ── -->
+      <div id="dash-cat-time" class="dash-cat-section active">
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Delivered by Month<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:320px"><canvas id="monthly-chart"></canvas></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;overflow-x:auto">
-            <div>
-              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Batch</div>
-              <div id="surcharge-by-batch"></div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Slot–ETA Distribution (days)<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-dist-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Avg Slot–ETA by Batch<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-batch-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Avg Slot–ETA by Trucker (days)<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-trucker-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Slot–ETA by Trucker &amp; Batch<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:360px"><canvas id="slot-eta-trucker-batch-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PRICE ── -->
+      <div id="dash-cat-price" class="dash-cat-section">
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Avg Price vs Price T1 by Trucker (€)<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-avg-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Total Freight Cost by Trucker (€)<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-total-chart"></canvas></div>
+          </div>
+        </div>
+        <div id="surcharge-summary-row" class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card" style="padding:16px 18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <h3 style="margin:0">💸 Surcharge Summary</h3>
+              <span id="surcharge-total-badge" style="font-size:12px;font-weight:700;color:#880E4F;background:#FCE4EC;border-radius:8px;padding:3px 10px"></span>
             </div>
-            <div>
-              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Reason</div>
-              <div id="surcharge-by-reason"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;overflow-x:auto">
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Batch</div>
+                <div id="surcharge-by-batch"></div>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Reason</div>
+                <div id="surcharge-by-reason"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Undelivered by Batch -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card" style="padding:16px 18px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <h3 style="margin:0">🚚 Undelivered by Batch</h3>
-            <span id="undelivered-total-badge" style="font-size:12px;font-weight:700;color:#C62828;background:#FFEBEE;border-radius:8px;padding:3px 10px"></span>
+        <!-- Unpaid by Batch -->
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card" style="padding:16px 18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <h3 style="margin:0">💳 Unpaid by Batch</h3>
+              <span id="unpaid-total-badge" style="font-size:12px;font-weight:700;color:#856404;background:#fff3cd;border-radius:8px;padding:3px 10px"></span>
+            </div>
+            <div id="unpaid-batch" style="overflow-x:auto"></div>
           </div>
-          <div id="undelivered-batch" style="overflow-x:auto"></div>
         </div>
       </div>
 
-      <!-- Unpaid by Batch -->
-      <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-        <div class="chart-card" style="padding:16px 18px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <h3 style="margin:0">💳 Unpaid by Batch</h3>
-            <span id="unpaid-total-badge" style="font-size:12px;font-weight:700;color:#856404;background:#fff3cd;border-radius:8px;padding:3px 10px"></span>
+      <!-- ── QUANTITY ── -->
+      <div id="dash-cat-qty" class="dash-cat-section">
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Containers by Batch<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:320px"><canvas id="batch-chart"></canvas></div>
           </div>
-          <div id="unpaid-batch" style="overflow-x:auto"></div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Total Containers by Consignee<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:320px"><canvas id="consignee-chart"></canvas></div>
+          </div>
         </div>
       </div>
+
     </div><!-- end dash-col LEFT -->
 
     <!-- ════ RIGHT: VESSEL SECTION ════ -->
@@ -910,6 +923,8 @@ td.editing .cell-edit{display:block}
     </div>
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
+
+  <div id="ct-batch-progress" style="margin:0 0 12px"></div>
 
   <div class="tbl-card">
     <div class="tbl-top">
@@ -1354,6 +1369,13 @@ function gotoFilter(col, val){
 function toggleChart(h3el){
   h3el.closest('.chart-card').classList.toggle('collapsed');
 }
+function switchDashCat(cat, btn){
+  document.querySelectorAll('.dash-cat-section').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.dash-cat-tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('dash-cat-'+cat).classList.add('active');
+  btn.classList.add('active');
+  renderDashboard(); // re-render so Chart.js resizes into visible containers
+}
 function gotoVessel(id){
   showPage('vessels');
   // Expand and scroll to the specific vessel row
@@ -1696,48 +1718,56 @@ function renderDashboard(){
   });
   const ptKeys=Object.keys(priceTruckers).sort();
   const _noPrice = ptKeys.length===0;
-  const _noPriceHtml = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:120px;color:var(--muted);font-size:12px;gap:6px"><span style="font-size:28px">📊</span><span>No price data yet — add Price / Price T1 in the Containers tab</span></div>`;
+  const _setPriceNoData = (id) => {
+    const el=document.getElementById(id); if(!el) return;
+    const wrap=el.parentElement;
+    let ov=wrap.querySelector('.price-nodata-ov');
+    if(_noPrice){
+      el.style.display='none';
+      if(!ov){ ov=document.createElement('div'); ov.className='price-nodata-ov';
+        ov.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;height:120px;color:#94a3b8;font-size:12px;gap:6px';
+        ov.innerHTML='<span style="font-size:28px">📊</span><span>No price data yet — add Price / Price T1 in Containers tab</span>';
+        wrap.appendChild(ov); }
+      ov.style.display='flex';
+    } else {
+      el.style.display=''; if(ov) ov.style.display='none';
+    }
+  };
 
   // Avg Price vs Avg Price T1
+  _setPriceNoData('price-trucker-avg-chart');
   if(priceTruckerAvgChart) priceTruckerAvgChart.destroy(); priceTruckerAvgChart=null;
-  { const wrap=document.getElementById('price-trucker-avg-chart').parentElement;
-    if(_noPrice){ wrap.innerHTML=_noPriceHtml; }
-    else {
-      if(!wrap.querySelector('canvas')){ wrap.innerHTML='<canvas id="price-trucker-avg-chart"></canvas>'; }
-      priceTruckerAvgChart = new Chart(document.getElementById('price-trucker-avg-chart'),{
-        type:'bar',
-        data:{
-          labels:ptKeys,
-          datasets:[
-            { label:'Avg Price (€)',
-              data:ptKeys.map(k=>priceTruckers[k].pCount?+(priceTruckers[k].pSum/priceTruckers[k].pCount).toFixed(0):null),
-              backgroundColor:'#004D4C', borderRadius:4 },
-            { label:'Avg Price T1 (€)',
-              data:ptKeys.map(k=>priceTruckers[k].p1Count?+(priceTruckers[k].p1Sum/priceTruckers[k].p1Count).toFixed(0):null),
-              backgroundColor:'#F9A825', borderRadius:4 }
-          ]
-        },
-        options:{ responsive:true,maintainAspectRatio:false,
-          plugins:{ legend:{position:'top',labels:{font:{size:11},padding:12}},
-            tooltip:{callbacks:{label:ctx=>ctx.raw!=null?' €'+ctx.raw.toLocaleString()+' avg/container':' —'}} },
-          scales:{
-            y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
-                title:{display:true,text:'Avg Price (€)',font:{size:11}} },
-            x:{ grid:{display:false} }
-          }
+  if(!_noPrice){
+    priceTruckerAvgChart = new Chart(document.getElementById('price-trucker-avg-chart'),{
+      type:'bar',
+      data:{
+        labels:ptKeys,
+        datasets:[
+          { label:'Avg Price (€)',
+            data:ptKeys.map(k=>priceTruckers[k].pCount?+(priceTruckers[k].pSum/priceTruckers[k].pCount).toFixed(0):null),
+            backgroundColor:'#004D4C', borderRadius:4 },
+          { label:'Avg Price T1 (€)',
+            data:ptKeys.map(k=>priceTruckers[k].p1Count?+(priceTruckers[k].p1Sum/priceTruckers[k].p1Count).toFixed(0):null),
+            backgroundColor:'#F9A825', borderRadius:4 }
+        ]
+      },
+      options:{ responsive:true,maintainAspectRatio:false,
+        plugins:{ legend:{position:'top',labels:{font:{size:11},padding:12}},
+          tooltip:{callbacks:{label:ctx=>ctx.raw!=null?' €'+ctx.raw.toLocaleString()+' avg/container':' —'}} },
+        scales:{
+          y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
+              title:{display:true,text:'Avg Price (€)',font:{size:11}} },
+          x:{ grid:{display:false} }
         }
-      });
-    }
+      }
+    });
   }
 
   // Total Price vs Total Price T1
+  _setPriceNoData('price-trucker-total-chart');
   if(priceTruckerTotalChart) priceTruckerTotalChart.destroy(); priceTruckerTotalChart=null;
-  { const wrap=document.getElementById('price-trucker-total-chart') ? document.getElementById('price-trucker-total-chart').parentElement : document.querySelector('#price-trucker-total-chart')?.parentElement;
-    if(!wrap) { /* skip */ }
-    else if(_noPrice){ wrap.innerHTML=_noPriceHtml; }
-    else {
-      if(!wrap.querySelector('canvas')){ wrap.innerHTML='<canvas id="price-trucker-total-chart"></canvas>'; }
-      priceTruckerTotalChart = new Chart(document.getElementById('price-trucker-total-chart'),{
+  if(!_noPrice){
+    priceTruckerTotalChart = new Chart(document.getElementById('price-trucker-total-chart'),{
         type:'bar',
         data:{
           labels:ptKeys,
@@ -1766,7 +1796,6 @@ function renderDashboard(){
           }
         }
       });
-    }
   }
 
   // Per-batch average Slot–ETA
@@ -1928,68 +1957,6 @@ function renderDashboard(){
     </table>`;
   }
 
-  // ── Undelivered by Batch ──────────────────────────────────────
-  const today=new Date(); today.setHours(0,0,0,0);
-  const undelivered=CT.filter(r=>r['Tracking']!=='Arrived');
-  // Total per batch (all containers, delivered + undelivered)
-  const batchTotal={};
-  CT.forEach(r=>{ const b=r['Batch / Train']||'(No Batch)'; batchTotal[b]=(batchTotal[b]||0)+1; });
-  // Group undelivered by batch
-  const batchMap={};
-  undelivered.forEach(r=>{
-    const b=r['Batch / Train']||'(No Batch)';
-    if(!batchMap[b]) batchMap[b]={total:0,none:0,t1:0,overdue:0,noETA:0,containers:[]};
-    batchMap[b].total++;
-    batchMap[b].containers.push(r);
-    if(r['Tracking']==='T1') batchMap[b].t1++;
-    else batchMap[b].none++;
-    const slot=parseDate(r['Scheduled Slot']);
-    if(slot&&slot<today) batchMap[b].overdue++;
-    if(!r['ETA at Hub']) batchMap[b].noETA++;
-  });
-  const batchKeys=Object.keys(batchMap).sort((a,b)=>batchMap[b].total-batchMap[a].total);
-
-  document.getElementById('undelivered-total-badge').textContent=
-    undelivered.length+' undelivered';
-
-  const udEl=document.getElementById('undelivered-batch');
-  if(!batchKeys.length){
-    udEl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0">🎉 All containers delivered!</div>';
-  } else {
-    const udRows=batchKeys.map(b=>{
-      const m=batchMap[b];
-      const btotal=batchTotal[b]||m.total;
-      const pct=Math.round(m.total/btotal*100);
-      // bar colour: green→yellow→red by percentage undelivered
-      const barColor=pct===100?'#e53935':pct>=50?'#F9A825':'#43A047';
-      const overdueBadge=m.overdue?`<span class="ud-pill" style="background:#FFEBEE;color:#C62828">⚠ ${m.overdue} overdue</span>`:'';
-      const noETABadge=m.noETA?`<span class="ud-pill" style="background:#F3E5F5;color:#7B1FA2">📡 ${m.noETA} no ETA</span>`:'';
-      const bEsc=b.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      return `<tr onclick="gotoBatch('${bEsc}')" title="Click to view in Containers tab">
-        <td style="font-weight:700;color:var(--navy)">${b}</td>
-        <td style="font-size:15px;font-weight:800;color:#C62828;text-align:center">${m.total} <span style="font-size:10px;font-weight:400;color:var(--muted)">/ ${btotal}</span></td>
-        <td>
-          <div class="ud-bar-wrap">
-            <div class="ud-bar-bg"><div class="ud-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
-            <span style="font-size:11px;font-weight:700;color:${barColor};min-width:34px">${pct}%</span>
-          </div>
-        </td>
-        <td><span class="ud-pill ud-pill-none">${m.none} None</span></td>
-        <td><span class="ud-pill ud-pill-t1">${m.t1} T1</span></td>
-        <td style="display:flex;gap:5px;flex-wrap:wrap;padding:6px 12px">${overdueBadge}${noETABadge}</td>
-      </tr>`;
-    }).join('');
-    udEl.innerHTML=`<table class="ud-tbl">
-      <thead><tr>
-        <th>Batch / Train</th>
-        <th style="text-align:center">Undelivered</th>
-        <th style="min-width:180px">Volume</th>
-        <th>None</th><th>T1</th>
-        <th>Alerts</th>
-      </tr></thead>
-      <tbody>${udRows}</tbody>
-    </table>`;
-  }
 
   // ── Unpaid by Batch ───────────────────────────────────────────
   const PAID_STATES=new Set(['Submitted','Done']);
@@ -2286,6 +2253,51 @@ function renderCT(){
   cascadeStaticMenu('payment',(rows,v)=>rows.some(r=>(r['Payment Status']||'')===v));
   const rows=getCTRows();
   document.getElementById('ct-count').textContent=rows.length+' of '+CT.length+' containers';
+
+  // ── Batch Progress Bars ────────────────────────────────────────
+  const _bpEl=document.getElementById('ct-batch-progress');
+  if(_bpEl){
+    // Always compute over ALL CT (not filtered), so bars reflect full batch reality
+    const _bpBatches={};
+    CT.forEach(r=>{
+      const b=r['Batch / Train']||'(No Batch)';
+      if(!_bpBatches[b]) _bpBatches[b]={total:0,arrived:0,t1:0,none:0};
+      _bpBatches[b].total++;
+      if(r['Tracking']==='Arrived') _bpBatches[b].arrived++;
+      else if(r['Tracking']==='T1') _bpBatches[b].t1++;
+      else _bpBatches[b].none++;
+    });
+    const _bpKeys=Object.keys(_bpBatches).sort();
+    if(!_bpKeys.length){ _bpEl.innerHTML=''; }
+    else {
+      _bpEl.innerHTML=`<div class="ct-bp-row">${_bpKeys.map(b=>{
+        const m=_bpBatches[b];
+        const pct=Math.round(m.arrived/m.total*100);
+        const fillColor=pct===100?'#16a34a':pct>=75?'#22c55e':pct>=40?'#F9A825':'#e53935';
+        const shipLeft=Math.max(6,Math.min(92,pct));
+        const shipIcon=pct===100?'🏁':'🚛';
+        const bEsc=b.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<div class="ct-bp-card" onclick="gotoBatch('${bEsc}')" title="Click to filter this batch">
+          <div class="ct-bp-name">📦 ${b}</div>
+          <div class="ct-bp-track">
+            <div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}">
+              ${pct<100?'<div class="ct-bp-fill-anim"></div>':''}
+            </div>
+            <div class="ct-bp-ship" style="left:${shipLeft}%">${shipIcon}</div>
+          </div>
+          <div class="ct-bp-labels">
+            <span class="ct-bp-pct" style="background:${pct===100?'#dcfce7':pct>=75?'#f0fdf4':pct>=40?'#fef9c3':'#fef2f2'};color:${fillColor}">${pct}%</span>
+            <span class="ct-bp-counts">${m.arrived} / ${m.total} arrived</span>
+          </div>
+          <div class="ct-bp-pills">
+            ${m.arrived?`<span class="ct-bp-pill" style="background:#dcfce7;color:#15803d">✅ ${m.arrived}</span>`:''}
+            ${m.t1?`<span class="ct-bp-pill" style="background:#dbeafe;color:#1d4ed8">🚂 T1 ${m.t1}</span>`:''}
+            ${m.none?`<span class="ct-bp-pill" style="background:#f3f4f6;color:#6b7280">⏳ ${m.none}</span>`:''}
+          </div>
+        </div>`;
+      }).join('')}</div>`;
+    }
+  }
   const tbody=document.getElementById('ct-body');
   const nodata=document.getElementById('ct-nodata');
   if(!rows.length){ tbody.innerHTML=''; nodata.style.display='block'; return; }
