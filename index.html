@@ -2072,7 +2072,7 @@ function renderDashboard(){
   if(!vgmRows.length){
     vgmEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All active vessels have VGM filed</div>';
   } else {
-    vgmEl.innerHTML=vgmRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
+    vgmEl.innerHTML=vgmRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span>${r['Booking / BC No.']?`<span style="color:#c62828;font-size:10px;font-weight:600;background:#fdecea;padding:1px 7px;border-radius:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r['Booking / BC No.']}">${r['Booking / BC No.']}</span>`:''}  <span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
   // Custom not filed
@@ -2085,7 +2085,7 @@ function renderDashboard(){
   if(!customRows.length){
     custEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All active vessels have Custom filed</div>';
   } else {
-    custEl.innerHTML=customRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
+    custEl.innerHTML=customRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span>${r['Booking / BC No.']?`<span style="color:#c62828;font-size:10px;font-weight:600;background:#fdecea;padding:1px 7px;border-radius:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r['Booking / BC No.']}">${r['Booking / BC No.']}</span>`:''}  <span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
   // ── Mala Pipeline ─────────────────────────────────────────────
