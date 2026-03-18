@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>OWENZ Shipment Tracker</title>
+<title>OwenZhang</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -521,21 +521,24 @@ td.editing .cell-edit{display:block}
 .bel-card-top-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .bel-card-top-left h3{font-size:14px;font-weight:800;color:var(--navy);margin:0;text-transform:uppercase;letter-spacing:.6px}
 .bel-card-top-right{font-size:11px;color:var(--muted);font-weight:600}
-.bel-input-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
-.bel-input-row label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-.bel-input-row input[type=date]{border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--text);background:#fff;outline:none}
-.bel-input-row input[type=date]:focus{border-color:var(--blue)}
+.bel-input-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.bel-input-row label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 .bel-clear-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--muted);cursor:pointer}
 .bel-clear-btn:hover{border-color:#999;color:var(--text)}
+.bel-anchor-badge{font-size:10px;font-weight:700;background:#E0EFEF;color:#004D4C;border-radius:10px;padding:2px 8px;border:1px solid #004D4C}
 /* horizontal pipeline */
 .bel-pipeline-wrap{overflow-x:auto;padding-bottom:6px}
 .bel-pipeline{display:flex;align-items:flex-start;min-width:700px;padding:10px 0 6px}
 .bel-node{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;text-align:center;padding:0 4px}
 .bel-icon-wrap{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,.13);flex-shrink:0;border:3px solid transparent;position:relative;z-index:1}
+.bel-icon-wrap.bel-anchor-node{box-shadow:0 0 0 3px #004D4C,0 3px 10px rgba(0,0,0,.18)}
 .bel-node-name{font-size:11px;font-weight:700;color:var(--text);margin-top:8px;line-height:1.3;max-width:90px}
 .bel-node-d{font-size:22px;font-weight:900;margin-top:4px;line-height:1}
-.bel-node-date{font-size:11px;font-weight:700;color:#555;margin-top:3px}
+.bel-node-date{font-size:11px;font-weight:700;color:#555;margin-top:3px;min-height:15px}
 .bel-node-sub{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4}
+.bel-node-input{width:88px;border:1px dashed #ccc;border-radius:5px;padding:3px 4px;font-size:10px;font-weight:600;color:#555;background:#fafafa;text-align:center;margin-top:6px;cursor:pointer;transition:border .15s,background .15s}
+.bel-node-input:focus{border:1px solid #004D4C;background:#fff;outline:none;color:#000}
+.bel-node-input.bel-anchor-input{border:1px solid #004D4C;background:#E0EFEF;color:#004D4C;font-weight:800}
 .bel-arrow{display:flex;align-items:center;padding-top:18px;color:#bbb;flex-shrink:0;font-size:18px;margin:0 -2px}
 /* bottom info bar */
 .bel-info-bar{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
@@ -544,18 +547,79 @@ td.editing .cell-edit{display:block}
 .bel-info-tile span{color:var(--muted)}
 .bel-info-tile.bel-slot-tile{background:#FFFDE7;border-color:#FFE082}
 .bel-info-tile.bel-slot-tile strong{color:#6D4C41}
-.bel-placeholder{text-align:center;padding:36px 20px;color:var(--muted);font-size:13px}
+.bel-placeholder{text-align:center;padding:28px 20px;color:var(--muted);font-size:13px}
 .bel-ph-icon{font-size:42px;margin-bottom:10px}
+
+/* ── Vessel Voyage Animation ── */
+.vt-voyage-card{background:linear-gradient(160deg,#e0f2fe 0%,#bae6fd 60%,#7dd3fc 100%);border-radius:12px;padding:14px 18px;margin:10px 4px 4px;border:1px solid #7dd3fc}
+.vt-voyage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.vt-voyage-title{font-size:12px;font-weight:800;color:#0c4a6e;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.vt-voyage-status-pill{font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;background:#fff;color:#0369a1;border:1px solid #7dd3fc}
+.vt-voyage-ocean{position:relative;height:64px;background:linear-gradient(180deg,#38bdf8 0%,#0284c7 50%,#0369a1 100%);border-radius:10px;overflow:hidden;margin:0 0 10px}
+.vt-voyage-waves{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0,transparent 18px,rgba(255,255,255,.07) 18px,rgba(255,255,255,.07) 36px);animation:vt-wave-move 3s linear infinite}
+.vt-voyage-waves2{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0,transparent 28px,rgba(255,255,255,.05) 28px,rgba(255,255,255,.05) 56px);animation:vt-wave-move 5s linear infinite reverse}
+@keyframes vt-wave-move{0%{background-position:0}100%{background-position:72px}}
+.vt-voyage-track-line{position:absolute;top:50%;left:5%;right:5%;height:2px;background:rgba(255,255,255,.25);border-radius:2px;transform:translateY(-50%)}
+.vt-voyage-port-start{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:20px;z-index:3;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+.vt-voyage-port-end{position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:20px;z-index:3;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+.vt-voyage-ship{position:absolute;top:50%;transform:translate(-50%,-60%);font-size:28px;z-index:4;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));transition:left 1.2s cubic-bezier(.4,0,.2,1);animation:vt-ship-bob 2.5s ease-in-out infinite}
+@keyframes vt-ship-bob{0%,100%{margin-top:0}50%{margin-top:-5px}}
+.vt-voyage-progress-bar{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,255,255,.5);transition:width 1.2s cubic-bezier(.4,0,.2,1);border-radius:0 2px 2px 0}
+.vt-voyage-info{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.vt-voyage-info-item{font-size:11px;font-weight:600;color:#0c4a6e;background:rgba(255,255,255,.7);padding:3px 10px;border-radius:8px;border:1px solid rgba(14,116,144,.2)}
+.vt-voyage-info-item span{color:#0369a1;font-weight:800}
+.vt-voyage-not-departed{background:rgba(255,255,255,.5);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:600;color:#7c3aed}
+/* ── Mini inline voyage progress bar ── */
+.vt-mini-prog-row td{padding:0 8px 4px!important;border-top:none!important}
+.vt-mini-prog-wrap{display:flex;flex-direction:column;gap:2px;padding:0 4px 0}
+.vt-mini-prog-track{position:relative;height:18px;background:linear-gradient(90deg,#bae6fd,#e0f9ff);border-radius:30px;overflow:visible;margin:0 4px;box-shadow:0 1px 4px rgba(3,105,161,.15),inset 0 1px 3px rgba(0,0,0,.06)}
+.vt-mini-prog-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc);border-radius:30px;transition:width 1.2s cubic-bezier(.4,0,.2,1);opacity:.85}
+.vt-mini-prog-ship{position:absolute;top:50%;transform:translate(-50%,-54%);font-size:15px;z-index:4;transition:left 1.2s cubic-bezier(.4,0,.2,1);animation:vt-ship-bob 2.5s ease-in-out infinite;filter:drop-shadow(0 1px 3px rgba(0,0,0,.25))}
+.vt-mini-prog-anchor{position:absolute;right:-2px;top:50%;transform:translateY(-50%);font-size:13px;z-index:3;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2))}
+.vt-mini-prog-labels{display:flex;align-items:center;gap:10px;padding:0 6px}
+.vt-mini-prog-status{font-size:10px;font-weight:700;flex:1}
+.vt-mini-prog-pct{font-size:10px;font-weight:800;color:#0369a1;background:#e0f2fe;padding:1px 7px;border-radius:10px;border:1px solid #bae6fd}
+.vt-mini-prog-remaining{font-size:10px;color:#64748b;font-style:italic}
+/* ── Feedback Page ── */
+.fb-toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#fff;border-bottom:1px solid #eee;gap:12px;flex-wrap:wrap}
+.fb-toolbar-left{display:flex;align-items:center;gap:10px}
+.fb-batch-section{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:22px;overflow:hidden;border:1px solid #e8edf5}
+.fb-batch-header{background:linear-gradient(135deg,#004D4C 0%,#006b6a 100%);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:10px}
+.fb-batch-title{font-size:15px;font-weight:800;letter-spacing:.3px}
+.fb-batch-meta{font-size:11px;opacity:.8}
+.fb-two-col{display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media(max-width:700px){.fb-two-col{grid-template-columns:1fr}}
+.fb-col{padding:16px 20px;border-right:1px solid #f0f0f0}
+.fb-col:last-child{border-right:none}
+.fb-col-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.fb-card{background:#fafbfd;border-radius:10px;border:1px solid #eaeff6;padding:12px 14px;margin-bottom:12px;transition:box-shadow .2s}
+.fb-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.08)}
+.fb-card-name{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.fb-card-name .fb-cn-pill{font-size:10px;background:#e8f0fe;color:#3b5bdb;border-radius:8px;padding:2px 8px;font-weight:600}
+.fb-stars{display:flex;gap:4px;margin-bottom:8px}
+.fb-star{font-size:22px;cursor:pointer;transition:transform .15s,opacity .15s;opacity:.3;user-select:none}
+.fb-star.on{opacity:1}
+.fb-star:hover{transform:scale(1.25)}
+.fb-note{width:100%;box-sizing:border-box;border:1px solid #dde3ee;border-radius:7px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;color:#334;background:#fff;transition:border-color .2s}
+.fb-note:focus{outline:none;border-color:#004D4C}
+.fb-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.fb-save-btn{font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#004D4C;color:#fff;cursor:pointer;font-weight:700;transition:background .2s}
+.fb-save-btn:hover{background:#006b6a}
+.fb-saved-badge{font-size:10px;color:#2e7d32;font-weight:700;display:none}
+.fb-empty{text-align:center;padding:40px;color:#aaa;font-size:14px}
+.fb-tag-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.fb-tag{font-size:10px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:1px 7px}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">🚢 OWENZ Shipment Tracker</div>
+  <div class="brand">🚢 OwenZhang</div>
   <nav>
     <button class="active" onclick="showPage('dashboard')">Dashboard</button>
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('vessels')">Vessels</button>
+    <button onclick="showPage('feedback')">⭐ Feedback</button>
   </nav>
   <div class="hbtns">
     <button class="btn btn-green" onclick="openAdd()">+ Add</button>
@@ -586,14 +650,14 @@ td.editing .cell-edit{display:block}
       <div class="bel-card-top-right">Days from China terminal departure</div>
     </div>
     <div class="bel-input-row">
-      <label>🗓 China Departure Date</label>
-      <input type="date" id="bel-depart-date" onchange="renderBelgiumTimeline(this.value)" title="Date containers depart China terminal"/>
-      <button class="bel-clear-btn" onclick="document.getElementById('bel-depart-date').value='';renderBelgiumTimeline('')">✕ Clear</button>
+      <label>📅 Enter a date at any stage below to project the full timeline</label>
+      <span id="bel-anchor-badge" class="bel-anchor-badge" style="display:none"></span>
+      <button class="bel-clear-btn" onclick="belClearAll()">✕ Clear</button>
     </div>
     <div id="bel-timeline-body">
       <div class="bel-placeholder">
         <div class="bel-ph-icon">🗺️</div>
-        <div>Enter the China departure date above to generate the full route timeline with projected dates</div>
+        <div>Enter a date at any stage to project the full route timeline</div>
       </div>
     </div>
   </div>
@@ -905,7 +969,7 @@ td.editing .cell-edit{display:block}
         <thead><tr>
           <th class="no-sort" style="width:32px"></th>
           <th>Port</th><th>Carrier</th><th>Booking / BC No.</th><th>Container Qty</th>
-          <th>Vessel Name</th><th>ETS (Departure)</th><th>Port Cut-Off</th>
+          <th>Vessel Name</th><th>ETS (Departure)</th><th>ETA (Arrival)</th><th>Port Cut-Off</th>
           <th>Barge Date</th><th>Days to Cut-Off</th>
           <th class="no-sort" style="text-align:center">VGM</th>
           <th class="no-sort" style="text-align:center">Custom</th>
@@ -918,6 +982,24 @@ td.editing .cell-edit{display:block}
   </div>
 
 
+</div>
+
+<!-- ══ FEEDBACK ══ -->
+<div id="page-feedback" class="page">
+  <div class="fb-toolbar">
+    <div class="fb-toolbar-left">
+      <span style="font-size:20px">⭐</span>
+      <h2 style="margin:0;font-size:16px;font-weight:800;color:var(--navy)">Feedback</h2>
+      <span id="fb-count" style="font-size:11px;background:#f0f4ff;color:#3b5bdb;border-radius:10px;padding:2px 10px;font-weight:700"></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="fb-batch-filter" onchange="renderFeedback()" style="border:1px solid #ddd;border-radius:6px;padding:5px 10px;font-size:12px;color:var(--navy)">
+        <option value="">All Batches</option>
+      </select>
+      <button class="btn btn-green" onclick="fbSaveAll()" title="Save all feedback">💾 Save All</button>
+    </div>
+  </div>
+  <div id="fb-content" style="padding:16px;max-width:1100px;margin:0 auto"></div>
 </div>
 
 </main>
@@ -1234,10 +1316,13 @@ function showPage(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  document.querySelectorAll('nav button')[['dashboard','containers','vessels'].indexOf(p)].classList.add('active');
+  const pages=['dashboard','containers','vessels','feedback'];
+  const idx=pages.indexOf(p);
+  if(idx>=0) document.querySelectorAll('nav button')[idx].classList.add('active');
   if(p==='dashboard') renderDashboard();
   if(p==='containers') renderCT();
   if(p==='vessels') renderVT();
+  if(p==='feedback') renderFeedback();
 }
 function gotoFilter(col, val){
   // Clear all multi-selects first
@@ -2527,7 +2612,7 @@ function toggleCMR(id, checked){
 // ── VESSEL TABLE ──────────────────────────────────────────────────
 function vtCell(r, col, opts){
   const v = r[col]===undefined||r[col]===null||isNaN_safe(r[col]) ? '' : String(r[col]);
-  const IS_DATE=['ETS (Departure)','Port Cut-Off','Barge Date'].includes(col);
+  const IS_DATE=['ETS (Departure)','ETA (Arrival)','Port Cut-Off','Barge Date'].includes(col);
   const disp = IS_DATE ? fmtDateStr(v) : v;
   if(opts && opts.select){
     const selOpts = opts.select.map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('');
@@ -2562,7 +2647,7 @@ function commitVTSelect(sel, col, id){
 }
 function openAddVessel(){
   const v={Port:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
-    'ETS (Departure)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
+    'ETS (Departure)':'','ETA (Arrival)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
     Status:'Scheduled','Remark':'','VGM':false,'Custom':false,containers:[],vesselHistory:[],_id:vtNextId++};
   VT.push(v); saveVT(); renderVT(); renderDashboard();
 }
@@ -2573,13 +2658,32 @@ function openDelVessel(id){
 function renderVT(){
   document.getElementById('vt-count').textContent=VT.length+' vessels';
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','TBD'];
-  const TOTAL_COLS=16; // expand + 13 data cols + del + sel
+  const TOTAL_COLS=17; // expand + 13 data cols + del + sel
   document.getElementById('vt-body').innerHTML=VT.map(r=>{
     // Auto-calculate Days to Cut-Off = Port Cut-Off − Barge Date
     const _pc=parseDate(r['Port Cut-Off']), _bd=parseDate(r['Barge Date']);
     const _days=(_pc&&_bd)?Math.round((_pc-_bd)/864e5):null;
     const _daysDisp=_days!==null?String(_days):'<span style="color:#ccc">—</span>';
     const _daysColor=_days===null?'':_days<0?'#e53935':_days<=2?'#F9A825':'#2e7d32';
+
+    // Voyage progress bar computation (hoisted for use in both main row and expanded row)
+    const _etsD = parseDate(r['ETS (Departure)']);
+    const _etaD = parseDate(r['ETA (Arrival)']);
+    const _vpNow = new Date(); _vpNow.setHours(0,0,0,0);
+    const _vpHasProgress = !!((_etsD && _etaD) && (_etaD > _etsD));
+    let _vpPct=0, _vpDaysGone=0, _vpDaysLeft=0, _vpTotalDays=0, _vpStatusLabel='', _vpStatusColor='', _vpShipLeft=8;
+    if(_vpHasProgress){
+      const _vpTotal=_etaD-_etsD;
+      const _vpElapsed=_vpNow-_etsD;
+      _vpPct=Math.min(1,Math.max(0,_vpElapsed/_vpTotal));
+      _vpTotalDays=Math.round(_vpTotal/864e5);
+      _vpDaysGone=Math.max(0,Math.round(_vpElapsed/864e5));
+      _vpDaysLeft=Math.max(0,Math.round((_etaD-_vpNow)/864e5));
+      _vpShipLeft=8+_vpPct*84;
+      if(_vpNow<_etsD){_vpStatusLabel='Not Yet Departed';_vpStatusColor='#7c3aed';}
+      else if(_vpNow>=_etaD){_vpStatusLabel='Arrived ✓';_vpStatusColor='#15803d';}
+      else{_vpStatusLabel=`Day ${_vpDaysGone} of ${_vpTotalDays}`;_vpStatusColor='#0369a1';}
+    }
 
     const cls=r['Status']==='Departed'?'v-dep':r['Status']==='Cut-Off Soon'?'v-soon':r['Status']==='Cut-Off Passed'?'v-late':'';
     const cns=Array.isArray(r.containers)?r.containers:[];
@@ -2614,6 +2718,7 @@ function renderVT(){
       ${vtCell(r,'Container Qty')}
       ${vtCell(r,'Vessel Name')}
       ${vtCell(r,'ETS (Departure)')}
+      ${vtCell(r,'ETA (Arrival)')}
       ${vtCell(r,'Port Cut-Off')}
       ${vtCell(r,'Barge Date')}
       <td style="padding:7px 10px;text-align:center;font-weight:700;color:${_daysColor};white-space:nowrap">${_daysDisp}</td>
@@ -2628,8 +2733,66 @@ function renderVT(){
         <input type="checkbox" class="vt-sel-cb" data-id="${r._id}" onchange="vtSelChange()" style="width:14px;height:14px;cursor:pointer"/>
       </td>
     </tr>
+    ${_vpHasProgress ? `<tr class="vt-mini-prog-row" id="vprog-${r._id}">
+      <td colspan="${TOTAL_COLS}" style="padding:0 0 2px;border-top:none;background:transparent">
+        <div class="vt-mini-prog-wrap">
+          <div class="vt-mini-prog-track">
+            <div class="vt-mini-prog-fill" style="width:${Math.round(_vpPct*100)}%"></div>
+            <div class="vt-mini-prog-ship" style="left:${_vpShipLeft}%">🚢</div>
+            <div class="vt-mini-prog-anchor" title="Destination">⚓</div>
+          </div>
+          <div class="vt-mini-prog-labels">
+            <span class="vt-mini-prog-status" style="color:${_vpStatusColor}">${_vpStatusLabel}</span>
+            <span class="vt-mini-prog-pct">${Math.round(_vpPct*100)}%</span>
+            <span class="vt-mini-prog-remaining">${_vpDaysLeft > 0 ? `${_vpDaysLeft}d remaining` : (_vpDaysLeft===0 && _vpNow < _etaD ? 'arriving today' : '')}</span>
+          </div>
+        </div>
+      </td>
+    </tr>` : ''}
     <tr class="vt-containers-row${isOpen?' open':''}" id="vexp-${r._id}">
       <td class="vt-containers-cell" colspan="${TOTAL_COLS}">
+        ${(()=>{
+          const etsD = parseDate(r['ETS (Departure)']);
+          const etaD = parseDate(r['ETA (Arrival)']);
+          if(!etsD || !etaD) return '';
+          const now = new Date(); now.setHours(0,0,0,0);
+          const total = etaD - etsD;
+          const elapsed = now - etsD;
+          const pct = Math.min(1, Math.max(0, elapsed / total));
+          const shipLeft = 8 + pct * 84; // 8%–92% range
+          const totalDays = Math.round(total / 864e5);
+          const daysGone  = Math.max(0, Math.round(elapsed / 864e5));
+          const daysLeft  = Math.max(0, Math.round((etaD - now) / 864e5));
+          const wds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+          const ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const fmtD = d => wds[d.getDay()]+' '+d.getDate()+' '+ms[d.getMonth()];
+          let statusLabel, statusColor;
+          if(now < etsD){ statusLabel='⏳ Not Yet Departed'; statusColor='#7c3aed'; }
+          else if(now >= etaD){ statusLabel='✅ Arrived'; statusColor='#15803d'; }
+          else { statusLabel=`🌊 At Sea · Day ${daysGone} of ${totalDays}`; statusColor='#0369a1'; }
+          return `<div class="vt-voyage-card">
+            <div class="vt-voyage-header">
+              <div class="vt-voyage-title">🚢 ${r['Vessel Name']||'Voyage'} — Sea Progress</div>
+              <div class="vt-voyage-status-pill" style="color:${statusColor}">${statusLabel}</div>
+            </div>
+            <div class="vt-voyage-ocean">
+              <div class="vt-voyage-waves"></div>
+              <div class="vt-voyage-waves2"></div>
+              <div class="vt-voyage-track-line"></div>
+              <div class="vt-voyage-port-start">🏭</div>
+              <div class="vt-voyage-port-end">⚓</div>
+              <div class="vt-voyage-ship" style="left:${shipLeft}%">🚢</div>
+              <div class="vt-voyage-progress-bar" style="width:${shipLeft}%"></div>
+            </div>
+            <div class="vt-voyage-info">
+              <div class="vt-voyage-info-item">🛫 ETS <span>${fmtD(etsD)}</span></div>
+              <div class="vt-voyage-info-item">📍 Progress <span>${Math.round(pct*100)}%</span></div>
+              <div class="vt-voyage-info-item">⏱ Elapsed <span>${daysGone}d</span></div>
+              <div class="vt-voyage-info-item">🕐 Remaining <span>${daysLeft}d</span></div>
+              <div class="vt-voyage-info-item">🛬 ETA <span>${fmtD(etaD)}</span></div>
+            </div>
+          </div>`;
+        })()}
         ${tagsHtml}
         <div class="vt-cn-add">
           <input id="vt-cn-inp-${r._id}" type="text" placeholder="Container No. (e.g. MSCU1234567)"
@@ -2743,63 +2906,99 @@ const BEL_STAGES = [
   { icon:'📦', label:'Belgium\nCustoms Broker',      avg:27.2, p70:29, p85:31, color:'#004D4C', bg:'#E0EFEF', dColor:'#003A3A' },
 ];
 
+let belDeparture = '';   // computed China departure (YYYY-MM-DD)
+let belAnchorIdx = -1;  // which stage was used as anchor
+
 function belAddDays(dateStr, days){
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + Math.round(days));
   return d;
 }
-
 function belFmtDate(d){
   const wds = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const ms = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const ms  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return wds[d.getDay()] + ' ' + d.getDate() + ' ' + ms[d.getMonth()];
 }
+function belFmtInput(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 
-function renderBelgiumTimeline(departureDateStr){
+function belSetStageDate(idx, dateStr){
+  if(!dateStr){
+    // If user clears the anchor, clear everything
+    if(idx === belAnchorIdx) belClearAll();
+    return;
+  }
+  // Back-calculate China departure from this stage
+  const stage = BEL_STAGES[idx];
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - Math.round(stage.avg));
+  belDeparture = belFmtInput(d);
+  belAnchorIdx = idx;
+  renderBelgiumTimeline();
+}
+
+function belClearAll(){
+  belDeparture = ''; belAnchorIdx = -1;
+  // Clear all node inputs
+  document.querySelectorAll('.bel-node-input').forEach(inp => inp.value = '');
+  document.getElementById('bel-anchor-badge').style.display = 'none';
+  renderBelgiumTimeline();
+}
+
+function renderBelgiumTimeline(){
   const body = document.getElementById('bel-timeline-body');
-  if(!departureDateStr){
-    body.innerHTML = `<div class="bel-placeholder"><div class="bel-ph-icon">🗺️</div><div>Enter the China departure date above to generate the full route timeline with projected dates</div></div>`;
+  const badge = document.getElementById('bel-anchor-badge');
+
+  if(!belDeparture){
+    body.innerHTML = `<div class="bel-placeholder"><div class="bel-ph-icon">🗺️</div><div>Enter a date at any stage to project the full route timeline</div></div>`;
+    badge.style.display = 'none';
+    // Still render the pipeline skeleton with blank inputs
+    renderBelPipelineSkeleton(body);
     return;
   }
 
-  // Build horizontal pipeline nodes
+  // Update anchor badge
+  const anchorName = belAnchorIdx >= 0 ? BEL_STAGES[belAnchorIdx].label.replace('\n',' ') : 'China Departure';
+  badge.textContent = `Anchored at: ${anchorName}`;
+  badge.style.display = '';
+
+  const barColors = ['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488','#2563EB'];
+
   let nodesHtml = '';
   BEL_STAGES.forEach((s, idx) => {
-    const avgDate = belAddDays(departureDateStr, s.avg);
-    const nameLines = s.label.split('\n');
-    const offsetStr = s.avg === 0 ? 'D+0' : `D+${s.avg}`;
-    const subLine = (s.p70 > 0)
-      ? `p70=D+${s.p70} · p85=D+${s.p85}`
-      : (idx === 0 ? `Book slot email →` : '');
+    const stageDate  = belAddDays(belDeparture, s.avg);
+    const inputVal   = belFmtInput(stageDate);
+    const isAnchor   = idx === belAnchorIdx;
+    const nameLines  = s.label.split('\n');
+    const offsetStr  = s.avg === 0 ? 'D+0' : `D+${s.avg}`;
+    const subLine    = s.p70 > 0 ? `p70=D+${s.p70} · p85=D+${s.p85}` : (idx===0 ? 'Book slot email →' : '');
 
-    // Special: show book-slot note under China departure
     nodesHtml += `<div class="bel-node">
-      <div class="bel-icon-wrap" style="background:${s.bg};border-color:${s.color}">${s.icon}</div>
+      <div class="bel-icon-wrap ${isAnchor?'bel-anchor-node':''}" style="background:${s.bg};border-color:${s.color}">${s.icon}</div>
       <div class="bel-node-name">${nameLines.join('<br>')}</div>
       <div class="bel-node-d" style="color:${s.dColor}">${offsetStr}</div>
-      <div class="bel-node-date">${belFmtDate(avgDate)}</div>
+      <div class="bel-node-date">${belFmtDate(stageDate)}</div>
       ${subLine ? `<div class="bel-node-sub">${subLine}</div>` : ''}
+      <input type="date" class="bel-node-input${isAnchor?' bel-anchor-input':''}"
+             value="${inputVal}"
+             onchange="belSetStageDate(${idx},this.value)"
+             title="Change anchor to: ${nameLines.join(' ')}"/>
     </div>`;
-
-    if(idx < BEL_STAGES.length - 1){
-      nodesHtml += `<div class="bel-arrow">→</div>`;
-    }
+    if(idx < BEL_STAGES.length-1) nodesHtml += `<div class="bel-arrow">→</div>`;
   });
 
-  // Color bars under each node (matching the Analysis screenshot)
-  const barColors = ['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488','#2563EB'];
   let barsHtml = `<div style="display:flex;min-width:700px;margin-top:6px;padding:0">`;
   BEL_STAGES.forEach((s, idx) => {
     barsHtml += `<div style="flex:1;height:4px;background:${barColors[idx]};border-radius:2px;margin:0 2px"></div>`;
-    if(idx < BEL_STAGES.length - 1) barsHtml += `<div style="width:18px"></div>`;
+    if(idx < BEL_STAGES.length-1) barsHtml += `<div style="width:18px"></div>`;
   });
   barsHtml += `</div>`;
 
-  // Bottom info bar
-  const bookDate  = belAddDays(departureDateStr, 3);
-  const targetDate = belAddDays(departureDateStr, 29);
-  const backupDate = belAddDays(departureDateStr, 31);
-  const slaDate   = belAddDays(departureDateStr, 36);
+  const bookDate   = belAddDays(belDeparture, 3);
+  const targetDate = belAddDays(belDeparture, 29);
+  const backupDate = belAddDays(belDeparture, 31);
+  const slaDate    = belAddDays(belDeparture, 36);
 
   const infoBar = `<div class="bel-info-bar">
     <div class="bel-info-tile">
@@ -2811,7 +3010,7 @@ function renderBelgiumTimeline(departureDateStr){
       <span>avg 4.8d &nbsp;|&nbsp; p70=6d · p85=8d</span>
     </div>
     <div class="bel-info-tile bel-slot-tile">
-      <strong>📅 Book slot on D+3 &nbsp;→&nbsp; ${belFmtDate(bookDate)}</strong>
+      <strong>📅 Book slot on D+3 → ${belFmtDate(bookDate)}</strong>
       <span>Target slot D+29 (${belFmtDate(targetDate)}) · Backup D+31 (${belFmtDate(backupDate)})</span>
     </div>
     <div class="bel-info-tile" style="background:#F0FDF4;border-color:#86EFAC">
@@ -2826,6 +3025,34 @@ function renderBelgiumTimeline(departureDateStr){
       ${barsHtml}
     </div>
     ${infoBar}`;
+}
+
+function renderBelPipelineSkeleton(body){
+  // Show pipeline with empty inputs even before any date is entered
+  const barColors = ['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488','#2563EB'];
+  let nodesHtml = '';
+  BEL_STAGES.forEach((s, idx) => {
+    const nameLines = s.label.split('\n');
+    const offsetStr = s.avg === 0 ? 'D+0' : `D+${s.avg}`;
+    const subLine   = s.p70 > 0 ? `p70=D+${s.p70} · p85=D+${s.p85}` : (idx===0 ? 'Book slot email →' : '');
+    nodesHtml += `<div class="bel-node">
+      <div class="bel-icon-wrap" style="background:${s.bg};border-color:${s.color}">${s.icon}</div>
+      <div class="bel-node-name">${nameLines.join('<br>')}</div>
+      <div class="bel-node-d" style="color:${s.dColor}">${offsetStr}</div>
+      <div class="bel-node-date" style="color:#ccc">—</div>
+      ${subLine ? `<div class="bel-node-sub">${subLine}</div>` : ''}
+      <input type="date" class="bel-node-input" onchange="belSetStageDate(${idx},this.value)"
+             title="Enter date for ${nameLines.join(' ')}"/>
+    </div>`;
+    if(idx < BEL_STAGES.length-1) nodesHtml += `<div class="bel-arrow">→</div>`;
+  });
+  let barsHtml = `<div style="display:flex;min-width:700px;margin-top:6px;padding:0">`;
+  BEL_STAGES.forEach((s, idx) => {
+    barsHtml += `<div style="flex:1;height:4px;background:${barColors[idx]};border-radius:2px;margin:0 2px;opacity:.25"></div>`;
+    if(idx < BEL_STAGES.length-1) barsHtml += `<div style="width:18px"></div>`;
+  });
+  barsHtml += `</div>`;
+  body.innerHTML = `<div class="bel-pipeline-wrap"><div class="bel-pipeline">${nodesHtml}</div>${barsHtml}</div>`;
 }
 
 function vtSearchContainer(q){
@@ -2991,7 +3218,7 @@ function exportCSV(){
   const csv=[cols.join(','),...CT.map(r=>cols.map(c=>'"'+(String(r[c]??'').replace(/"/g,'""'))+'"').join(','))].join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download='OWENZ_Containers_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.download='OwenZhang_Containers_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
 }
 
@@ -3571,7 +3798,7 @@ async function connectSync(){
       // Create new bin
       const res=await fetch(JBIN,{
         method:'POST',
-        headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'OWENZ Shipment Tracker'},
+        headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'OwenZhang'},
         body:JSON.stringify({CT,VT})
       });
       if(!res.ok) throw new Error('Failed to create bin (HTTP '+res.status+'). Check your Master Key.');
@@ -3809,6 +4036,127 @@ function applyBulkEdit(){
   setTimeout(()=>{ closeBE(); clearAllSel(); }, 900);
 }
 renderDashboard();
+renderBelgiumTimeline(); // show skeleton pipeline with empty date inputs on load
+
+// ══════════════════════════════════════════
+//  FEEDBACK PAGE
+// ══════════════════════════════════════════
+const FB_KEY = 'owenz_feedback_v1';
+let FB = {};
+(function loadFB(){
+  try{ const s=localStorage.getItem(FB_KEY); if(s) FB=JSON.parse(s); }catch(e){}
+})();
+function saveFB(){ try{ localStorage.setItem(FB_KEY, JSON.stringify(FB)); }catch(e){} }
+
+function fbGet(batch, type, name){ // type = 'truckers' | 'consignees'
+  if(!FB[batch]) FB[batch]={};
+  if(!FB[batch][type]) FB[batch][type]={};
+  if(!FB[batch][type][name]) FB[batch][type][name]={stars:0,note:''};
+  return FB[batch][type][name];
+}
+function fbSet(batch, type, name, stars, note){
+  if(!FB[batch]) FB[batch]={};
+  if(!FB[batch][type]) FB[batch][type]={};
+  FB[batch][type][name]={stars,note};
+  saveFB();
+}
+
+function fbSetStar(batch, type, name, stars){
+  const d=fbGet(batch,type,name);
+  fbSet(batch,type,name,stars,d.note);
+  // re-render stars in place
+  const key=`${batch}|${type}|${name}`;
+  document.querySelectorAll(`.fb-star[data-key="${CSS.escape(key)}"]`).forEach(s=>{
+    s.classList.toggle('on', parseInt(s.dataset.v)<=stars);
+  });
+}
+function fbSaveOne(batch, type, name){
+  const key=`${batch}|${type}|${name}`;
+  const starsOn=document.querySelectorAll(`.fb-star.on[data-key="${CSS.escape(key)}"]`).length;
+  const noteEl=document.getElementById('fbnote_'+CSS.escape(key).replace(/\|/g,'_'));
+  const note=noteEl?noteEl.value:'';
+  fbSet(batch,type,name,starsOn,note);
+  const badge=document.getElementById('fbsaved_'+CSS.escape(key).replace(/\|/g,'_'));
+  if(badge){ badge.style.display='inline'; setTimeout(()=>badge.style.display='none',2000); }
+}
+function fbSaveAll(){
+  document.querySelectorAll('.fb-save-btn').forEach(btn=>btn.click());
+}
+
+function renderFeedback(){
+  // Gather all batches from CT
+  const batches=[...new Set(CT.map(r=>r['Batch / Train']||'').filter(Boolean))].sort();
+  const filterVal=document.getElementById('fb-batch-filter').value;
+
+  // Populate filter dropdown
+  const sel=document.getElementById('fb-batch-filter');
+  const prev=sel.value;
+  sel.innerHTML='<option value="">All Batches</option>'+batches.map(b=>`<option value="${b}"${b===prev?' selected':''}>${b}</option>`).join('');
+
+  const visibleBatches=filterVal?[filterVal]:batches;
+  document.getElementById('fb-count').textContent=batches.length+' batches';
+
+  if(!batches.length){
+    document.getElementById('fb-content').innerHTML='<div class="fb-empty">No batch data found in the Containers tab yet.</div>';
+    return;
+  }
+
+  const html=visibleBatches.map(batch=>{
+    const rows=CT.filter(r=>r['Batch / Train']===batch);
+    const truckers=[...new Set(rows.map(r=>r['Trucker']||'').filter(Boolean))].sort();
+    const consignees=[...new Set(rows.map(r=>r['Consignee']||'').filter(Boolean))].sort();
+    const totalCt=rows.length;
+
+    const makeCard=(type,name)=>{
+      const d=fbGet(batch,type,name);
+      const key=`${batch}|${type}|${name}`;
+      const safeKey=key.replace(/[|]/g,'_');
+      // Which container nos are linked
+      const relRows=rows.filter(r=>{
+        if(type==='truckers') return (r['Trucker']||'')==name;
+        return (r['Consignee']||'')==name;
+      });
+      const cnList=relRows.map(r=>r['Container No.']||'').filter(Boolean);
+      const tagsHtml=cnList.length?`<div class="fb-tag-row">${cnList.map(cn=>`<span class="fb-tag">${cn}</span>`).join('')}</div>`:'';
+      const starsHtml=[1,2,3,4,5].map(v=>`<span class="fb-star${d.stars>=v?' on':''}" data-key="${key}" data-v="${v}" onclick="fbSetStar('${batch.replace(/'/g,"\\'")}','${type}','${name.replace(/'/g,"\\'")}',${v})" title="${v} star${v>1?'s':''}">★</span>`).join('');
+      return `<div class="fb-card">
+        <div class="fb-card-name">
+          ${name}
+          <span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span>
+        </div>
+        ${tagsHtml}
+        <div class="fb-stars">${starsHtml}</div>
+        <textarea class="fb-note" id="fbnote_${safeKey}" placeholder="Add notes, comments, performance rating…" rows="2">${(d.note||'').replace(/</g,'&lt;')}</textarea>
+        <div class="fb-card-footer">
+          <button class="fb-save-btn" onclick="fbSaveOne('${batch.replace(/'/g,"\\'")}','${type}','${name.replace(/'/g,"\\'")}')">💾 Save</button>
+          <span class="fb-saved-badge" id="fbsaved_${safeKey}">✓ Saved!</span>
+        </div>
+      </div>`;
+    };
+
+    return `<div class="fb-batch-section">
+      <div class="fb-batch-header">
+        <span style="font-size:18px">🚂</span>
+        <div>
+          <div class="fb-batch-title">${batch}</div>
+          <div class="fb-batch-meta">${totalCt} container${totalCt!==1?'s':''} · ${truckers.length} trucker${truckers.length!==1?'s':''} · ${consignees.length} consignee${consignees.length!==1?'s':''}</div>
+        </div>
+      </div>
+      <div class="fb-two-col">
+        <div class="fb-col">
+          <div class="fb-col-title">🚛 Truckers</div>
+          ${truckers.length?truckers.map(t=>makeCard('truckers',t)).join(''):'<div class="fb-empty" style="padding:20px;font-size:12px">No truckers assigned</div>'}
+        </div>
+        <div class="fb-col">
+          <div class="fb-col-title">🏢 Consignees</div>
+          ${consignees.length?consignees.map(c=>makeCard('consignees',c)).join(''):'<div class="fb-empty" style="padding:20px;font-size:12px">No consignees assigned</div>'}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('fb-content').innerHTML=html||'<div class="fb-empty">No data for selected batch.</div>';
+}
 </script>
 
 <style id="sticky-header-patch">
