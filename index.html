@@ -544,25 +544,18 @@ td.editing .cell-edit{display:block}
 .bel-placeholder{text-align:center;padding:28px 20px;color:var(--muted);font-size:13px}
 .bel-ph-icon{font-size:42px;margin-bottom:10px}
 
-/* ── Vessel Voyage Animation ── */
-.vt-voyage-card{background:linear-gradient(160deg,#e0f2fe 0%,#bae6fd 60%,#7dd3fc 100%);border-radius:10px;padding:7px 12px;margin:2px 4px 3px;border:1px solid #7dd3fc}
-.vt-voyage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
-.vt-voyage-title{font-size:12px;font-weight:800;color:#0c4a6e;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
-.vt-voyage-status-pill{font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;background:#fff;color:#0369a1;border:1px solid #7dd3fc}
-.vt-voyage-ocean{position:relative;height:36px;background:linear-gradient(180deg,#38bdf8 0%,#0284c7 50%,#0369a1 100%);border-radius:8px;overflow:hidden;margin:0 0 6px}
-.vt-voyage-waves{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0,transparent 18px,rgba(255,255,255,.07) 18px,rgba(255,255,255,.07) 36px);animation:vt-wave-move 3s linear infinite}
-.vt-voyage-waves2{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0,transparent 28px,rgba(255,255,255,.05) 28px,rgba(255,255,255,.05) 56px);animation:vt-wave-move 5s linear infinite reverse}
-@keyframes vt-wave-move{0%{background-position:0}100%{background-position:72px}}
-.vt-voyage-track-line{position:absolute;top:50%;left:5%;right:5%;height:2px;background:rgba(255,255,255,.25);border-radius:2px;transform:translateY(-50%)}
-.vt-voyage-port-start{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:14px;z-index:3;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
-.vt-voyage-port-end{position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:14px;z-index:3;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
-.vt-voyage-ship{position:absolute;top:50%;transform:translate(-50%,-60%);font-size:18px;z-index:4;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));transition:left 1.2s cubic-bezier(.4,0,.2,1);animation:vt-ship-bob 2.5s ease-in-out infinite}
-@keyframes vt-ship-bob{0%,100%{margin-top:0}50%{margin-top:-3px}}
-.vt-voyage-progress-bar{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,255,255,.5);transition:width 1.2s cubic-bezier(.4,0,.2,1);border-radius:0 2px 2px 0}
-.vt-voyage-info{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
-.vt-voyage-info-item{font-size:10px;font-weight:600;color:#0c4a6e;background:rgba(255,255,255,.7);padding:2px 8px;border-radius:6px;border:1px solid rgba(14,116,144,.2)}
-.vt-voyage-info-item span{color:#0369a1;font-weight:800}
-.vt-voyage-not-departed{background:rgba(255,255,255,.5);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:600;color:#7c3aed}
+/* ── Vessel Voyage Progress (pill style) ── */
+.vt-voyage-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;box-shadow:var(--shadow);margin:2px 4px 3px}
+.vt-voyage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.vt-voyage-title{font-size:12px;font-weight:800;color:var(--navy);letter-spacing:.2px;display:flex;align-items:center;gap:6px}
+.vt-voyage-status-pill{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc}
+.vt-voyage-ocean{position:relative;height:22px;background:#e5e7eb;border-radius:30px;overflow:hidden;margin:0 0 6px}
+.vt-voyage-fill{position:absolute;left:0;top:0;bottom:0;border-radius:30px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.vt-voyage-fill-anim{background:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0,rgba(255,255,255,.22) 12px,transparent 12px,transparent 24px);position:absolute;inset:0;border-radius:30px;animation:ct-bp-stripe 1.4s linear infinite}
+.vt-voyage-ship{position:absolute;top:50%;transform:translate(-50%,-55%);font-size:13px;z-index:3;transition:left 1.2s cubic-bezier(.4,0,.2,1);animation:ct-bp-bob 2.2s ease-in-out infinite}
+.vt-voyage-info{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px}
+.vt-voyage-info-item{font-size:12px;font-weight:600;color:var(--navy);background:var(--bg);padding:2px 9px;border-radius:6px;border:1px solid var(--border)}
+.vt-voyage-info-item span{color:var(--blue);font-weight:800}
 /* ── CT Batch Progress Bars ── */
 .ct-bp-row{display:flex;flex-wrap:wrap;gap:10px}
 .ct-bp-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;flex:1;min-width:160px;max-width:260px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s}
@@ -975,6 +968,7 @@ td.editing .cell-edit{display:block}
     <span id="vt-search-msg" class="vt-search-msg"></span>
     <button class="btn btn-green" style="margin-left:auto;padding:5px 12px;font-size:12px" onclick="openAddVessel()">+ Add Vessel</button>
   </div>
+  <div id="vt-progress-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 4px 12px"></div>
   <div class="tbl-card">
     <div class="tbl-top">
       <h3>Vessel Tracker</h3><span id="vt-count"></span>
@@ -2773,41 +2767,6 @@ function renderVT(){
         <input type="checkbox" class="vt-sel-cb" data-id="${r._id}" onchange="vtSelChange()" style="width:14px;height:14px;cursor:pointer"/>
       </td>
     </tr>
-    ${_vpHasProgress ? `<tr id="vprog-${r._id}" style="background:transparent">
-      <td colspan="${TOTAL_COLS}" style="padding:0 8px 4px;border-top:none;background:transparent">
-        ${(()=>{
-          const _wds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-          const _mns=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          const _fD=d=>_wds[d.getDay()]+' '+d.getDate()+' '+_mns[d.getMonth()];
-          const _oceanSt=_ataD?'background:linear-gradient(180deg,#4ade80 0%,#16a34a 50%,#166534 100%)':'';
-          const _ataInfo=_ataD?`<div class="vt-voyage-info-item" style="background:rgba(220,252,231,.8);border-color:#86efac">🛬 ATA <span style="color:#15803d">${_fD(_ataD)}</span></div>`:'';
-          const _statusPill=_ataD?`🏁 Arrived`:(_vpNow<_etsD?`⏳ Not Yet Departed`:(_vpNow>=_etaD?`⚠️ Overdue`:(`🌊 Day ${_vpDaysGone} of ${_vpTotalDays}`)));
-          return `<div class="vt-voyage-card" style="margin:2px 0 2px">
-            <div class="vt-voyage-header">
-              <div class="vt-voyage-title">${_ataD?'🏁':'🚢'} ${r['Vessel Name']||'Voyage'} — Sea Progress</div>
-              <div class="vt-voyage-status-pill" style="color:${_vpStatusColor}">${_statusPill}</div>
-            </div>
-            <div class="vt-voyage-ocean" style="${_oceanSt}">
-              <div class="vt-voyage-waves"></div>
-              <div class="vt-voyage-waves2"></div>
-              <div class="vt-voyage-track-line"></div>
-              <div class="vt-voyage-port-start">🏭</div>
-              <div class="vt-voyage-port-end">⚓</div>
-              <div class="vt-voyage-ship" style="left:${_vpShipLeft}%">${_ataD?'🏁':'🚢'}</div>
-              <div class="vt-voyage-progress-bar" style="width:${_vpShipLeft}%"></div>
-            </div>
-            <div class="vt-voyage-info">
-              <div class="vt-voyage-info-item">🛫 ETS <span>${_fD(_etsD)}</span></div>
-              <div class="vt-voyage-info-item">📍 Progress <span>${Math.round(_vpPct*100)}%</span></div>
-              <div class="vt-voyage-info-item">⏱ Elapsed <span>${_vpDaysGone}d</span></div>
-              ${_ataD?'':(`<div class="vt-voyage-info-item">🕐 Remaining <span>${_vpDaysLeft}d</span></div>`)}
-              <div class="vt-voyage-info-item">📅 ETA <span>${_fD(_etaD)}</span></div>
-              ${_ataInfo}
-            </div>
-          </div>`;
-        })()}
-      </td>
-    </tr>` : ''}
     <tr class="vt-containers-row${isOpen?' open':''}" id="vexp-${r._id}">
       <td class="vt-containers-cell" colspan="${TOTAL_COLS}">
         ${tagsHtml}
@@ -2850,6 +2809,39 @@ function renderVT(){
       </td>
     </tr>`;
   }).join('');
+
+  // ── Voyage progress cards (top of page) ──────────────────────────
+  const _vfD=(d)=>{const w=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return w[d.getDay()]+' '+d.getDate()+' '+m[d.getMonth()];};
+  const vpCards=VT.filter(r=>{const e=parseDate(r['ETS (Departure)']),a=parseDate(r['ETA (Arrival)']);return !!(e&&a&&a>e);}).map(r=>{
+    const _e=parseDate(r['ETS (Departure)']),_a=parseDate(r['ETA (Arrival)']),_at=parseDate(r['ATA (Actual)']);
+    const _now=new Date();_now.setHours(0,0,0,0);
+    const _tot=_a-_e,_totD=Math.round(_tot/864e5);
+    let _pct=0,_gone=0,_left=0,_sl=8,_sp='',_sc='#0369a1';
+    if(_at){_pct=1;_sl=92;_gone=Math.round((_at-_e)/864e5);const d=Math.round((_at-_a)/864e5);_sp='🏁 Arrived'+(d===0?' · on time':d<0?` · ${Math.abs(d)}d early`:` · ${d}d late`);_sc='#15803d';}
+    else{const _el=_now-_e;_pct=Math.min(1,Math.max(0,_el/_tot));_gone=Math.max(0,Math.round(_el/864e5));_left=Math.max(0,Math.round((_a-_now)/864e5));_sl=8+_pct*84;
+      if(_now<_e){_sp='⏳ Not Departed';_sc='#7c3aed';}else if(_now>=_a){_sp='⚠️ Overdue';_sc='#e53935';}else{_sp=`🌊 Day ${_gone} of ${_totD}`;_sc='#0369a1';}
+    }
+    const _fc=_now>=_a&&!_at?'#e53935':'#0284c7';
+    return `<div class="vt-voyage-card" style="flex:1;min-width:200px;max-width:300px">
+      <div class="vt-voyage-header">
+        <div class="vt-voyage-title">🚢 ${r['Vessel Name']||'Vessel'}</div>
+        <div class="vt-voyage-status-pill" style="color:${_sc}">${_sp}</div>
+      </div>
+      <div class="vt-voyage-ocean">
+        <div class="vt-voyage-fill" style="width:${_sl}%;background:${_fc}"><div class="vt-voyage-fill-anim"></div></div>
+        <div class="vt-voyage-ship" style="left:${_sl}%">${_at?'🏁':'🚢'}</div>
+      </div>
+      <div class="vt-voyage-info">
+        <div class="vt-voyage-info-item">🛫 <span>${_vfD(_e)}</span></div>
+        <div class="vt-voyage-info-item">📍 <span>${Math.round(_pct*100)}%</span></div>
+        ${_at?`<div class="vt-voyage-info-item">🛬 <span style="color:#15803d">${_vfD(_at)}</span></div>`:`<div class="vt-voyage-info-item">🕐 <span>${_left}d left</span></div>`}
+        <div class="vt-voyage-info-item">📅 <span>${_vfD(_a)}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  const vpEl=document.getElementById('vt-progress-row');
+  if(vpEl) vpEl.innerHTML=vpCards;
+  if(vpEl) vpEl.style.display=vpCards?'flex':'none';
 }
 
 // ── VESSEL EXPAND / CONTAINERS ────────────────────────────────────
@@ -3847,7 +3839,7 @@ async function pushToCloud(manual=false){
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT})
+      body:JSON.stringify({CT,VT,FB})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     setSyncDot('ok','Saved — '+(new Date().toLocaleTimeString()));
@@ -3877,6 +3869,7 @@ async function pullFromCloud(manual=false){
     const rec=data.record;
     if(rec&&rec.CT){ CT=rec.CT; nextId=Math.max(0,...CT.map(r=>r._id||0))+1; saveData(); }
     if(rec&&rec.VT){ VT=rec.VT; vtNextId=Math.max(0,...VT.map(r=>r._id||0))+1; saveVT(); }
+    if(rec&&rec.FB){ FB=rec.FB; localStorage.setItem(FB_KEY,JSON.stringify(FB)); }
     setSyncDot('ok','Loaded — '+(new Date().toLocaleTimeString()));
     renderCT(); renderVT(); renderDashboard();
     if(manual){
@@ -4062,7 +4055,7 @@ let FB = {};
 (function loadFB(){
   try{ const s=localStorage.getItem(FB_KEY); if(s) FB=JSON.parse(s); }catch(e){}
 })();
-function saveFB(){ try{ localStorage.setItem(FB_KEY, JSON.stringify(FB)); }catch(e){} }
+function saveFB(){ try{ localStorage.setItem(FB_KEY, JSON.stringify(FB)); }catch(e){} cloudAutoSave(); }
 
 // Safe element-id key: base64url-like encoding to avoid CSS/HTML special chars
 function fbSafeId(batch, type, name){
