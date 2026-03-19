@@ -4195,11 +4195,14 @@ function fbSetData(batch, type, name, data){
 function fbSetStar(sid, aspect, v){
   const card=document.getElementById('fbcard_'+sid);
   if(!card) return;
-  card.querySelectorAll('.fb-star[data-aspect="'+aspect+'"]').forEach(s=>{
-    s.classList.toggle('on', parseInt(s.dataset.v)<=v);
-  });
   const inp=document.getElementById('fbstar_'+sid+'_'+aspect);
-  if(inp) inp.value=v;
+  // If clicking the same star that's already set → withdraw (reset to 0)
+  const current=inp?parseInt(inp.value)||0:0;
+  const newVal = current===v ? 0 : v;
+  card.querySelectorAll('.fb-star[data-aspect="'+aspect+'"]').forEach(s=>{
+    s.classList.toggle('on', parseInt(s.dataset.v)<=newVal);
+  });
+  if(inp) inp.value=newVal;
 }
 
 function fbSaveCard(sid){
