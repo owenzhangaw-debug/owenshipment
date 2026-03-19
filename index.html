@@ -2244,6 +2244,11 @@ function getCTRows(){
   }).sort((a,b)=>{
     let av=a[ctSortCol]??'', bv=b[ctSortCol]??'';
     if(typeof av==='number'&&typeof bv==='number') return (av-bv)*ctSortDir;
+    // Date-aware sort for Batch / Train (e.g. "Chengdu 12/28" → Dec 2025, "Guangzhou 1/6" → Jan 2026)
+    if(ctSortCol==='Batch / Train'){
+      const _bk=n=>{const m=String(n).match(/(\d{1,2})\/(\d{1,2})/);if(!m)return'9999/99/99';const mo=+m[1],dy=+m[2],yr=mo>=10?2025:2026;return`${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`;};
+      return _bk(av).localeCompare(_bk(bv))*ctSortDir;
+    }
     return String(av).localeCompare(String(bv))*ctSortDir;
   });
 }
@@ -2303,15 +2308,25 @@ function renderCT(){
       const _dl=parseDate(r['Deadline']);
       if(_dl && (!_bpBatches[b].minDL || _dl < _bpBatches[b].minDL)) _bpBatches[b].minDL=_dl;
     });
-    const _bpKeys=Object.keys(_bpBatches).sort();
+    // Sort by departure date encoded in batch name (e.g. "Chengdu 12/28" → Dec 2025, "Guangzhou 2/7" → Feb 2026)
+    const _bpSortKey=name=>{
+      const mx=name.match(/(\d{1,2})\/(\d{1,2})/);
+      if(!mx) return '9999/99/99';
+      const mo=parseInt(mx[1]),dy=parseInt(mx[2]),yr=mo>=10?2025:2026;
+      return `${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`;
+    };
+    const _bpKeys=Object.keys(_bpBatches).sort((a,b)=>_bpSortKey(a).localeCompare(_bpSortKey(b)));
     const _bpToday=new Date(); _bpToday.setHours(0,0,0,0);
     if(!_bpKeys.length){ _bpEl.innerHTML=''; }
     else {
-      _bpEl.innerHTML=`<div class="ct-bp-row">${_bpKeys.map(b=>{
+      // Split into done (100%) and active (<100%)
+      const _bpDone=_bpKeys.filter(b=>_bpBatches[b].arrived===_bpBatches[b].total);
+      const _bpActive=_bpKeys.filter(b=>_bpBatches[b].arrived<_bpBatches[b].total);
+
+      const _bpRenderCard=(b,big)=>{
         const m=_bpBatches[b];
         const pct=Math.round(m.arrived/m.total*100);
         const allDone=pct===100;
-        // Deadline urgency
         let _dlColor='#6b7280',_dlBg='#f3f4f6',_dlLabel='',_dlDays=null,_urgency=0;
         if(m.minDL){
           _dlDays=Math.round((m.minDL-_bpToday)/864e5);
@@ -2324,7 +2339,6 @@ function renderCT(){
           else if(_dlDays<=7){_dlColor='#b45309';_dlBg='#fef3c7';_dlLabel+=` (${_dlDays}d)`;_urgency=2;}
           else{_dlColor='#0369a1';_dlBg='#dbeafe';_dlLabel+=` (${_dlDays}d)`;_urgency=1;}
         }
-        // Bar fill color: urgency overrides progress color when not all done
         let fillColor;
         if(allDone) fillColor='#16a34a';
         else if(_urgency===4) fillColor='#e53935';
@@ -2334,13 +2348,16 @@ function renderCT(){
         const shipLeft=Math.max(6,Math.min(92,pct));
         const shipIcon=allDone?'🏁':'🚛';
         const bEsc=b.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        return `<div class="ct-bp-card" onclick="gotoBatch('${bEsc}')" title="Click to filter this batch">
+        const trackH=big?'36px':'22px';
+        const shipSz=big?'18px':'13px';
+        const cardStyle=big?'flex:1;min-width:180px;max-width:340px':'';
+        return `<div class="ct-bp-card" style="${cardStyle}" onclick="gotoBatch('${bEsc}')" title="Click to filter this batch">
           <div class="ct-bp-name">📦 ${b}</div>
-          <div class="ct-bp-track">
+          <div class="ct-bp-track" style="height:${trackH}">
             <div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}">
               ${pct<100?'<div class="ct-bp-fill-anim"></div>':''}
             </div>
-            <div class="ct-bp-ship" style="left:${shipLeft}%">${shipIcon}</div>
+            <div class="ct-bp-ship" style="left:${shipLeft}%;font-size:${shipSz}">${shipIcon}</div>
           </div>
           <div class="ct-bp-labels">
             <span class="ct-bp-pct" style="background:${allDone?'#dcfce7':_urgency>=3?'#ffedd5':_urgency===2?'#fef9c3':'#fef2f2'};color:${fillColor}">${pct}%</span>
@@ -2353,7 +2370,14 @@ function renderCT(){
             ${m.none?`<span class="ct-bp-pill" style="background:#f3f4f6;color:#6b7280">⏳ ${m.none}</span>`:''}
           </div>
         </div>`;
-      }).join('')}</div>`;
+      };
+
+      let html='';
+      // Active batches first — big bars
+      if(_bpActive.length) html+=`<div class="ct-bp-row" style="margin-bottom:8px">${_bpActive.map(b=>_bpRenderCard(b,true)).join('')}</div>`;
+      // Completed batches below — compact
+      if(_bpDone.length) html+=`<div class="ct-bp-row">${_bpDone.map(b=>_bpRenderCard(b,false)).join('')}</div>`;
+      _bpEl.innerHTML=html;
     }
   }
   const tbody=document.getElementById('ct-body');
