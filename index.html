@@ -3469,6 +3469,7 @@ loadData();
 // ── CLOUD SYNC ───────────────────────────────────────────────────
 const JBIN = 'https://api.jsonbin.io/v3/b';
 let cloudSaveTimer = null;
+let _lastPushTs = 0; // timestamp of last successful push from THIS device
 
 function cloudAutoSave(){
   if(!localStorage.getItem('owenz_sync_key')||!localStorage.getItem('owenz_bin_id')) return;
@@ -3476,6 +3477,19 @@ function cloudAutoSave(){
   cloudSaveTimer = setTimeout(()=>pushToCloud(false), 2000);
   setSyncDot('busy','Saving…');
 }
+
+// ── AUTO PULL (background sync) ────────────────────────────────────────────
+function _autoPull(){
+  // Don't pull if we have unsaved local changes pending (about to push)
+  if(cloudSaveTimer) return;
+  if(!localStorage.getItem('owenz_sync_key')||!localStorage.getItem('owenz_bin_id')) return;
+  pullFromCloud(false);
+}
+// Pull every 30 seconds
+setInterval(_autoPull, 30000);
+// Pull when user returns to this tab
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) _autoPull(); });
+window.addEventListener('focus', _autoPull);
 
 function openSync(){
   document.getElementById('sync-key').value  = localStorage.getItem('owenz_sync_key')||'';
@@ -3934,9 +3948,10 @@ async function pushToCloud(manual=false){
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB})
+      body:JSON.stringify({CT,VT,FB,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
+    _lastPushTs = Date.now();
     setSyncDot('ok','Saved — '+(new Date().toLocaleTimeString()));
     if(manual){
       const ok=document.getElementById('sync-ok');
@@ -3962,10 +3977,15 @@ async function pullFromCloud(manual=false){
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data=await res.json();
     const rec=data.record;
-    if(rec&&rec.CT){ CT=rec.CT; nextId=Math.max(0,...CT.map(r=>r._id||0))+1; saveData(); }
-    if(rec&&rec.VT){ VT=rec.VT; vtNextId=Math.max(0,...VT.map(r=>r._id||0))+1; saveVT(); }
+    // Skip auto-pull if cloud data is from our own last push (same device, nothing new)
+    if(!manual && rec&&rec._ts && rec._ts <= _lastPushTs) {
+      setSyncDot('ok','Up to date');
+      return;
+    }
+    if(rec&&rec.CT){ CT=rec.CT; nextId=Math.max(0,...CT.map(r=>r._id||0))+1; localStorage.setItem(LS_CT,JSON.stringify(CT)); }
+    if(rec&&rec.VT){ VT=rec.VT; vtNextId=Math.max(0,...VT.map(r=>r._id||0))+1; localStorage.setItem(LS_VT,JSON.stringify(VT)); }
     if(rec&&rec.FB){ FB=rec.FB; localStorage.setItem(FB_KEY,JSON.stringify(FB)); }
-    setSyncDot('ok','Loaded — '+(new Date().toLocaleTimeString()));
+    setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
     renderCT(); renderVT(); renderDashboard();
     if(manual){
       const ok=document.getElementById('sync-ok');
