@@ -589,9 +589,9 @@ td.editing .cell-edit{display:block}
 .bel-ph-icon{font-size:42px;margin-bottom:10px}
 
 /* ── Vessel Voyage Progress (pill style) ── */
-.vt-voyage-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;box-shadow:var(--shadow);margin:2px 4px 3px;cursor:pointer}
-.vt-voyage-card:hover .vt-voyage-ocean{animation:vt-ocean-flash .6s ease-out forwards}
-@keyframes vt-ocean-flash{0%{box-shadow:0 0 0 0 rgba(2,132,199,0)}40%{box-shadow:0 0 0 5px rgba(2,132,199,.35)}100%{box-shadow:0 0 0 2px rgba(2,132,199,.12)}}
+.vt-voyage-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;box-shadow:var(--shadow);margin:2px 4px 3px;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.vt-voyage-card.vt-pop{animation:vt-pop .45s cubic-bezier(.36,.07,.19,.97)}
+@keyframes vt-pop{0%,100%{transform:translateY(0) scale(1)}20%{transform:translateY(-5px) scale(1.03)}50%{transform:translateY(-2px) scale(1.01)}75%{transform:translateY(-3px) scale(1.02)}}
 .vt-voyage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .vt-voyage-title{font-size:12px;font-weight:800;color:var(--navy);letter-spacing:.2px;display:flex;align-items:center;gap:6px}
 .vt-voyage-status-pill{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc}
@@ -2913,7 +2913,7 @@ function renderVT(){
       if(_now<_e){_sp='⏳ Not Departed';_sc='#7c3aed';}else if(_now>=_a){_sp='⚠️ Overdue';_sc='#e53935';}else{_sp=`🌊 Day ${_gone} of ${_totD}`;_sc='#0369a1';}
     }
     const _fc=_now>=_a&&!_at?'#e53935':'#0284c7';
-    return `<div class="vt-voyage-card" style="flex:1 1 200px;max-width:300px">
+    return `<div class="vt-voyage-card" style="flex:1 1 200px;max-width:300px" onmouseenter="this.classList.remove('vt-pop');void this.offsetWidth;this.classList.add('vt-pop')" onanimationend="this.classList.remove('vt-pop')">
       <div class="vt-voyage-header">
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
           <div class="vt-voyage-title">🚢 ${r['Vessel Name']||'Vessel'}</div>
