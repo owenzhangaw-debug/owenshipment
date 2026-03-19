@@ -2358,7 +2358,7 @@ function renderCT(){
         const trackH=big?'36px':'22px';
         const shipSz=big?'18px':'13px';
         const cardStyle=big?'flex:1;min-width:180px;max-width:340px':'';
-        return `<div class="ct-bp-card" style="${cardStyle}" onclick="gotoBatch('${bEsc}')" title="Click to filter this batch">
+        return `<div class="ct-bp-card" style="${cardStyle}" onclick="gotoBatch('${bEsc}')" title="Click to filter this batch" onmouseenter="this.classList.remove('vt-pop');void this.offsetWidth;this.classList.add('vt-pop')" onanimationend="this.classList.remove('vt-pop')">
           <div class="ct-bp-name">📦 ${b}</div>
           <div class="ct-bp-track" style="height:${trackH}">
             <div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}">
@@ -2831,7 +2831,7 @@ function renderVT(){
     }).join('');
     const tagsHtml=cnCount?`<div class="vt-cn-tags">${tags}</div>`:`<div class="vt-cn-tags"><span class="vt-cn-empty">No containers linked yet</span></div>`;
 
-    return `<tr class="${cls}" id="vrow-${r._id}" style="--vpct:${Math.round(_vpPct*100)}%">
+    return `<tr class="${cls}" id="vrow-${r._id}" style="--vpct:${Math.round(_vpPct*100)}%" onmouseenter="(function(){const c=document.querySelector('.vt-voyage-card[data-vtid=\\'${r._id}\\']');if(c){c.classList.remove('vt-pop');void c.offsetWidth;c.classList.add('vt-pop');}})()">
       <td style="padding:4px 6px;text-align:center;white-space:nowrap">
         <button class="vt-expand-btn" onclick="vtToggleExpand(${r._id})" title="${isOpen?'Collapse':'Expand'}">${isOpen?'▼':'▶'}</button>
         ${cnCount?`<span style="font-size:10px;color:var(--blue);font-weight:700">${cnCount}</span>`:''}
@@ -2913,7 +2913,7 @@ function renderVT(){
       if(_now<_e){_sp='⏳ Not Departed';_sc='#7c3aed';}else if(_now>=_a){_sp='⚠️ Overdue';_sc='#e53935';}else{_sp=`🌊 Day ${_gone} of ${_totD}`;_sc='#0369a1';}
     }
     const _fc=_now>=_a&&!_at?'#e53935':'#0284c7';
-    return `<div class="vt-voyage-card" style="flex:1 1 200px;max-width:300px" onmouseenter="this.classList.remove('vt-pop');void this.offsetWidth;this.classList.add('vt-pop')" onanimationend="this.classList.remove('vt-pop')">
+    return `<div class="vt-voyage-card" data-vtid="${r._id}" style="flex:1 1 200px;max-width:300px" onmouseenter="this.classList.remove('vt-pop');void this.offsetWidth;this.classList.add('vt-pop')" onanimationend="this.classList.remove('vt-pop')">
       <div class="vt-voyage-header">
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
           <div class="vt-voyage-title">🚢 ${r['Vessel Name']||'Vessel'}</div>
