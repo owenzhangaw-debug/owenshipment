@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>OwenZhang</title>
+<title>Owen Zhang</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -666,7 +666,7 @@ td.editing .cell-edit{display:block}
 <body>
 
 <header>
-  <div class="brand">🚢 OwenZhang</div>
+  <div class="brand">🚢 Owen Zhang</div>
   <nav>
     <button class="active" onclick="showPage('dashboard')">Dashboard</button>
     <button onclick="showPage('containers')">Containers</button>
@@ -2777,7 +2777,8 @@ function renderVT(){
       }
     }
 
-    const cls=r['Status']==='Departed'?'v-dep':r['Status']==='Discharged'?'v-disc':r['Status']==='Cut-Off Soon'?'v-soon':r['Status']==='Cut-Off Passed'?'v-late':'';
+    const _hasAta=!!(r['ATA (Actual)']&&String(r['ATA (Actual)']).trim());
+    const cls=_hasAta?'':r['Status']==='Departed'?'v-dep':r['Status']==='Discharged'?'v-disc':r['Status']==='Cut-Off Soon'?'v-soon':r['Status']==='Cut-Off Passed'?'v-late':'';
     const cns=Array.isArray(r.containers)?r.containers:[];
     const cnCount=cns.length;
     const isOpen=vtExpanded.has(r._id);
@@ -2811,15 +2812,10 @@ function renderVT(){
       ${vtCell(r,'Vessel Name')}
       ${vtCell(r,'ETS (Departure)')}
       ${vtCell(r,'ETA (Arrival)')}
-      ${(()=>{
-        const ata=r['ATA (Actual)'];
-        const hasAta=ata&&ata.trim();
-        const style=hasAta?'background:#f0fdf4;color:#166534;font-weight:700':'';
-        return vtCell(r,'ATA (Actual)',{extraStyle:style});
-      })()}
+      ${vtCell(r,'ATA (Actual)')}
       ${vtCell(r,'Port Cut-Off')}
       ${vtCell(r,'Barge Date')}
-      <td style="padding:7px 10px;text-align:center;font-weight:700;color:${_daysColor};white-space:nowrap">${_daysDisp}</td>
+      <td style="padding:7px 10px;text-align:center;font-weight:700;color:${r['Status']==='Discharged'?'#6b7280':_daysColor};white-space:nowrap">${_daysDisp}</td>
       <td style="text-align:center;padding:6px"><input type="checkbox" title="VGM" ${r['VGM']?'checked':''} onchange="vtToggleFlag(${r._id},'VGM',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--blue)"/></td>
       <td style="text-align:center;padding:6px"><input type="checkbox" title="Custom" ${r['Custom']?'checked':''} onchange="vtToggleFlag(${r._id},'Custom',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#8B4513"/></td>
       ${vtCell(r,'Status',{select:STATUS_OPTS})}
@@ -3293,7 +3289,7 @@ function exportCSV(){
   const csv=[cols.join(','),...CT.map(r=>cols.map(c=>'"'+(String(r[c]??'').replace(/"/g,'""'))+'"').join(','))].join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download='OwenZhang_Containers_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.download='Owen Zhang_Containers_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
 }
 
@@ -3873,7 +3869,7 @@ async function connectSync(){
       // Create new bin
       const res=await fetch(JBIN,{
         method:'POST',
-        headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'OwenZhang'},
+        headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'Owen Zhang'},
         body:JSON.stringify({CT,VT})
       });
       if(!res.ok) throw new Error('Failed to create bin (HTTP '+res.status+'). Check your Master Key.');
