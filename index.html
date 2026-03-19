@@ -208,6 +208,11 @@ td.editing .cell-edit{display:block}
 
 /* VESSEL TABLE */
 .v-dep{background:#D1FAE5}.v-soon{background:#FEF9C3}.v-late{background:#FEE2E2}.v-disc{background:#E0E7FF}
+/* VT row hover progress bar */
+#vt-body tr{position:relative}
+#vt-body tr::after{content:'';position:absolute;left:0;bottom:0;height:3px;width:0;background:#0284c7;border-radius:0 2px 2px 0;opacity:0;transition:opacity .15s}
+#vt-body tr:hover::after{width:var(--vpct,0%);opacity:1;animation:vt-bar-flash .5s ease-out}
+@keyframes vt-bar-flash{0%{opacity:0;height:3px}30%{opacity:1;height:5px}100%{opacity:1;height:3px}}
 .vt-expand-btn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--navy);
   width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;
   border-radius:5px;transition:background .15s;user-select:none}
@@ -2824,7 +2829,7 @@ function renderVT(){
     }).join('');
     const tagsHtml=cnCount?`<div class="vt-cn-tags">${tags}</div>`:`<div class="vt-cn-tags"><span class="vt-cn-empty">No containers linked yet</span></div>`;
 
-    return `<tr class="${cls}" id="vrow-${r._id}">
+    return `<tr class="${cls}" id="vrow-${r._id}" style="--vpct:${Math.round(_vpPct*100)}%">
       <td style="padding:4px 6px;text-align:center;white-space:nowrap">
         <button class="vt-expand-btn" onclick="vtToggleExpand(${r._id})" title="${isOpen?'Collapse':'Expand'}">${isOpen?'▼':'▶'}</button>
         ${cnCount?`<span style="font-size:10px;color:var(--blue);font-weight:700">${cnCount}</span>`:''}
