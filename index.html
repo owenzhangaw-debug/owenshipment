@@ -589,7 +589,9 @@ td.editing .cell-edit{display:block}
 .bel-ph-icon{font-size:42px;margin-bottom:10px}
 
 /* ── Vessel Voyage Progress (pill style) ── */
-.vt-voyage-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;box-shadow:var(--shadow);margin:2px 4px 3px}
+.vt-voyage-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;box-shadow:var(--shadow);margin:2px 4px 3px;cursor:pointer}
+.vt-voyage-card:hover .vt-voyage-ocean{animation:vt-ocean-flash .6s ease-out forwards}
+@keyframes vt-ocean-flash{0%{box-shadow:0 0 0 0 rgba(2,132,199,0)}40%{box-shadow:0 0 0 5px rgba(2,132,199,.35)}100%{box-shadow:0 0 0 2px rgba(2,132,199,.12)}}
 .vt-voyage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .vt-voyage-title{font-size:12px;font-weight:800;color:var(--navy);letter-spacing:.2px;display:flex;align-items:center;gap:6px}
 .vt-voyage-status-pill{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc}
