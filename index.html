@@ -3513,7 +3513,8 @@ function autoGenerateSlots(){
     if(!batchMap[b]) batchMap[b] = 0;
     batchMap[b]++;
   });
-  const batches = Object.keys(batchMap).sort();
+  const _fbSK=n=>{const m=String(n).match(/(\d{1,2})\/(\d{1,2})/);if(!m)return'9999/99/99';const mo=+m[1],dy=+m[2],yr=mo>=10?2025:2026;return`${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`;};
+  const batches = Object.keys(batchMap).sort((a,b)=>_fbSK(a).localeCompare(_fbSK(b)));
 
   // Build and open picker modal
   const existing = document.getElementById('as-overlay');
@@ -4281,7 +4282,8 @@ function fbAspectBlock(sid, aspect, label, current, currentNote){
 }
 
 function renderFeedback(){
-  const batches=[...new Set(CT.map(r=>r['Batch / Train']||'').filter(Boolean))].sort();
+  const _fbSK2=n=>{const m=String(n).match(/(\d{1,2})\/(\d{1,2})/);if(!m)return'9999/99/99';const mo=+m[1],dy=+m[2],yr=mo>=10?2025:2026;return`${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`;};
+  const batches=[...new Set(CT.map(r=>r['Batch / Train']||'').filter(Boolean))].sort((a,b)=>_fbSK2(a).localeCompare(_fbSK2(b)));
   const sel=document.getElementById('fb-batch-filter');
   const prev=sel.value;
   sel.innerHTML='<option value="">All Batches</option>'+batches.map(b=>`<option value="${b}"${b===prev?' selected':''}>${b}</option>`).join('');
