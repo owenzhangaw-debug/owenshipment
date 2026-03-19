@@ -590,7 +590,7 @@ td.editing .cell-edit{display:block}
 
 /* ── Vessel Voyage Progress (pill style) ── */
 .vt-voyage-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;box-shadow:var(--shadow);margin:2px 4px 3px;cursor:pointer;transition:transform .15s,box-shadow .15s}
-.vt-voyage-card.vt-pop{animation:vt-pop .45s cubic-bezier(.36,.07,.19,.97)}
+.vt-pop{animation:vt-pop .45s cubic-bezier(.36,.07,.19,.97) !important}
 @keyframes vt-pop{0%,100%{transform:translateY(0) scale(1)}20%{transform:translateY(-5px) scale(1.03)}50%{transform:translateY(-2px) scale(1.01)}75%{transform:translateY(-3px) scale(1.02)}}
 .vt-voyage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .vt-voyage-title{font-size:12px;font-weight:800;color:var(--navy);letter-spacing:.2px;display:flex;align-items:center;gap:6px}
@@ -2207,7 +2207,8 @@ function fillMultiSel(id, key, placeholder){
   const checkedVals=msGetValues(id); // reads JS state — survives DOM rebuild
   // Use only rows passing all OTHER filters (cascading behaviour)
   const sourceRows=getCTRowsExcept(id);
-  const vals=[...new Set(sourceRows.map(r=>r[key]).filter(Boolean))].sort();
+  const _msBK=n=>{const m=String(n).match(/(\d{1,2})\/(\d{1,2})/);if(!m)return'9999/99/99';const mo=+m[1],dy=+m[2],yr=mo>=10?2025:2026;return`${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`;};
+  const vals=[...new Set(sourceRows.map(r=>r[key]).filter(Boolean))].sort(id==='batch'?(a,b)=>_msBK(a).localeCompare(_msBK(b)):undefined);
   menu.innerHTML=vals.map(v=>`<label><input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${checkedVals.includes(v)?'checked':''} onchange="msChange('${id}','${placeholder}')"> ${v}</label>`).join('');
   // Re-sync any hardcoded menus that share this id (e.g. arrival, tracking)
   _msSyncDOM(id);
