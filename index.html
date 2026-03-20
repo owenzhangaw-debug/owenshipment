@@ -634,6 +634,19 @@ td.editing .cell-edit{display:block}
 .fb-toolbar-left{display:flex;align-items:center;gap:10px}
 .fb-batch-section{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:22px;overflow:hidden;border:1px solid #e8edf5}
 .fb-batch-header{background:linear-gradient(135deg,#004D4C 0%,#006b6a 100%);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:10px}
+/* Performance Summary */
+.fb-summary{background:#f8fafc;border-bottom:1px solid #e8edf5;padding:14px 20px}
+.fb-summary-title{font-size:11px;font-weight:800;color:#64748b;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.fb-summary-grid{display:flex;flex-wrap:wrap;gap:10px}
+.fb-summary-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;min-width:160px;flex:1;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.fb-summary-name{font-size:11px;font-weight:800;color:#1e293b;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.fb-summary-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px;color:#64748b}
+.fb-summary-bar-wrap{flex:1;height:6px;background:#e5e7eb;border-radius:6px;overflow:hidden}
+.fb-summary-bar{height:100%;border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.fb-summary-score{font-size:10px;font-weight:700;min-width:24px;text-align:right}
+.fb-summary-stars{font-size:11px;letter-spacing:1px}
+.fb-summary-avg{font-size:18px;font-weight:900;line-height:1}
+.fb-summary-incomplete{font-size:9px;color:#94a3b8;margin-top:4px}
 .fb-batch-title{font-size:15px;font-weight:800;letter-spacing:.3px}
 .fb-batch-meta{font-size:11px;opacity:.8}
 .fb-two-col{display:grid;grid-template-columns:1fr 1fr;gap:0}
@@ -4385,6 +4398,46 @@ function renderFeedback(){
       </div>`;
     };
 
+    // ── Performance Summary ──────────────────────────────────────
+    const _sc=(v,max=5)=>Math.round((v/max)*100);
+    const _barColor=pct=>pct>=80?'#16a34a':pct>=60?'#22c55e':pct>=40?'#F9A825':pct>=20?'#ea580c':'#e53935';
+    const _stars=avg=>'★'.repeat(Math.round(avg))+'☆'.repeat(5-Math.round(avg));
+    const summaryCards=truckers.map(name=>{
+      const d=fbGetData(batch,'truckers',name);
+      const relRows=rows.filter(r=>(r['Trucker']||'')==name);
+      const arrived=relRows.filter(r=>r['Tracking']==='Arrived').length;
+      const hasRatings=(d.prep||0)+(d.delivery||0)+(d.finishing||0)>0;
+      const prep=d.prep||0,del=d.delivery||0,fin=d.finishing||0;
+      const filled=[prep,del,fin].filter(v=>v>0).length;
+      const avg=filled?((prep+del+fin)/filled):0;
+      const avgPct=_sc(avg);
+      const avgColor=_barColor(avgPct);
+      const aspects=[
+        {label:'📋 Prep',val:prep},
+        {label:'🚚 Delivery',val:del},
+        {label:'✅ Finishing',val:fin}
+      ];
+      const aspectRows=aspects.map(a=>{
+        const pct=_sc(a.val);
+        return `<div class="fb-summary-row">
+          <span style="width:60px">${a.label}</span>
+          <div class="fb-summary-bar-wrap"><div class="fb-summary-bar" style="width:${pct}%;background:${_barColor(pct)}"></div></div>
+          <span class="fb-summary-score" style="color:${_barColor(pct)}">${a.val?a.val+'/5':'—'}</span>
+        </div>`;
+      }).join('');
+      return `<div class="fb-summary-card">
+        <div class="fb-summary-name">🚛 ${name}
+          <span style="font-size:9px;font-weight:600;color:#94a3b8">${arrived}/${relRows.length} arrived</span>
+        </div>
+        ${aspectRows}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
+          <span class="fb-summary-stars" style="color:${avgColor}">${_stars(avg)}</span>
+          <span class="fb-summary-avg" style="color:${avgColor}">${avg?avg.toFixed(1):'—'}</span>
+        </div>
+        ${!hasRatings?`<div class="fb-summary-incomplete">⏳ No ratings yet</div>`:''}
+      </div>`;
+    }).join('');
+
     return `<div class="fb-batch-section">
       <div class="fb-batch-header">
         <span style="font-size:18px">🚂</span>
@@ -4393,6 +4446,10 @@ function renderFeedback(){
           <div class="fb-batch-meta">${totalCt} container${totalCt!==1?'s':''} · ${truckers.length} trucker${truckers.length!==1?'s':''} · ${consignees.length} consignee${consignees.length!==1?'s':''}</div>
         </div>
       </div>
+      ${truckers.length?`<div class="fb-summary">
+        <div class="fb-summary-title">📊 Trucker Performance Summary</div>
+        <div class="fb-summary-grid">${summaryCards}</div>
+      </div>`:''}
       <div class="fb-two-col">
         <div class="fb-col">
           <div class="fb-col-title">🚛 Truckers</div>
