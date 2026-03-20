@@ -898,6 +898,12 @@ td.editing .cell-edit{display:block}
             <div class="chart-wrap" style="height:320px"><canvas id="consignee-chart"></canvas></div>
           </div>
         </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Slot Reschedules by Trucker<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:260px"><canvas id="slot-change-trucker-chart"></canvas></div>
+          </div>
+        </div>
       </div>
 
     </div><!-- end dash-col LEFT -->
@@ -1411,7 +1417,7 @@ let vtSortCol = '', vtSortDir = 1;
 let editId = null, delId = null;
 let importWB = null, importRows = [];
 let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null,
-    slotEtaTruckerChart = null, slotEtaTruckerBatchChart = null;
+    slotEtaTruckerChart = null, slotEtaTruckerBatchChart = null, slotChangeTruckerChart = null;
 
 // ── PERSISTENCE ───────────────────────────────────────────────────
 function loadData(){
@@ -1726,7 +1732,7 @@ function renderDashboard(){
   document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
   document.getElementById('kv-hi').textContent    = CT.filter(r=>!r['Actual Arrival']).length;
   document.getElementById('kv-vessels').textContent = VT.length;
-  const _totalSlotChanges=CT.reduce((acc,r)=>acc+(Array.isArray(r.slotHistory)?r.slotHistory.length:0),0);
+  const _totalSlotChanges=CT.reduce((acc,r)=>acc+(Array.isArray(r.slotHistory)?r.slotHistory.filter(h=>h.to&&h.to.trim()).length:0),0);
   document.getElementById('kv-slot-changes').textContent = _totalSlotChanges||'0';
 
   // Monthly deliveries
@@ -2014,6 +2020,48 @@ function renderDashboard(){
       }
     }
   });
+
+  // ── Slot Reschedules by Trucker ──────────────────────────────────
+  const _scTruckerMap={};
+  CT.forEach(r=>{
+    const trucker=r['Trucker']||'(Unknown)';
+    const validChanges=(Array.isArray(r.slotHistory)?r.slotHistory:[]).filter(h=>h.to&&h.to.trim());
+    if(!validChanges.length) return;
+    const byTrucker=validChanges.filter(h=>h.causedBy==='trucker').length;
+    const byCon=validChanges.filter(h=>h.causedBy==='consignee').length;
+    if(!_scTruckerMap[trucker]) _scTruckerMap[trucker]={byTrucker:0,byCon:0};
+    _scTruckerMap[trucker].byTrucker+=byTrucker;
+    _scTruckerMap[trucker].byCon+=byCon;
+  });
+  const _scKeys=Object.keys(_scTruckerMap).sort((a,b)=>(_scTruckerMap[b].byTrucker+_scTruckerMap[b].byCon)-(_scTruckerMap[a].byTrucker+_scTruckerMap[a].byCon));
+  if(slotChangeTruckerChart) slotChangeTruckerChart.destroy();
+  if(_scKeys.length){
+    slotChangeTruckerChart = new Chart(document.getElementById('slot-change-trucker-chart'),{
+      type:'bar',
+      data:{
+        labels:_scKeys,
+        datasets:[
+          {label:'By Trucker',data:_scKeys.map(k=>_scTruckerMap[k].byTrucker),backgroundColor:'#f97316',borderRadius:4},
+          {label:'By Consignee',data:_scKeys.map(k=>_scTruckerMap[k].byCon),backgroundColor:'#a78bfa',borderRadius:4}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11}}},
+          tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw} change${ctx.raw!==1?'s':''}`}}},
+        scales:{
+          x:{stacked:true,grid:{display:false},ticks:{font:{size:12}}},
+          y:{stacked:true,ticks:{stepSize:1},grid:{color:'rgba(0,0,0,.06)'},
+             title:{display:true,text:'# Reschedules',font:{size:11}}}
+        }
+      }
+    });
+  } else {
+    const cvs=document.getElementById('slot-change-trucker-chart');
+    const ctx2=cvs.getContext('2d'); ctx2.clearRect(0,0,cvs.width,cvs.height);
+    ctx2.font='13px sans-serif'; ctx2.fillStyle='#94a3b8'; ctx2.textAlign='center';
+    ctx2.fillText('No slot changes recorded yet.',cvs.width/2,cvs.height/2);
+  }
 
   // ── Surcharge Summary ─────────────────────────────────────────
   const surRows=CT.filter(r=>r['Surcharge']&&parseFloat(r['Surcharge'])>0);
