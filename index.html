@@ -692,6 +692,27 @@ td.editing .cell-edit{display:block}
 .fb-two-col{display:grid;grid-template-columns:1fr 1fr;gap:0}
 @media(max-width:700px){.fb-two-col{grid-template-columns:1fr}}
 .fb-col{padding:16px 20px;border-right:1px solid #f0f0f0}
+/* ── Dashboard Trucker Reviews ── */
+.tr-review-section{margin-top:20px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #e2e8f0;overflow:hidden}
+.tr-review-hdr{background:linear-gradient(135deg,#004D4C,#006b6a);color:#fff;padding:12px 20px;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.tr-review-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0;padding:0}
+.tr-review-card{padding:16px 18px;border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;position:relative}
+.tr-review-card:last-child{border-right:none}
+.tr-review-name{font-size:14px;font-weight:800;color:#004D4C;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tr-review-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.tr-chip{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;white-space:nowrap}
+.tr-chip-vol{background:#e0f2fe;color:#0369a1}
+.tr-chip-rate{background:#dcfce7;color:#15803d}
+.tr-chip-rate-low{background:#fee2e2;color:#b91c1c}
+.tr-chip-stars{background:#fef9c3;color:#854d0e}
+.tr-chip-warn{background:#fef3c7;color:#92400e}
+.tr-chip-nodata{background:#f1f5f9;color:#94a3b8}
+.tr-review-bar{display:flex;gap:6px;align-items:center;margin-bottom:6px;font-size:10px;color:#64748b}
+.tr-review-bar-track{flex:1;height:5px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.tr-review-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.tr-review-text{font-size:11.5px;color:#334155;line-height:1.65;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9}
+.tr-review-trend{font-size:10px;color:#7c3aed;font-weight:700;margin-top:6px}
+.tr-review-empty{padding:20px;text-align:center;color:#94a3b8;font-size:12px}
 .fb-col:last-child{border-right:none}
 .fb-col-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:14px;display:flex;align-items:center;gap:6px}
 .fb-card{background:#fafbfd;border-radius:10px;border:1px solid #eaeff6;padding:12px 14px;margin-bottom:12px;transition:box-shadow .2s}
@@ -955,6 +976,13 @@ td.editing .cell-edit{display:block}
     </div><!-- end dash-col RIGHT -->
 
   </div><!-- end dash-split -->
+
+  <!-- ══ Trucker Reviews ══ -->
+  <div class="tr-review-section">
+    <div class="tr-review-hdr">🚛 Trucker Performance Reviews <span style="font-size:9px;font-weight:500;opacity:.75;margin-left:4px">auto-updated from ratings &amp; data</span></div>
+    <div class="tr-review-grid" id="tr-review-grid"></div>
+  </div>
+
 </div>
 
 <!-- ══ CONTAINERS ══ -->
@@ -2211,9 +2239,127 @@ function renderDashboard(){
     })
     .filter(x=>x.malaDt)
     .sort((a,b)=>a.malaDt-b.malaDt);
+
+  renderTruckerReviews();
 }
 
 function applyMalaHubById(id){ applyMalaHub(id); renderDashboard(); }
+
+// ── TRUCKER REVIEWS ──────────────────────────────────────────────
+function renderTruckerReviews(){
+  const grid=document.getElementById('tr-review-grid');
+  if(!grid) return;
+  const allTruckers=[...new Set(CT.map(r=>r['Trucker']||'').filter(Boolean))].sort();
+  if(!allTruckers.length){
+    grid.innerHTML='<div class="tr-review-empty">No trucker data yet. Assign truckers in the Containers tab.</div>';
+    return;
+  }
+
+  const _barColor=pct=>pct>=80?'#16a34a':pct>=60?'#22c55e':pct>=40?'#F9A825':pct>=20?'#ea580c':'#dc2626';
+  const _stars=v=>'★'.repeat(v)+'☆'.repeat(5-v);
+
+  grid.innerHTML=allTruckers.map(name=>{
+    const rows=CT.filter(r=>(r['Trucker']||'')==name);
+    const total=rows.length;
+    const arrived=rows.filter(r=>r['Tracking']==='Arrived').length;
+    const arrRate=total?Math.round(arrived/total*100):0;
+    const batches=[...new Set(rows.map(r=>r['Batch / Train']||'').filter(Boolean))];
+
+    // Ratings across all batches
+    let prepScores=[],delScores=[],finScores=[];
+    batches.forEach(b=>{
+      const d=fbGetData(b,'truckers',name);
+      if(d.prep) prepScores.push(d.prep);
+      if(d.delivery) delScores.push(d.delivery);
+      if(d.finishing) finScores.push(d.finishing);
+    });
+    const _avg=arr=>arr.length?+(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(2):0;
+    const avgPrep=_avg(prepScores), avgDel=_avg(delScores), avgFin=_avg(finScores);
+    const allScores=[...prepScores,...delScores,...finScores];
+    const avgOverall=_avg(allScores);
+
+    // Per-batch avg trend (for improving/declining detection)
+    const batchAvgs=batches.map(b=>{
+      const d=fbGetData(b,'truckers',name);
+      const s=[d.prep,d.delivery,d.finishing].filter(v=>v>0);
+      return s.length?s.reduce((a,b)=>a+b,0)/s.length:null;
+    }).filter(v=>v!==null);
+    let trend='';
+    if(batchAvgs.length>=2){
+      const first=batchAvgs[0], last=batchAvgs[batchAvgs.length-1];
+      if(last-first>=0.5) trend='📈 Performance improving across batches.';
+      else if(first-last>=0.5) trend='📉 Performance declining — worth monitoring.';
+      else trend='📊 Performance has been consistent across batches.';
+    }
+
+    // Slot changes
+    const slotChanges=rows.reduce((acc,r)=>acc+(Array.isArray(r.slotHistory)?r.slotHistory.filter(h=>h.to&&h.causedBy==='trucker').length:0),0);
+
+    // Slot-ETA avg
+    const seItems=rows.map(r=>{
+      const slot=parseDate(r['Scheduled Slot']), eta=parseDate(r['ETA at Hub']);
+      return (slot&&eta)?Math.round((slot-eta)/864e5):null;
+    }).filter(v=>v!==null);
+    const seAvg=seItems.length?+(seItems.reduce((a,b)=>a+b,0)/seItems.length).toFixed(1):null;
+
+    // ── Auto-generate review text ──────────────────────────────
+    const sentences=[];
+
+    // Volume & delivery
+    sentences.push(`Handled <strong>${total}</strong> container${total!==1?'s':''} across <strong>${batches.length}</strong> batch${batches.length!==1?'es':''}, with a <strong style="color:${arrRate>=80?'#16a34a':arrRate>=50?'#F9A825':'#dc2626'}">${arrRate}% delivery rate</strong>.`);
+
+    // Rating
+    if(avgOverall>=4.5) sentences.push(`Overall rated <strong>${avgOverall.toFixed(1)}/5</strong> — excellent across all aspects.`);
+    else if(avgOverall>=3.5) sentences.push(`Overall rated <strong>${avgOverall.toFixed(1)}/5</strong> — good performance overall.`);
+    else if(avgOverall>=2.5) sentences.push(`Overall rated <strong>${avgOverall.toFixed(1)}/5</strong> — acceptable, but has room for improvement.`);
+    else if(avgOverall>0) sentences.push(`Overall rated <strong style="color:#dc2626">${avgOverall.toFixed(1)}/5</strong> — below expectations.`);
+    else sentences.push('Not yet rated — fill in ratings on the Feedback page.');
+
+    // Aspect callouts
+    if(avgOverall>0){
+      const aspects=[['Preparation',avgPrep],['Delivery',avgDel],['Finishing',avgFin]].filter(([,v])=>v>0);
+      const weak=aspects.filter(([,v])=>v<2.5);
+      const strong=aspects.filter(([,v])=>v>=4.0);
+      if(strong.length) sentences.push(`Particularly strong in <strong>${strong.map(([l])=>l).join(', ')}</strong>.`);
+      if(weak.length) sentences.push(`Needs attention in <strong style="color:#dc2626">${weak.map(([l])=>l).join(', ')}</strong>.`);
+    }
+
+    // Slot changes
+    if(slotChanges>0) sentences.push(`<span style="color:#b45309">⚠️ ${slotChanges} slot reschedule${slotChanges>1?'s':''} attributed to this trucker.</span>`);
+
+    // Slot-ETA timing
+    if(seAvg!==null){
+      if(seAvg<0) sentences.push(`Slots booked on average <strong>${Math.abs(seAvg)} days before ETA</strong> — good planning buffer.`);
+      else if(seAvg===0) sentences.push(`Slots booked on the same day as ETA on average — tight scheduling.`);
+      else sentences.push(`<span style="color:#b45309">Slots booked <strong>${seAvg} days after ETA</strong> on average — late booking risk.</span>`);
+    }
+
+    // Trend
+    if(trend) sentences.push(`<span class="tr-review-trend">${trend}</span>`);
+
+    // ── Aspect bars ─────────────────────────────────────────────
+    const aspectBars=[['Prep',avgPrep],['Delivery',avgDel],['Finishing',avgFin]].map(([lbl,v])=>{
+      if(!v) return `<div class="tr-review-bar"><span style="min-width:58px">${lbl}</span><div class="tr-review-bar-track"><div class="tr-review-bar-fill" style="width:0%;background:#e5e7eb"></div></div><span style="min-width:28px;text-align:right;color:#94a3b8">—</span></div>`;
+      const pct=Math.round(v/5*100);
+      return `<div class="tr-review-bar"><span style="min-width:58px">${lbl}</span><div class="tr-review-bar-track"><div class="tr-review-bar-fill" style="width:${pct}%;background:${_barColor(pct)}"></div></div><span style="min-width:28px;text-align:right;color:${_barColor(pct)};font-weight:700">${v.toFixed(1)}</span></div>`;
+    }).join('');
+
+    // ── Chips ────────────────────────────────────────────────────
+    const chips=[];
+    chips.push(`<span class="tr-chip tr-chip-vol">📦 ${total} unit${total!==1?'s':''}</span>`);
+    chips.push(`<span class="tr-chip ${arrRate>=80?'tr-chip-rate':'tr-chip-rate-low'}">🚚 ${arrRate}% arrived</span>`);
+    if(avgOverall>0) chips.push(`<span class="tr-chip tr-chip-stars">${_stars(Math.round(avgOverall))} ${avgOverall.toFixed(1)}</span>`);
+    else chips.push(`<span class="tr-chip tr-chip-nodata">Not rated</span>`);
+    if(slotChanges>0) chips.push(`<span class="tr-chip tr-chip-warn">⚠️ ${slotChanges} reschedule${slotChanges>1?'s':''}</span>`);
+
+    return `<div class="tr-review-card">
+      <div class="tr-review-name">🚛 ${name}<span style="font-size:9px;color:#94a3b8;font-weight:500">${batches.length} batch${batches.length!==1?'es':''}</span></div>
+      <div class="tr-review-chips">${chips.join('')}</div>
+      ${aspectBars}
+      <div class="tr-review-text">${sentences.join(' ')}</div>
+    </div>`;
+  }).join('');
+}
 function applyMalaSlotById(id){
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
   const hub=parseDate(CT[i]['ETA at Hub'])||
