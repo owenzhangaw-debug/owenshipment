@@ -647,6 +647,46 @@ td.editing .cell-edit{display:block}
 .fb-summary-stars{font-size:11px;letter-spacing:1px}
 .fb-summary-avg{font-size:18px;font-weight:900;line-height:1}
 .fb-summary-incomplete{font-size:9px;color:#94a3b8;margin-top:4px}
+/* Text Summary */
+.fb-txt-box{width:100%;box-sizing:border-box;font-family:'Courier New',monospace;font-size:12px;line-height:1.7;color:#1e293b;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;resize:vertical;min-height:220px;margin-top:10px}
+.fb-gen-btn{background:linear-gradient(135deg,#0369a1,#0284c7);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .15s}
+.fb-gen-btn:hover{opacity:.88}
+.fb-copy-btn{background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s}
+.fb-copy-btn:hover{background:#e2e8f0}
+.fb-copy-btn.copied{background:#dcfce7;color:#15803d;border-color:#86efac}
+.fb-txt-section{padding:14px 20px;border-top:1px solid #e8edf5;background:#fff}
+/* CT Slot Change History */
+.ct-exp-btn{background:none;border:none;cursor:pointer;font-size:10px;color:var(--navy);width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;transition:background .15s;user-select:none;vertical-align:middle;flex-shrink:0}
+.ct-exp-btn:hover{background:rgba(0,0,0,.09)}
+.ct-exp-row{display:none}
+.ct-exp-row.open{display:table-row}
+.ct-exp-cell{padding:10px 18px 14px 32px;background:#f0f9ff;border-bottom:2px solid #bae6fd}
+.ct-sh-title{font-size:10px;font-weight:800;color:#0369a1;letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ct-sh-empty{font-size:11px;color:#94a3b8;margin-bottom:8px}
+.ct-sh-entry{display:flex;align-items:center;gap:7px;padding:5px 9px;background:#fff;border:1px solid #e0f2fe;border-radius:7px;margin-bottom:5px;font-size:11px;flex-wrap:wrap}
+.ct-sh-date{font-weight:700;color:#0c4a6e;min-width:82px;white-space:nowrap}
+.ct-sh-change{color:#334155;flex:1;min-width:100px}
+.ct-sh-by{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.ct-sh-by-trucker{background:#fef3c7;color:#92400e}
+.ct-sh-by-consignee{background:#ede9fe;color:#4c1d95}
+.ct-sh-note{font-size:10px;color:#64748b;font-style:italic}
+.ct-sh-rm{background:none;border:none;cursor:pointer;color:#ef4444;font-size:12px;padding:0 2px;opacity:.55;line-height:1}
+.ct-sh-rm:hover{opacity:1}
+.ct-sh-add{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.ct-sh-add input,.ct-sh-add select{border:1px solid #bae6fd;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;font-family:inherit}
+.ct-sh-add button{background:#0284c7;color:#fff;border:none;border-radius:6px;padding:5px 13px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.ct-sh-add button:hover{opacity:.88}
+.ct-sh-from{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #bae6fd;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#0c4a6e;white-space:nowrap}
+.ct-sh-from-empty{color:#94a3b8;font-weight:400;font-style:italic}
+.ct-sh-arrow{font-size:13px;color:#0284c7;font-weight:700;flex-shrink:0}
+.ct-sh-badge{font-size:9px;font-weight:700;color:#0284c7;background:#e0f2fe;padding:1px 5px;border-radius:8px;margin-left:2px;vertical-align:middle}
+/* Slot changes in feedback */
+.fb-slot-list{margin-top:6px;padding:8px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:7px;font-size:10px;color:#0c4a6e}
+.fb-slot-list-title{font-weight:800;font-size:9px;color:#0369a1;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.fb-slot-item{display:flex;gap:6px;align-items:flex-start;margin-bottom:3px;flex-wrap:wrap}
+.fb-slot-cn{font-weight:700;color:#0369a1;white-space:nowrap}
+.fb-slot-change{color:#334155}
+.fb-slot-note{color:#64748b;font-style:italic}
 .fb-batch-title{font-size:15px;font-weight:800;letter-spacing:.3px}
 .fb-batch-meta{font-size:11px;opacity:.8}
 .fb-two-col{display:grid;grid-template-columns:1fr 1fr;gap:0}
@@ -753,6 +793,9 @@ td.editing .cell-edit{display:block}
         </div>
         <div class="kpi k-hi" onclick="gotoFilter('_missing_arrival','')">
           <div class="kl">OTW</div><div class="kv" id="kv-hi">—</div><div class="ks">arrival not filled</div>
+        </div>
+        <div class="kpi" style="border-color:#b45309;cursor:default">
+          <div class="kl">Slot Changes</div><div class="kv" id="kv-slot-changes" style="color:#b45309">—</div><div class="ks">reschedules recorded</div>
         </div>
       </div>
 
@@ -1363,6 +1406,7 @@ const LS_CT = 'owenz_ct_v3';
 const LS_VT = 'owenz_vt_v1';
 let CT = [], VT = [], nextId = 1, vtNextId = 1;
 let ctSortCol = 'Batch / Train', ctSortDir = 1;
+const ctExpanded = new Set();
 let vtSortCol = '', vtSortDir = 1;
 let editId = null, delId = null;
 let importWB = null, importRows = [];
@@ -1682,6 +1726,8 @@ function renderDashboard(){
   document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
   document.getElementById('kv-hi').textContent    = CT.filter(r=>!r['Actual Arrival']).length;
   document.getElementById('kv-vessels').textContent = VT.length;
+  const _totalSlotChanges=CT.reduce((acc,r)=>acc+(Array.isArray(r.slotHistory)?r.slotHistory.length:0),0);
+  document.getElementById('kv-slot-changes').textContent = _totalSlotChanges||'0';
 
   // Monthly deliveries
   const monthly = {};
@@ -2276,6 +2322,35 @@ function getCTRows(){
 
 function ctSort(col){ ctSortCol===col?ctSortDir*=-1:(ctSortCol=col,ctSortDir=1); renderCT(); }
 function vtSort(col){ vtSortCol===col?vtSortDir*=-1:(vtSortCol=col,vtSortDir=1); renderVT(); }
+
+// ── CT SLOT CHANGE HISTORY ────────────────────────────────────────
+function ctToggleExpand(id){
+  if(ctExpanded.has(id)) ctExpanded.delete(id); else ctExpanded.add(id);
+  renderCT();
+}
+function ctAddSlotChange(id){
+  const today=new Date();
+  const defDate=`${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+  const newSlot=((document.getElementById('ctsh-newslot-'+id)||{}).value||'').trim();
+  const causedBy=(document.getElementById('ctsh-by-'+id)||{}).value||'trucker';
+  const party=((document.getElementById('ctsh-party-'+id)||{}).value||'').trim();
+  const note=((document.getElementById('ctsh-note-'+id)||{}).value||'').trim();
+  if(!newSlot) return;
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  const fromSlot=CT[i]['Scheduled Slot']||'';
+  if(!Array.isArray(CT[i].slotHistory)) CT[i].slotHistory=[];
+  CT[i].slotHistory.push({date:defDate,from:fromSlot,to:newSlot,causedBy,party,note});
+  // Update the main Scheduled Slot to the new value
+  CT[i]['Scheduled Slot']=newSlot;
+  delete CT[i]._slotAuto;
+  saveData(); _smartData=null; renderCT();
+}
+function ctRemoveSlotChange(id,idx){
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  if(!Array.isArray(CT[i].slotHistory)) return;
+  CT[i].slotHistory.splice(idx,1);
+  saveData(); renderCT();
+}
 function resetFilters(){
   const s=document.getElementById('f-search'); if(s) s.value='';
   msClear('batch','All Batches');
@@ -2537,8 +2612,48 @@ function renderCT(){
       <div class="cell-view" onclick="startEdit(this)">${rmkV||'<span style="color:#ccc">—</span>'}</div>
       <div class="cell-edit"><input value="${rmkV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Remark',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
     </td>`;
+
+    // ── Slot Change History sub-row ───────────────────────────────
+    const ctIsOpen=ctExpanded.has(r._id);
+    const slotHist=Array.isArray(r.slotHistory)?r.slotHistory:[];
+    const slotBadge=slotHist.length?`<span class="ct-sh-badge">${slotHist.length}</span>`:'';
+    const slotEntries=slotHist.length?slotHist.map((h,idx)=>{
+      const byClass=h.causedBy==='trucker'?'ct-sh-by-trucker':'ct-sh-by-consignee';
+      const byLabel=h.causedBy==='trucker'?`🚛 Trucker${h.party?': '+h.party:''}`:`🏢 Consignee${h.party?': '+h.party:''}`;
+      const fromDisp=h.from||'—';
+      const toDisp=h.to||'—';
+      return `<div class="ct-sh-entry">
+        <span class="ct-sh-date">${h.date||'—'}</span>
+        <span class="ct-sh-from">${fromDisp}</span>
+        <span class="ct-sh-arrow">→</span>
+        <span class="ct-sh-change" style="font-weight:700;color:#0369a1">${toDisp}</span>
+        <span class="ct-sh-by ${byClass}">${byLabel}</span>
+        ${h.note?`<span class="ct-sh-note">"${h.note}"</span>`:''}
+        <button class="ct-sh-rm" onclick="ctRemoveSlotChange(${r._id},${idx})" title="Remove">✕</button>
+      </div>`;
+    }).join(''):`<div class="ct-sh-empty">No slot changes recorded.</div>`;
+    const defParty=r['Trucker']||'';
+    const curSlot=r['Scheduled Slot']||'';
+    const curSlotDisp=curSlot?`<span>${curSlot}</span>`:`<span class="ct-sh-from-empty">No slot set</span>`;
+    const slotHistSection=`<div class="ct-slot-hist">
+      <div class="ct-sh-title">🔁 Slot Change History</div>
+      ${slotEntries}
+      <div class="ct-sh-add">
+        <span class="ct-sh-from" title="Current scheduled slot">📅 ${curSlotDisp}</span>
+        <span class="ct-sh-arrow">→</span>
+        <input id="ctsh-newslot-${r._id}" type="text" placeholder="New slot YYYY/MM/DD HH:MM" style="width:170px" onkeydown="if(event.key==='Enter'){ctAddSlotChange(${r._id});event.preventDefault();}"/>
+        <select id="ctsh-by-${r._id}" onchange="(function(s){const pi=document.getElementById('ctsh-party-${r._id}');if(pi&&!pi._manualEdit){pi.value=s.value==='trucker'?'${defParty.replace(/'/g,"\\'")}':'';}}) (this)">
+          <option value="trucker">🚛 Trucker</option>
+          <option value="consignee">🏢 Consignee</option>
+        </select>
+        <input id="ctsh-party-${r._id}" type="text" placeholder="Name" value="${defParty.replace(/"/g,'&quot;')}" style="width:90px" oninput="this._manualEdit=true"/>
+        <input id="ctsh-note-${r._id}" type="text" placeholder="Note (optional)" style="width:120px" onkeydown="if(event.key==='Enter'){ctAddSlotChange(${r._id});event.preventDefault();}"/>
+        <button onclick="ctAddSlotChange(${r._id})">+ Add</button>
+      </div>
+    </div>`;
+
     return `<tr class="${rowCls}" id="row-${r._id}">
-      <td class="fc-1" style="padding:7px 10px;white-space:nowrap">${r['Batch / Train']||''}</td>
+      <td class="fc-1" style="padding:4px 6px;white-space:nowrap"><button class="ct-exp-btn" onclick="ctToggleExpand(${r._id})" title="${ctIsOpen?'Collapse':'Expand'}">${ctIsOpen?'▼':'▶'}</button>${r['Batch / Train']||''}${slotBadge}</td>
       <td class="fc-2" style="padding:7px 10px"><strong>${r['Container No.']||''}</strong></td>
       ${blC}
       ${conC}
@@ -2624,6 +2739,9 @@ function renderCT(){
       <td style="text-align:center;padding:4px 6px">
         <input type="checkbox" class="ct-sel-cb" data-id="${r._id}" onchange="ctSelChange()" style="width:14px;height:14px;cursor:pointer"/>
       </td>
+    </tr>
+    <tr class="ct-exp-row${ctIsOpen?' open':''}" id="ctexp-${r._id}">
+      <td class="ct-exp-cell" colspan="99">${slotHistSection}</td>
     </tr>`;
   }).join('');
   // Dynamically set left offsets for frozen columns based on actual rendered widths
@@ -4353,9 +4471,16 @@ function renderFeedback(){
       const relRows=rows.filter(r=>(r['Trucker']||'')==name);
       const cnList=relRows.map(r=>r['Container No.']||'').filter(Boolean);
       const tagsHtml=cnList.length?`<div class="fb-tag-row">${cnList.map(cn=>`<span class="fb-tag">${cn}</span>`).join('')}</div>`:'';
+      // Slot changes attributed to this trucker
+      const slotChanges=relRows.flatMap(r=>(Array.isArray(r.slotHistory)?r.slotHistory:[]).filter(h=>h.causedBy==='trucker').map(h=>({cn:r['Container No.']||'',h})));
+      const slotChangesHtml=slotChanges.length?`<div class="fb-slot-list">
+        <div class="fb-slot-list-title">🔁 Slot Changes Attributed (${slotChanges.length})</div>
+        ${slotChanges.map(({cn,h})=>`<div class="fb-slot-item"><span class="fb-slot-cn">${cn}</span><span class="fb-slot-change">${h.change||'—'}</span><span style="color:#94a3b8">${h.date||''}</span>${h.note?`<span class="fb-slot-note">"${h.note}"</span>`:''}</div>`).join('')}
+      </div>`:'';
       return `<div class="fb-card" id="fbcard_${sid}" data-batch="${batch.replace(/"/g,'&quot;')}" data-type="truckers" data-name="${name.replace(/"/g,'&quot;')}">
-        <div class="fb-card-name">🚛 ${name}<span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span></div>
+        <div class="fb-card-name">🚛 ${name}<span class="fb-cn-pill">${relRows.length} unit${relRows.length!==1?'s':''}</span>${slotChanges.length?`<span style="font-size:9px;font-weight:700;color:#b45309;background:#fef3c7;padding:1px 7px;border-radius:10px;margin-left:4px">⚠️ ${slotChanges.length} slot change${slotChanges.length>1?'s':''}</span>`:''}</div>
         ${tagsHtml}
+        ${slotChangesHtml}
         <div class="fb-aspects">
           ${fbAspectBlock(sid,'prep','📋 Preparation',d.prep||0,d.prepNote||'')}
           ${fbAspectBlock(sid,'delivery','🚚 Delivery',d.delivery||0,d.deliveryNote||'')}
@@ -4425,9 +4550,11 @@ function renderFeedback(){
           <span class="fb-summary-score" style="color:${_barColor(pct)}">${a.val?a.val+'/5':'—'}</span>
         </div>`;
       }).join('');
+      const _sumSlotChanges=relRows.reduce((acc,r)=>acc+(Array.isArray(r.slotHistory)?r.slotHistory.filter(h=>h.causedBy==='trucker').length:0),0);
       return `<div class="fb-summary-card">
         <div class="fb-summary-name">🚛 ${name}
           <span style="font-size:9px;font-weight:600;color:#94a3b8">${arrived}/${relRows.length} arrived</span>
+          ${_sumSlotChanges?`<span style="font-size:9px;font-weight:700;color:#b45309;background:#fef3c7;padding:1px 6px;border-radius:8px;margin-left:2px">⚠️${_sumSlotChanges}</span>`:''}
         </div>
         ${aspectRows}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
@@ -4449,6 +4576,11 @@ function renderFeedback(){
       ${truckers.length?`<div class="fb-summary">
         <div class="fb-summary-title">📊 Trucker Performance Summary</div>
         <div class="fb-summary-grid">${summaryCards}</div>
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="fb-gen-btn" onclick="fbGenText('${batch.replace(/'/g,"\\'")}')">📝 Generate Text Summary</button>
+          <button class="fb-copy-btn" id="fbcopy_${batch.replace(/[^a-z0-9]/gi,'_')}" onclick="fbCopyText('${batch.replace(/'/g,"\\'")}')">📋 Copy</button>
+        </div>
+        <textarea class="fb-txt-box" id="fbtext_${batch.replace(/[^a-z0-9]/gi,'_')}" placeholder="Click 'Generate Text Summary' to auto-write a report you can copy and send…"></textarea>
       </div>`:''}
       <div class="fb-two-col">
         <div class="fb-col">
@@ -4464,6 +4596,93 @@ function renderFeedback(){
   }).join('');
 
   document.getElementById('fb-content').innerHTML=html||'<div class="fb-empty">No data for selected batch.</div>';
+}
+
+function fbGenText(batch){
+  const safeBatch=batch.replace(/[^a-z0-9]/gi,'_');
+  const ta=document.getElementById('fbtext_'+safeBatch);
+  if(!ta) return;
+  const rows=CT.filter(r=>r['Batch / Train']===batch);
+  const truckers=[...new Set(rows.map(r=>r['Trucker']||'').filter(Boolean))].sort();
+  const today=new Date();
+  const dateStr=today.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const totalArrived=rows.filter(r=>r['Tracking']==='Arrived').length;
+
+  const _label=v=>v>=5?'Excellent':v>=4?'Good':v>=3?'Acceptable':v>=2?'Below average':'Poor';
+  const _stars=v=>'★'.repeat(v)+'☆'.repeat(5-v);
+
+  let lines=[];
+  lines.push(`BATCH PERFORMANCE SUMMARY — ${batch}`);
+  lines.push(`Date: ${dateStr}   |   Containers: ${totalArrived}/${rows.length} arrived`);
+  lines.push('─'.repeat(56));
+  lines.push('');
+
+  truckers.forEach(name=>{
+    const d=fbGetData(batch,'truckers',name);
+    const relRows=rows.filter(r=>(r['Trucker']||'')==name);
+    const arrived=relRows.filter(r=>r['Tracking']==='Arrived').length;
+    const prep=d.prep||0, del=d.delivery||0, fin=d.finishing||0;
+    const filled=[prep,del,fin].filter(v=>v>0).length;
+    const avg=filled?((prep+del+fin)/filled):0;
+
+    lines.push(`TRUCKER: ${name.toUpperCase()}  (${arrived}/${relRows.length} units delivered)`);
+    if(avg>0){
+      lines.push(`Overall: ${_stars(Math.round(avg))} ${avg.toFixed(1)}/5 — ${_label(avg)}`);
+    } else {
+      lines.push(`Overall: Not yet rated`);
+    }
+    if(prep)   lines.push(`  📋 Preparation : ${_stars(prep)} ${prep}/5${d.prepNote?'  — '+d.prepNote.trim():''}`);
+    if(del)    lines.push(`  🚚 Delivery    : ${_stars(del)} ${del}/5${d.deliveryNote?'  — '+d.deliveryNote.trim():''}`);
+    if(fin)    lines.push(`  ✅ Finishing   : ${_stars(fin)} ${fin}/5${d.finishingNote?'  — '+d.finishingNote.trim():''}`);
+    if(d.note&&d.note.trim()) lines.push(`  💬 Note: ${d.note.trim()}`);
+    // Slot changes
+    const trSlotChanges=relRows.flatMap(r=>(Array.isArray(r.slotHistory)?r.slotHistory:[]).filter(h=>h.causedBy==='trucker').map(h=>({cn:r['Container No.']||'',h})));
+    if(trSlotChanges.length){
+      lines.push(`  ⚠️ Slot Changes (${trSlotChanges.length}):`);
+      trSlotChanges.forEach(({cn,h})=>lines.push(`    · ${cn}  ${h.date||''}  ${h.change||''}${h.note?'  ('+h.note+')':''}`));
+    }
+    lines.push('');
+  });
+
+  // Cross-batch trucker comparison (all-time averages for each trucker appearing here)
+  const hasMultiple=truckers.some(name=>{
+    return Object.keys(FB).filter(b=>b!==batch).some(b=>{ const d=fbGetData(b,'truckers',name); return (d.prep||d.delivery||d.finishing)>0; });
+  });
+  if(hasMultiple){
+    lines.push('─'.repeat(56));
+    lines.push('HISTORICAL AVERAGE (all batches):');
+    truckers.forEach(name=>{
+      const allScores=[];
+      Object.keys(FB).forEach(b=>{
+        const d=fbGetData(b,'truckers',name);
+        [d.prep,d.delivery,d.finishing].forEach(v=>{ if(v>0) allScores.push(v); });
+      });
+      if(allScores.length){
+        const hist=allScores.reduce((a,b)=>a+b,0)/allScores.length;
+        lines.push(`  ${name}: ${hist.toFixed(1)}/5 avg across ${Object.keys(FB).filter(b=>{ const d=fbGetData(b,'truckers',name); return (d.prep||d.delivery||d.finishing)>0; }).length} batch(es)`);
+      }
+    });
+    lines.push('');
+  }
+
+  lines.push('─'.repeat(56));
+  lines.push(`Generated by Owen Zhang Logistics App · ${dateStr}`);
+
+  ta.value=lines.join('\n');
+  ta.style.minHeight=Math.max(220,lines.length*22)+'px';
+}
+
+function fbCopyText(batch){
+  const safeBatch=batch.replace(/[^a-z0-9]/gi,'_');
+  const ta=document.getElementById('fbtext_'+safeBatch);
+  const btn=document.getElementById('fbcopy_'+safeBatch);
+  if(!ta||!ta.value.trim()) return;
+  navigator.clipboard.writeText(ta.value).then(()=>{
+    if(btn){ btn.textContent='✅ Copied!'; btn.classList.add('copied'); setTimeout(()=>{ btn.textContent='📋 Copy'; btn.classList.remove('copied'); },2000); }
+  }).catch(()=>{
+    ta.select(); document.execCommand('copy');
+    if(btn){ btn.textContent='✅ Copied!'; btn.classList.add('copied'); setTimeout(()=>{ btn.textContent='📋 Copy'; btn.classList.remove('copied'); },2000); }
+  });
 }
 </script>
 
