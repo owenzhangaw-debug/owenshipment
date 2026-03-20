@@ -837,6 +837,7 @@ td.editing .cell-edit{display:block}
       <!-- Category Tabs -->
       <div class="dash-cat-tabs">
         <button class="dash-cat-tab active" onclick="switchDashCat('time',this)">⏱ Time</button>
+        <button class="dash-cat-tab" onclick="switchDashCat('hub-t1',this)">🏗️ Hub → T1</button>
         <button class="dash-cat-tab" onclick="switchDashCat('price',this)">💰 Price</button>
         <button class="dash-cat-tab" onclick="switchDashCat('qty',this)">📦 Quantity</button>
       </div>
@@ -1013,7 +1014,7 @@ td.editing .cell-edit{display:block}
 <div id="page-containers" class="page">
   <div class="toolbar">
     <div class="fg"><label>Search</label>
-      <input type="text" id="f-search" placeholder="Container, B/L, consignee…" oninput="renderCT()"/></div>
+      <input type="text" id="f-search" placeholder="Container, B/L… paste multiple with commas" oninput="renderCT()"/></div>
     <div class="ms-wrap" id="wrap-batch">
       <span class="ms-label">Batch</span>
       <button class="ms-btn" id="btn-batch" onclick="msOpen('batch')">All Batches</button>
@@ -1600,9 +1601,7 @@ function parseDate(s){
 }
 function formatDate(d){
   if(!d||isNaN(d)) return '';
-  return d.getFullYear()+'/'
-    +String(d.getMonth()+1).padStart(2,'0')+'/'
-    +String(d.getDate()).padStart(2,'0');
+  return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();
 }
 function fmtDateStr(s){
   // Normalize any stored date string → yyyy/mm/dd display
@@ -2526,7 +2525,9 @@ function msClear(id, placeholder){
 }
 // Returns CT rows filtered by all filters EXCEPT the one specified (for cascading menus)
 function getCTRowsExcept(excludeId){
-  const q=(document.getElementById('f-search')?document.getElementById('f-search').value||'':'').toLowerCase();
+  const qRaw=(document.getElementById('f-search')?document.getElementById('f-search').value||'':'');
+  const q=qRaw; // kept for compat below
+  const qTokens=qRaw.split(/[\s,;]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
   const fbs=excludeId==='batch'?[]:msGetValues('batch');
   const fts=excludeId==='trucker'?[]:msGetValues('trucker');
   const ftrs=excludeId==='tracking'?[]:msGetValues('tracking');
@@ -2552,10 +2553,10 @@ function getCTRowsExcept(excludeId){
       if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
     }
     if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
-    if(q){
+    if(qTokens.length){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
                r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
-      if(!h.includes(q)) return false;
+      if(!qTokens.some(t=>h.includes(t))) return false;
     }
     return true;
   });
@@ -2575,7 +2576,9 @@ function fillMultiSel(id, key, placeholder){
 document.addEventListener('click',function(e){ if(!e.target.closest('.ms-wrap')) document.querySelectorAll('.ms-menu.open').forEach(m=>m.classList.remove('open')); });
 
 function getCTRows(){
-  const q=(document.getElementById('f-search').value||'').toLowerCase();
+  const qRaw=(document.getElementById('f-search').value||'');
+  // Split by comma/semicolon/whitespace to support pasting multiple values
+  const qTokens=qRaw.split(/[\s,;]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
   const fbs=msGetValues('batch');
   const fts=msGetValues('trucker');
   const ftrs=msGetValues('tracking');
@@ -2601,10 +2604,11 @@ function getCTRows(){
       if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
     }
     if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
-    if(q){
+    if(qTokens.length){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
                r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
-      if(!h.includes(q)) return false;
+      // Match if ANY token found (supports pasting multiple container/BL numbers)
+      if(!qTokens.some(t=>h.includes(t))) return false;
     }
     return true;
   }).sort((a,b)=>{
@@ -3164,12 +3168,12 @@ function updateFrozenOffsets(){
 // ── Flatpickr helpers ─────────────────────────────────────────────
 function fpDate(inp){
   if(!inp||inp._flatpickr) return;
-  flatpickr(inp,{dateFormat:'Y/m/d',allowInput:true,disableMobile:true,
+  flatpickr(inp,{dateFormat:'Y/n/j',allowInput:true,disableMobile:true,
     onClose:()=>{ inp.dispatchEvent(new Event('blur')); }});
 }
 function fpDatetime(inp){
   if(!inp||inp._flatpickr) return;
-  flatpickr(inp,{dateFormat:'Y/m/d H:i',enableTime:true,minuteIncrement:30,
+  flatpickr(inp,{dateFormat:'Y/n/j H:i',enableTime:true,minuteIncrement:30,
     allowInput:true,disableMobile:true,time_24hr:true,
     onClose:()=>{ inp.dispatchEvent(new Event('blur')); }});
 }
