@@ -875,6 +875,16 @@ td.editing .cell-edit{display:block}
         </div>
       </div>
 
+      <!-- ── HUB → T1 DURATION ── -->
+      <div id="dash-cat-hub-t1" class="dash-cat-section">
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">ETA Duisburg → T1 Cleared (days per batch)<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:300px"><canvas id="hub-t1-batch-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── PRICE ── -->
       <div id="dash-cat-price" class="dash-cat-section">
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
@@ -1084,6 +1094,7 @@ td.editing .cell-edit{display:block}
           <th class="no-sort">Broker</th>
           <th onclick="ctSort('ETA in Mala')" title="ETA at Port of Malaysia">ETA in Mala ↕</th>
           <th onclick="ctSort('ETA at Hub')">ETA at Hub ↕</th>
+          <th onclick="ctSort('T1 Date')" title="Date when T1 customs cleared at Duisburg">T1 ↕</th>
           <th onclick="ctSort('Scheduled Slot')">Scheduled Slot ↕</th>
           <th onclick="ctSort('Actual Arrival')">Actual Arrival ↕</th>
           <th onclick="ctSort('Deadline')">Deadline ↕</th>
@@ -1211,6 +1222,7 @@ td.editing .cell-edit{display:block}
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
       <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+5d)</span></label><input type="text" id="f_eta" placeholder="YYYY/MM/DD"/></div>
+      <div class="form-group"><label>T1 Date <span style="font-size:10px;color:var(--muted);font-weight:400">T1 customs cleared</span></label><input type="text" id="f_t1date" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: same as Hub)</span></label><input type="text" id="f_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
       <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>Deadline</label><input type="text" id="f_dl" placeholder="YYYY/MM/DD"/></div>
@@ -1251,6 +1263,7 @@ td.editing .cell-edit{display:block}
         <select id="b_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="b_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
       <div class="form-group"><label>ETA at Hub</label><input type="text" id="b_eta" placeholder="YYYY/MM/DD"/></div>
+      <div class="form-group"><label>T1 Date</label><input type="text" id="b_t1date" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>Scheduled Slot</label><input type="text" id="b_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
       <div class="form-group"><label>Deadline</label><input type="text" id="b_dl" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group" style="align-items:flex-start;padding-top:18px">
@@ -1399,6 +1412,7 @@ td.editing .cell-edit{display:block}
           <select id="be_track"><option value="">— no change —</option><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
         <div class="form-group"><label>ETA in Mala<label class="be-clear-lbl"><input type="checkbox" id="be_clr_eta_mala" onchange="beToggleClear(this,'be_eta_mala')"> × clear</label></label><input type="text" id="be_eta_mala" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>ETA at Hub<label class="be-clear-lbl"><input type="checkbox" id="be_clr_eta" onchange="beToggleClear(this,'be_eta')"> × clear</label></label><input type="text" id="be_eta" placeholder="yyyy/mm/dd"/></div>
+        <div class="form-group"><label>T1 Date<label class="be-clear-lbl"><input type="checkbox" id="be_clr_t1date" onchange="beToggleClear(this,'be_t1date')"> × clear</label></label><input type="text" id="be_t1date" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>Actual Arrival<label class="be-clear-lbl"><input type="checkbox" id="be_clr_arr" onchange="beToggleClear(this,'be_arr')"> × clear</label></label><input type="text" id="be_arr" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>Deadline<label class="be-clear-lbl"><input type="checkbox" id="be_clr_dl" onchange="beToggleClear(this,'be_dl')"> × clear</label></label><input type="text" id="be_dl" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>Pickup Ref<label class="be-clear-lbl"><input type="checkbox" id="be_clr_ref" onchange="beToggleClear(this,'be_ref')"> × clear</label></label><input type="text" id="be_ref"/></div>
@@ -1473,7 +1487,7 @@ let vtSortCol = '', vtSortDir = 1;
 let editId = null, delId = null;
 let importWB = null, importRows = [];
 let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null,
-    slotEtaTruckerChart = null, slotEtaTruckerBatchChart = null, slotChangeTruckerChart = null;
+    slotEtaTruckerChart = null, slotEtaTruckerBatchChart = null, slotChangeTruckerChart = null, hubT1BatchChart = null;
 
 // ── PERSISTENCE ───────────────────────────────────────────────────
 function loadData(){
@@ -2119,6 +2133,64 @@ function renderDashboard(){
     ctx2.fillText('No slot changes recorded yet.',cvs.width/2,cvs.height/2);
   }
 
+  // ── Hub → T1 Date duration per batch ─────────────────────────
+  if(hubT1BatchChart){hubT1BatchChart.destroy();hubT1BatchChart=null;}
+  (()=>{
+    // Collect per-batch samples: days from ETA at Hub to T1 Date
+    const batchSamples={};
+    CT.forEach(r=>{
+      const hub=parseDate(r['ETA at Hub']);
+      const t1d=parseDate(r['T1 Date']);
+      if(!hub||!t1d) return;
+      const days=Math.round((t1d-hub)/864e5);
+      if(days<0||days>60) return; // sanity filter
+      const b=r['Batch / Train']||'(No Batch)';
+      if(!batchSamples[b]) batchSamples[b]=[];
+      batchSamples[b].push(days);
+    });
+    const bKeys=Object.keys(batchSamples).sort();
+    const bAvgs=bKeys.map(b=>{const s=batchSamples[b];return+(s.reduce((a,c)=>a+c,0)/s.length).toFixed(1);});
+    const bCounts=bKeys.map(b=>batchSamples[b].length);
+    const cvs=document.getElementById('hub-t1-batch-chart');
+    if(!cvs) return;
+    if(!bKeys.length){
+      const ctx2=cvs.getContext('2d');ctx2.clearRect(0,0,cvs.width,cvs.height);
+      ctx2.font='13px sans-serif';ctx2.fillStyle='#94a3b8';ctx2.textAlign='center';
+      ctx2.fillText('Fill in T1 Date and ETA at Hub on containers to see data.',cvs.width/2,cvs.height/2);
+      return;
+    }
+    hubT1BatchChart=new Chart(cvs,{
+      type:'bar',
+      data:{
+        labels:bKeys,
+        datasets:[{
+          label:'Avg days Hub → T1',
+          data:bAvgs,
+          backgroundColor:bAvgs.map(d=>d<=3?'#22c55e':d<=7?'#F9A825':'#e53935'),
+          borderRadius:6
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{
+            label:ctx=>{
+              const b=bKeys[ctx.dataIndex];
+              return [`Avg: ${ctx.raw}d (${bCounts[ctx.dataIndex]} container${bCounts[ctx.dataIndex]!==1?'s':''})`];
+            }
+          }}
+        },
+        scales:{
+          x:{grid:{display:false},ticks:{font:{size:11}}},
+          y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},
+             title:{display:true,text:'Days (ETA Hub → T1 cleared)',font:{size:11}},
+             ticks:{stepSize:1}}
+        }
+      }
+    });
+  })();
+
   // ── Surcharge Summary ─────────────────────────────────────────
   const surRows=CT.filter(r=>r['Surcharge']&&parseFloat(r['Surcharge'])>0);
   const surTotalAll=surRows.reduce((s,r)=>s+parseFloat(r['Surcharge']),0);
@@ -2354,13 +2426,6 @@ function renderTruckerReviews(){
 
     // Slot changes
     if(slotChanges>0) sentences.push(`<span style="color:#b45309">⚠️ ${slotChanges} slot reschedule${slotChanges>1?'s':''} attributed to this trucker.</span>`);
-
-    // Slot-ETA timing
-    if(seAvg!==null){
-      if(seAvg<0) sentences.push(`Slots booked on average <strong>${Math.abs(seAvg)} days before ETA</strong> — good planning buffer.`);
-      else if(seAvg===0) sentences.push(`Slots booked on the same day as ETA on average — tight scheduling.`);
-      else sentences.push(`<span style="color:#b45309">Slots booked <strong>${seAvg} days after ETA</strong> on average — late booking risk.</span>`);
-    }
 
     // Trend
     if(trend) sentences.push(`<span class="tr-review-trend">${trend}</span>`);
@@ -2838,6 +2903,11 @@ function renderCT(){
       <div class="cell-view" onclick="startEdit(this)">${etaV||'<span style="color:#ccc">—</span>'}</div>
       <div class="cell-edit"><input type="text" data-fptype="date" value="${etaV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
     </td>`;
+    const t1dV=r['T1 Date']||'';
+    const t1dC=`<td data-id="${r._id}" data-col="T1 Date">
+      <div class="cell-view" onclick="startEdit(this)">${t1dV||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input type="text" data-fptype="date" value="${t1dV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'T1 Date',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
+    </td>`;
     const slotV=r['Scheduled Slot']||'';
     const slotIsAuto = !!r._slotAuto;
     const slotDisplay = slotV
@@ -2962,6 +3032,7 @@ function renderCT(){
       ${brokerCell}
       ${etaMalaC}
       ${etaCell}
+      ${t1dC}
       ${slotCell}
       ${arrC}
       ${dlC}
@@ -3683,7 +3754,7 @@ function vtSearchContainer(q){
 function openAdd(){
   editId=null;
   document.getElementById('modal-title').textContent='+ Add Container';
-  ['f_no','f_bl','f_batch','f_con','f_truck','f_eta_mala','f_eta','f_slot','f_arr','f_dl','f_ref','f_rmk','f_price','f_price_t1','f_surcharge']
+  ['f_no','f_bl','f_batch','f_con','f_truck','f_eta_mala','f_eta','f_t1date','f_slot','f_arr','f_dl','f_ref','f_rmk','f_price','f_price_t1','f_surcharge']
     .forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_surcharge_reason').value='';
   document.getElementById('f_pay_status').value='';
@@ -3693,7 +3764,7 @@ function openAdd(){
   document.getElementById('f_cmr').checked=false;
   refreshDLs();
   // Init flatpickr on modal date fields
-  ['f_eta_mala','f_eta','f_arr','f_dl'].forEach(id=>initFP(id,'date'));
+  ['f_eta_mala','f_eta','f_t1date','f_arr','f_dl'].forEach(id=>initFP(id,'date'));
   initFP('f_slot','datetime');
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -3709,6 +3780,7 @@ function openEdit(id){
   document.getElementById('f_track').value =r['Tracking']||'None';
   document.getElementById('f_eta_mala').value=r['ETA in Mala']||'';
   document.getElementById('f_eta').value  =r['ETA at Hub']||'';
+  document.getElementById('f_t1date').value=r['T1 Date']||'';
   document.getElementById('f_slot').value =r['Scheduled Slot']||'';
   document.getElementById('f_arr').value  =r['Actual Arrival']||'';
   document.getElementById('f_dl').value   =r['Deadline']||'';
@@ -3723,7 +3795,7 @@ function openEdit(id){
   document.getElementById('f_cmr').checked=(r['CMR']==='✅');
   refreshDLs();
   // Init flatpickr on modal date fields
-  ['f_eta_mala','f_eta','f_arr','f_dl'].forEach(id=>initFP(id,'date'));
+  ['f_eta_mala','f_eta','f_t1date','f_arr','f_dl'].forEach(id=>initFP(id,'date'));
   initFP('f_slot','datetime');
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -3733,7 +3805,7 @@ function saveRow(){
   const u={
     'Container No.':g('f_no'),'Master B/L':g('f_bl'),'Batch / Train':g('f_batch'),
     'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Tracking':g('f_track'),
-    'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'Scheduled Slot':g('f_slot'),
+    'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'T1 Date':g('f_t1date'),'Scheduled Slot':g('f_slot'),
     'Actual Arrival':g('f_arr'),'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
@@ -3745,14 +3817,14 @@ function saveRow(){
 
 // ── BULK ADD ──────────────────────────────────────────────────────
 function openBulk(){
-  ['b_batch','b_con','b_truck','b_eta_mala','b_eta','b_slot','b_dl','b_nos'].forEach(id=>document.getElementById(id).value='');
+  ['b_batch','b_con','b_truck','b_eta_mala','b_eta','b_t1date','b_slot','b_dl','b_nos'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('b_track').value='T1';
   document.getElementById('b_cmr').checked=false;
   document.getElementById('b_ok').style.display='none';
   document.getElementById('b_err').style.display='none';
   document.getElementById('b_parsed_preview').innerHTML='';
   refreshDLs();
-  ['b_eta_mala','b_eta','b_dl'].forEach(id=>initFP(id,'date'));
+  ['b_eta_mala','b_eta','b_t1date','b_dl'].forEach(id=>initFP(id,'date'));
   initFP('b_slot','datetime');
   document.getElementById('bulk-overlay').classList.add('open');
 }
@@ -3795,7 +3867,7 @@ function saveBulk(){
   if(!batch){ err.textContent='Batch / Train is required.'; err.style.display='block'; return; }
   const g=id=>document.getElementById(id).value.trim();
   const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),
-    'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),
+    'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'T1 Date':g('b_t1date'),
     'Scheduled Slot':g('b_slot'),'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
     'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','T1 Payment Status':'','Broker':'','Remark':''};
   pairs.forEach(p=>CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,_id:nextId++}));
@@ -4530,7 +4602,7 @@ function updateSelBar(){
 
 // ── BULK EDIT ─────────────────────────────────────────────────────
 function openBulkEdit(){
-  ['be_batch','be_truck','be_con','be_eta_mala','be_eta','be_arr','be_dl','be_ref','be_price','be_price_t1','be_rmk','be_broker',
+  ['be_batch','be_truck','be_con','be_eta_mala','be_eta','be_t1date','be_arr','be_dl','be_ref','be_price','be_price_t1','be_rmk','be_broker',
    'be_port','be_carrier','be_ets','be_pco','be_notes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
@@ -4547,7 +4619,7 @@ function openBulkEdit(){
   if(ctSel.size) switchBETab('ct', document.querySelector('.be-tab'));
   else if(vtSel.size){ const tabs=document.querySelectorAll('.be-tab'); switchBETab('vt',tabs[1]); }
   refreshDLs();
-  ['be_eta_mala','be_eta','be_arr','be_dl'].forEach(id=>initFP(id,'date'));
+  ['be_eta_mala','be_eta','be_t1date','be_arr','be_dl'].forEach(id=>initFP(id,'date'));
   // Reset all clear checkboxes
   document.querySelectorAll('[id^="be_clr_"]').forEach(cb=>{
     cb.checked=false;
@@ -4583,7 +4655,7 @@ function applyBulkEdit(){
   if(ctSel.size){
     const fields={
       'Batch / Train':g('be_batch'),'Trucker':g('be_truck'),'Consignee':g('be_con'),
-      'ETA in Mala':g('be_eta_mala'),'ETA at Hub':g('be_eta'),'Actual Arrival':g('be_arr'),'Deadline':g('be_dl'),
+      'ETA in Mala':g('be_eta_mala'),'ETA at Hub':g('be_eta'),'T1 Date':g('be_t1date'),'Actual Arrival':g('be_arr'),'Deadline':g('be_dl'),
       'Pickup Ref':g('be_ref'),'Price':g('be_price'),'Price T1':g('be_price_t1'),'Remark':g('be_rmk'),'Broker':g('be_broker')
     };
     const tracking=g('be_track');
@@ -4598,6 +4670,7 @@ function applyBulkEdit(){
       'Tracking':      document.getElementById('be_clr_track')?.checked,
       'ETA in Mala':   document.getElementById('be_clr_eta_mala')?.checked,
       'ETA at Hub':    document.getElementById('be_clr_eta')?.checked,
+      'T1 Date':       document.getElementById('be_clr_t1date')?.checked,
       'Actual Arrival':document.getElementById('be_clr_arr')?.checked,
       'Deadline':      document.getElementById('be_clr_dl')?.checked,
       'Pickup Ref':    document.getElementById('be_clr_ref')?.checked,
