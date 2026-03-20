@@ -2626,6 +2626,23 @@ function renderCT(){
       const _dl=parseDate(r['Deadline']);
       if(_dl && (!_bpBatches[b].minDL || _dl < _bpBatches[b].minDL)) _bpBatches[b].minDL=_dl;
     });
+    // Precompute median ETA in Mala + ETA at Hub per batch from CT rows
+    const _bpCtEtaRaw={};
+    CT.forEach(r=>{
+      const b=r['Batch / Train']; if(!b) return;
+      if(!_bpCtEtaRaw[b]) _bpCtEtaRaw[b]={mala:[],hub:[]};
+      const pm=parseDate(r['ETA in Mala']); if(pm&&!isNaN(pm)) _bpCtEtaRaw[b].mala.push(pm);
+      const ph=parseDate(r['ETA at Hub']);   if(ph&&!isNaN(ph)) _bpCtEtaRaw[b].hub.push(ph);
+    });
+    const _bpCtEta={};
+    Object.keys(_bpCtEtaRaw).forEach(b=>{
+      const ms=[..._bpCtEtaRaw[b].mala].sort((a,c)=>a-c);
+      const hs=[..._bpCtEtaRaw[b].hub ].sort((a,c)=>a-c);
+      _bpCtEta[b]={
+        mala: ms.length?ms[Math.floor(ms.length/2)]:null,
+        hub:  hs.length?hs[Math.floor(hs.length/2)]:null
+      };
+    });
     // Sort by departure date encoded in batch name (e.g. "Chengdu 12/28" → Dec 2025, "Guangzhou 2/7" → Feb 2026)
     const _bpSortKey=name=>{
       const mx=name.match(/(\d{1,2})\/(\d{1,2})/);
@@ -2669,14 +2686,14 @@ function renderCT(){
         const trackH=big?'36px':'22px';
         const shipSz=big?'18px':'13px';
         const cardStyle=big?'flex:1;min-width:180px;max-width:340px':'';
-        // Train progress bar with manual date overrides
+        // Train progress bar with manual date overrides + CT data auto-fill
         const _trainBar=(()=>{
           const ov=_bpTrainDates[b]||{};
+          const ctEta=_bpCtEta[b]||{};
           const mx=b.match(/(\d{1,2})\/(\d{1,2})/);
-          // Departure: manual override → batch name → skip
+          // Departure: batch name parse
           let depart;
-          if(ov.depart) depart=new Date(ov.depart+'T00:00:00');
-          else if(mx){ const mo=parseInt(mx[1]),dy=parseInt(mx[2]),yr=mo>=10?2025:2026; depart=new Date(yr,mo-1,dy); }
+          if(mx){ const mo=parseInt(mx[1]),dy=parseInt(mx[2]),yr=mo>=10?2025:2026; depart=new Date(yr,mo-1,dy); }
           else return '';
           // Estimated rail transit days by origin (fallback only)
           const bl=b.toLowerCase();
@@ -2684,11 +2701,14 @@ function renderCT(){
             :bl.includes('chengdu')||bl.includes('cd')?18
             :bl.includes('xi')||bl.includes('xian')||bl.includes("xi'an")?16
             :bl.includes('wuhan')?17:20;
-          // Mala ETA (optional milestone marker)
-          const malaDt=ov.etaMala?new Date(ov.etaMala+'T00:00:00'):null;
-          // Duisburg ETA: manual → Mala+5d estimate → auto
+          // Format date for HTML input (YYYY-MM-DD)
+          const fi=d=>d instanceof Date&&!isNaN(d)?d.toISOString().slice(0,10):'';
+          // Mala ETA: manual override → CT median → null
+          const malaDt=ov.etaMala?new Date(ov.etaMala+'T00:00:00'):ctEta.mala||null;
+          // Duisburg ETA: manual override → CT hub median → mala+5d → auto estimate
           let arriveDate;
           if(ov.etaDuis) arriveDate=new Date(ov.etaDuis+'T00:00:00');
+          else if(ctEta.hub) arriveDate=ctEta.hub;
           else if(malaDt){ arriveDate=new Date(malaDt); arriveDate.setDate(arriveDate.getDate()+5); }
           else { arriveDate=new Date(depart); arriveDate.setDate(arriveDate.getDate()+transitDays); }
           // Progress calculation
@@ -2704,13 +2724,16 @@ function renderCT(){
           const etaLabel=trainArrived
             ?'<span class="ct-bp-train-eta">✅ In Duisburg</span>'
             :`<span class="ct-bp-train-eta">ETA ${etaStr} · ${daysLeft}d left</span>`;
-          // Mala milestone dot (amber line at proportional position)
+          // Mala milestone dot (amber line at proportional position on bar)
           const malaDot=malaDt&&totalMs>0
             ?`<div class="ct-bp-mala-dot" style="left:${Math.min(98,Math.max(2,(malaDt-depart)/totalMs*100)).toFixed(1)}%" title="Malaszewicze (Poland border)"></div>`
             :'';
-          // Format date for HTML input value
-          const fi=d=>d?d.toISOString().slice(0,10):'';
-          // onclick-safe batch name (already have bEsc from outer scope)
+          // Picker values: manual override → CT data → empty
+          // Small "auto" indicator when value comes from CT (not manually set)
+          const malaVal=ov.etaMala||fi(ctEta.mala)||'';
+          const duisVal=ov.etaDuis||fi(ctEta.hub)||'';
+          const malaAuto=!ov.etaMala&&ctEta.mala?' title="Auto-filled from container ETA in Mala"':'';
+          const duisAuto=!ov.etaDuis&&ctEta.hub?' title="Auto-filled from container ETA at Hub"':'';
           return `<div class="ct-bp-train-wrap">
             <div class="ct-bp-train-label"><span>🚂 Train → Duisburg</span>${etaLabel}</div>
             <div class="ct-bp-train-track">
@@ -2719,8 +2742,8 @@ function renderCT(){
               <div class="ct-bp-train-icon" style="left:${iconLeft}%">${trainArrived?'🏁':'🚂'}</div>
             </div>
             <div class="ct-bp-train-edit" onclick="event.stopPropagation()">
-              <div class="ct-bp-train-field"><label>📍 Mala</label><input type="date" value="${ov.etaMala||''}" onclick="event.stopPropagation()" onchange="setBpTrainDate('${bEsc}','etaMala',this.value)" title="ETA at Malaszewicze, Poland border"/></div>
-              <div class="ct-bp-train-field"><label>🏗️ Duis</label><input type="date" value="${ov.etaDuis||''}" onclick="event.stopPropagation()" onchange="setBpTrainDate('${bEsc}','etaDuis',this.value)" title="ETA at Duisburg Hub"/></div>
+              <div class="ct-bp-train-field"><label>📍 Mala</label><input type="date" value="${malaVal}" style="${malaVal&&!ov.etaMala?'border-color:#fbbf24;background:#fffbeb':''}" onclick="event.stopPropagation()" onchange="setBpTrainDate('${bEsc}','etaMala',this.value)"${malaAuto}/></div>
+              <div class="ct-bp-train-field"><label>🏗️ Duis</label><input type="date" value="${duisVal}" style="${duisVal&&!ov.etaDuis?'border-color:#fbbf24;background:#fffbeb':''}" onclick="event.stopPropagation()" onchange="setBpTrainDate('${bEsc}','etaDuis',this.value)"${duisAuto}/></div>
             </div>
           </div>`;
         })();
