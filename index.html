@@ -621,9 +621,17 @@ td.editing .cell-edit{display:block}
 .ct-bp-train-wrap{margin-top:6px;border-top:1px solid #e0f2fe;padding-top:5px}
 .ct-bp-train-label{font-size:9px;font-weight:700;color:#1d4ed8;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center;gap:4px}
 .ct-bp-train-eta{font-size:9px;font-weight:600;color:#0369a1;white-space:nowrap}
-.ct-bp-train-track{position:relative;height:14px;background:#dbeafe;border-radius:30px;overflow:hidden}
+.ct-bp-train-track{position:relative;height:14px;background:#dbeafe;border-radius:30px;overflow:hidden;margin-bottom:5px}
 .ct-bp-train-fill{position:absolute;left:0;top:0;bottom:0;border-radius:30px;transition:width 1s cubic-bezier(.4,0,.2,1)}
 .ct-bp-train-icon{position:absolute;top:50%;transform:translate(-50%,-55%);font-size:10px;z-index:3;transition:left 1s cubic-bezier(.4,0,.2,1);animation:ct-bp-bob 2.2s ease-in-out infinite}
+.ct-bp-mala-dot{position:absolute;top:0;bottom:0;width:2px;background:rgba(245,158,11,.8);z-index:4}
+.ct-bp-train-edit{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.ct-bp-train-field{display:flex;align-items:center;gap:2px}
+.ct-bp-train-field label{font-size:9px;color:#6b7280;font-weight:700;white-space:nowrap;cursor:default}
+.ct-bp-train-field input[type=date]{font-size:9px;padding:1px 4px;border:1px solid #d1d5db;border-radius:6px;color:#1e3a8a;background:#eff6ff;cursor:pointer;width:104px;outline:none}
+.ct-bp-train-field input[type=date]:hover{border-color:#93c5fd}
+.ct-bp-train-field input[type=date]:focus{border-color:#3b82f6;background:#fff}
+.ct-bp-train-field input[type=date]::-webkit-calendar-picker-indicator{opacity:.5;cursor:pointer;padding:0;margin:0}
 /* ── Mini inline voyage progress bar ── */
 .vt-mini-prog-row td{padding:0 8px 4px!important;border-top:none!important}
 .vt-mini-prog-wrap{display:flex;flex-direction:column;gap:2px;padding:0 4px 0}
@@ -1446,6 +1454,20 @@ const LS_CT = 'owenz_ct_v3';
 const LS_VT = 'owenz_vt_v1';
 let CT = [], VT = [], nextId = 1, vtNextId = 1;
 let ctSortCol = 'Batch / Train', ctSortDir = 1;
+// ── TRAIN DATE OVERRIDES (per-batch manual Mala/Duisburg ETAs) ────────────
+let _bpTrainDates = {};  // { batchName: { depart:'YYYY-MM-DD', etaMala:'YYYY-MM-DD', etaDuis:'YYYY-MM-DD' } }
+const _bpTrainKey = 'owenz_bptrain_v1';
+function _loadBpTrain(){ try{const s=localStorage.getItem(_bpTrainKey);if(s)_bpTrainDates=JSON.parse(s);}catch(e){} }
+function _saveBpTrain(){ try{localStorage.setItem(_bpTrainKey,JSON.stringify(_bpTrainDates));}catch(e){} cloudAutoSave(); }
+function setBpTrainDate(batchName, field, val){
+  if(!_bpTrainDates[batchName]) _bpTrainDates[batchName]={};
+  const v=(val||'').trim();
+  if(v) _bpTrainDates[batchName][field]=v;
+  else delete _bpTrainDates[batchName][field];
+  if(!Object.keys(_bpTrainDates[batchName]).length) delete _bpTrainDates[batchName];
+  _saveBpTrain();
+  renderCT();
+}
 const ctExpanded = new Set();
 let vtSortCol = '', vtSortDir = 1;
 let editId = null, delId = null;
@@ -2647,36 +2669,58 @@ function renderCT(){
         const trackH=big?'36px':'22px';
         const shipSz=big?'18px':'13px';
         const cardStyle=big?'flex:1;min-width:180px;max-width:340px':'';
-        // Train progress bar: parse departure date from batch name e.g. "Guangzhou 2/22"
+        // Train progress bar with manual date overrides
         const _trainBar=(()=>{
+          const ov=_bpTrainDates[b]||{};
           const mx=b.match(/(\d{1,2})\/(\d{1,2})/);
-          if(!mx) return '';
-          const mo=parseInt(mx[1]),dy=parseInt(mx[2]),yr=mo>=10?2025:2026;
-          const depart=new Date(yr,mo-1,dy);
+          // Departure: manual override → batch name → skip
+          let depart;
+          if(ov.depart) depart=new Date(ov.depart+'T00:00:00');
+          else if(mx){ const mo=parseInt(mx[1]),dy=parseInt(mx[2]),yr=mo>=10?2025:2026; depart=new Date(yr,mo-1,dy); }
+          else return '';
+          // Estimated rail transit days by origin (fallback only)
           const bl=b.toLowerCase();
-          // Estimated rail transit days China → Duisburg by origin city
           const transitDays=bl.includes('guangzhou')||bl.includes('gz')?22
             :bl.includes('chengdu')||bl.includes('cd')?18
             :bl.includes('xi')||bl.includes('xian')||bl.includes("xi'an")?16
-            :bl.includes('wuhan')||bl.includes('wu han')?17
-            :20; // default
-          const arriveDate=new Date(depart); arriveDate.setDate(arriveDate.getDate()+transitDays);
+            :bl.includes('wuhan')?17:20;
+          // Mala ETA (optional milestone marker)
+          const malaDt=ov.etaMala?new Date(ov.etaMala+'T00:00:00'):null;
+          // Duisburg ETA: manual → Mala+5d estimate → auto
+          let arriveDate;
+          if(ov.etaDuis) arriveDate=new Date(ov.etaDuis+'T00:00:00');
+          else if(malaDt){ arriveDate=new Date(malaDt); arriveDate.setDate(arriveDate.getDate()+5); }
+          else { arriveDate=new Date(depart); arriveDate.setDate(arriveDate.getDate()+transitDays); }
+          // Progress calculation
+          const totalMs=arriveDate-depart;
           const elapsedMs=_bpToday-depart;
-          const elapsedDays=elapsedMs/864e5;
-          const trainPct=Math.min(100,Math.max(0,elapsedDays/transitDays*100));
+          const trainPct=Math.min(100,Math.max(0,totalMs>0?elapsedMs/totalMs*100:0));
           const trainArrived=trainPct>=100;
-          const daysLeft=Math.max(0,Math.round(transitDays-elapsedDays));
+          const daysLeft=Math.max(0,Math.round((arriveDate-_bpToday)/864e5));
           const _mo2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
           const etaStr=`${arriveDate.getDate()} ${_mo2[arriveDate.getMonth()]}`;
           const iconLeft=Math.max(6,Math.min(92,trainPct));
           const trainColor=trainArrived?'#16a34a':trainPct>=66?'#22c55e':trainPct>=33?'#3b82f6':'#6366f1';
-          const etaLabel=trainArrived?'<span class="ct-bp-train-eta">✅ In Duisburg</span>'
+          const etaLabel=trainArrived
+            ?'<span class="ct-bp-train-eta">✅ In Duisburg</span>'
             :`<span class="ct-bp-train-eta">ETA ${etaStr} · ${daysLeft}d left</span>`;
+          // Mala milestone dot (amber line at proportional position)
+          const malaDot=malaDt&&totalMs>0
+            ?`<div class="ct-bp-mala-dot" style="left:${Math.min(98,Math.max(2,(malaDt-depart)/totalMs*100)).toFixed(1)}%" title="Malaszewicze (Poland border)"></div>`
+            :'';
+          // Format date for HTML input value
+          const fi=d=>d?d.toISOString().slice(0,10):'';
+          // onclick-safe batch name (already have bEsc from outer scope)
           return `<div class="ct-bp-train-wrap">
             <div class="ct-bp-train-label"><span>🚂 Train → Duisburg</span>${etaLabel}</div>
             <div class="ct-bp-train-track">
               <div class="ct-bp-train-fill" style="width:${trainPct.toFixed(1)}%;background:${trainColor}">${!trainArrived?'<div class="ct-bp-fill-anim"></div>':''}</div>
+              ${malaDot}
               <div class="ct-bp-train-icon" style="left:${iconLeft}%">${trainArrived?'🏁':'🚂'}</div>
+            </div>
+            <div class="ct-bp-train-edit" onclick="event.stopPropagation()">
+              <div class="ct-bp-train-field"><label>📍 Mala</label><input type="date" value="${ov.etaMala||''}" onclick="event.stopPropagation()" onchange="setBpTrainDate('${bEsc}','etaMala',this.value)" title="ETA at Malaszewicze, Poland border"/></div>
+              <div class="ct-bp-train-field"><label>🏗️ Duis</label><input type="date" value="${ov.etaDuis||''}" onclick="event.stopPropagation()" onchange="setBpTrainDate('${bEsc}','etaDuis',this.value)" title="ETA at Duisburg Hub"/></div>
             </div>
           </div>`;
         })();
@@ -3893,6 +3937,7 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 loadData();
+_loadBpTrain();
 
 // ── CLOUD SYNC ───────────────────────────────────────────────────
 const JBIN = 'https://api.jsonbin.io/v3/b';
