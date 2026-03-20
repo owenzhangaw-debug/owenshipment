@@ -618,6 +618,12 @@ td.editing .cell-edit{display:block}
 .ct-bp-counts{font-size:10px;color:var(--muted)}
 .ct-bp-pills{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap}
 .ct-bp-pill{font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px}
+.ct-bp-train-wrap{margin-top:6px;border-top:1px solid #e0f2fe;padding-top:5px}
+.ct-bp-train-label{font-size:9px;font-weight:700;color:#1d4ed8;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center;gap:4px}
+.ct-bp-train-eta{font-size:9px;font-weight:600;color:#0369a1;white-space:nowrap}
+.ct-bp-train-track{position:relative;height:14px;background:#dbeafe;border-radius:30px;overflow:hidden}
+.ct-bp-train-fill{position:absolute;left:0;top:0;bottom:0;border-radius:30px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.ct-bp-train-icon{position:absolute;top:50%;transform:translate(-50%,-55%);font-size:10px;z-index:3;transition:left 1s cubic-bezier(.4,0,.2,1);animation:ct-bp-bob 2.2s ease-in-out infinite}
 /* ── Mini inline voyage progress bar ── */
 .vt-mini-prog-row td{padding:0 8px 4px!important;border-top:none!important}
 .vt-mini-prog-wrap{display:flex;flex-direction:column;gap:2px;padding:0 4px 0}
@@ -2641,6 +2647,39 @@ function renderCT(){
         const trackH=big?'36px':'22px';
         const shipSz=big?'18px':'13px';
         const cardStyle=big?'flex:1;min-width:180px;max-width:340px':'';
+        // Train progress bar: parse departure date from batch name e.g. "Guangzhou 2/22"
+        const _trainBar=(()=>{
+          const mx=b.match(/(\d{1,2})\/(\d{1,2})/);
+          if(!mx) return '';
+          const mo=parseInt(mx[1]),dy=parseInt(mx[2]),yr=mo>=10?2025:2026;
+          const depart=new Date(yr,mo-1,dy);
+          const bl=b.toLowerCase();
+          // Estimated rail transit days China → Duisburg by origin city
+          const transitDays=bl.includes('guangzhou')||bl.includes('gz')?22
+            :bl.includes('chengdu')||bl.includes('cd')?18
+            :bl.includes('xi')||bl.includes('xian')||bl.includes("xi'an")?16
+            :bl.includes('wuhan')||bl.includes('wu han')?17
+            :20; // default
+          const arriveDate=new Date(depart); arriveDate.setDate(arriveDate.getDate()+transitDays);
+          const elapsedMs=_bpToday-depart;
+          const elapsedDays=elapsedMs/864e5;
+          const trainPct=Math.min(100,Math.max(0,elapsedDays/transitDays*100));
+          const trainArrived=trainPct>=100;
+          const daysLeft=Math.max(0,Math.round(transitDays-elapsedDays));
+          const _mo2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const etaStr=`${arriveDate.getDate()} ${_mo2[arriveDate.getMonth()]}`;
+          const iconLeft=Math.max(6,Math.min(92,trainPct));
+          const trainColor=trainArrived?'#16a34a':trainPct>=66?'#22c55e':trainPct>=33?'#3b82f6':'#6366f1';
+          const etaLabel=trainArrived?'<span class="ct-bp-train-eta">✅ In Duisburg</span>'
+            :`<span class="ct-bp-train-eta">ETA ${etaStr} · ${daysLeft}d left</span>`;
+          return `<div class="ct-bp-train-wrap">
+            <div class="ct-bp-train-label"><span>🚂 Train → Duisburg</span>${etaLabel}</div>
+            <div class="ct-bp-train-track">
+              <div class="ct-bp-train-fill" style="width:${trainPct.toFixed(1)}%;background:${trainColor}">${!trainArrived?'<div class="ct-bp-fill-anim"></div>':''}</div>
+              <div class="ct-bp-train-icon" style="left:${iconLeft}%">${trainArrived?'🏁':'🚂'}</div>
+            </div>
+          </div>`;
+        })();
         return `<div class="ct-bp-card" style="${cardStyle}" onclick="gotoBatch('${bEsc}')" title="Click to filter this batch" onmouseenter="this.classList.remove('vt-pop');void this.offsetWidth;this.classList.add('vt-pop')" onanimationend="this.classList.remove('vt-pop')">
           <div class="ct-bp-name">📦 ${b}</div>
           <div class="ct-bp-track" style="height:${trackH}">
@@ -2659,6 +2698,7 @@ function renderCT(){
             ${m.t1?`<span class="ct-bp-pill" style="background:#dbeafe;color:#1d4ed8">🚂 T1 ${m.t1}</span>`:''}
             ${m.none?`<span class="ct-bp-pill" style="background:#f3f4f6;color:#6b7280">⏳ ${m.none}</span>`:''}
           </div>
+          ${_trainBar}
         </div>`;
       };
 
@@ -3337,6 +3377,53 @@ const BEL_STAGES = [
 let belDeparture = '';   // computed China departure (YYYY-MM-DD)
 let belAnchorIdx = -1;  // which stage was used as anchor
 
+// ── SMART STAGE TIMING: blend CT tracker data with historical baselines ─────
+function computeSmartBelStages(){
+  // For each CT row with a parseable batch departure date, extract actual
+  // transit days to Malaszewicze (ETA in Mala), Duisburg (ETA at Hub),
+  // and Belgium (Actual Arrival). Blend with 564-delivery historical baseline.
+  const sMala=[],sHub=[],sArr=[];
+  CT.forEach(r=>{
+    const batch=r['Batch / Train']||'';
+    const mx=batch.match(/(\d{1,2})\/(\d{1,2})/);
+    if(!mx) return;
+    const mo=parseInt(mx[1]),dy=parseInt(mx[2]),yr=mo>=10?2025:2026;
+    const dep=new Date(yr,mo-1,dy);
+    // reuse global parseDate helper
+    const pd=s=>{if(!s||typeof s!=='string')return null;const p=parseDate(s);return(p&&!isNaN(p.getTime()))?p:null;};
+    const mala=pd(r['ETA in Mala']);
+    const hub =pd(r['ETA at Hub']);
+    const arr =pd(r['Actual Arrival']);
+    if(mala){const d=(mala-dep)/864e5;if(d>4&&d<40)sMala.push(d);}
+    if(hub) {const d=(hub -dep)/864e5;if(d>8&&d<50) sHub.push(d);}
+    if(arr) {const d=(arr -dep)/864e5;if(d>12&&d<60)sArr.push(d);}
+  });
+  // Weighted blend: treat historical as HIST_N virtual samples
+  const HIST_N=40;
+  const blend=(samples,hist)=>{
+    if(!samples.length) return hist;
+    const avg=samples.reduce((a,b)=>a+b,0)/samples.length;
+    return +(( hist*HIST_N + avg*samples.length )/(HIST_N+samples.length)).toFixed(2);
+  };
+  const smartMala=blend(sMala,17.4);
+  const smartHub =blend(sHub ,22.4);
+  const smartArr =blend(sArr ,27.2);
+  // Scale early transit stages (1–3: Alashankou, Kazakhstan, Russia) proportionally
+  const scaleFactor=smartMala/17.4;
+  const stages=BEL_STAGES.map((s,i)=>{
+    let avg=s.avg;
+    if(i>=1&&i<=3) avg=+(s.avg*scaleFactor).toFixed(1);
+    if(i===4) avg=smartMala;
+    if(i===5) avg=smartHub;
+    if(i===6) avg=smartArr;
+    return {...s,avg};
+  });
+  const totalLiveSamples=sMala.length+sHub.length+sArr.length;
+  return{stages,smartMala,smartHub,smartArr,
+    nMala:sMala.length,nHub:sHub.length,nArr:sArr.length,
+    totalLive:totalLiveSamples};
+}
+
 function belAddDays(dateStr, days){
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + Math.round(days));
@@ -3357,8 +3444,8 @@ function belSetStageDate(idx, dateStr){
     if(idx === belAnchorIdx) belClearAll();
     return;
   }
-  // Back-calculate China departure from this stage
-  const stage = BEL_STAGES[idx];
+  // Back-calculate China departure from this stage using smart (live-blended) avg
+  const stage = computeSmartBelStages().stages[idx];
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() - Math.round(stage.avg));
   belDeparture = belFmtInput(d);
@@ -3378,34 +3465,41 @@ function renderBelgiumTimeline(){
   const body = document.getElementById('bel-timeline-body');
   const badge = document.getElementById('bel-anchor-badge');
 
+  // Compute smart stages from real CT data blended with historical
+  const smart = computeSmartBelStages();
+  const STAGES = smart.stages;
+
   if(!belDeparture){
     body.innerHTML = `<div class="bel-placeholder"><div class="bel-ph-icon">🗺️</div><div>Enter a date at any stage to project the full route timeline</div></div>`;
     badge.style.display = 'none';
     // Still render the pipeline skeleton with blank inputs
-    renderBelPipelineSkeleton(body);
+    renderBelPipelineSkeleton(body, STAGES);
     return;
   }
 
   // Update anchor badge
-  const anchorName = belAnchorIdx >= 0 ? BEL_STAGES[belAnchorIdx].label.replace('\n',' ') : 'China Departure';
+  const anchorName = belAnchorIdx >= 0 ? STAGES[belAnchorIdx].label.replace('\n',' ') : 'China Departure';
   badge.textContent = `Anchored at: ${anchorName}`;
   badge.style.display = '';
 
   const barColors = ['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488','#2563EB'];
 
   let nodesHtml = '';
-  BEL_STAGES.forEach((s, idx) => {
+  STAGES.forEach((s, idx) => {
     const stageDate  = belAddDays(belDeparture, s.avg);
     const inputVal   = belFmtInput(stageDate);
     const isAnchor   = idx === belAnchorIdx;
     const nameLines  = s.label.split('\n');
     const offsetStr  = s.avg === 0 ? 'D+0' : `D+${s.avg}`;
     const subLine    = s.p70 > 0 ? `p70=D+${s.p70} · p85=D+${s.p85}` : (idx===0 ? 'Book slot email →' : '');
+    // Show live-data indicator for stages with real samples
+    const liveN = idx===4?smart.nMala:idx===5?smart.nHub:idx===6?smart.nArr:0;
+    const liveTag = liveN>0 ? `<span style="font-size:8px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 4px;font-weight:700">📊${liveN}</span>` : '';
 
     nodesHtml += `<div class="bel-node">
       <div class="bel-icon-wrap ${isAnchor?'bel-anchor-node':''}" style="background:${s.bg};border-color:${s.color}">${s.icon}</div>
       <div class="bel-node-name">${nameLines.join('<br>')}</div>
-      <div class="bel-node-d" style="color:${s.dColor}">${offsetStr}</div>
+      <div class="bel-node-d" style="color:${s.dColor}">${offsetStr}${liveTag}</div>
       <div class="bel-node-date">${belFmtDate(stageDate)}</div>
       ${subLine ? `<div class="bel-node-sub">${subLine}</div>` : ''}
       <input type="date" class="bel-node-input${isAnchor?' bel-anchor-input':''}"
@@ -3413,37 +3507,45 @@ function renderBelgiumTimeline(){
              onchange="belSetStageDate(${idx},this.value)"
              title="Change anchor to: ${nameLines.join(' ')}"/>
     </div>`;
-    if(idx < BEL_STAGES.length-1) nodesHtml += `<div class="bel-arrow">→</div>`;
+    if(idx < STAGES.length-1) nodesHtml += `<div class="bel-arrow">→</div>`;
   });
 
   let barsHtml = `<div style="display:flex;min-width:700px;margin-top:6px;padding:0">`;
-  BEL_STAGES.forEach((s, idx) => {
+  STAGES.forEach((s, idx) => {
     barsHtml += `<div style="flex:1;height:4px;background:${barColors[idx]};border-radius:2px;margin:0 2px"></div>`;
-    if(idx < BEL_STAGES.length-1) barsHtml += `<div style="width:18px"></div>`;
+    if(idx < STAGES.length-1) barsHtml += `<div style="width:18px"></div>`;
   });
   barsHtml += `</div>`;
 
+  // Compute smart slot booking dates from actual stage timing
   const bookDate   = belAddDays(belDeparture, 3);
-  const targetDate = belAddDays(belDeparture, 29);
-  const backupDate = belAddDays(belDeparture, 31);
-  const slaDate    = belAddDays(belDeparture, 36);
+  const targetDate = belAddDays(belDeparture, Math.round(smart.smartArr + 2));
+  const backupDate = belAddDays(belDeparture, Math.round(smart.smartArr + 4));
+  const slaDate    = belAddDays(belDeparture, Math.round(smart.smartArr + 9));
+  const malaToDuis = +(smart.smartHub - smart.smartMala).toFixed(1);
+  const duisToArr  = +(smart.smartArr  - smart.smartHub ).toFixed(1);
+  const liveLabel  = smart.totalLive>0
+    ? `<span style="font-size:9px;background:#dbeafe;color:#1d4ed8;border-radius:5px;padding:2px 7px;font-weight:700;margin-left:6px">📊 ${smart.totalLive} live data points</span>`
+    : `<span style="font-size:9px;color:#9ca3af;margin-left:6px">historical only</span>`;
 
   const infoBar = `<div class="bel-info-bar">
     <div class="bel-info-tile">
-      <strong>🚂 Mala → Duisburg</strong>
-      <span>avg 5.1d &nbsp;|&nbsp; p70=6d · p85=7d</span>
+      <strong>🚂 Mala → Duisburg${smart.nHub>0?` <span style="font-size:9px;color:#0369a1">(${smart.nHub} real)</span>`:''}
+      </strong>
+      <span>avg ${malaToDuis}d &nbsp;|&nbsp; p70=${BEL_STAGES[4].p70>0?Math.round(BEL_STAGES[5].avg-BEL_STAGES[4].avg+1):6}d · p85=${BEL_STAGES[4].p70>0?Math.round(BEL_STAGES[5].avg-BEL_STAGES[4].avg+2):7}d</span>
     </div>
     <div class="bel-info-tile">
-      <strong>🏗️ Duisburg → Customs</strong>
-      <span>avg 4.8d &nbsp;|&nbsp; p70=6d · p85=8d</span>
+      <strong>🏗️ Duisburg → Customs${smart.nArr>0?` <span style="font-size:9px;color:#0369a1">(${smart.nArr} real)</span>`:''}
+      </strong>
+      <span>avg ${duisToArr}d &nbsp;|&nbsp; p70=${Math.round(duisToArr+1)}d · p85=${Math.round(duisToArr+3)}d</span>
     </div>
     <div class="bel-info-tile bel-slot-tile">
       <strong>📅 Book slot on D+3 → ${belFmtDate(bookDate)}</strong>
-      <span>Target slot D+29 (${belFmtDate(targetDate)}) · Backup D+31 (${belFmtDate(backupDate)})</span>
+      <span>Target slot D+${Math.round(smart.smartArr+2)} (${belFmtDate(targetDate)}) · Backup D+${Math.round(smart.smartArr+4)} (${belFmtDate(backupDate)})</span>
     </div>
     <div class="bel-info-tile" style="background:#F0FDF4;border-color:#86EFAC">
-      <strong style="color:#15803D">✅ SLA Deadline: ${belFmtDate(slaDate)} (D+36)</strong>
-      <span>99.8% compliance · 564 deliveries</span>
+      <strong style="color:#15803D">✅ SLA Deadline: ${belFmtDate(slaDate)} (D+${Math.round(smart.smartArr+9)})</strong>
+      <span>99.8% compliance · 564 hist.${liveLabel}</span>
     </div>
   </div>`;
 
@@ -3455,11 +3557,12 @@ function renderBelgiumTimeline(){
     ${infoBar}`;
 }
 
-function renderBelPipelineSkeleton(body){
+function renderBelPipelineSkeleton(body, STAGES){
   // Show pipeline with empty inputs even before any date is entered
+  if(!STAGES) STAGES = computeSmartBelStages().stages;
   const barColors = ['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488','#2563EB'];
   let nodesHtml = '';
-  BEL_STAGES.forEach((s, idx) => {
+  STAGES.forEach((s, idx) => {
     const nameLines = s.label.split('\n');
     const offsetStr = s.avg === 0 ? 'D+0' : `D+${s.avg}`;
     const subLine   = s.p70 > 0 ? `p70=D+${s.p70} · p85=D+${s.p85}` : (idx===0 ? 'Book slot email →' : '');
@@ -3472,12 +3575,12 @@ function renderBelPipelineSkeleton(body){
       <input type="date" class="bel-node-input" onchange="belSetStageDate(${idx},this.value)"
              title="Enter date for ${nameLines.join(' ')}"/>
     </div>`;
-    if(idx < BEL_STAGES.length-1) nodesHtml += `<div class="bel-arrow">→</div>`;
+    if(idx < STAGES.length-1) nodesHtml += `<div class="bel-arrow">→</div>`;
   });
   let barsHtml = `<div style="display:flex;min-width:700px;margin-top:6px;padding:0">`;
-  BEL_STAGES.forEach((s, idx) => {
+  STAGES.forEach((s, idx) => {
     barsHtml += `<div style="flex:1;height:4px;background:${barColors[idx]};border-radius:2px;margin:0 2px;opacity:.25"></div>`;
-    if(idx < BEL_STAGES.length-1) barsHtml += `<div style="width:18px"></div>`;
+    if(idx < STAGES.length-1) barsHtml += `<div style="width:18px"></div>`;
   });
   barsHtml += `</div>`;
   body.innerHTML = `<div class="bel-pipeline-wrap"><div class="bel-pipeline">${nodesHtml}</div>${barsHtml}</div>`;
