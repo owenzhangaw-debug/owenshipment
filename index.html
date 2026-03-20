@@ -2133,17 +2133,29 @@ function renderDashboard(){
     ctx2.fillText('No slot changes recorded yet.',cvs.width/2,cvs.height/2);
   }
 
-  // ── Hub → T1 Date duration per batch ─────────────────────────
+  // ── Hub → T1 Date duration per batch (business days only) ─────
   if(hubT1BatchChart){hubT1BatchChart.destroy();hubT1BatchChart=null;}
   (()=>{
-    // Collect per-batch samples: days from ETA at Hub to T1 Date
+    // Count business days (Mon–Fri) between two dates.
+    // If start falls on a weekend, advance to next Monday first.
+    const bizDays=(start,end)=>{
+      let d=new Date(start); d.setHours(0,0,0,0);
+      const e=new Date(end);  e.setHours(0,0,0,0);
+      // Shift weekend start to Monday
+      if(d.getDay()===6) d.setDate(d.getDate()+2);
+      else if(d.getDay()===0) d.setDate(d.getDate()+1);
+      let count=0;
+      while(d<e){ const wd=d.getDay(); if(wd!==0&&wd!==6) count++; d.setDate(d.getDate()+1); }
+      return count;
+    };
+    // Collect per-batch samples: business days from ETA at Hub to T1 Date
     const batchSamples={};
     CT.forEach(r=>{
       const hub=parseDate(r['ETA at Hub']);
       const t1d=parseDate(r['T1 Date']);
       if(!hub||!t1d) return;
-      const days=Math.round((t1d-hub)/864e5);
-      if(days<0||days>60) return; // sanity filter
+      const days=bizDays(hub,t1d);
+      if(days<0||days>40) return; // sanity filter
       const b=r['Batch / Train']||'(No Batch)';
       if(!batchSamples[b]) batchSamples[b]=[];
       batchSamples[b].push(days);
@@ -2164,7 +2176,7 @@ function renderDashboard(){
       data:{
         labels:bKeys,
         datasets:[{
-          label:'Avg days Hub → T1',
+          label:'Avg business days Hub → T1',
           data:bAvgs,
           backgroundColor:bAvgs.map(d=>d<=3?'#22c55e':d<=7?'#F9A825':'#e53935'),
           borderRadius:6
@@ -2184,7 +2196,7 @@ function renderDashboard(){
         scales:{
           x:{grid:{display:false},ticks:{font:{size:11}}},
           y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},
-             title:{display:true,text:'Days (ETA Hub → T1 cleared)',font:{size:11}},
+             title:{display:true,text:'Business Days (ETA Hub → T1 cleared)',font:{size:11}},
              ticks:{stepSize:1}}
         }
       }
@@ -2847,7 +2859,7 @@ function renderCT(){
   if(!rows.length){ tbody.innerHTML=''; nodata.style.display='block'; return; }
   nodata.style.display='none';
 
-  const EDITABLE=['ETA in Mala','Master B/L','Consignee','Trucker'];
+  const EDITABLE=['Master B/L','Consignee','Trucker'];
   // Frozen column class map by col name
   const FC_CLASS={'Master B/L':'fc-3','Consignee':'fc-4'};
 
@@ -2895,7 +2907,13 @@ function renderCT(){
     </td>`;
 
     // split editCells into groups
-    const [etaMalaC,blC,conC,truckC]=editCells;
+    const [blC,conC,truckC]=editCells;
+    // ETA in Mala — dedicated flatpickr date cell
+    const etaMalaV=r['ETA in Mala']||'';
+    const etaMalaC=`<td data-id="${r._id}" data-col="ETA in Mala">
+      <div class="cell-view" onclick="startEdit(this)">${etaMalaV||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input type="text" data-fptype="date" value="${etaMalaV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'ETA in Mala',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
+    </td>`;
 
     // ── Date picker cells (flatpickr) ─────────────────────────────
     const etaV=r['ETA at Hub']||'';
