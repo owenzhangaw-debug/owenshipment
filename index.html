@@ -4485,10 +4485,8 @@ function applyBulkEdit(){
   renderCT(); renderVT(); renderDashboard();
   setTimeout(()=>{ closeBE(); clearAllSel(); }, 900);
 }
-renderDashboard();
-
 // ══════════════════════════════════════════
-//  FEEDBACK PAGE
+//  FEEDBACK PAGE — init FB before renderDashboard so renderTruckerReviews can safely call fbGetData
 // ══════════════════════════════════════════
 const FB_KEY = 'owenz_feedback_v1';
 let FB = {};
@@ -4496,6 +4494,8 @@ let FB = {};
   try{ const s=localStorage.getItem(FB_KEY); if(s) FB=JSON.parse(s); }catch(e){}
 })();
 function saveFB(){ try{ localStorage.setItem(FB_KEY, JSON.stringify(FB)); }catch(e){} cloudAutoSave(); }
+
+renderDashboard();
 
 // Safe element-id key: base64url-like encoding to avoid CSS/HTML special chars
 function fbSafeId(batch, type, name){
