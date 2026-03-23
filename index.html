@@ -166,6 +166,12 @@ tbody tr{border-bottom:1px solid var(--border)}
 tbody tr:hover td{background:#F8FAFC}
 tbody tr.hi-missing{background:var(--hi)}
 tbody tr.hi-missing:hover td{background:#FFF3C4}
+tbody tr.hi-late-arr{background:#fff1f2}
+tbody tr.hi-late-arr:hover td{background:#ffe4e6}
+tbody tr.hi-late-arr td.fc-1,tbody tr.hi-late-arr td.fc-2,
+tbody tr.hi-late-arr td.fc-3,tbody tr.hi-late-arr td.fc-4{background:#fff1f2}
+tbody tr.hi-late-arr:hover td.fc-1,tbody tr.hi-late-arr:hover td.fc-2,
+tbody tr.hi-late-arr:hover td.fc-3,tbody tr.hi-late-arr:hover td.fc-4{background:#ffe4e6}
 tbody td{padding:0;vertical-align:middle;position:relative}
 /* ── Frozen columns ── */
 th.fc-1,td.fc-1,th.fc-2,td.fc-2,th.fc-3,td.fc-3,th.fc-4,td.fc-4{position:sticky;z-index:3}
@@ -1012,9 +1018,9 @@ td.editing .cell-edit{display:block}
 
 <!-- ══ CONTAINERS ══ -->
 <div id="page-containers" class="page">
-  <div class="toolbar">
-    <div class="fg"><label>Search</label>
-      <input type="text" id="f-search" placeholder="Container, B/L… paste multiple with commas" oninput="renderCT()"/></div>
+  <div id="ct-batch-progress" style="margin:0 0 12px"></div>
+
+  <div class="toolbar" style="margin:0 0 8px">
     <div class="ms-wrap" id="wrap-batch">
       <span class="ms-label">Batch</span>
       <button class="ms-btn" id="btn-batch" onclick="msOpen('batch')">All Batches</button>
@@ -1078,7 +1084,9 @@ td.editing .cell-edit{display:block}
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
-  <div id="ct-batch-progress" style="margin:0 0 12px"></div>
+  <div style="margin:0 0 8px">
+    <input type="text" id="f-search" placeholder="🔍  Search container, B/L… paste multiple with commas" oninput="renderCT()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+  </div>
 
   <div class="tbl-card">
     <div class="tbl-top">
@@ -2689,7 +2697,13 @@ function renderCT(){
   cascadeStaticMenu('surcharge',(rows,v)=>v==='missing'?rows.some(r=>!(r['Surcharge']&&String(r['Surcharge']).trim())):rows.some(r=>!!(r['Surcharge']&&String(r['Surcharge']).trim())));
   cascadeStaticMenu('payment',(rows,v)=>rows.some(r=>(r['Payment Status']||'')===v));
   const rows=getCTRows();
-  document.getElementById('ct-count').textContent=rows.length+' of '+CT.length+' containers';
+  const lateRows=rows.filter(r=>{
+    const arr=parseDate(r['Actual Arrival']), slot=parseDate(r['Scheduled Slot']);
+    return arr&&slot&&arr>slot;
+  });
+  let countTxt=rows.length+' of '+CT.length+' containers';
+  if(lateRows.length) countTxt+=` · <span style="color:#dc2626;font-weight:700">⚠ ${lateRows.length} late arrival${lateRows.length>1?'s':''}</span>`;
+  document.getElementById('ct-count').innerHTML=countTxt;
 
   // ── Batch Progress Bars ────────────────────────────────────────
   const _bpEl=document.getElementById('ct-batch-progress');
@@ -2873,7 +2887,8 @@ function renderCT(){
   const _ctMaxSur= Math.max(1, ...rows.map(r=>parseFloat(r['Surcharge'])||0));
   tbody.innerHTML=rows.map(r=>{
     const missing=!r['Actual Arrival'];
-    const rowCls=missing?'hi-missing':'';
+    const _lateArr=(()=>{const arr=parseDate(r['Actual Arrival']),slot=parseDate(r['Scheduled Slot']);return arr&&slot&&arr>slot;})();
+    const rowCls=missing?'hi-missing':_lateArr?'hi-late-arr':'';
     const dl=computeDays(r);
     const dlStr=dl!==null?(dl>0?'+'+dl:String(dl)):'—';
     const trackBadge=r['Tracking']==='Arrived'?'<span class="track-arr">Arrived</span>':r['Tracking']==='T1'?'<span class="track-t1">T1</span>':'<span class="track-none">None</span>';
@@ -2942,8 +2957,13 @@ function renderCT(){
       <div class="cell-edit"><input type="text" data-fptype="datetime" value="${slotV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD HH:MM" style="width:150px"/></div>
     </td>`;
     const arrV=r['Actual Arrival']||'';
+    const arrDisplay=arrV
+      ? (_lateArr
+          ? `<span style="color:#dc2626;font-weight:700" title="Arrived after scheduled slot">${arrV} <span style="font-size:9px;background:#dc2626;color:#fff;border-radius:4px;padding:0 4px;vertical-align:middle">LATE</span></span>`
+          : arrV)
+      : '<span style="color:#ccc">—</span>';
     const arrC=`<td data-id="${r._id}" data-col="Actual Arrival">
-      <div class="cell-view" onclick="startEdit(this)">${arrV||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-view" onclick="startEdit(this)">${arrDisplay}</div>
       <div class="cell-edit"><input type="text" data-fptype="date" value="${arrV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Actual Arrival',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
     </td>`;
     const dlV=r['Deadline']||'';
