@@ -262,6 +262,22 @@ td.editing .cell-edit{display:block}
 .vt-hist-add input.vhi-date{width:105px}
 .vt-hist-add input.vhi-vessel{width:140px}
 .vt-hist-add input.vhi-remark{width:150px}
+.vt-barge-roll-section{margin-top:14px;padding-top:12px;border-top:1px dashed #a7f3d0}
+.vt-barge-roll-label{font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.vt-barge-chain{display:flex;flex-wrap:wrap;align-items:flex-start;gap:0;margin-bottom:10px}
+.vt-barge-entry{display:flex;flex-direction:column;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:8px;padding:6px 28px 6px 10px;position:relative;min-width:170px;max-width:260px}
+.vt-barge-entry .br-old{font-size:10px;color:#6b7280;font-weight:600;margin-bottom:2px}
+.vt-barge-entry .br-etd{color:#0369a1;font-weight:700;font-size:11px}
+.vt-barge-entry .br-eta{color:#065f46;font-weight:800;font-size:13px;margin-top:1px}
+.vt-barge-entry .br-new-badge{display:inline-block;background:#059669;color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:0 5px;margin-top:2px;letter-spacing:.3px}
+.vt-barge-rm{position:absolute;top:4px;right:5px;background:none;border:none;cursor:pointer;color:#94A3B8;font-size:11px;padding:0 2px}
+.vt-barge-rm:hover{color:#EF4444}
+.vt-barge-add{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px}
+.vt-barge-add input{height:28px;padding:0 9px;border:1px solid #6ee7b7;border-radius:6px;font-size:12px;background:#f0fdf4}
+.vt-barge-add input.vbi-etd{width:105px}
+.vt-barge-add input.vbi-eta{width:105px}
+.vt-barge-add button{height:28px;padding:0 13px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+.vt-barge-add button:hover{opacity:.85}
 .vt-hist-add button{height:28px;padding:0 13px;background:#D97706;color:#fff;
   border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap}
 .vt-hist-add button:hover{opacity:.85}
@@ -3431,6 +3447,25 @@ function renderVT(){
           } else {
             chainHtml='<div class="vt-hist-empty">No vessel change history yet</div>';
           }
+          const bargeHist=Array.isArray(r.bargeRollHistory)?r.bargeRollHistory:[];
+          let bargeChainHtml='';
+          if(bargeHist.length>0){
+            bargeChainHtml='<div class="vt-barge-chain">';
+            bargeHist.forEach((h,idx)=>{
+              bargeChainHtml+=`<div class="vt-barge-entry">
+                ${h.oldBarge?`<span class="br-old">⛵ Rolled from: ${h.oldBarge}</span>`:''}
+                <span class="br-etd">🛫 ETD ${h.etd||'—'}</span>
+                <span class="br-eta">⚓ ETA ${h.eta||'—'}</span>
+                <span class="br-new-badge">→ New Barge: ${h.eta||'—'}</span>
+                <button class="vt-barge-rm" onclick="vtRemoveBargeRoll(${r._id},${idx})" title="Remove">✕</button>
+              </div>`;
+              if(idx<bargeHist.length-1) bargeChainHtml+=`<div class="vt-hist-arrow-wrap"><svg width="28" height="18" viewBox="0 0 28 18"><line x1="0" y1="9" x2="20" y2="9" stroke="#6ee7b7" stroke-width="2"/><polyline points="14,4 22,9 14,14" fill="none" stroke="#6ee7b7" stroke-width="2" stroke-linejoin="round"/></svg></div>`;
+            });
+            bargeChainHtml+='</div>';
+          } else {
+            bargeChainHtml='<div class="vt-hist-empty">No barge roll history yet</div>';
+          }
+          const curBarge=r['Barge Date']||'';
           return `<div class="vt-history-section">
             <div class="vt-history-label">🔄 Vessel Roll History</div>
             ${chainHtml}
@@ -3440,6 +3475,19 @@ function renderVT(){
               <input id="vt-hist-remark-${r._id}" class="vhi-remark" type="text" placeholder="Remark (optional)"
                 onkeydown="if(event.key==='Enter'){vtAddVesselHistory(${r._id});event.preventDefault();}"/>
               <button onclick="vtAddVesselHistory(${r._id})">+ Add Roll</button>
+            </div>
+          </div>
+          <div class="vt-barge-roll-section">
+            <div class="vt-barge-roll-label">⚓ Barge Roll History</div>
+            ${bargeChainHtml}
+            <div class="vt-barge-add">
+              <span style="font-size:11px;color:#6b7280;font-weight:600;white-space:nowrap">ETD</span>
+              <input id="vt-barge-etd-${r._id}" class="vbi-etd" type="text" placeholder="YYYY/MM/DD"/>
+              <span style="font-size:11px;color:#6b7280;font-weight:600;white-space:nowrap">ETA</span>
+              <input id="vt-barge-eta-${r._id}" class="vbi-eta" type="text" placeholder="YYYY/MM/DD"
+                onkeydown="if(event.key==='Enter'){vtAddBargeRoll(${r._id});event.preventDefault();}"/>
+              <button onclick="vtAddBargeRoll(${r._id})">+ Add Roll</button>
+              ${curBarge?`<span style="font-size:10px;color:#6b7280;white-space:nowrap">Current Barge: <b>${curBarge}</b></span>`:''}
             </div>
           </div>`;
         })()}
@@ -3481,6 +3529,8 @@ function renderVT(){
   const vpEl=document.getElementById('vt-progress-row');
   if(vpEl) vpEl.innerHTML=vpCards;
   if(vpEl) vpEl.style.display=vpCards?'flex':'none';
+  // Init flatpickr on barge and vessel roll date inputs
+  document.querySelectorAll('.vhi-date,.vbi-etd,.vbi-eta').forEach(inp=>fpDate(inp));
 }
 
 // ── VESSEL EXPAND / CONTAINERS ────────────────────────────────────
@@ -3540,6 +3590,33 @@ function vtRemoveVesselHistory(id, idx){
   const i=VT.findIndex(r=>r._id===id); if(i<0) return;
   if(!Array.isArray(VT[i].vesselHistory)) return;
   VT[i].vesselHistory.splice(idx,1);
+  saveVT(); renderVT();
+}
+
+function vtAddBargeRoll(id){
+  const etdInp=document.getElementById('vt-barge-etd-'+id);
+  const etaInp=document.getElementById('vt-barge-eta-'+id);
+  const etd=(etdInp?etdInp.value:'').trim();
+  const eta=(etaInp?etaInp.value:'').trim();
+  if(!etd&&!eta) return;
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  const oldBarge=VT[i]['Barge Date']||'';
+  if(!Array.isArray(VT[i].bargeRollHistory)) VT[i].bargeRollHistory=[];
+  VT[i].bargeRollHistory.push({etd, eta, oldBarge});
+  // Auto-fill Barge Date with new ETA
+  if(eta) VT[i]['Barge Date']=eta;
+  saveVT(); renderVT();
+  const nd=document.getElementById('vt-barge-etd-'+id);
+  if(nd) nd.focus();
+}
+
+function vtRemoveBargeRoll(id, idx){
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  if(!Array.isArray(VT[i].bargeRollHistory)) return;
+  VT[i].bargeRollHistory.splice(idx,1);
+  // Restore Barge Date to the most recent entry's ETA, or blank
+  const hist=VT[i].bargeRollHistory;
+  VT[i]['Barge Date']=hist.length?hist[hist.length-1].eta||'':'';
   saveVT(); renderVT();
 }
 
