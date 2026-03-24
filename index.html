@@ -4090,7 +4090,7 @@ function applyBulkPickup(){
     if(map[cn]){ r['Pickup Ref']=map[cn]; updated++; }
     else skipped++;
   });
-  saveCT(); renderCT();
+  saveData(); renderCT();
   const res=document.getElementById('bulk-pickup-result');
   res.innerHTML=`<span style="color:#15803d;font-weight:700">✓ ${updated} containers updated</span>${skipped?` <span style="color:#6b7280">(${skipped} not matched)</span>`:''}`;
 }
