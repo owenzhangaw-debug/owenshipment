@@ -1107,6 +1107,7 @@ td.editing .cell-edit{display:block}
   <div class="tbl-card">
     <div class="tbl-top">
       <h3>Container List</h3><span id="ct-count"></span>
+      <button onclick="openBulkPickup()" style="margin-left:auto;padding:4px 11px;font-size:11px;font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer" title="Bulk update Pickup Refs from Excel data">📥 Bulk Pickup Ref</button>
     </div>
     <div class="tbl-scroll">
       <table id="ct-table">
@@ -1317,6 +1318,19 @@ td.editing .cell-edit{display:block}
 </div>
 
 <!-- IMPORT MODAL -->
+<div class="overlay" id="bulk-pickup-overlay">
+  <div class="modal" style="width:560px">
+    <h2>📥 Bulk Pickup Ref Import</h2>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Paste two columns: <b>Container No.</b> and <b>Pickup Ref</b> — tab, comma, or space separated. One container per line.</p>
+    <textarea id="bulk-pickup-text" rows="14" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical" placeholder="NEPU4534432&#9;WB049289CDHOT_1&#10;NEPU4595525&#9;WB049290CDHOT_1&#10;..."></textarea>
+    <div id="bulk-pickup-result" style="margin-top:8px;font-size:12px;min-height:20px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="mbtn-cancel" onclick="closeBulkPickup()">Cancel</button>
+      <button class="mbtn-save" onclick="applyBulkPickup()">↑ Apply</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="import-overlay">
   <div class="modal" style="width:700px">
     <h2>↑ Import from Excel / CSV</h2>
@@ -3497,17 +3511,24 @@ function renderVT(){
 
   // ── Voyage progress cards (top of page) ──────────────────────────
   const _vfD=(d)=>{const w=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return w[d.getDay()]+' '+d.getDate()+' '+m[d.getMonth()];};
-  const vpCards=VT.filter(r=>{const e=parseDate(r['ETS (Departure)']),a=parseDate(r['ETA (Arrival)']);return !!(e&&a&&a>e);}).map(r=>{
+  const vpCards=VT.filter(r=>{const e=parseDate(r['ETS (Departure)']);return !!e;}).map(r=>{
     const _e=parseDate(r['ETS (Departure)']),_a=parseDate(r['ETA (Arrival)']),_at=parseDate(r['ATA (Actual)']);
     const _now=new Date();_now.setHours(0,0,0,0);
-    const _tot=_a-_e,_totD=Math.round(_tot/864e5);
-    let _pct=0,_gone=0,_left=0,_sl=8,_sp='',_sc='#0369a1';
-    if(_at){_pct=1;_sl=92;_gone=Math.round((_at-_e)/864e5);const d=Math.round((_at-_a)/864e5);_sp='🏁 Arrived'+(d===0?' · on time':d<0?` · ${Math.abs(d)}d early`:` · ${d}d late`);_sc='#15803d';}
-    else{const _el=_now-_e;_pct=Math.min(1,Math.max(0,_el/_tot));_gone=Math.max(0,Math.round(_el/864e5));_left=Math.max(0,Math.round((_a-_now)/864e5));_sl=8+_pct*84;
-      if(_now<_e){_sp='⏳ Not Departed';_sc='#7c3aed';}else if(_now>=_a){_sp='⚠️ Overdue';_sc='#e53935';}else{_sp=`🌊 Day ${_gone} of ${_totD}`;_sc='#0369a1';}
+    const _noEta=!_a;
+    let _pct=0,_gone=0,_left=0,_sl=8,_sp='',_sc='#6b7280',_fc='#94a3b8';
+    if(_noEta){
+      // No ETA: show as scheduled/pending
+      _sp=_now<_e?'📋 Scheduled':'🕐 En Route';_sc='#7c3aed';_fc='#a78bfa';
+      _sl=_now>=_e?12:8;
+    } else {
+      const _tot=_a-_e;const _totD=Math.round(_tot/864e5);
+      _fc=_now>=_a&&!_at?'#e53935':'#0284c7';
+      if(_at){_pct=1;_sl=92;_gone=Math.round((_at-_e)/864e5);const d=Math.round((_at-_a)/864e5);_sp='🏁 Arrived'+(d===0?' · on time':d<0?` · ${Math.abs(d)}d early`:` · ${d}d late`);_sc='#15803d';}
+      else{const _el=_now-_e;_pct=Math.min(1,Math.max(0,_el/_tot));_gone=Math.max(0,Math.round(_el/864e5));_left=Math.max(0,Math.round((_a-_now)/864e5));_sl=8+_pct*84;
+        if(_now<_e){_sp='⏳ Not Departed';_sc='#7c3aed';}else if(_now>=_a){_sp='⚠️ Overdue';_sc='#e53935';}else{_sp=`🌊 Day ${_gone} of ${_totD}`;_sc='#0369a1';}
+      }
     }
-    const _fc=_now>=_a&&!_at?'#e53935':'#0284c7';
-    return `<div class="vt-voyage-card" data-vtid="${r._id}" style="flex:1 1 200px;max-width:300px" onmouseenter="this.classList.remove('vt-pop');void this.offsetWidth;this.classList.add('vt-pop')" onanimationend="this.classList.remove('vt-pop')">
+    return `<div class="vt-voyage-card" data-vtid="${r._id}" style="flex:1 1 200px;max-width:300px${_noEta?';opacity:.82;border:1.5px dashed #c4b5fd':''}" onmouseenter="this.classList.remove('vt-pop');void this.offsetWidth;this.classList.add('vt-pop')" onanimationend="this.classList.remove('vt-pop')">
       <div class="vt-voyage-header">
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
           <div class="vt-voyage-title">🚢 ${r['Vessel Name']||'Vessel'}</div>
@@ -3520,9 +3541,14 @@ function renderVT(){
       </div>
       <div class="vt-voyage-info">
         <div class="vt-voyage-info-item">🛫 <span>${_vfD(_e)}</span></div>
-        <div class="vt-voyage-info-item">📍 <span>${Math.round(_pct*100)}%</span></div>
-        ${_at?`<div class="vt-voyage-info-item">🛬 <span style="color:#15803d">${_vfD(_at)}</span></div>`:`<div class="vt-voyage-info-item">🕐 <span>${_left}d left</span></div>`}
-        <div class="vt-voyage-info-item">📅 <span>${_vfD(_a)}</span></div>
+        <div class="vt-voyage-info-item">📍 <span style="color:${_sc}">${_noEta?_sp:Math.round(_pct*100)+'%'}</span></div>
+        ${_noEta
+          ? `<div class="vt-voyage-info-item">📅 <span style="color:#9333ea;font-style:italic">ETA: TBD</span></div>`
+          : (_at
+              ? `<div class="vt-voyage-info-item">🛬 <span style="color:#15803d">${_vfD(_at)}</span></div>`
+              : `<div class="vt-voyage-info-item">🕐 <span>${_left}d left</span></div>`)
+        }
+        ${_noEta?'':`<div class="vt-voyage-info-item">📅 <span>${_vfD(_a)}</span></div>`}
       </div>
     </div>`;
   }).join('');
@@ -4036,6 +4062,39 @@ function openImport(){ importWB=null; importRows=[];
   document.getElementById('import-overlay').classList.add('open'); }
 function closeImport(){ document.getElementById('import-overlay').classList.remove('open'); }
 
+// ── BULK PICKUP REF ───────────────────────────────────────────────
+const _BULK_PICKUP_PREFILL = `NEPU4534432\tWB049289CDHOT_1\nNEPU4595525\tWB049290CDHOT_1\nNEPU4571673\tWB049291CDHOT_1\nNEPU6004616\tWB049292CDHOT_1\nSEKU6614925\tWB049293CDHOT_1\nNEPU4546080\tWB049294CDHOT_1\nSEKU6612162\tWB049295CDHOT_1\nNPTU4506150\tWB049296CDHOT_1\nNEPU4541107\tWB049297CDHOT_1\nNEPU4557994\tWB049298CDHOT_1\nSEKU6504867\tWB049299CDHOT_1\nNEPU4596408\tWB049300CDHOT_1\nKSBU0049504\tWB049301CDHOT_1\nNEPU4589878\tWB049302CDHOT_1\nNEPU4564294\tWB049303CDHOT_1\nSEKU6539251\tWB049304CDHOT_1\nSEKU6549901\tWB049305CDHOT_1\nSEKU5557944\tWB049306CDHOT_1\nNPTU4504136\tWB049307CDHOT_1\nNEPU4551867\tWB049308CDHOT_1\nCICU2264631\tWB049309CDHOT_1\nBURU6733126\tWB049310CDHOT_1\nNEPU4520125\tWB049311CDHOT_1\nBURU6726512\tWB049312CDHOT_1\nSEKU6246649\tWB049313CDHOT_1\nKSBU0113563\tWB049314CDHOT_1\nNEPU4520505\tWB049315CDHOT_1\nSEKU6540951\tWB049316CDHOT_1\nSEKU6596884\tWB049317CDHOT_1\nSEKU6612780\tWB049318CDHOT_1\nSEGU5601873\tWB049319CDHOT_1\nNEPU4588613\tWB049320CDHOT_1\nNEPU4558898\tWB049321CDHOT_1\nSEKU6247877\tWB049322CDHOT_1\nSEGU5253037\tWB049323CDHOT_1\nSEGU4869645\tWB049324CDHOT_1\nNEPU4530165\tWB049325CDHOT_1\nSEKU6554180\tWB049326CDHOT_1\nSEKU6507608\tWB049327CDHOT_1\nSEKU6524170\tWB049328CDHOT_1\nSEGU5594780\tWB049329CDHOT_1\nNEPU6002763\tWB049330CDHOT_1\nNEPU4509954\tWB049331CDHOT_1\nKSBU0044550\tWB049332CDHOT_1\nNEPU6006990\tWB049333CDHOT_1`;
+
+function openBulkPickup(){
+  const ta=document.getElementById('bulk-pickup-text');
+  if(ta&&!ta.value.trim()) ta.value=_BULK_PICKUP_PREFILL;
+  document.getElementById('bulk-pickup-result').textContent='';
+  document.getElementById('bulk-pickup-overlay').classList.add('open');
+}
+function closeBulkPickup(){ document.getElementById('bulk-pickup-overlay').classList.remove('open'); }
+function applyBulkPickup(){
+  const text=(document.getElementById('bulk-pickup-text').value||'').trim();
+  if(!text){ document.getElementById('bulk-pickup-result').innerHTML='<span style="color:#dc2626">Nothing to import.</span>'; return; }
+  const map={};
+  text.split('\n').forEach(line=>{
+    const parts=line.trim().split(/[\t,; ]+/);
+    if(parts.length>=2){
+      const cn=parts[0].trim().toUpperCase();
+      const ref=parts[1].trim();
+      if(cn&&ref) map[cn]=ref;
+    }
+  });
+  let updated=0, skipped=0;
+  CT.forEach(r=>{
+    const cn=(r['Container No.']||'').toUpperCase();
+    if(map[cn]){ r['Pickup Ref']=map[cn]; updated++; }
+    else skipped++;
+  });
+  saveCT(); renderCT();
+  const res=document.getElementById('bulk-pickup-result');
+  res.innerHTML=`<span style="color:#15803d;font-weight:700">✓ ${updated} containers updated</span>${skipped?` <span style="color:#6b7280">(${skipped} not matched)</span>`:''}`;
+}
+
 function handleImport(e){
   const file=e.target.files[0]; if(!file) return;
   const reader=new FileReader();
@@ -4147,7 +4206,7 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById('imp-btn').style.display='none'; }
 
 // ── INIT ──────────────────────────────────────────────────────────
-['modal-overlay','bulk-overlay','del-overlay','import-overlay','sync-overlay','be-overlay'].forEach(id=>{
+['modal-overlay','bulk-overlay','bulk-pickup-overlay','del-overlay','import-overlay','sync-overlay','be-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 loadData();
