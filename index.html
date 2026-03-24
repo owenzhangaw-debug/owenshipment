@@ -1322,7 +1322,11 @@ td.editing .cell-edit{display:block}
   <div class="modal" style="width:560px">
     <h2>📥 Bulk Pickup Ref Import</h2>
     <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Paste two columns: <b>Container No.</b> and <b>Pickup Ref</b> — tab, comma, or space separated. One container per line.</p>
-    <textarea id="bulk-pickup-text" rows="14" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical" placeholder="NEPU4534432&#9;WB049289CDHOT_1&#10;NEPU4595525&#9;WB049290CDHOT_1&#10;..."></textarea>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <label style="font-size:12px;font-weight:600;white-space:nowrap">Only apply to batch:</label>
+      <input id="bulk-pickup-batch" type="text" value="Chengdu 3/11" style="flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Leave blank to apply to all batches"/>
+    </div>
+    <textarea id="bulk-pickup-text" rows="12" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical" placeholder="NEPU4534432&#9;WB049289CDHOT_1&#10;NEPU4595525&#9;WB049290CDHOT_1&#10;..."></textarea>
     <div id="bulk-pickup-result" style="margin-top:8px;font-size:12px;min-height:20px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
       <button class="mbtn-cancel" onclick="closeBulkPickup()">Cancel</button>
@@ -4063,7 +4067,7 @@ function openImport(){ importWB=null; importRows=[];
 function closeImport(){ document.getElementById('import-overlay').classList.remove('open'); }
 
 // ── BULK PICKUP REF ───────────────────────────────────────────────
-const _BULK_PICKUP_PREFILL = `NEPU4534432\tWB049289CDHOT_1\nNEPU4595525\tWB049290CDHOT_1\nNEPU4571673\tWB049291CDHOT_1\nNEPU6004616\tWB049292CDHOT_1\nSEKU6614925\tWB049293CDHOT_1\nNEPU4546080\tWB049294CDHOT_1\nSEKU6612162\tWB049295CDHOT_1\nNPTU4506150\tWB049296CDHOT_1\nNEPU4541107\tWB049297CDHOT_1\nNEPU4557994\tWB049298CDHOT_1\nSEKU6504867\tWB049299CDHOT_1\nNEPU4596408\tWB049300CDHOT_1\nKSBU0049504\tWB049301CDHOT_1\nNEPU4589878\tWB049302CDHOT_1\nNEPU4564294\tWB049303CDHOT_1\nSEKU6539251\tWB049304CDHOT_1\nSEKU6549901\tWB049305CDHOT_1\nSEKU5557944\tWB049306CDHOT_1\nNPTU4504136\tWB049307CDHOT_1\nNEPU4551867\tWB049308CDHOT_1\nCICU2264631\tWB049309CDHOT_1\nBURU6733126\tWB049310CDHOT_1\nNEPU4520125\tWB049311CDHOT_1\nBURU6726512\tWB049312CDHOT_1\nSEKU6246649\tWB049313CDHOT_1\nKSBU0113563\tWB049314CDHOT_1\nNEPU4520505\tWB049315CDHOT_1\nSEKU6540951\tWB049316CDHOT_1\nSEKU6596884\tWB049317CDHOT_1\nSEKU6612780\tWB049318CDHOT_1\nSEGU5601873\tWB049319CDHOT_1\nNEPU4588613\tWB049320CDHOT_1\nNEPU4558898\tWB049321CDHOT_1\nSEKU6247877\tWB049322CDHOT_1\nSEGU5253037\tWB049323CDHOT_1\nSEGU4869645\tWB049324CDHOT_1\nNEPU4530165\tWB049325CDHOT_1\nSEKU6554180\tWB049326CDHOT_1\nSEKU6507608\tWB049327CDHOT_1\nSEKU6524170\tWB049328CDHOT_1\nSEGU5594780\tWB049329CDHOT_1\nNEPU6002763\tWB049330CDHOT_1\nNEPU4509954\tWB049331CDHOT_1\nKSBU0044550\tWB049332CDHOT_1\nNEPU6006990\tWB049333CDHOT_1`;
+const _BULK_PICKUP_PREFILL = `NEPU6004616\tWB049292CDHOT_1\nSEKU6614925\tWB049293CDHOT_1\nNEPU4546080\tWB049294CDHOT_1\nNPTU4506150\tWB049296CDHOT_1\nNEPU4564294\tWB049303CDHOT_1\nSEKU6504867\tWB049299CDHOT_1\nNPTU4504136\tWB049307CDHOT_1\nSEKU6549901\tWB049305CDHOT_1\nBURU6733126\tWB049310CDHOT_1\nNEPU4520125\tWB049311CDHOT_1\nSEKU6540951\tWB049316CDHOT_1\nSEKU6596884\tWB049317CDHOT_1\nSEKU6612780\tWB049318CDHOT_1\nNEPU4588613\tWB049320CDHOT_1\nNEPU4558898\tWB049321CDHOT_1\nNEPU4530165\tWB049325CDHOT_1\nSEKU6507608\tWB049327CDHOT_1\nSEKU6524170\tWB049328CDHOT_1\nNEPU6002763\tWB049330CDHOT_1\nSEKU6247877\tWB049322CDHOT_1`;
 
 function openBulkPickup(){
   const ta=document.getElementById('bulk-pickup-text');
@@ -4073,8 +4077,12 @@ function openBulkPickup(){
 }
 function closeBulkPickup(){ document.getElementById('bulk-pickup-overlay').classList.remove('open'); }
 function applyBulkPickup(){
-  const text=(document.getElementById('bulk-pickup-text').value||'').trim();
-  if(!text){ document.getElementById('bulk-pickup-result').innerHTML='<span style="color:#dc2626">Nothing to import.</span>'; return; }
+  const textEl=document.getElementById('bulk-pickup-text');
+  const batchEl=document.getElementById('bulk-pickup-batch');
+  const text=(textEl?textEl.value||'':'').trim();
+  const batchFilter=(batchEl?batchEl.value||'':'').trim();
+  const resEl=document.getElementById('bulk-pickup-result');
+  if(!text){ if(resEl) resEl.innerHTML='<span style="color:#dc2626">Nothing to import.</span>'; return; }
   const map={};
   text.split('\n').forEach(line=>{
     const parts=line.trim().split(/[\t,; ]+/);
@@ -4084,15 +4092,18 @@ function applyBulkPickup(){
       if(cn&&ref) map[cn]=ref;
     }
   });
-  let updated=0, skipped=0;
+  let updated=0, wrongBatch=0, noMatch=0;
   CT.forEach(r=>{
     const cn=(r['Container No.']||'').toUpperCase();
-    if(map[cn]){ r['Pickup Ref']=map[cn]; updated++; }
-    else skipped++;
+    if(!map[cn]){ noMatch++; return; }
+    if(batchFilter && r['Batch / Train']!==batchFilter){ wrongBatch++; return; }
+    r['Pickup Ref']=map[cn]; updated++;
   });
   saveData(); renderCT();
-  const res=document.getElementById('bulk-pickup-result');
-  res.innerHTML=`<span style="color:#15803d;font-weight:700">✓ ${updated} containers updated</span>${skipped?` <span style="color:#6b7280">(${skipped} not matched)</span>`:''}`;
+  let msg=`<span style="color:#15803d;font-weight:700">✓ ${updated} containers updated</span>`;
+  if(wrongBatch) msg+=` <span style="color:#dc2626">(${wrongBatch} skipped — wrong batch)</span>`;
+  if(noMatch) msg+=` <span style="color:#6b7280">(${noMatch} not in app)</span>`;
+  res.innerHTML=msg;
 }
 
 function handleImport(e){
