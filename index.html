@@ -2942,7 +2942,7 @@ function renderCT(){
     // Tracking cell (dropdown)
     const trackCell=`<td data-id="${r._id}" data-col="Tracking">
       <div class="cell-view" onclick="startEdit(this)">${trackBadge}</div>
-      <div class="cell-edit"><select onblur="commitEditSelect(this,'Tracking',${r._id})" onchange="commitEditSelect(this,'Tracking',${r._id})">
+      <div class="cell-edit"><select onblur="blurEditSelect(this)" onchange="commitEditSelect(this,'Tracking',${r._id})">
         <option value="None" ${r['Tracking']==='None'||!r['Tracking']?'selected':''}>None</option>
         <option ${r['Tracking']==='T1'?'selected':''}>T1</option>
         <option ${r['Tracking']==='Arrived'?'selected':''}>Arrived</option>
@@ -2954,7 +2954,7 @@ function renderCT(){
     const brokerBadge=brokerVal==='Wispex'?'<span class="broker-wispex">Wispex</span>':brokerVal==='Self'?'<span class="broker-self">Self</span>':'<span style="color:#ccc">—</span>';
     const brokerCell=`<td data-id="${r._id}" data-col="Broker">
       <div class="cell-view" onclick="startEdit(this)">${brokerBadge}</div>
-      <div class="cell-edit"><select onblur="commitEditSelect(this,'Broker',${r._id})" onchange="commitEditSelect(this,'Broker',${r._id})">
+      <div class="cell-edit"><select onblur="blurEditSelect(this)" onchange="commitEditSelect(this,'Broker',${r._id})">
         <option value="" ${!brokerVal?'selected':''}>—</option>
         <option ${brokerVal==='Wispex'?'selected':''}>Wispex</option>
         <option ${brokerVal==='Self'?'selected':''}>Self</option>
@@ -3146,7 +3146,7 @@ function renderCT(){
           const sv=r['Surcharge Reason']||'';
           const badge=sv==='unloading'?`<span class="sr-unloading">Unloading</span>`:sv==='ATA delayed'?`<span class="sr-ata">ATA Delayed</span>`:sv==='other'?`<span class="sr-other">Other</span>`:'<span style="color:#ccc">—</span>';
           return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
-          <div class="cell-edit"><select onblur="commitEditSelect(this,'Surcharge Reason',${r._id})" onchange="commitEditSelect(this,'Surcharge Reason',${r._id})">
+          <div class="cell-edit"><select onblur="blurEditSelect(this)" onchange="commitEditSelect(this,'Surcharge Reason',${r._id})">
             <option value="" ${!sv?'selected':''}>—</option>
             <option ${sv==='unloading'?'selected':''}>unloading</option>
             <option ${sv==='ATA delayed'?'selected':''}>ATA delayed</option>
@@ -3159,7 +3159,7 @@ function renderCT(){
           const pv=r['Payment Status']||'';
           const badge=pv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:pv==='Amending'?`<span class="ps-amending">Amending</span>`:pv==='Verifying'?`<span class="ps-verifying">Verifying</span>`:pv==='Requested'?`<span class="ps-requested">Requested</span>`:pv==='Paid'?`<span class="ps-paid">Paid</span>`:'<span style="color:#ccc">—</span>';
           return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
-          <div class="cell-edit"><select onblur="commitEditSelect(this,'Payment Status',${r._id})" onchange="commitEditSelect(this,'Payment Status',${r._id})">
+          <div class="cell-edit"><select onblur="blurEditSelect(this)" onchange="commitEditSelect(this,'Payment Status',${r._id})">
             <option value="" ${!pv?'selected':''}>—</option>
             <option value="Pending invoice" ${pv==='Pending invoice'?'selected':''}>Pending invoice</option>
             <option value="Amending" ${pv==='Amending'?'selected':''}>Amending</option>
@@ -3174,7 +3174,7 @@ function renderCT(){
           const tv=r['T1 Payment Status']||'';
           const badge=tv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:tv==='Amending'?`<span class="ps-amending">Amending</span>`:tv==='Verifying'?`<span class="ps-verifying">Verifying</span>`:tv==='Requested'?`<span class="ps-requested">Requested</span>`:tv==='Paid'?`<span class="ps-paid">Paid</span>`:'<span style="color:#ccc">—</span>';
           return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
-          <div class="cell-edit"><select onblur="commitEditSelect(this,'T1 Payment Status',${r._id})" onchange="commitEditSelect(this,'T1 Payment Status',${r._id})">
+          <div class="cell-edit"><select onblur="blurEditSelect(this)" onchange="commitEditSelect(this,'T1 Payment Status',${r._id})">
             <option value="" ${!tv?'selected':''}>—</option>
             <option value="Pending invoice" ${tv==='Pending invoice'?'selected':''}>Pending invoice</option>
             <option value="Amending" ${tv==='Amending'?'selected':''}>Amending</option>
@@ -3270,16 +3270,16 @@ function commitEdit(inp, col, id){
   if(col==='Scheduled Slot') delete CT[i]._slotAuto;
   saveData(); renderCT();
 }
-let _commitSelectBusy=false;
 function commitEditSelect(sel, col, id){
-  if(_commitSelectBusy) return;
-  _commitSelectBusy=true;
-  setTimeout(()=>{_commitSelectBusy=false;},300);
-  const td=sel.closest('td'); if(td) td.classList.remove('editing');
-  const val=sel.value;
+  // Called by onchange only — save value and re-render
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
-  CT[i][col]=val;
+  CT[i][col]=sel.value;
   saveData(); renderCT();
+}
+function blurEditSelect(sel){
+  // Called by onblur — just close the dropdown UI, never save
+  // (onblur fires BEFORE onchange in native selects, so saving here would overwrite the new value)
+  const td=sel.closest('td'); if(td) td.classList.remove('editing');
 }
 function cancelEdit(inp){ inp.closest('td').classList.remove('editing'); }
 
