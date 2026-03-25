@@ -3270,8 +3270,12 @@ function commitEdit(inp, col, id){
   if(col==='Scheduled Slot') delete CT[i]._slotAuto;
   saveData(); renderCT();
 }
+let _commitSelectBusy=false;
 function commitEditSelect(sel, col, id){
-  const td=sel.closest('td'); td.classList.remove('editing');
+  if(_commitSelectBusy) return;
+  _commitSelectBusy=true;
+  setTimeout(()=>{_commitSelectBusy=false;},300);
+  const td=sel.closest('td'); if(td) td.classList.remove('editing');
   const val=sel.value;
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
   CT[i][col]=val;
@@ -4255,6 +4259,7 @@ loadData();
     ['Payment Status','T1 Payment Status'].forEach(k=>{
       if(r[k]==='Submitted'){r[k]='Requested';changed=true;}
       else if(r[k]==='Done'){r[k]='Paid';changed=true;}
+      else if(r[k]==='Invoice received'){r[k]='Amending';changed=true;}
     });
   });
   if(changed) saveData();
