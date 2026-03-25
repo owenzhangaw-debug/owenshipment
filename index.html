@@ -3455,7 +3455,10 @@ function renderVT(){
             hist.forEach((h,idx)=>{
               chainHtml+=`<div class="vt-hist-entry">
                 <span class="vt-hist-date">${h.date||'—'}</span>
+                ${h.oldVessel?`<span style="font-size:10px;color:#94a3b8;text-decoration:line-through;margin-bottom:1px">${h.oldVessel}${h.oldEts?' · '+h.oldEts:''}</span>`:''}
                 <span class="vt-hist-vessel">${h.vessel||'—'}</span>
+                ${h.newEts?`<span style="font-size:10px;color:#0369a1;font-weight:600">🛫 ETS: ${h.newEts}</span>`:''}
+                ${h.newCutoff?`<span style="font-size:10px;color:#7c3aed;font-weight:600">✂️ Cut-off: ${h.newCutoff}</span>`:''}
                 ${h.remark?`<span class="vt-hist-remark">${h.remark}</span>`:''}
                 <button class="vt-hist-rm" onclick="vtRemoveVesselHistory(${r._id},${idx})" title="Remove">✕</button>
               </div>`;
@@ -3487,9 +3490,10 @@ function renderVT(){
           return `<div class="vt-history-section">
             <div class="vt-history-label">🔄 Vessel Roll History</div>
             ${chainHtml}
-            <div class="vt-hist-add">
-              <input id="vt-hist-date-${r._id}" class="vhi-date" type="text" placeholder="YYYY/MM/DD"/>
-              <input id="vt-hist-vessel-${r._id}" class="vhi-vessel" type="text" placeholder="Vessel Name"/>
+            <div class="vt-hist-add" style="flex-wrap:wrap;row-gap:5px">
+              <input id="vt-hist-vessel-${r._id}" class="vhi-vessel" type="text" placeholder="New Vessel Name"/>
+              <input id="vt-hist-newets-${r._id}" class="vhi-date" type="text" placeholder="New ETS (YYYY/MM/DD)" style="width:148px"/>
+              <input id="vt-hist-newcutoff-${r._id}" class="vhi-date" type="text" placeholder="New Cut-Off (YYYY/MM/DD)" style="width:172px"/>
               <input id="vt-hist-remark-${r._id}" class="vhi-remark" type="text" placeholder="Remark (optional)"
                 onkeydown="if(event.key==='Enter'){vtAddVesselHistory(${r._id});event.preventDefault();}"/>
               <button onclick="vtAddVesselHistory(${r._id})">+ Add Roll</button>
@@ -3600,26 +3604,45 @@ function vtToggleFlag(id, col, checked){
 }
 
 function vtAddVesselHistory(id){
-  const dateInp=document.getElementById('vt-hist-date-'+id);
-  const vesselInp=document.getElementById('vt-hist-vessel-'+id);
-  const remarkInp=document.getElementById('vt-hist-remark-'+id);
-  const date=(dateInp?dateInp.value:'').trim();
-  const vessel=(vesselInp?vesselInp.value:'').trim();
-  const remark=(remarkInp?remarkInp.value:'').trim();
-  if(!date&&!vessel) return;
+  const dateInp    = document.getElementById('vt-hist-date-'+id);
+  const vesselInp  = document.getElementById('vt-hist-vessel-'+id);
+  const remarkInp  = document.getElementById('vt-hist-remark-'+id);
+  const newEtsInp  = document.getElementById('vt-hist-newets-'+id);
+  const newCutInp  = document.getElementById('vt-hist-newcutoff-'+id);
+  const date    = (dateInp   ?dateInp.value   :'').trim();
+  const vessel  = (vesselInp ?vesselInp.value :'').trim();
+  const remark  = (remarkInp ?remarkInp.value :'').trim();
+  const newEts  = (newEtsInp ?newEtsInp.value :'').trim();
+  const newCutoff=(newCutInp ?newCutInp.value :'').trim();
+  if(!vessel&&!newEts) return;
   const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  // Capture old values before replacing
+  const oldVessel = VT[i]['Vessel Name']||'';
+  const oldEts    = VT[i]['ETS (Departure)']||'';
+  const oldCutoff = VT[i]['Port Cut-Off']||'';
   if(!Array.isArray(VT[i].vesselHistory)) VT[i].vesselHistory=[];
-  VT[i].vesselHistory.push({date, vessel, remark});
+  VT[i].vesselHistory.push({date, vessel, remark, newEts, newCutoff, oldVessel, oldEts, oldCutoff});
+  // Auto-replace vessel fields
+  if(vessel)    VT[i]['Vessel Name']=vessel;
+  if(newEts)    VT[i]['ETS (Departure)']=newEts;
+  if(newCutoff) VT[i]['Port Cut-Off']=newCutoff;
   saveVT(); renderVT();
-  // Re-focus the date input after re-render
-  const nd=document.getElementById('vt-hist-date-'+id);
+  const nd=document.getElementById('vt-hist-vessel-'+id);
   if(nd) nd.focus();
 }
 
 function vtRemoveVesselHistory(id, idx){
   const i=VT.findIndex(r=>r._id===id); if(i<0) return;
   if(!Array.isArray(VT[i].vesselHistory)) return;
+  const h=VT[i].vesselHistory[idx]||{};
   VT[i].vesselHistory.splice(idx,1);
+  // Restore old values if this was the last/most-recent roll entry
+  const hist=VT[i].vesselHistory;
+  if(hist.length===0||idx===hist.length){
+    if(h.oldVessel) VT[i]['Vessel Name']=h.oldVessel;
+    if(h.oldEts)    VT[i]['ETS (Departure)']=h.oldEts;
+    if(h.oldCutoff) VT[i]['Port Cut-Off']=h.oldCutoff;
+  }
   saveVT(); renderVT();
 }
 
