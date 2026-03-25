@@ -185,9 +185,10 @@ tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
 .sr-ata{background:#FFF1F2;color:#BE123C;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .sr-other{background:#F5F3FF;color:#6D28D9;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .ps-pending{background:#FFFBEB;color:#92400E;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.ps-received{background:#E0EFEF;color:#003A3A;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.ps-submitted{background:#ECFDF5;color:#065F46;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.ps-done{background:#1E293B;color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-amending{background:#FFF3E0;color:#E65100;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-verifying{background:#E3F2FD;color:#0D47A1;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-requested{background:#ECFDF5;color:#065F46;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.ps-paid{background:#1E293B;color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .broker-wispex{display:inline-block;background:#E0EFEF;color:#003A3A;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .broker-self{display:inline-block;background:#ECFDF5;color:#065F46;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 
@@ -1091,9 +1092,10 @@ td.editing .cell-edit{display:block}
       <button class="ms-btn" id="btn-payment" onclick="msOpen('payment')">All</button>
       <div class="ms-menu" id="menu-payment">
         <label><input type="checkbox" value="Pending invoice" onchange="msChange('payment','All')"> Pending invoice</label>
-        <label><input type="checkbox" value="Invoice received" onchange="msChange('payment','All')"> Invoice received</label>
-        <label><input type="checkbox" value="Submitted"       onchange="msChange('payment','All')"> Submitted</label>
-        <label><input type="checkbox" value="Done"           onchange="msChange('payment','All')"> Done</label>
+        <label><input type="checkbox" value="Amending"       onchange="msChange('payment','All')"> Amending</label>
+        <label><input type="checkbox" value="Verifying"      onchange="msChange('payment','All')"> Verifying</label>
+        <label><input type="checkbox" value="Requested"      onchange="msChange('payment','All')"> Requested</label>
+        <label><input type="checkbox" value="Paid"           onchange="msChange('payment','All')"> Paid</label>
         <label><input type="checkbox" value=""               onchange="msChange('payment','All')"> Not set</label>
       </div>
     </div>
@@ -1259,9 +1261,9 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>Surcharge Reason</label>
         <select id="f_surcharge_reason"><option value="">—</option><option value="unloading">Unloading</option><option value="ATA delayed">ATA Delayed</option><option value="other">Other</option></select></div>
       <div class="form-group"><label>Payment Status</label>
-        <select id="f_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option><option value="Done">Done</option></select></div>
+        <select id="f_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Amending">Amending</option><option value="Verifying">Verifying</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
       <div class="form-group"><label>T1 Payment Status</label>
-        <select id="f_t1_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option><option value="Done">Done</option></select></div>
+        <select id="f_t1_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Amending">Amending</option><option value="Verifying">Verifying</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
       <div class="form-group"><label>Remark</label><input type="text" id="f_rmk"/></div>
       <div class="form-group" style="align-items:flex-start;padding-top:18px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
@@ -1462,9 +1464,9 @@ td.editing .cell-edit{display:block}
         <div class="form-group"><label>Price (€)<label class="be-clear-lbl"><input type="checkbox" id="be_clr_price" onchange="beToggleClear(this,'be_price')"> × clear</label></label><input type="number" min="0" step="0.01" id="be_price" placeholder="0.00"/></div>
         <div class="form-group"><label>Price T1 (€)<label class="be-clear-lbl"><input type="checkbox" id="be_clr_price_t1" onchange="beToggleClear(this,'be_price_t1')"> × clear</label></label><input type="number" min="0" step="0.01" id="be_price_t1" placeholder="0.00"/></div>
         <div class="form-group"><label>Payment Status<label class="be-clear-lbl"><input type="checkbox" id="be_clr_pay" onchange="beToggleClear(this,'be_pay_status')"> × clear</label></label>
-          <select id="be_pay_status"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option><option value="Done">Done</option></select></div>
+          <select id="be_pay_status"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Amending">Amending</option><option value="Verifying">Verifying</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
         <div class="form-group"><label>T1 Payment Status<label class="be-clear-lbl"><input type="checkbox" id="be_clr_t1pay" onchange="beToggleClear(this,'be_t1_pay_status')"> × clear</label></label>
-          <select id="be_t1_pay_status"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Invoice received">Invoice received</option><option value="Submitted">Submitted</option><option value="Done">Done</option></select></div>
+          <select id="be_t1_pay_status"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Amending">Amending</option><option value="Verifying">Verifying</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
         <div class="form-group full"><label>Remark<label class="be-clear-lbl"><input type="checkbox" id="be_clr_rmk" onchange="beToggleClear(this,'be_rmk')"> × clear</label></label><input type="text" id="be_rmk"/></div>
       </div>
     </div>
@@ -2287,7 +2289,7 @@ function renderDashboard(){
 
 
   // ── Unpaid by Batch ───────────────────────────────────────────
-  const PAID_STATES=new Set(['Submitted','Done']);
+  const PAID_STATES=new Set(['Requested','Paid']);
   const unpaidMap={};
   CT.forEach(r=>{
     const b=r['Batch / Train']||'(No Batch)';
@@ -2304,7 +2306,7 @@ function renderDashboard(){
   if(!unpaidKeys.length){
     upEl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0">No data yet.</div>';
   } else {
-    const psLabel=v=>v==='Pending invoice'?'<span class="ps-pending">Pending</span>':v==='Invoice received'?'<span class="ps-received">Invoiced</span>':v==='Submitted'?'<span class="ps-submitted">Submitted</span>':v==='Done'?'<span class="ps-done">Done</span>':'<span style="color:#aaa">—</span>';
+    const psLabel=v=>v==='Pending invoice'?'<span class="ps-pending">Pending</span>':v==='Amending'?'<span class="ps-amending">Amending</span>':v==='Verifying'?'<span class="ps-verifying">Verifying</span>':v==='Requested'?'<span class="ps-requested">Requested</span>':v==='Paid'?'<span class="ps-paid">Paid</span>':'<span style="color:#aaa">—</span>';
     const upRows=unpaidKeys.map(b=>{
       const m=unpaidMap[b];
       const payPct=Math.round(m.payUnpaid/m.total*100);
@@ -3155,28 +3157,30 @@ function renderCT(){
       <td data-id="${r._id}" data-col="Payment Status">
         ${(()=>{
           const pv=r['Payment Status']||'';
-          const badge=pv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:pv==='Invoice received'?`<span class="ps-received">Invoice Received</span>`:pv==='Submitted'?`<span class="ps-submitted">Submitted</span>`:pv==='Done'?`<span class="ps-done">Done</span>`:'<span style="color:#ccc">—</span>';
+          const badge=pv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:pv==='Amending'?`<span class="ps-amending">Amending</span>`:pv==='Verifying'?`<span class="ps-verifying">Verifying</span>`:pv==='Requested'?`<span class="ps-requested">Requested</span>`:pv==='Paid'?`<span class="ps-paid">Paid</span>`:'<span style="color:#ccc">—</span>';
           return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
           <div class="cell-edit"><select onblur="commitEditSelect(this,'Payment Status',${r._id})" onchange="commitEditSelect(this,'Payment Status',${r._id})">
             <option value="" ${!pv?'selected':''}>—</option>
             <option value="Pending invoice" ${pv==='Pending invoice'?'selected':''}>Pending invoice</option>
-            <option value="Invoice received" ${pv==='Invoice received'?'selected':''}>Invoice received</option>
-            <option value="Submitted" ${pv==='Submitted'?'selected':''}>Submitted</option>
-            <option value="Done" ${pv==='Done'?'selected':''}>Done</option>
+            <option value="Amending" ${pv==='Amending'?'selected':''}>Amending</option>
+            <option value="Verifying" ${pv==='Verifying'?'selected':''}>Verifying</option>
+            <option value="Requested" ${pv==='Requested'?'selected':''}>Requested</option>
+            <option value="Paid" ${pv==='Paid'?'selected':''}>Paid</option>
           </select></div>`;
         })()}
       </td>
       <td data-id="${r._id}" data-col="T1 Payment Status">
         ${(()=>{
           const tv=r['T1 Payment Status']||'';
-          const badge=tv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:tv==='Invoice received'?`<span class="ps-received">Invoice Received</span>`:tv==='Submitted'?`<span class="ps-submitted">Submitted</span>`:tv==='Done'?`<span class="ps-done">Done</span>`:'<span style="color:#ccc">—</span>';
+          const badge=tv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:tv==='Amending'?`<span class="ps-amending">Amending</span>`:tv==='Verifying'?`<span class="ps-verifying">Verifying</span>`:tv==='Requested'?`<span class="ps-requested">Requested</span>`:tv==='Paid'?`<span class="ps-paid">Paid</span>`:'<span style="color:#ccc">—</span>';
           return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
           <div class="cell-edit"><select onblur="commitEditSelect(this,'T1 Payment Status',${r._id})" onchange="commitEditSelect(this,'T1 Payment Status',${r._id})">
             <option value="" ${!tv?'selected':''}>—</option>
             <option value="Pending invoice" ${tv==='Pending invoice'?'selected':''}>Pending invoice</option>
-            <option value="Invoice received" ${tv==='Invoice received'?'selected':''}>Invoice received</option>
-            <option value="Submitted" ${tv==='Submitted'?'selected':''}>Submitted</option>
-            <option value="Done" ${tv==='Done'?'selected':''}>Done</option>
+            <option value="Amending" ${tv==='Amending'?'selected':''}>Amending</option>
+            <option value="Verifying" ${tv==='Verifying'?'selected':''}>Verifying</option>
+            <option value="Requested" ${tv==='Requested'?'selected':''}>Requested</option>
+            <option value="Paid" ${tv==='Paid'?'selected':''}>Paid</option>
           </select></div>`;
         })()}
       </td>
@@ -4244,6 +4248,17 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 loadData();
+// ── Migrate old Payment Status values ────────────────────────────
+(function migratePayStatus(){
+  let changed=false;
+  CT.forEach(r=>{
+    ['Payment Status','T1 Payment Status'].forEach(k=>{
+      if(r[k]==='Submitted'){r[k]='Requested';changed=true;}
+      else if(r[k]==='Done'){r[k]='Paid';changed=true;}
+    });
+  });
+  if(changed) saveData();
+})();
 _loadBpTrain();
 
 // ── CLOUD SYNC ───────────────────────────────────────────────────
