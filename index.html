@@ -1591,7 +1591,7 @@ function setBpTrainDate(batchName, field, val){
   renderCT();
 }
 const ctExpanded = new Set();
-let vtSortCol = '_id', vtSortDir = -1; // default: newest first
+let vtSortCol = 'Port Cut-Off', vtSortDir = 1; // default: nearest cut-off first
 let editId = null, delId = null;
 let importWB = null, importRows = [];
 let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null,
@@ -3817,7 +3817,12 @@ function renderVT(){
 
   // ── Voyage progress cards (top of page) ──────────────────────────
   const _vfD=(d)=>{const w=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return w[d.getDay()]+' '+d.getDate()+' '+m[d.getMonth()];};
-  const vpCards=[...VT].sort((a,b)=>b._id-a._id).filter(r=>{const e=parseDate(r['ETS (Departure)']);return !!e;}).map(r=>{
+  const vpCards=[...VT].sort((a,b)=>{
+    const ca=parseDate(a['Port Cut-Off']),cb=parseDate(b['Port Cut-Off']);
+    if(ca&&cb) return ca-cb;
+    if(ca) return -1; if(cb) return 1;
+    return (parseDate(a['ETS (Departure)'])||0)-(parseDate(b['ETS (Departure)'])||0);
+  }).filter(r=>{const e=parseDate(r['ETS (Departure)']);return !!e;}).map(r=>{
     const _e=parseDate(r['ETS (Departure)']),_a=parseDate(r['ETA (Arrival)']),_at=parseDate(r['ATA (Actual)']);
     const _now=new Date();_now.setHours(0,0,0,0);
     const _noEta=!_a;
