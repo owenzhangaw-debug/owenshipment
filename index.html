@@ -3437,112 +3437,157 @@ async function vtLoadPDF(file){
 }
 
 function vtScanBooking(){
-  const text=document.getElementById('vta-scan-text').value||'';
+  const raw=document.getElementById('vta-scan-text').value||'';
   const sr=document.getElementById('vta-scan-result');
-  if(!text.trim()){sr.textContent='Paste some text first.';sr.style.color='#DC2626';return;}
+  if(!raw.trim()){sr.textContent='Paste some text first.';sr.style.color='#DC2626';return;}
 
-  const set=(id,val)=>{if(val&&val.trim()){const el=document.getElementById(id);if(el)el.value=val.trim();}};
+  // Normalise whitespace: collapse multiple spaces, keep newlines
+  const text=raw.replace(/[ \t]+/g,' ').replace(/\r\n?/g,'\n');
   let found=0;
 
-  // Normalise a raw date string to YYYY/MM/DD
-  const MONTHS={JAN:'01',FEB:'02',MAR:'03',APR:'04',MAY:'05',JUN:'06',
-    JUL:'07',AUG:'08',SEP:'09',OCT:'10',NOV:'11',DEC:'12'};
+  // ── Date normaliser → always YYYY/MM/DD ──────────────────────────
+  const MON={JAN:'01',FEB:'02',MAR:'03',APR:'04',MAY:'05',JUN:'06',
+             JUL:'07',AUG:'08',SEP:'09',OCT:'10',NOV:'11',DEC:'12'};
   function normDate(s){
     if(!s) return '';
     s=s.trim();
     let m;
-    // YYYY-MM-DD or YYYY/MM/DD
-    m=s.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+    // YYYY/MM/DD or YYYY-MM-DD (with optional trailing time)
+    m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
     if(m) return `${m[1]}/${m[2].padStart(2,'0')}/${m[3].padStart(2,'0')}`;
-    // DD-MMM-YYYY  e.g. 25-MAR-2026
-    m=s.match(/(\d{1,2})[-\/\s](JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[-\/\s](\d{4})/i);
-    if(m) return `${m[3]}/${MONTHS[m[2].toUpperCase()]}/${m[1].padStart(2,'0')}`;
+    // DD-MMM-YYYY or DD/MMM/YYYY
+    m=s.match(/^(\d{1,2})[-\/\s](JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[-\/\s](\d{4})/i);
+    if(m) return `${m[3]}/${MON[m[2].toUpperCase()]}/${m[1].padStart(2,'0')}`;
     // DD/MM/YYYY
-    m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if(m) return `${m[3]}/${m[2].padStart(2,'0')}/${m[1].padStart(2,'0')}`;
     return '';
   }
 
-  function tryP(patterns){
-    for(const p of patterns){const m=text.match(p);if(m) return (m[1]||m[0]).trim();}
-    return '';
+  // Find first date anywhere in a string (strips trailing time)
+  function extractDate(s){
+    if(!s) return '';
+    const m=s.match(/(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}|\d{1,2}[-\/\s](?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[-\/\s]\d{4})/i);
+    return m ? normDate(m[1]) : '';
   }
 
-  // Booking No
-  const bk=tryP([
-    /[Bb]ooking\s*(?:[Nn]o\.?|[Nn]umber|[Rr]ef\.?|[Rr]eference)\s*[:\-]?\s*([A-Z0-9]{5,20})/,
-    /BC\s*No\.?\s*[:\-]?\s*([A-Z0-9]{5,20})/,
-    /Ref\s*[:\-]\s*([A-Z0-9\-]{5,20})/,
-  ]);
-  if(bk){set('vta-booking',bk);found++;}
+  // Match a label:value pattern (label may span spaces/colons/slashes)
+  function findLabel(labelRe, lineRe){
+    // Try full-line label pattern first
+    if(lineRe){
+      const m=text.match(lineRe);
+      if(m&&m[1]) return m[1].trim();
+    }
+    // Generic: find labelRe then grab rest of the line
+    const m=text.match(labelRe);
+    if(!m) return '';
+    const after=text.slice(m.index+m[0].length).match(/^[:\s]*(.+)/);
+    return after ? after[1].split('\n')[0].trim() : '';
+  }
 
-  // Vessel name
-  const vn=tryP([
-    /[Vv]essel\s*[Nn]ame\s*[:\-]\s*([A-Z][A-Z0-9 ]{2,30}?)(?:\s+V[OY]?\.?\s*\d|\s*\n|$)/m,
-    /M\/V\s*[:\-]?\s*([A-Z][A-Z0-9 ]{2,30})/,
-    /[Vv]essel\s*[:\-]\s*([A-Z][A-Z0-9 ]{2,30})/,
-    /[Ss]hip(?:ping)?\s+[Nn]ame\s*[:\-]\s*([A-Z][A-Z0-9 ]{2,30})/,
-  ]);
-  if(vn){set('vta-vessel',vn.replace(/\s+/g,' ').trim());found++;}
+  function setF(id,val){
+    if(!val||!String(val).trim()) return false;
+    const el=document.getElementById(id);
+    if(!el) return false;
+    el.value=String(val).trim();
+    return true;
+  }
 
-  // Port of Loading
-  const pol=tryP([
-    /POL\s*[:\-]\s*([A-Z][A-Za-z ]{2,25})/,
-    /[Pp]ort\s+of\s+[Ll]oading\s*[:\-]\s*([A-Z][A-Za-z ,]{2,25})/,
-    /[Ll]oading\s+[Pp]ort\s*[:\-]\s*([A-Z][A-Za-z ,]{2,25})/,
-    /[Oo]rigin\s*[:\-]\s*([A-Z][A-Za-z ,]{2,25})/,
-  ]);
-  if(pol){set('vta-port',pol.trim());found++;}
+  // ── BOOKING NO ───────────────────────────────────────────────────
+  // Matches: "BOOKING NO. :560600058902", "Booking No: ABC123", "BC No. XXXX"
+  const bkRaw=findLabel(
+    /BOOKING\s+NO\.?\s*[:\-]?\s*([A-Z0-9]{6,20})/i,
+    /BOOKING\s+NO\.?\s*[:\-]\s*([A-Z0-9]{6,20})/i
+  ) || findLabel(/BC\s+NO\.?\s*[:\-]\s*([A-Z0-9]{6,20})/i);
+  if(setF('vta-booking', bkRaw.split(/\s/)[0])) found++;
 
-  // Carrier
-  const cr=tryP([
-    /[Cc]arrier\s*[:\-]\s*([A-Z][A-Za-z ]{2,25})/,
-    /[Ss]hipping\s+[Ll]ine\s*[:\-]\s*([A-Z][A-Za-z ]{2,25})/,
-    /(COSCO|MSC|EVERGREEN|MAERSK|CMA\s*CGM|HAPAG|YANGMING|ONE|ZIM|PIL|HMM|WANHAI)/i,
-  ]);
-  if(cr){set('vta-carrier',cr.trim());found++;}
+  // ── VESSEL NAME ──────────────────────────────────────────────────
+  // "VESSEL/VOYAGE :OOCL TURKIYE 010E" → strip voyage suffix (e.g. 010E, 2403N, W)
+  const vnRaw=findLabel(/VESSEL\s*(?:\/\s*VOYAGE)?\s*[:\-]/i) ||
+              findLabel(/VESSEL\s+NAME\s*[:\-]/i) ||
+              findLabel(/M\/V\s*[:\-]?/i);
+  if(vnRaw){
+    // Remove voyage code at end: 3–4 digits + optional letter(s), e.g. "010E", "0124W"
+    const clean=vnRaw.replace(/\s+\d{2,4}[A-Z]{0,2}\s*$/,'').replace(/\s+/g,' ').trim();
+    if(setF('vta-vessel', clean)) found++;
+  }
 
-  // ETS / ETD
-  const etsRaw=tryP([
-    /ETD\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /ETS\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /[Dd]eparture\s+[Dd]ate\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /[Ss]ailing\s+[Dd]ate\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /[Ee]stimated\s+[Tt]ime\s+of\s+[Dd]eparture\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-  ]);
-  const ets=normDate(etsRaw);
-  if(ets){set('vta-ets',ets);found++;}
+  // ── PORT OF LOADING ──────────────────────────────────────────────
+  // "PORT OF LOADING :GDANSK, POLAND" → extract city only (before comma)
+  const portRaw=findLabel(/PORT\s+OF\s+LOADING\s*[:\-]/i) ||
+                findLabel(/PLACE\s+OF\s+RECEIPT\s*[:\-]/i) ||
+                findLabel(/POL\s*[:\-]/i) ||
+                findLabel(/LOADING\s+PORT\s*[:\-]/i);
+  if(portRaw){
+    const city=portRaw.split(',')[0].split('(')[0].trim();
+    if(setF('vta-port', city)) found++;
+  }
 
-  // ETA
-  const etaRaw=tryP([
-    /ETA\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /[Aa]rrival\s+[Dd]ate\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /[Ee]stimated\s+[Tt]ime\s+of\s+[Aa]rrival\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /[Ee]xpected\s+[Aa]rrival\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-  ]);
-  const eta=normDate(etaRaw);
-  if(eta){set('vta-eta',eta);found++;}
+  // ── CARRIER ──────────────────────────────────────────────────────
+  // "CARRIER :EVERGREEN LINE" → normalise to known carrier names
+  const CARRIER_MAP={
+    'EVERGREEN LINE':'Evergreen','EVERGREEN':'Evergreen',
+    'COSCO SHIPPING':'COSCO','COSCO':'COSCO',
+    'MEDITERRANEAN SHIPPING':'MSC','MSC':'MSC',
+    'MAERSK LINE':'Maersk','MAERSK':'Maersk',
+    'CMA CGM':'CMA CGM','CMACGM':'CMA CGM',
+    'HAPAG-LLOYD':'Hapag-Lloyd','HAPAG LLOYD':'Hapag-Lloyd',
+    'YANG MING':'Yang Ming','YANGMING':'Yang Ming',
+    'OCEAN NETWORK EXPRESS':'ONE','ONE':'ONE',
+    'ZIM':'ZIM','PIL':'PIL','HMM':'HMM','OOCL':'OOCL','SITC':'SITC',
+    'WANHAI':'Wan Hai','WAN HAI':'Wan Hai',
+  };
+  const crRaw=findLabel(/CARRIER\s*[:\-]/i) || findLabel(/SHIPPING\s+LINE\s*[:\-]/i);
+  if(crRaw){
+    const upper=crRaw.toUpperCase().split('\n')[0].trim();
+    const mapped=CARRIER_MAP[upper]||Object.keys(CARRIER_MAP).find(k=>upper.includes(k));
+    if(setF('vta-carrier', mapped?CARRIER_MAP[mapped]||mapped:crRaw.split('\n')[0].trim())) found++;
+  }
 
-  // Port Cut-Off
-  const coRaw=tryP([
-    /[Pp]ort\s+[Cc]ut[\s\-][Oo]ff\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /[Cc]argo\s+[Cc]ut[\s\-][Oo]ff\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /SI\s*[Cc]ut[\s\-][Oo]ff\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-    /[Cc]ut[\s\-][Oo]ff\s*(?:[Dd]ate)?\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
-  ]);
-  const co=normDate(coRaw);
-  if(co){set('vta-cutoff',co);found++;}
+  // ── CONTAINER QTY ────────────────────────────────────────────────
+  // "10 /40' HI-CUBE" or "QTY/TYPE ... 10 /40'"
+  const qtyM=text.match(/(\d+)\s*\/\s*(?:20|40)\s*['′]?\s*(?:HC|HI.CUBE|GP|OT|FR|FLAT|OPEN)?/i)
+    || text.match(/CONTAINER\s+QTY\s*[:\-]?\s*(\d+)/i)
+    || text.match(/QUANTITY\s*[:\-]?\s*(\d+)/i)
+    || text.match(/NO\.?\s+OF\s+CONTAINERS?\s*[:\-]?\s*(\d+)/i);
+  if(qtyM&&setF('vta-qty', qtyM[1])) found++;
 
-  // Qty
-  const qty=tryP([
-    /[Cc]ontainer\s*[Qq]t[y.]?\s*[:\-]\s*(\d+)/,
-    /[Qq]uantity\s*[:\-]\s*(\d+)/,
-    /No\.\s+of\s+[Cc]ontainers?\s*[:\-]\s*(\d+)/,
-    /(\d+)\s*[Xx]?\s*(?:20['`]?|40['`]?)\s*(?:HC|GP|OT|FR)?/,
-  ]);
-  if(qty){set('vta-qty',qty);found++;}
+  // ── DATES ────────────────────────────────────────────────────────
+  // ETD / ETS: "ETD DATE :2026/04/18" or "ETD DATE/TIME :2026/04/18 17:00"
+  const etdM=text.match(/ETD\s+DATE(?:\s*\/\s*TIME)?\s*[:\-]\s*([\d\/\-]+)/i)
+    || text.match(/ETD\s*[:\-]\s*([\d\/\-]+)/i)
+    || text.match(/ETS\s*[:\-]\s*([\d\/\-]+)/i)
+    || text.match(/DEPARTURE\s+DATE(?:\s*\/\s*TIME)?\s*[:\-]\s*([\d\/\-]+)/i)
+    || text.match(/SAILING\s+DATE\s*[:\-]\s*([\d\/\-]+)/i);
+  const ets=etdM?normDate(etdM[1]):'';
+  if(setF('vta-ets', ets)) found++;
 
-  sr.textContent=found>0?`✓ ${found} field${found>1?'s':''} auto-filled — please verify all values`:'No fields detected — please fill in manually';
+  // ETA: for docs with multiple ETAs (like Evergreen), take the LAST one (= final destination)
+  const allEtas=[...text.matchAll(/ETA\s+DATE(?:\s*\/\s*TIME)?\s*[:\-]\s*([\d\/\-]+)/gi)];
+  let etaStr='';
+  if(allEtas.length>0){
+    etaStr=normDate(allEtas[allEtas.length-1][1]); // last ETA = final destination
+  } else {
+    const etaM=text.match(/ETA\s*[:\-]\s*([\d\/\-]+)/i)
+      || text.match(/ARRIVAL\s+DATE\s*[:\-]\s*([\d\/\-]+)/i)
+      || text.match(/EXPECTED\s+ARRIVAL\s*[:\-]\s*([\d\/\-]+)/i);
+    etaStr=etaM?normDate(etaM[1]):'';
+  }
+  if(setF('vta-eta', etaStr)) found++;
+
+  // Port Cut-Off: "CARGO CUT OFF DATE/TIME :2026/04/08 17:00"
+  // Priority order: CARGO CUT OFF > PORT CUT OFF > SI CUT OFF > VGM CUT OFF > any CUT OFF
+  const coM=text.match(/CARGO\s+CUT\s+OFF\s+DATE(?:\s*\/\s*TIME)?\s*[:\-]\s*([\d\/\-]+)/i)
+    || text.match(/PORT\s+CUT[\s\-]+OFF\s+DATE(?:\s*\/\s*TIME)?\s*[:\-]\s*([\d\/\-]+)/i)
+    || text.match(/SI\s+CUT[\s\-]+OFF(?:\s+DATE)?(?:\s*\/\s*TIME)?\s*[:\-]\s*([\d\/\-]+)/i)
+    || text.match(/CUT[\s\-]+OFF\s+DATE(?:\s*\/\s*TIME)?\s*[:\-]\s*([\d\/\-]+)/i)
+    || text.match(/CUT[\s\-]+OFF\s*[:\-]\s*([\d\/\-]+)/i);
+  const co=coM?normDate(coM[1]):'';
+  if(setF('vta-cutoff', co)) found++;
+
+  sr.textContent=found>0
+    ?`✓ ${found} field${found>1?'s':''} auto-filled — please verify before saving`
+    :'No fields detected — please fill in manually';
   sr.style.color=found>0?'#065F46':'#DC2626';
 }
 
