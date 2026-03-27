@@ -3502,26 +3502,25 @@ function vtScanBooking(){
   if(setF('vta-booking', bkRaw.split(/\s/)[0])) found++;
 
   // ── VESSEL NAME ──────────────────────────────────────────────────
-  // "VESSEL/VOYAGE :OOCL TURKIYE 010E" → strip voyage suffix (e.g. 010E, 2403N, W)
-  const vnRaw=findLabel(/VESSEL\s*(?:\/\s*VOYAGE)?\s*[:\-]/i) ||
-              findLabel(/VESSEL\s+NAME\s*[:\-]/i) ||
-              findLabel(/M\/V\s*[:\-]?/i);
-  if(vnRaw){
-    // Remove voyage code at end: 3–4 digits + optional letter(s), e.g. "010E", "0124W"
-    const clean=vnRaw.replace(/\s+\d{2,4}[A-Z]{0,2}\s*$/,'').replace(/\s+/g,' ').trim();
-    if(setF('vta-vessel', clean)) found++;
-  }
+  // "VESSEL/VOYAGE :OOCL TURKIYE 010E" → capture only vessel name, stop before voyage code
+  // Voyage code = 2-4 digits + 1-2 letters (e.g. 010E, 2403N, 001W)
+  // Use direct regex so we never grab text beyond the voyage code
+  const vnM=text.match(/VESSEL\s*\/\s*VOYAGE\s*[:\-]\s*([A-Z][A-Z0-9 ]{1,30}?)\s+\d{2,4}[A-Z]{1,2}\b/i)
+    || text.match(/VESSEL\s+NAME\s*[:\-]\s*([A-Z][A-Z0-9 ]{1,30}?)\s+\d{2,4}[A-Z]{1,2}\b/i)
+    || text.match(/VESSEL\s*[:\-]\s*([A-Z][A-Z0-9 ]{1,30}?)\s+\d{2,4}[A-Z]{1,2}\b/i)
+    // Fallback: no voyage code present — grab up to 5 uppercase words
+    || text.match(/VESSEL\s*\/\s*VOYAGE\s*[:\-]\s*([A-Z][A-Z0-9]*(?:\s+[A-Z][A-Z0-9]*){0,4})/i)
+    || text.match(/VESSEL\s+NAME\s*[:\-]\s*([A-Z][A-Z0-9]*(?:\s+[A-Z][A-Z0-9]*){0,4})/i)
+    || text.match(/M\/V\s*[:\-]?\s*([A-Z][A-Z0-9]*(?:\s+[A-Z][A-Z0-9]*){0,4})/i);
+  if(vnM && setF('vta-vessel', vnM[1].trim())) found++;
 
   // ── PORT OF LOADING ──────────────────────────────────────────────
-  // "PORT OF LOADING :GDANSK, POLAND" → extract city only (before comma)
-  const portRaw=findLabel(/PORT\s+OF\s+LOADING\s*[:\-]/i) ||
-                findLabel(/PLACE\s+OF\s+RECEIPT\s*[:\-]/i) ||
-                findLabel(/POL\s*[:\-]/i) ||
-                findLabel(/LOADING\s+PORT\s*[:\-]/i);
-  if(portRaw){
-    const city=portRaw.split(',')[0].split('(')[0].trim();
-    if(setF('vta-port', city)) found++;
-  }
+  // "PORT OF LOADING :GDANSK, POLAND" → city only (before comma or newline)
+  const portM=text.match(/PORT\s+OF\s+LOADING\s*[:\-]\s*([A-Z][A-Z\s]{1,25}?)(?:,|\n|$)/i)
+    || text.match(/PLACE\s+OF\s+RECEIPT\s*[:\-]\s*([A-Z][A-Z\s]{1,25}?)(?:,|\n|$)/i)
+    || text.match(/LOADING\s+PORT\s*[:\-]\s*([A-Z][A-Z\s]{1,25}?)(?:,|\n|$)/i)
+    || text.match(/\bPOL\s*[:\-]\s*([A-Z][A-Z\s]{1,25}?)(?:,|\n|$)/i);
+  if(portM && setF('vta-port', portM[1].trim())) found++;
 
   // ── CARRIER ──────────────────────────────────────────────────────
   // "CARRIER :EVERGREEN LINE" → normalise to known carrier names
@@ -3537,11 +3536,12 @@ function vtScanBooking(){
     'ZIM':'ZIM','PIL':'PIL','HMM':'HMM','OOCL':'OOCL','SITC':'SITC',
     'WANHAI':'Wan Hai','WAN HAI':'Wan Hai',
   };
-  const crRaw=findLabel(/CARRIER\s*[:\-]/i) || findLabel(/SHIPPING\s+LINE\s*[:\-]/i);
-  if(crRaw){
-    const upper=crRaw.toUpperCase().split('\n')[0].trim();
-    const mapped=CARRIER_MAP[upper]||Object.keys(CARRIER_MAP).find(k=>upper.includes(k));
-    if(setF('vta-carrier', mapped?CARRIER_MAP[mapped]||mapped:crRaw.split('\n')[0].trim())) found++;
+  const crM=text.match(/CARRIER\s*[:\-]\s*([A-Z][A-Z\s]{1,25}?)(?:\n|$)/i)
+    || text.match(/SHIPPING\s+LINE\s*[:\-]\s*([A-Z][A-Z\s]{1,25}?)(?:\n|$)/i);
+  if(crM){
+    const upper=crM[1].trim().toUpperCase();
+    const key=Object.keys(CARRIER_MAP).find(k=>upper===k||upper.startsWith(k));
+    if(setF('vta-carrier', key?CARRIER_MAP[key]:crM[1].trim())) found++;
   }
 
   // ── CONTAINER QTY ────────────────────────────────────────────────
