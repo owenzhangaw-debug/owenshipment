@@ -792,7 +792,7 @@ td.editing .cell-edit{display:block}
     <button onclick="showPage('feedback')">⭐ Feedback</button>
   </nav>
   <div class="hbtns">
-    <button class="btn btn-green" onclick="openAdd()">+ Add</button>
+    <button class="btn btn-green" id="hdr-add-btn" onclick="_contextAdd()">+ Add Container</button>
     <button class="btn btn-blue"  onclick="openBulk()">⊞ Bulk</button>
     <button class="btn btn-ghost" onclick="openImport()">↑ Import</button>
     <button class="btn btn-ghost" onclick="exportCSV()">↓ Export</button>
@@ -1155,7 +1155,7 @@ td.editing .cell-edit{display:block}
       <input id="vt-search" type="text" placeholder="Search container no. in bookings…" oninput="vtSearchContainer(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtSearchContainer('');}"/>
     </div>
     <span id="vt-search-msg" class="vt-search-msg"></span>
-    <button class="btn btn-green" style="margin-left:auto;padding:5px 12px;font-size:12px" onclick="openAddVessel()">+ Add Vessel</button>
+    <button class="btn btn-green" style="margin-left:auto;padding:5px 12px;font-size:12px" onclick="openAddVesselModal()">+ Add Vessel</button>
   </div>
   <div id="vt-progress-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 4px 12px"></div>
   <div class="tbl-card">
@@ -1492,6 +1492,55 @@ td.editing .cell-edit{display:block}
   </div>
 </div>
 
+<!-- VESSEL ADD MODAL -->
+<div class="overlay" id="vt-add-overlay">
+  <div class="modal" style="width:660px;max-height:90vh;overflow-y:auto">
+    <h2>🚢 Add New Vessel</h2>
+
+    <!-- Auto Scan section -->
+    <div style="margin-bottom:16px;padding:13px 14px;background:#F0F9F9;border-radius:9px;border:1px solid #B8E3E3">
+      <div style="font-size:11px;font-weight:700;color:#004D4C;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">🔍 Auto Scan Booking Confirmation</div>
+      <textarea id="vta-scan-text" rows="5"
+        placeholder="Paste your booking confirmation text here (email, PDF text, or any format) and click Scan — fields will be auto-filled."
+        style="width:100%;box-sizing:border-box;border:1px solid #B8E3E3;border-radius:7px;padding:9px;font-size:12px;resize:vertical;font-family:inherit;background:#fff;color:#1e293b;outline:none"></textarea>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+        <button onclick="vtScanBooking()"
+          style="padding:6px 16px;background:#004D4C;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.2px">🔍 Scan &amp; Auto-fill</button>
+        <span id="vta-scan-result" style="font-size:11px;color:#6b7280"></span>
+      </div>
+    </div>
+
+    <!-- Fields -->
+    <div class="form-grid">
+      <div class="form-group"><label>Booking / BC No.</label><input type="text" id="vta-booking" placeholder="e.g. COSU1234567"/></div>
+      <div class="form-group"><label>Vessel Name</label><input type="text" id="vta-vessel" placeholder="e.g. MSC AURORA"/></div>
+      <div class="form-group"><label>Port (POL)</label><input type="text" id="vta-port" placeholder="e.g. XINGANG"/></div>
+      <div class="form-group"><label>Carrier</label><input type="text" id="vta-carrier" placeholder="e.g. COSCO"/></div>
+      <div class="form-group"><label>Container Qty</label><input type="number" id="vta-qty" min="0" placeholder="0"/></div>
+      <div class="form-group"><label>Status</label>
+        <select id="vta-status">
+          <option value="Scheduled">Scheduled</option>
+          <option value="Cut-Off Soon">Cut-Off Soon</option>
+          <option value="Cut-Off Passed">Cut-Off Passed</option>
+          <option value="Departed">Departed</option>
+          <option value="Discharged">Discharged</option>
+          <option value="TBD">TBD</option>
+        </select>
+      </div>
+      <div class="form-group"><label>ETS / Departure (YYYY/MM/DD)</label><input type="text" id="vta-ets" placeholder="YYYY/MM/DD"/></div>
+      <div class="form-group"><label>ETA / Arrival (YYYY/MM/DD)</label><input type="text" id="vta-eta" placeholder="YYYY/MM/DD"/></div>
+      <div class="form-group"><label>Port Cut-Off (YYYY/MM/DD)</label><input type="text" id="vta-cutoff" placeholder="YYYY/MM/DD"/></div>
+      <div class="form-group"><label>Barge Date (YYYY/MM/DD)</label><input type="text" id="vta-barge" placeholder="YYYY/MM/DD"/></div>
+      <div class="form-group full"><label>Remark</label><input type="text" id="vta-remark" placeholder="Optional notes"/></div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="document.getElementById('vt-add-overlay').classList.remove('open')">Cancel</button>
+      <button class="mbtn-save" onclick="vtSaveNewVessel()">+ Add Vessel</button>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE CONFIRM -->
 <div class="overlay" id="del-overlay">
   <div class="confirm-inner">
@@ -1513,6 +1562,7 @@ const LS_CT = 'owenz_ct_v3';
 const LS_VT = 'owenz_vt_v1';
 let CT = [], VT = [], nextId = 1, vtNextId = 1;
 let ctSortCol = 'Batch / Train', ctSortDir = 1;
+let _currentPage = 'dashboard';
 // ── TRAIN DATE OVERRIDES (per-batch manual Mala/Duisburg ETAs) ────────────
 let _bpTrainDates = {};  // { batchName: { depart:'YYYY-MM-DD', etaMala:'YYYY-MM-DD', etaDuis:'YYYY-MM-DD' } }
 const _bpTrainKey = 'owenz_bptrain_v1';
@@ -1557,16 +1607,24 @@ function saveVT(){ try{ localStorage.setItem(LS_VT, JSON.stringify(VT)); }catch(
 
 // ── PAGE NAV ──────────────────────────────────────────────────────
 function showPage(p){
+  _currentPage = p;
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   const pages=['dashboard','containers','vessels','feedback'];
   const idx=pages.indexOf(p);
   if(idx>=0) document.querySelectorAll('nav button')[idx].classList.add('active');
+  // Update + Add button label to match context
+  const addBtn=document.getElementById('hdr-add-btn');
+  if(addBtn) addBtn.textContent = p==='vessels' ? '+ Add Vessel' : '+ Add Container';
   if(p==='dashboard') renderDashboard();
   if(p==='containers') renderCT();
   if(p==='vessels') renderVT();
   if(p==='feedback') renderFeedback();
+}
+function _contextAdd(){
+  if(_currentPage==='vessels') openAddVesselModal();
+  else openAdd();
 }
 function gotoFilter(col, val){
   // Clear all multi-selects first
@@ -3325,6 +3383,150 @@ function commitVTSelect(sel, col, id){
   const i=VT.findIndex(r=>r._id===id); if(i<0) return;
   VT[i][col]=val; saveVT(); renderVT(); renderDashboard();
 }
+// ── VESSEL ADD MODAL ──────────────────────────────────────────────
+function openAddVesselModal(){
+  ['vta-booking','vta-vessel','vta-port','vta-carrier','vta-qty','vta-ets','vta-eta','vta-cutoff','vta-barge','vta-remark','vta-scan-text'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const st=document.getElementById('vta-status'); if(st) st.value='Scheduled';
+  const sr=document.getElementById('vta-scan-result'); if(sr){sr.textContent='';sr.style.color='#6b7280';}
+  document.getElementById('vt-add-overlay').classList.add('open');
+}
+
+function vtScanBooking(){
+  const text=document.getElementById('vta-scan-text').value||'';
+  const sr=document.getElementById('vta-scan-result');
+  if(!text.trim()){sr.textContent='Paste some text first.';sr.style.color='#DC2626';return;}
+
+  const set=(id,val)=>{if(val&&val.trim()){const el=document.getElementById(id);if(el)el.value=val.trim();}};
+  let found=0;
+
+  // Normalise a raw date string to YYYY/MM/DD
+  const MONTHS={JAN:'01',FEB:'02',MAR:'03',APR:'04',MAY:'05',JUN:'06',
+    JUL:'07',AUG:'08',SEP:'09',OCT:'10',NOV:'11',DEC:'12'};
+  function normDate(s){
+    if(!s) return '';
+    s=s.trim();
+    let m;
+    // YYYY-MM-DD or YYYY/MM/DD
+    m=s.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+    if(m) return `${m[1]}/${m[2].padStart(2,'0')}/${m[3].padStart(2,'0')}`;
+    // DD-MMM-YYYY  e.g. 25-MAR-2026
+    m=s.match(/(\d{1,2})[-\/\s](JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[-\/\s](\d{4})/i);
+    if(m) return `${m[3]}/${MONTHS[m[2].toUpperCase()]}/${m[1].padStart(2,'0')}`;
+    // DD/MM/YYYY
+    m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(m) return `${m[3]}/${m[2].padStart(2,'0')}/${m[1].padStart(2,'0')}`;
+    return '';
+  }
+
+  function tryP(patterns){
+    for(const p of patterns){const m=text.match(p);if(m) return (m[1]||m[0]).trim();}
+    return '';
+  }
+
+  // Booking No
+  const bk=tryP([
+    /[Bb]ooking\s*(?:[Nn]o\.?|[Nn]umber|[Rr]ef\.?|[Rr]eference)\s*[:\-]?\s*([A-Z0-9]{5,20})/,
+    /BC\s*No\.?\s*[:\-]?\s*([A-Z0-9]{5,20})/,
+    /Ref\s*[:\-]\s*([A-Z0-9\-]{5,20})/,
+  ]);
+  if(bk){set('vta-booking',bk);found++;}
+
+  // Vessel name
+  const vn=tryP([
+    /[Vv]essel\s*[Nn]ame\s*[:\-]\s*([A-Z][A-Z0-9 ]{2,30}?)(?:\s+V[OY]?\.?\s*\d|\s*\n|$)/m,
+    /M\/V\s*[:\-]?\s*([A-Z][A-Z0-9 ]{2,30})/,
+    /[Vv]essel\s*[:\-]\s*([A-Z][A-Z0-9 ]{2,30})/,
+    /[Ss]hip(?:ping)?\s+[Nn]ame\s*[:\-]\s*([A-Z][A-Z0-9 ]{2,30})/,
+  ]);
+  if(vn){set('vta-vessel',vn.replace(/\s+/g,' ').trim());found++;}
+
+  // Port of Loading
+  const pol=tryP([
+    /POL\s*[:\-]\s*([A-Z][A-Za-z ]{2,25})/,
+    /[Pp]ort\s+of\s+[Ll]oading\s*[:\-]\s*([A-Z][A-Za-z ,]{2,25})/,
+    /[Ll]oading\s+[Pp]ort\s*[:\-]\s*([A-Z][A-Za-z ,]{2,25})/,
+    /[Oo]rigin\s*[:\-]\s*([A-Z][A-Za-z ,]{2,25})/,
+  ]);
+  if(pol){set('vta-port',pol.trim());found++;}
+
+  // Carrier
+  const cr=tryP([
+    /[Cc]arrier\s*[:\-]\s*([A-Z][A-Za-z ]{2,25})/,
+    /[Ss]hipping\s+[Ll]ine\s*[:\-]\s*([A-Z][A-Za-z ]{2,25})/,
+    /(COSCO|MSC|EVERGREEN|MAERSK|CMA\s*CGM|HAPAG|YANGMING|ONE|ZIM|PIL|HMM|WANHAI)/i,
+  ]);
+  if(cr){set('vta-carrier',cr.trim());found++;}
+
+  // ETS / ETD
+  const etsRaw=tryP([
+    /ETD\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /ETS\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /[Dd]eparture\s+[Dd]ate\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /[Ss]ailing\s+[Dd]ate\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /[Ee]stimated\s+[Tt]ime\s+of\s+[Dd]eparture\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+  ]);
+  const ets=normDate(etsRaw);
+  if(ets){set('vta-ets',ets);found++;}
+
+  // ETA
+  const etaRaw=tryP([
+    /ETA\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /[Aa]rrival\s+[Dd]ate\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /[Ee]stimated\s+[Tt]ime\s+of\s+[Aa]rrival\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /[Ee]xpected\s+[Aa]rrival\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+  ]);
+  const eta=normDate(etaRaw);
+  if(eta){set('vta-eta',eta);found++;}
+
+  // Port Cut-Off
+  const coRaw=tryP([
+    /[Pp]ort\s+[Cc]ut[\s\-][Oo]ff\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /[Cc]argo\s+[Cc]ut[\s\-][Oo]ff\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /SI\s*[Cc]ut[\s\-][Oo]ff\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+    /[Cc]ut[\s\-][Oo]ff\s*(?:[Dd]ate)?\s*[:\-]\s*([\d\-\/A-Za-z ]{6,15})/,
+  ]);
+  const co=normDate(coRaw);
+  if(co){set('vta-cutoff',co);found++;}
+
+  // Qty
+  const qty=tryP([
+    /[Cc]ontainer\s*[Qq]t[y.]?\s*[:\-]\s*(\d+)/,
+    /[Qq]uantity\s*[:\-]\s*(\d+)/,
+    /No\.\s+of\s+[Cc]ontainers?\s*[:\-]\s*(\d+)/,
+    /(\d+)\s*[Xx]?\s*(?:20['`]?|40['`]?)\s*(?:HC|GP|OT|FR)?/,
+  ]);
+  if(qty){set('vta-qty',qty);found++;}
+
+  sr.textContent=found>0?`✓ ${found} field${found>1?'s':''} auto-filled — please verify all values`:'No fields detected — please fill in manually';
+  sr.style.color=found>0?'#065F46':'#DC2626';
+}
+
+function vtSaveNewVessel(){
+  const g=id=>(document.getElementById(id)?.value||'').trim();
+  const v={
+    'Port':g('vta-port'),
+    'Carrier':g('vta-carrier'),
+    'Booking / BC No.':g('vta-booking'),
+    'Container Qty':g('vta-qty'),
+    'Vessel Name':g('vta-vessel'),
+    'ETS (Departure)':g('vta-ets'),
+    'ETA (Arrival)':g('vta-eta'),
+    'ATA (Actual)':'',
+    'Port Cut-Off':g('vta-cutoff'),
+    'Barge Date':g('vta-barge'),
+    'Days to Cut-Off':'',
+    'Status':document.getElementById('vta-status')?.value||'Scheduled',
+    'Remark':g('vta-remark'),
+    'VGM':false,'Custom':false,
+    containers:[],vesselHistory:[],bargeRollHistory:[],
+    _id:vtNextId++
+  };
+  VT.push(v); saveVT(); renderVT(); renderDashboard();
+  document.getElementById('vt-add-overlay').classList.remove('open');
+}
+
 function openAddVessel(){
   const v={Port:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
     'ETS (Departure)':'','ETA (Arrival)':'','ATA (Actual)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
@@ -4248,7 +4450,7 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById('imp-btn').style.display='none'; }
 
 // ── INIT ──────────────────────────────────────────────────────────
-['modal-overlay','bulk-overlay','bulk-pickup-overlay','del-overlay','import-overlay','sync-overlay','be-overlay'].forEach(id=>{
+['modal-overlay','bulk-overlay','bulk-pickup-overlay','del-overlay','import-overlay','sync-overlay','be-overlay','vt-add-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 loadData();
