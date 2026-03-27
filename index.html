@@ -6,6 +6,7 @@
 <title>Owen Zhang</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <style>
@@ -792,7 +793,7 @@ td.editing .cell-edit{display:block}
     <button onclick="showPage('feedback')">⭐ Feedback</button>
   </nav>
   <div class="hbtns">
-    <button class="btn btn-green" id="hdr-add-btn" onclick="_contextAdd()">+ Add Container</button>
+    <button class="btn btn-green" id="hdr-add-btn" onclick="_contextAdd()" style="display:none">+ Add Container</button>
     <button class="btn btn-blue"  onclick="openBulk()">⊞ Bulk</button>
     <button class="btn btn-ghost" onclick="openImport()">↑ Import</button>
     <button class="btn btn-ghost" onclick="exportCSV()">↓ Export</button>
@@ -1499,9 +1500,21 @@ td.editing .cell-edit{display:block}
 
     <!-- Auto Scan section -->
     <div style="margin-bottom:16px;padding:13px 14px;background:#F0F9F9;border-radius:9px;border:1px solid #B8E3E3">
-      <div style="font-size:11px;font-weight:700;color:#004D4C;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">🔍 Auto Scan Booking Confirmation</div>
-      <textarea id="vta-scan-text" rows="5"
-        placeholder="Paste your booking confirmation text here (email, PDF text, or any format) and click Scan — fields will be auto-filled."
+      <div style="font-size:11px;font-weight:700;color:#004D4C;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">🔍 Auto Scan Booking Confirmation</div>
+      <!-- PDF drop zone -->
+      <div id="vta-pdf-drop" onclick="document.getElementById('vta-pdf-input').click()"
+        style="border:2px dashed #B8E3E3;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#fff;margin-bottom:10px;transition:border-color .2s,background .2s"
+        ondragover="event.preventDefault();this.style.borderColor='#004D4C';this.style.background='#E0EFEF'"
+        ondragleave="this.style.borderColor='#B8E3E3';this.style.background='#fff'"
+        ondrop="event.preventDefault();this.style.borderColor='#B8E3E3';this.style.background='#fff';vtLoadPDF(event.dataTransfer.files[0])">
+        <div style="font-size:22px;margin-bottom:4px">📄</div>
+        <div style="font-size:12px;font-weight:600;color:#004D4C">Drop booking confirmation PDF here</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:2px">or click to browse</div>
+        <input type="file" id="vta-pdf-input" accept=".pdf" style="display:none" onchange="vtLoadPDF(this.files[0])"/>
+      </div>
+      <div style="font-size:11px;color:#6b7280;text-align:center;margin-bottom:8px">— or paste text below —</div>
+      <textarea id="vta-scan-text" rows="3"
+        placeholder="Paste booking confirmation text (email, copied PDF text, any format)…"
         style="width:100%;box-sizing:border-box;border:1px solid #B8E3E3;border-radius:7px;padding:9px;font-size:12px;resize:vertical;font-family:inherit;background:#fff;color:#1e293b;outline:none"></textarea>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
         <button onclick="vtScanBooking()"
@@ -1614,9 +1627,13 @@ function showPage(p){
   const pages=['dashboard','containers','vessels','feedback'];
   const idx=pages.indexOf(p);
   if(idx>=0) document.querySelectorAll('nav button')[idx].classList.add('active');
-  // Update + Add button label to match context
+  // Show/hide + Add button and update label based on active page
   const addBtn=document.getElementById('hdr-add-btn');
-  if(addBtn) addBtn.textContent = p==='vessels' ? '+ Add Vessel' : '+ Add Container';
+  if(addBtn){
+    const showAdd=(p==='containers'||p==='vessels');
+    addBtn.style.display=showAdd?'':'none';
+    addBtn.textContent=p==='vessels'?'+ Add Vessel':'+ Add Container';
+  }
   if(p==='dashboard') renderDashboard();
   if(p==='containers') renderCT();
   if(p==='vessels') renderVT();
@@ -3391,6 +3408,32 @@ function openAddVesselModal(){
   const st=document.getElementById('vta-status'); if(st) st.value='Scheduled';
   const sr=document.getElementById('vta-scan-result'); if(sr){sr.textContent='';sr.style.color='#6b7280';}
   document.getElementById('vt-add-overlay').classList.add('open');
+}
+
+// ── PDF text extraction ───────────────────────────────────────────
+async function vtLoadPDF(file){
+  if(!file||file.type!=='application/pdf') return;
+  const sr=document.getElementById('vta-scan-result');
+  const drop=document.getElementById('vta-pdf-drop');
+  sr.textContent='📄 Reading PDF…'; sr.style.color='#6b7280';
+  if(drop) drop.querySelector('div:nth-child(2)').textContent=file.name;
+  try{
+    if(typeof pdfjsLib==='undefined') throw new Error('PDF.js not loaded');
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    let fullText='';
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      fullText+=tc.items.map(i=>i.str).join(' ')+'\n';
+    }
+    document.getElementById('vta-scan-text').value=fullText;
+    vtScanBooking();
+  }catch(e){
+    sr.textContent='Could not read PDF — try copying and pasting the text instead.';
+    sr.style.color='#DC2626';
+  }
 }
 
 function vtScanBooking(){
