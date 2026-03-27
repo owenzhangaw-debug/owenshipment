@@ -3834,7 +3834,7 @@ function renderVT(){
     } else {
       const _tot=_a-_e;const _totD=Math.round(_tot/864e5);
       _fc=_now>=_a&&!_at?'#e53935':'#0284c7';
-      if(_at){_pct=1;_sl=92;_gone=Math.round((_at-_e)/864e5);const d=Math.round((_at-_a)/864e5);_sp='🏁 Arrived'+(d===0?' · on time':d<0?` · ${Math.abs(d)}d early`:` · ${d}d late`);_sc='#15803d';}
+      if(_at){_pct=1;_sl=92;_fc='#16a34a';_gone=Math.round((_at-_e)/864e5);const d=Math.round((_at-_a)/864e5);_sp='🏁 Arrived'+(d===0?' · on time':d<0?` · ${Math.abs(d)}d early`:` · ${d}d late`);_sc='#15803d';}
       else{const _el=_now-_e;_pct=Math.min(1,Math.max(0,_el/_tot));_gone=Math.max(0,Math.round(_el/864e5));_left=Math.max(0,Math.round((_a-_now)/864e5));_sl=8+_pct*84;
         if(_now<_e){_sp='⏳ Not Departed';_sc='#7c3aed';}else if(_now>=_a){_sp='⚠️ Overdue';_sc='#e53935';}else{_sp=`🌊 Day ${_gone} of ${_totD}`;_sc='#0369a1';}
       }
