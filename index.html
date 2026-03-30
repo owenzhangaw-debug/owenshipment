@@ -1213,14 +1213,6 @@ td.editing .cell-edit{display:block}
 <!-- ══ VESSELS ══ -->
 <div id="page-vessels" class="page">
   <div id="page-notice-vessels"></div>
-  <div class="vt-toolbar">
-    <div class="vt-search-wrap">
-      <span class="vt-si">🔍</span>
-      <input id="vt-search" type="text" placeholder="Search container no. in bookings…" oninput="vtSearchContainer(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtSearchContainer('');}"/>
-    </div>
-    <span id="vt-search-msg" class="vt-search-msg"></span>
-    <button class="btn btn-green" style="margin-left:auto;padding:5px 12px;font-size:12px" onclick="openAddVesselModal()">+ Add Vessel</button>
-  </div>
 
   <div id="vt-progress-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 4px 12px"></div>
 
@@ -1275,7 +1267,8 @@ td.editing .cell-edit{display:block}
     <div class="ml"><button class="btn-reset" onclick="vtResetFilters()">↺ Reset</button></div>
   </div>
   <div style="margin:0 0 8px">
-    <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port…" oninput="renderVT()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+    <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port, container no…" oninput="vtCombinedSearch(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+    <span id="vt-search-msg" class="vt-search-msg" style="display:block;margin-top:4px;padding-left:4px"></span>
   </div>
   <div class="tbl-card">
     <div class="tbl-top">
@@ -2945,6 +2938,8 @@ function vtFillMultiSel(id, field, placeholder){
 }
 function vtResetFilters(){
   const s=document.getElementById('vt-f-search'); if(s) s.value='';
+  const msg=document.getElementById('vt-search-msg'); if(msg) msg.textContent='';
+  document.querySelectorAll('.vt-search-highlight').forEach(el=>el.classList.remove('vt-search-highlight'));
   vtmsClear('port','All Ports');
   vtmsClear('carrier','All Carriers');
   vtmsClear('status','All Statuses');
@@ -4422,30 +4417,26 @@ function renderBelPipelineSkeleton(body, STAGES){
   body.innerHTML = `<div class="bel-pipeline-wrap"><div class="bel-pipeline">${nodesHtml}</div>${barsHtml}</div>`;
 }
 
-function vtSearchContainer(q){
+function vtSearchContainer(q){ vtCombinedSearch(q); } // legacy alias
+function vtCombinedSearch(q){
   const msg=document.getElementById('vt-search-msg');
-  // Clear previous highlights
   document.querySelectorAll('.vt-search-highlight').forEach(el=>el.classList.remove('vt-search-highlight'));
-  if(!q||!q.trim()){ msg.textContent=''; return; }
-  const needle=q.trim().toUpperCase();
-  // Find matching booking
-  const match=VT.find(r=>Array.isArray(r.containers)&&r.containers.some(cn=>cn.toUpperCase().includes(needle)));
-  if(!match){
-    msg.textContent='No booking found for "'+q.trim()+'"';
-    return;
-  }
-  // Expand that row
-  vtExpanded.add(match._id);
+  // Always re-render with text filter applied
   renderVT();
-  // Highlight main row
-  const row=document.getElementById('vrow-'+match._id);
-  if(row){
-    row.classList.add('vt-search-highlight');
-    row.scrollIntoView({behavior:'smooth',block:'center'});
+  if(!q||!q.trim()){ if(msg) msg.textContent=''; return; }
+  // Also try container-no highlight (exact container lookup)
+  const needle=q.trim().toUpperCase();
+  const match=VT.find(r=>Array.isArray(r.containers)&&r.containers.some(cn=>cn.toUpperCase().includes(needle)));
+  if(match){
+    vtExpanded.add(match._id);
+    renderVT();
+    const row=document.getElementById('vrow-'+match._id);
+    if(row){ row.classList.add('vt-search-highlight'); row.scrollIntoView({behavior:'smooth',block:'center'}); }
+    const matchedCns=match.containers.filter(cn=>cn.toUpperCase().includes(needle));
+    if(msg) msg.textContent='📦 Container found in booking: '+(match['Booking / BC No.']||'ID '+match._id)+' ('+matchedCns.join(', ')+')';
+  } else {
+    if(msg) msg.textContent='';
   }
-  const booking=match['Booking / BC No.']||'ID '+match._id;
-  const matchedCns=match.containers.filter(cn=>cn.toUpperCase().includes(needle));
-  msg.textContent='Found in booking: '+booking+' ('+matchedCns.join(', ')+')';
 }
 
 // ── ADD / EDIT MODAL ──────────────────────────────────────────────
