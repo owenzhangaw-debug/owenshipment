@@ -1222,7 +1222,9 @@ td.editing .cell-edit{display:block}
     <button class="btn btn-green" style="margin-left:auto;padding:5px 12px;font-size:12px" onclick="openAddVesselModal()">+ Add Vessel</button>
   </div>
 
-  <!-- VT Filter Row -->
+  <div id="vt-progress-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 4px 12px"></div>
+
+  <!-- VT Filter Row — below progress cards, above table -->
   <div class="toolbar" style="margin:0 0 8px" id="vt-filter-toolbar">
     <div class="ms-wrap" id="vt-wrap-port">
       <span class="ms-label">Port</span>
@@ -1275,7 +1277,6 @@ td.editing .cell-edit{display:block}
   <div style="margin:0 0 8px">
     <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port…" oninput="renderVT()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
   </div>
-  <div id="vt-progress-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 4px 12px"></div>
   <div class="tbl-card">
     <div class="tbl-top">
       <h3>Vessel Tracker</h3><span id="vt-count"></span>
@@ -5234,7 +5235,7 @@ async function connectSync(){
       const res=await fetch(JBIN,{
         method:'POST',
         headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'Owen Zhang'},
-        body:JSON.stringify({CT,VT})
+        body:JSON.stringify({CT,VT,NOTICES})
       });
       if(!res.ok) throw new Error('Failed to create bin (HTTP '+res.status+'). Check your Master Key.');
       const data=await res.json();
@@ -5265,7 +5266,7 @@ async function pushToCloud(manual=false){
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB,_ts:Date.now()})
+      body:JSON.stringify({CT,VT,FB,NOTICES,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
@@ -5302,6 +5303,7 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.CT){ CT=rec.CT; nextId=Math.max(0,...CT.map(r=>r._id||0))+1; localStorage.setItem(LS_CT,JSON.stringify(CT)); }
     if(rec&&rec.VT){ VT=rec.VT; vtNextId=Math.max(0,...VT.map(r=>r._id||0))+1; localStorage.setItem(LS_VT,JSON.stringify(VT)); }
     if(rec&&rec.FB){ FB=rec.FB; localStorage.setItem(FB_KEY,JSON.stringify(FB)); }
+    if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
     renderCT(); renderVT(); renderDashboard();
     if(manual){
@@ -5880,7 +5882,7 @@ let NOTICES=[];
 (function loadNotices(){
   try{ const s=localStorage.getItem(NOTICES_KEY); if(s) NOTICES=JSON.parse(s); }catch(e){}
 })();
-function saveNotices(){ try{ localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); }catch(e){} }
+function saveNotices(){ try{ localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 function noticeOpenAdd(){
   document.getElementById('notice-add-form').style.display='block';
   document.getElementById('notice-text').focus();
