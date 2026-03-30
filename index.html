@@ -730,6 +730,32 @@ td.editing .cell-edit{display:block}
 .fb-two-col{display:grid;grid-template-columns:1fr 1fr;gap:0}
 @media(max-width:700px){.fb-two-col{grid-template-columns:1fr}}
 .fb-col{padding:16px 20px;border-right:1px solid #f0f0f0}
+/* ── Notice + News Row ── */
+.notice-news-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0 0}
+@media(max-width:780px){.notice-news-row{grid-template-columns:1fr}}
+.notice-board,.news-board{padding:14px 16px;min-height:120px}
+.notice-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;font-weight:700;color:#004D4C;border-bottom:1px solid #f0f0f0;padding-bottom:8px}
+.notice-add-btn{margin-left:auto;font-size:11px;font-weight:700;padding:4px 10px;border:1px solid #004D4C;background:#fff;color:#004D4C;border-radius:6px;cursor:pointer;white-space:nowrap}
+.notice-add-btn:hover{background:#E0EFEF}
+.notice-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f8f8f8;font-size:12px;line-height:1.5;color:#1e293b}
+.notice-item:last-child{border-bottom:none}
+.notice-level-badge{font-size:14px;flex-shrink:0;margin-top:1px}
+.notice-item-text{flex:1;min-width:0;word-break:break-word}
+.notice-item-meta{font-size:10px;color:#94a3b8;margin-top:2px}
+.notice-item-rm{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:14px;padding:0;flex-shrink:0;margin-top:1px;line-height:1}
+.notice-item-rm:hover{color:#e53935}
+.notice-info{background:#EFF6FF;border-left:3px solid #3B82F6;border-radius:0 6px 6px 0;padding:5px 8px}
+.notice-warn{background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 6px 6px 0;padding:5px 8px}
+.notice-urgent{background:#FEF2F2;border-left:3px solid #EF4444;border-radius:0 6px 6px 0;padding:5px 8px}
+/* ── News Feed ── */
+.news-item{padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
+.news-item:last-child{border-bottom:none}
+.news-item a{color:#004D4C;font-weight:700;text-decoration:none;line-height:1.4;display:block;margin-bottom:3px}
+.news-item a:hover{text-decoration:underline}
+.news-item-meta{color:#94a3b8;font-size:10px;margin-bottom:3px}
+.news-item-desc{color:#475569;font-size:11px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.news-loading{color:#aaa;font-size:12px;padding:8px 0}
+.news-error{color:#ef4444;font-size:12px;padding:8px 0}
 /* ── Dashboard Trucker Reviews ── */
 .tr-review-section{margin-top:20px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #e2e8f0;overflow:hidden}
 .tr-review-hdr{background:linear-gradient(135deg,#004D4C,#006b6a);color:#fff;padding:12px 20px;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
@@ -1026,6 +1052,44 @@ td.editing .cell-edit{display:block}
 
   </div><!-- end dash-split -->
 
+  <!-- ══ Notice + News Row ══ -->
+  <div class="notice-news-row">
+
+    <!-- Important Notice Board -->
+    <div class="chart-card notice-board">
+      <div class="notice-hdr">
+        <span>📌 Important Notices</span>
+        <button class="notice-add-btn" onclick="noticeOpenAdd()">+ Add Notice</button>
+      </div>
+      <div id="notice-add-form" style="display:none;margin-bottom:10px">
+        <div style="display:flex;gap:6px;align-items:flex-start">
+          <select id="notice-level" style="border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:12px;color:#1e293b;background:#fff">
+            <option value="info">ℹ️ Info</option>
+            <option value="warn">⚠️ Warning</option>
+            <option value="urgent">🚨 Urgent</option>
+          </select>
+          <textarea id="notice-text" rows="2" placeholder="Type notice…" style="flex:1;border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:12px;resize:vertical;font-family:inherit;min-width:0"></textarea>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button class="btn btn-green" style="padding:5px 12px;font-size:12px" onclick="noticeSave()">Save</button>
+            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="noticeCloseAdd()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div id="notice-list"><div style="color:#aaa;font-size:12px;padding:8px 0">No notices yet.</div></div>
+    </div>
+
+    <!-- Europe Logistics News -->
+    <div class="chart-card news-board">
+      <div class="notice-hdr">
+        <span>🌍 Europe Logistics News</span>
+        <span id="news-updated" style="font-size:10px;color:#94a3b8;margin-left:auto;font-weight:400"></span>
+        <button class="notice-add-btn" onclick="fetchLogisticsNews(true)" title="Refresh">↺ Refresh</button>
+      </div>
+      <div id="news-list"><div style="color:#aaa;font-size:12px;padding:8px 0">Loading news…</div></div>
+    </div>
+
+  </div><!-- end notice-news-row -->
+
   <!-- ══ Trucker Reviews ══ -->
   <div class="tr-review-section">
     <div class="tr-review-hdr">🚛 Trucker Performance Reviews <span style="font-size:9px;font-weight:500;opacity:.75;margin-left:4px">auto-updated from ratings &amp; data</span></div>
@@ -1158,6 +1222,60 @@ td.editing .cell-edit{display:block}
     <span id="vt-search-msg" class="vt-search-msg"></span>
     <button class="btn btn-green" style="margin-left:auto;padding:5px 12px;font-size:12px" onclick="openAddVesselModal()">+ Add Vessel</button>
   </div>
+
+  <!-- VT Filter Row -->
+  <div class="toolbar" style="margin:0 0 8px" id="vt-filter-toolbar">
+    <div class="ms-wrap" id="vt-wrap-port">
+      <span class="ms-label">Port</span>
+      <button class="ms-btn" id="vt-btn-port" onclick="vtmsOpen('port')">All Ports</button>
+      <div class="ms-menu" id="vt-menu-port"></div>
+    </div>
+    <div class="ms-wrap" id="vt-wrap-carrier">
+      <span class="ms-label">Carrier</span>
+      <button class="ms-btn" id="vt-btn-carrier" onclick="vtmsOpen('carrier')">All Carriers</button>
+      <div class="ms-menu" id="vt-menu-carrier"></div>
+    </div>
+    <div class="ms-wrap" id="vt-wrap-status">
+      <span class="ms-label">Status</span>
+      <button class="ms-btn" id="vt-btn-status" onclick="vtmsOpen('status')">All Statuses</button>
+      <div class="ms-menu" id="vt-menu-status">
+        <label><input type="checkbox" value="Scheduled"       onchange="vtmsChange('status','All Statuses')"> Scheduled</label>
+        <label><input type="checkbox" value="Cut-Off Soon"    onchange="vtmsChange('status','All Statuses')"> Cut-Off Soon</label>
+        <label><input type="checkbox" value="Cut-Off Passed"  onchange="vtmsChange('status','All Statuses')"> Cut-Off Passed</label>
+        <label><input type="checkbox" value="Departed"        onchange="vtmsChange('status','All Statuses')"> Departed</label>
+        <label><input type="checkbox" value="Discharged"      onchange="vtmsChange('status','All Statuses')"> Discharged</label>
+        <label><input type="checkbox" value="TBD"             onchange="vtmsChange('status','All Statuses')"> TBD</label>
+      </div>
+    </div>
+    <div class="ms-wrap" id="vt-wrap-vgm">
+      <span class="ms-label">VGM</span>
+      <button class="ms-btn" id="vt-btn-vgm" onclick="vtmsOpen('vgm')">All</button>
+      <div class="ms-menu" id="vt-menu-vgm">
+        <label><input type="checkbox" value="done"    onchange="vtmsChange('vgm','All')"> Done</label>
+        <label><input type="checkbox" value="missing" onchange="vtmsChange('vgm','All')"> Missing</label>
+      </div>
+    </div>
+    <div class="ms-wrap" id="vt-wrap-custom">
+      <span class="ms-label">Custom</span>
+      <button class="ms-btn" id="vt-btn-custom" onclick="vtmsOpen('custom')">All</button>
+      <div class="ms-menu" id="vt-menu-custom">
+        <label><input type="checkbox" value="done"    onchange="vtmsChange('custom','All')"> Done</label>
+        <label><input type="checkbox" value="missing" onchange="vtmsChange('custom','All')"> Missing</label>
+      </div>
+    </div>
+    <div class="ms-wrap" id="vt-wrap-ata">
+      <span class="ms-label">Arrival</span>
+      <button class="ms-btn" id="vt-btn-ata" onclick="vtmsOpen('ata')">All</button>
+      <div class="ms-menu" id="vt-menu-ata">
+        <label><input type="checkbox" value="arrived"   onchange="vtmsChange('ata','All')"> Arrived (ATA set)</label>
+        <label><input type="checkbox" value="en-route"  onchange="vtmsChange('ata','All')"> En Route</label>
+      </div>
+    </div>
+    <div class="ml"><button class="btn-reset" onclick="vtResetFilters()">↺ Reset</button></div>
+  </div>
+  <div style="margin:0 0 8px">
+    <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port…" oninput="renderVT()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+  </div>
   <div id="vt-progress-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 4px 12px"></div>
   <div class="tbl-card">
     <div class="tbl-top">
@@ -1181,6 +1299,7 @@ td.editing .cell-edit{display:block}
           <th class="no-sort" style="text-align:center">VGM</th>
           <th class="no-sort" style="text-align:center">Custom</th>
           <th onclick="vtSort('Status')" data-vtcol="Status">Status ↕</th>
+          <th onclick="vtSort('Order No.')" data-vtcol="Order No.">Order No. ↕</th>
           <th onclick="vtSort('Remark')" data-vtcol="Remark">Remark ↕</th>
           <th class="no-sort"></th>
           <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="vt-sel-all" onchange="vtSelAll(this.checked)" title="Select all" style="width:14px;height:14px;cursor:pointer"/></th>
@@ -1915,6 +2034,8 @@ function applySmartETA(id){
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function renderDashboard(){
   renderSmartInsights();
+  if(typeof renderNotices==='function') renderNotices();
+  if(typeof fetchLogisticsNews==='function') fetchLogisticsNews(false);
   document.getElementById('kv-total').textContent = CT.length;
   document.getElementById('kv-arr').textContent   = CT.filter(r=>r['Tracking']==='Arrived').length;
   document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
@@ -2786,6 +2907,54 @@ function resetFilters(){
   renderCT();
 }
 
+// ── VT (VESSEL TRACKER) MULTI-SELECT FILTER HELPERS ───────────────
+const _vtmsState={};
+function vtmsGetValues(id){ return _vtmsState[id]?[..._vtmsState[id]]:[]; }
+function _vtmsUpdateBtn(id,vals,placeholder){
+  const btn=document.getElementById('vt-btn-'+id); if(!btn) return;
+  if(vals.length){ btn.textContent=vals.join(', '); btn.classList.add('has-sel'); }
+  else{ btn.textContent=placeholder; btn.classList.remove('has-sel'); }
+}
+function _vtmsSyncDOM(id){
+  const s=_vtmsState[id]||new Set();
+  document.querySelectorAll('#vt-menu-'+id+' input[type=checkbox]').forEach(cb=>{ cb.checked=s.has(cb.value); });
+}
+function vtmsOpen(id){
+  const menu=document.getElementById('vt-menu-'+id);
+  const wasOpen=menu.classList.contains('open');
+  document.querySelectorAll('.ms-menu.open').forEach(m=>m.classList.remove('open'));
+  if(!wasOpen) menu.classList.add('open');
+}
+function vtmsChange(id, placeholder){
+  const vals=Array.from(document.querySelectorAll('#vt-menu-'+id+' input[type=checkbox]:checked')).map(cb=>cb.value);
+  _vtmsState[id]=new Set(vals);
+  _vtmsUpdateBtn(id,vals,placeholder);
+  renderVT();
+}
+function vtmsClear(id, placeholder){
+  _vtmsState[id]=new Set();
+  _vtmsSyncDOM(id);
+  _vtmsUpdateBtn(id,[],placeholder);
+}
+function vtFillMultiSel(id, field, placeholder){
+  const vals=vtmsGetValues(id);
+  const allVals=[...new Set(VT.map(r=>r[field]||'').filter(Boolean))].sort();
+  const menu=document.getElementById('vt-menu-'+id); if(!menu) return;
+  const selected=_vtmsState[id]||new Set();
+  menu.innerHTML=allVals.map(v=>`<label><input type="checkbox" value="${v}" ${selected.has(v)?'checked':''} onchange="vtmsChange('${id}','${placeholder}')"> ${v}</label>`).join('');
+  if(!allVals.length) menu.innerHTML='<label style="color:#aaa;font-style:italic">No data yet</label>';
+}
+function vtResetFilters(){
+  const s=document.getElementById('vt-f-search'); if(s) s.value='';
+  vtmsClear('port','All Ports');
+  vtmsClear('carrier','All Carriers');
+  vtmsClear('status','All Statuses');
+  vtmsClear('vgm','All');
+  vtmsClear('custom','All');
+  vtmsClear('ata','All');
+  renderVT();
+}
+
 // Grey-out options in static menus that have no matches given other active filters
 function cascadeStaticMenu(id, hasValueFn){
   const rows=getCTRowsExcept(id);
@@ -3627,12 +3796,15 @@ function openDelVessel(id){
 }
 function renderVT(){
   const _vtTotalCt=VT.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0);
-  document.getElementById('vt-count').textContent=VT.length+' vessels · '+_vtTotalCt+' containers';
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'];
-  const TOTAL_COLS=18; // expand + 14 data cols + del + sel
+  const TOTAL_COLS=19; // expand + 15 data cols + del + sel
+
+  // ── Fill dynamic filter menus (Port, Carrier) ─────────────────────
+  vtFillMultiSel('port','Port','All Ports');
+  vtFillMultiSel('carrier','Carrier','All Carriers');
 
   // ── Sort ──────────────────────────────────────────────────────────
-  const vtRows = vtSortCol
+  const vtSorted = vtSortCol
     ? [...VT].sort((a,b)=>{
         let av=a[vtSortCol]??'', bv=b[vtSortCol]??'';
         const da=parseDate(String(av)), db=parseDate(String(bv));
@@ -3641,6 +3813,57 @@ function renderVT(){
         return String(av).localeCompare(String(bv))*vtSortDir;
       })
     : VT;
+
+  // ── Apply VT filters ──────────────────────────────────────────────
+  const _vtQ=(document.getElementById('vt-f-search')?document.getElementById('vt-f-search').value||'':'').toLowerCase().trim();
+  const _vtTokens=_vtQ?_vtQ.split(/[\s,;]+/).filter(Boolean):[];
+  const _vtfPort=vtmsGetValues('port');
+  const _vtfCarrier=vtmsGetValues('carrier');
+  const _vtfStatus=vtmsGetValues('status');
+  const _vtfVgm=vtmsGetValues('vgm');
+  const _vtfCustom=vtmsGetValues('custom');
+  const _vtfAta=vtmsGetValues('ata');
+  const vtRows=vtSorted.filter(r=>{
+    if(_vtfPort.length&&!_vtfPort.includes(r['Port']||'')) return false;
+    if(_vtfCarrier.length&&!_vtfCarrier.includes(r['Carrier']||'')) return false;
+    if(_vtfStatus.length&&!_vtfStatus.includes(r['Status']||'')) return false;
+    if(_vtfVgm.length){
+      const has=!!r['VGM'];
+      if(_vtfVgm.includes('done')&&!has) return false;
+      if(_vtfVgm.includes('missing')&&has) return false;
+      if(_vtfVgm.includes('done')&&_vtfVgm.includes('missing')) {} // both = show all
+    }
+    if(_vtfCustom.length){
+      const has=!!r['Custom'];
+      if(_vtfCustom.includes('done')&&!has) return false;
+      if(_vtfCustom.includes('missing')&&has) return false;
+      if(_vtfCustom.includes('done')&&_vtfCustom.includes('missing')) {}
+    }
+    if(_vtfAta.length){
+      const hasAta=!!(r['ATA (Actual)']&&String(r['ATA (Actual)']).trim());
+      if(_vtfAta.includes('arrived')&&!hasAta) return false;
+      if(_vtfAta.includes('en-route')&&hasAta) return false;
+    }
+    if(_vtTokens.length){
+      const haystack=[r['Port'],r['Carrier'],r['Booking / BC No.'],r['Vessel Name'],r['Order No.'],r['Remark'],...(Array.isArray(r.containers)?r.containers:[])].filter(Boolean).join(' ').toLowerCase();
+      if(!_vtTokens.every(t=>haystack.includes(t))) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('vt-count').textContent=vtRows.length+(vtRows.length!==VT.length?` of ${VT.length}`:'')+' vessels · '+vtRows.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0)+' containers';
+
+  // ── No-data message ───────────────────────────────────────────────
+  let _vtNoData=document.getElementById('vt-nodata');
+  if(!_vtNoData){
+    _vtNoData=document.createElement('div');
+    _vtNoData.id='vt-nodata';
+    _vtNoData.className='no-data';
+    _vtNoData.style.display='none';
+    _vtNoData.textContent='No vessels match the filters.';
+    document.querySelector('#page-vessels .tbl-card').appendChild(_vtNoData);
+  }
+  _vtNoData.style.display=vtRows.length?'none':'block';
 
   // Update sort indicators on column headers
   document.querySelectorAll('#page-vessels thead th[data-vtcol]').forEach(th=>{
@@ -3728,6 +3951,7 @@ function renderVT(){
       <td style="text-align:center;padding:6px"><input type="checkbox" title="VGM" ${r['VGM']?'checked':''} onchange="vtToggleFlag(${r._id},'VGM',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--blue)"/></td>
       <td style="text-align:center;padding:6px"><input type="checkbox" title="Custom" ${r['Custom']?'checked':''} onchange="vtToggleFlag(${r._id},'Custom',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#8B4513"/></td>
       ${vtCell(r,'Status',{select:STATUS_OPTS})}
+      ${vtCell(r,'Order No.')}
       ${vtCell(r,'Remark')}
       <td style="padding:4px 6px;text-align:center">
         <button class="btn-del-row" onclick="openDelVessel(${r._id})" title="Delete">✕</button>
@@ -5650,6 +5874,115 @@ function fbCopyText(batch){
   });
 }
 </script>
+
+// ══ IMPORTANT NOTICE BOARD ════════════════════════════════════════
+const NOTICES_KEY='LOGISTICS_NOTICES';
+let NOTICES=[];
+(function loadNotices(){
+  try{ const s=localStorage.getItem(NOTICES_KEY); if(s) NOTICES=JSON.parse(s); }catch(e){}
+})();
+function saveNotices(){ try{ localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); }catch(e){} }
+function noticeOpenAdd(){
+  document.getElementById('notice-add-form').style.display='block';
+  document.getElementById('notice-text').focus();
+}
+function noticeCloseAdd(){
+  document.getElementById('notice-add-form').style.display='none';
+  document.getElementById('notice-text').value='';
+}
+function noticeSave(){
+  const text=(document.getElementById('notice-text').value||'').trim();
+  if(!text) return;
+  const level=document.getElementById('notice-level').value||'info';
+  const now=new Date();
+  NOTICES.unshift({id:Date.now(),level,text,ts:now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})});
+  saveNotices();
+  noticeCloseAdd();
+  renderNotices();
+}
+function noticeDelete(id){
+  NOTICES=NOTICES.filter(n=>n.id!==id);
+  saveNotices();
+  renderNotices();
+}
+function renderNotices(){
+  const el=document.getElementById('notice-list'); if(!el) return;
+  if(!NOTICES.length){ el.innerHTML='<div style="color:#aaa;font-size:12px;padding:8px 0">No notices yet.</div>'; return; }
+  const icons={info:'ℹ️',warn:'⚠️',urgent:'🚨'};
+  el.innerHTML=NOTICES.map(n=>`
+    <div class="notice-item notice-${n.level}">
+      <span class="notice-level-badge">${icons[n.level]||'📌'}</span>
+      <div class="notice-item-text">
+        ${n.text.replace(/</g,'&lt;').replace(/\n/g,'<br>')}
+        <div class="notice-item-meta">${n.ts}</div>
+      </div>
+      <button class="notice-item-rm" onclick="noticeDelete(${n.id})" title="Dismiss">✕</button>
+    </div>
+  `).join('');
+}
+renderNotices();
+
+// ══ EUROPE LOGISTICS NEWS FEED ════════════════════════════════════
+let _newsLastFetch=0;
+const NEWS_INTERVAL=30*60*1000; // 30 minutes
+const NEWS_FEEDS=[
+  'https://theloadstar.com/feed/',            // The Loadstar – top EU shipping news
+  'https://www.freightwaves.com/news/feed'    // FreightWaves – global logistics
+];
+function _stripHtml(html){ return (html||'').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').replace(/&#\d+;/g,'').trim(); }
+function _timeAgo(dateStr){
+  const d=new Date(dateStr); if(isNaN(d)) return dateStr;
+  const diff=Math.round((Date.now()-d)/60000);
+  if(diff<1) return 'just now'; if(diff<60) return diff+'m ago';
+  const h=Math.round(diff/60); if(h<24) return h+'h ago';
+  const days=Math.round(h/24); return days+'d ago';
+}
+async function fetchLogisticsNews(force=false){
+  const now=Date.now();
+  if(!force && now-_newsLastFetch < NEWS_INTERVAL) return;
+  _newsLastFetch=now;
+  const el=document.getElementById('news-list'); if(!el) return;
+  el.innerHTML='<div class="news-loading">⏳ Fetching latest news…</div>';
+  const allItems=[];
+  for(const feedUrl of NEWS_FEEDS){
+    try{
+      const apiUrl=`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=8`;
+      const resp=await fetch(apiUrl,{signal:AbortSignal.timeout(8000)});
+      const data=await resp.json();
+      if(data.status==='ok'&&Array.isArray(data.items)){
+        data.items.forEach(item=>{
+          allItems.push({
+            title:item.title||'',
+            link:item.link||'#',
+            pubDate:item.pubDate||'',
+            description:_stripHtml(item.description||'').slice(0,200)
+          });
+        });
+      }
+    }catch(err){ /* try next feed */ }
+  }
+  if(!allItems.length){
+    el.innerHTML='<div class="news-error">⚠️ Could not load news. Check your internet connection.</div>';
+    return;
+  }
+  // Sort by date, deduplicate by title, take top 8
+  allItems.sort((a,b)=>new Date(b.pubDate)-new Date(a.pubDate));
+  const seen=new Set(); const deduped=[];
+  allItems.forEach(item=>{ const k=item.title.slice(0,40); if(!seen.has(k)){ seen.add(k); deduped.push(item); }});
+  const top=deduped.slice(0,8);
+  const upd=document.getElementById('news-updated');
+  if(upd) upd.textContent='Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  el.innerHTML=top.map(item=>`
+    <div class="news-item">
+      <div class="news-item-meta">${_timeAgo(item.pubDate)}</div>
+      <a href="${item.link}" target="_blank" rel="noopener">${item.title.replace(/</g,'&lt;')}</a>
+      ${item.description?`<div class="news-item-desc">${item.description.replace(/</g,'&lt;')}</div>`:''}
+    </div>
+  `).join('');
+}
+// Initial fetch + auto-refresh every 30 min
+fetchLogisticsNews(true);
+setInterval(()=>fetchLogisticsNews(false), NEWS_INTERVAL);
 
 <style id="sticky-header-patch">
   /* Sticky header fix:
