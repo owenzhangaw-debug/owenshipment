@@ -730,32 +730,31 @@ td.editing .cell-edit{display:block}
 .fb-two-col{display:grid;grid-template-columns:1fr 1fr;gap:0}
 @media(max-width:700px){.fb-two-col{grid-template-columns:1fr}}
 .fb-col{padding:16px 20px;border-right:1px solid #f0f0f0}
-/* ── Notice + News Row ── */
-.notice-news-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0 0}
-@media(max-width:780px){.notice-news-row{grid-template-columns:1fr}}
-.notice-board,.news-board{padding:14px 16px;min-height:120px}
-.notice-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;font-weight:700;color:#004D4C;border-bottom:1px solid #f0f0f0;padding-bottom:8px}
-.notice-add-btn{margin-left:auto;font-size:11px;font-weight:700;padding:4px 10px;border:1px solid #004D4C;background:#fff;color:#004D4C;border-radius:6px;cursor:pointer;white-space:nowrap}
-.notice-add-btn:hover{background:#E0EFEF}
-.notice-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f8f8f8;font-size:12px;line-height:1.5;color:#1e293b}
-.notice-item:last-child{border-bottom:none}
-.notice-level-badge{font-size:14px;flex-shrink:0;margin-top:1px}
-.notice-item-text{flex:1;min-width:0;word-break:break-word}
-.notice-item-meta{font-size:10px;color:#94a3b8;margin-top:2px}
-.notice-item-rm{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:14px;padding:0;flex-shrink:0;margin-top:1px;line-height:1}
-.notice-item-rm:hover{color:#e53935}
-.notice-info{background:#EFF6FF;border-left:3px solid #3B82F6;border-radius:0 6px 6px 0;padding:5px 8px}
-.notice-warn{background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 6px 6px 0;padding:5px 8px}
-.notice-urgent{background:#FEF2F2;border-left:3px solid #EF4444;border-radius:0 6px 6px 0;padding:5px 8px}
-/* ── News Feed ── */
-.news-item{padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
-.news-item:last-child{border-bottom:none}
-.news-item a{color:#004D4C;font-weight:700;text-decoration:none;line-height:1.4;display:block;margin-bottom:3px}
-.news-item a:hover{text-decoration:underline}
-.news-item-meta{color:#94a3b8;font-size:10px;margin-bottom:3px}
-.news-item-desc{color:#475569;font-size:11px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.news-loading{color:#aaa;font-size:12px;padding:8px 0}
-.news-error{color:#ef4444;font-size:12px;padding:8px 0}
+/* ── Important Notice Board ── */
+.notice-board-wrap{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e2e8f0;margin:0 0 18px;overflow:hidden}
+.nb-header{display:flex;align-items:center;gap:10px;padding:13px 18px;background:linear-gradient(135deg,#004D4C,#006b6a);color:#fff;font-size:13px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.nb-add-btn{margin-left:auto;font-size:11px;font-weight:700;padding:5px 14px;border:1.5px solid rgba(255,255,255,.55);background:rgba(255,255,255,.13);color:#fff;border-radius:7px;cursor:pointer;white-space:nowrap;transition:background .15s}
+.nb-add-btn:hover{background:rgba(255,255,255,.28)}
+.nb-form{padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e8edf2}
+.nb-select{width:100%;border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;font-size:13px;color:#1e293b;background:#fff;margin-bottom:8px;cursor:pointer}
+.nb-textarea{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:7px;padding:8px 12px;font-size:13px;font-family:inherit;resize:vertical;min-height:58px;outline:none;transition:border-color .15s}
+.nb-textarea:focus{border-color:#004D4C}
+#notice-list{padding:10px 16px 14px}
+.ni{display:flex;align-items:flex-start;gap:11px;padding:10px 12px;border-radius:9px;margin-bottom:8px}
+.ni:last-child{margin-bottom:2px}
+.ni-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.ni-body{flex:1;min-width:0}
+.ni-text{font-size:13px;font-weight:500;color:#1e293b;word-break:break-word;line-height:1.55}
+.ni-date{font-size:10px;color:#94a3b8;margin-top:3px}
+.ni-rm{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:16px;padding:0;flex-shrink:0;line-height:1;transition:color .15s;margin-top:1px}
+.ni-rm:hover{color:#ef4444}
+.ni-info{background:#EFF6FF;border-left:4px solid #3B82F6}
+.ni-warn{background:#FFFBEB;border-left:4px solid #F59E0B}
+.ni-urgent{background:#FEF2F2;border-left:4px solid #EF4444;animation:ni-pulse 2.5s ease-in-out infinite}
+@keyframes ni-pulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 4px rgba(239,68,68,.12)}}
+/* ── Page-level notice strip (Vessels / Containers) ── */
+.page-notice-strip{margin:0 0 12px;display:flex;flex-direction:column;gap:6px}
+.page-notice-strip .ni{margin-bottom:0;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 /* ── Dashboard Trucker Reviews ── */
 .tr-review-section{margin-top:20px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #e2e8f0;overflow:hidden}
 .tr-review-hdr{background:linear-gradient(135deg,#004D4C,#006b6a);color:#fff;padding:12px 20px;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
@@ -857,6 +856,37 @@ td.editing .cell-edit{display:block}
         <div>Enter a date at any stage to project the full route timeline</div>
       </div>
     </div>
+  </div>
+
+  <!-- ══ Important Notice Board ══ -->
+  <div class="notice-board-wrap">
+    <div class="nb-header">
+      <span style="font-size:18px">📌</span>
+      <span>Important Notices</span>
+      <button class="nb-add-btn" onclick="noticeOpenAdd()">+ Add Notice</button>
+    </div>
+    <div id="notice-add-form" style="display:none">
+      <div class="nb-form">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <select id="notice-level" class="nb-select" style="flex:1;margin-bottom:0">
+            <option value="info">ℹ️  Info</option>
+            <option value="warn">⚠️  Warning</option>
+            <option value="urgent">🚨  Urgent</option>
+          </select>
+          <select id="notice-cat" class="nb-select" style="flex:1;margin-bottom:0">
+            <option value="all">📋 All Pages</option>
+            <option value="vessels">🚢 Vessels Only</option>
+            <option value="containers">📦 Containers Only</option>
+          </select>
+        </div>
+        <textarea id="notice-text" class="nb-textarea" placeholder="Type your notice here…" rows="2"></textarea>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn btn-green" style="flex:1;padding:7px;font-size:13px" onclick="noticeSave()">💾 Save</button>
+          <button class="btn btn-ghost" style="padding:7px 16px;font-size:13px" onclick="noticeCloseAdd()">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div id="notice-list"></div>
   </div>
 
   <div class="dash-split">
@@ -1052,44 +1082,6 @@ td.editing .cell-edit{display:block}
 
   </div><!-- end dash-split -->
 
-  <!-- ══ Notice + News Row ══ -->
-  <div class="notice-news-row">
-
-    <!-- Important Notice Board -->
-    <div class="chart-card notice-board">
-      <div class="notice-hdr">
-        <span>📌 Important Notices</span>
-        <button class="notice-add-btn" onclick="noticeOpenAdd()">+ Add Notice</button>
-      </div>
-      <div id="notice-add-form" style="display:none;margin-bottom:10px">
-        <div style="display:flex;gap:6px;align-items:flex-start">
-          <select id="notice-level" style="border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:12px;color:#1e293b;background:#fff">
-            <option value="info">ℹ️ Info</option>
-            <option value="warn">⚠️ Warning</option>
-            <option value="urgent">🚨 Urgent</option>
-          </select>
-          <textarea id="notice-text" rows="2" placeholder="Type notice…" style="flex:1;border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:12px;resize:vertical;font-family:inherit;min-width:0"></textarea>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <button class="btn btn-green" style="padding:5px 12px;font-size:12px" onclick="noticeSave()">Save</button>
-            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="noticeCloseAdd()">Cancel</button>
-          </div>
-        </div>
-      </div>
-      <div id="notice-list"><div style="color:#aaa;font-size:12px;padding:8px 0">No notices yet.</div></div>
-    </div>
-
-    <!-- Europe Logistics News -->
-    <div class="chart-card news-board">
-      <div class="notice-hdr">
-        <span>🌍 Europe Logistics News</span>
-        <span id="news-updated" style="font-size:10px;color:#94a3b8;margin-left:auto;font-weight:400"></span>
-        <button class="notice-add-btn" onclick="fetchLogisticsNews(true)" title="Refresh">↺ Refresh</button>
-      </div>
-      <div id="news-list"><div style="color:#aaa;font-size:12px;padding:8px 0">Loading news…</div></div>
-    </div>
-
-  </div><!-- end notice-news-row -->
-
   <!-- ══ Trucker Reviews ══ -->
   <div class="tr-review-section">
     <div class="tr-review-hdr">🚛 Trucker Performance Reviews <span style="font-size:9px;font-weight:500;opacity:.75;margin-left:4px">auto-updated from ratings &amp; data</span></div>
@@ -1100,6 +1092,7 @@ td.editing .cell-edit{display:block}
 
 <!-- ══ CONTAINERS ══ -->
 <div id="page-containers" class="page">
+  <div id="page-notice-containers"></div>
   <div id="ct-batch-progress" style="margin:0 0 12px"></div>
 
   <div class="toolbar" style="margin:0 0 8px">
@@ -1214,6 +1207,7 @@ td.editing .cell-edit{display:block}
 
 <!-- ══ VESSELS ══ -->
 <div id="page-vessels" class="page">
+  <div id="page-notice-vessels"></div>
   <div class="vt-toolbar">
     <div class="vt-search-wrap">
       <span class="vt-si">🔍</span>
@@ -1754,8 +1748,8 @@ function showPage(p){
     addBtn.textContent=p==='vessels'?'+ Add Vessel':'+ Add Container';
   }
   if(p==='dashboard') renderDashboard();
-  if(p==='containers') renderCT();
-  if(p==='vessels') renderVT();
+  if(p==='containers'){ renderCT(); if(typeof renderPageNotices==='function') renderPageNotices(); }
+  if(p==='vessels'){ renderVT(); if(typeof renderPageNotices==='function') renderPageNotices(); }
   if(p==='feedback') renderFeedback();
 }
 function _contextAdd(){
@@ -2035,7 +2029,6 @@ function applySmartETA(id){
 function renderDashboard(){
   renderSmartInsights();
   if(typeof renderNotices==='function') renderNotices();
-  if(typeof fetchLogisticsNews==='function') fetchLogisticsNews(false);
   document.getElementById('kv-total').textContent = CT.length;
   document.getElementById('kv-arr').textContent   = CT.filter(r=>r['Tracking']==='Arrived').length;
   document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
@@ -5875,6 +5868,7 @@ function fbCopyText(batch){
 }
 </script>
 
+<script>
 // ══ IMPORTANT NOTICE BOARD ════════════════════════════════════════
 const NOTICES_KEY='LOGISTICS_NOTICES';
 let NOTICES=[];
@@ -5890,99 +5884,58 @@ function noticeCloseAdd(){
   document.getElementById('notice-add-form').style.display='none';
   document.getElementById('notice-text').value='';
 }
+const CAT_LABELS={all:'📋 All Pages',vessels:'🚢 Vessels',containers:'📦 Containers'};
 function noticeSave(){
   const text=(document.getElementById('notice-text').value||'').trim();
   if(!text) return;
   const level=document.getElementById('notice-level').value||'info';
+  const cat=document.getElementById('notice-cat').value||'all';
   const now=new Date();
-  NOTICES.unshift({id:Date.now(),level,text,ts:now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})});
-  saveNotices();
-  noticeCloseAdd();
-  renderNotices();
+  NOTICES.unshift({id:Date.now(),level,cat,text,ts:now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})});
+  saveNotices(); noticeCloseAdd(); renderNotices(); renderPageNotices();
 }
 function noticeDelete(id){
   NOTICES=NOTICES.filter(n=>n.id!==id);
-  saveNotices();
-  renderNotices();
+  saveNotices(); renderNotices(); renderPageNotices();
+}
+function _buildNoticeItems(list, showDelete=true){
+  const icons={info:'ℹ️',warn:'⚠️',urgent:'🚨'};
+  return list.map(n=>`
+    <div class="ni ni-${n.level}">
+      <span class="ni-icon">${icons[n.level]||'📌'}</span>
+      <div class="ni-body">
+        <div class="ni-text">${n.text.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>
+        <div class="ni-date">${n.ts}${n.cat&&n.cat!=='all'?` · <span style="font-weight:700;color:#004D4C">${CAT_LABELS[n.cat]||''}</span>`:''}</div>
+      </div>
+      ${showDelete?`<button class="ni-rm" onclick="noticeDelete(${n.id})" title="Dismiss">✕</button>`:''}
+    </div>
+  `).join('');
 }
 function renderNotices(){
   const el=document.getElementById('notice-list'); if(!el) return;
-  if(!NOTICES.length){ el.innerHTML='<div style="color:#aaa;font-size:12px;padding:8px 0">No notices yet.</div>'; return; }
-  const icons={info:'ℹ️',warn:'⚠️',urgent:'🚨'};
-  el.innerHTML=NOTICES.map(n=>`
-    <div class="notice-item notice-${n.level}">
-      <span class="notice-level-badge">${icons[n.level]||'📌'}</span>
-      <div class="notice-item-text">
-        ${n.text.replace(/</g,'&lt;').replace(/\n/g,'<br>')}
-        <div class="notice-item-meta">${n.ts}</div>
-      </div>
-      <button class="notice-item-rm" onclick="noticeDelete(${n.id})" title="Dismiss">✕</button>
-    </div>
-  `).join('');
-}
-renderNotices();
-
-// ══ EUROPE LOGISTICS NEWS FEED ════════════════════════════════════
-let _newsLastFetch=0;
-const NEWS_INTERVAL=30*60*1000; // 30 minutes
-const NEWS_FEEDS=[
-  'https://theloadstar.com/feed/',            // The Loadstar – top EU shipping news
-  'https://www.freightwaves.com/news/feed'    // FreightWaves – global logistics
-];
-function _stripHtml(html){ return (html||'').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').replace(/&#\d+;/g,'').trim(); }
-function _timeAgo(dateStr){
-  const d=new Date(dateStr); if(isNaN(d)) return dateStr;
-  const diff=Math.round((Date.now()-d)/60000);
-  if(diff<1) return 'just now'; if(diff<60) return diff+'m ago';
-  const h=Math.round(diff/60); if(h<24) return h+'h ago';
-  const days=Math.round(h/24); return days+'d ago';
-}
-async function fetchLogisticsNews(force=false){
-  const now=Date.now();
-  if(!force && now-_newsLastFetch < NEWS_INTERVAL) return;
-  _newsLastFetch=now;
-  const el=document.getElementById('news-list'); if(!el) return;
-  el.innerHTML='<div class="news-loading">⏳ Fetching latest news…</div>';
-  const allItems=[];
-  for(const feedUrl of NEWS_FEEDS){
-    try{
-      const apiUrl=`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=8`;
-      const resp=await fetch(apiUrl,{signal:AbortSignal.timeout(8000)});
-      const data=await resp.json();
-      if(data.status==='ok'&&Array.isArray(data.items)){
-        data.items.forEach(item=>{
-          allItems.push({
-            title:item.title||'',
-            link:item.link||'#',
-            pubDate:item.pubDate||'',
-            description:_stripHtml(item.description||'').slice(0,200)
-          });
-        });
-      }
-    }catch(err){ /* try next feed */ }
-  }
-  if(!allItems.length){
-    el.innerHTML='<div class="news-error">⚠️ Could not load news. Check your internet connection.</div>';
+  if(!NOTICES.length){
+    el.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:14px 0;text-align:center">No notices yet. Use <b>+ Add</b> to pin an important reminder.</div>';
     return;
   }
-  // Sort by date, deduplicate by title, take top 8
-  allItems.sort((a,b)=>new Date(b.pubDate)-new Date(a.pubDate));
-  const seen=new Set(); const deduped=[];
-  allItems.forEach(item=>{ const k=item.title.slice(0,40); if(!seen.has(k)){ seen.add(k); deduped.push(item); }});
-  const top=deduped.slice(0,8);
-  const upd=document.getElementById('news-updated');
-  if(upd) upd.textContent='Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  el.innerHTML=top.map(item=>`
-    <div class="news-item">
-      <div class="news-item-meta">${_timeAgo(item.pubDate)}</div>
-      <a href="${item.link}" target="_blank" rel="noopener">${item.title.replace(/</g,'&lt;')}</a>
-      ${item.description?`<div class="news-item-desc">${item.description.replace(/</g,'&lt;')}</div>`:''}
-    </div>
-  `).join('');
+  el.innerHTML=_buildNoticeItems(NOTICES, true);
 }
-// Initial fetch + auto-refresh every 30 min
-fetchLogisticsNews(true);
-setInterval(()=>fetchLogisticsNews(false), NEWS_INTERVAL);
+function renderPageNotices(){
+  // Show relevant notices on Vessels page
+  const vtEl=document.getElementById('page-notice-vessels');
+  if(vtEl){
+    const vtNotes=NOTICES.filter(n=>n.cat==='all'||n.cat==='vessels');
+    vtEl.innerHTML=vtNotes.length?`<div class="page-notice-strip">${_buildNoticeItems(vtNotes,false)}</div>`:'';
+  }
+  // Show relevant notices on Containers page
+  const ctEl=document.getElementById('page-notice-containers');
+  if(ctEl){
+    const ctNotes=NOTICES.filter(n=>n.cat==='all'||n.cat==='containers');
+    ctEl.innerHTML=ctNotes.length?`<div class="page-notice-strip">${_buildNoticeItems(ctNotes,false)}</div>`:'';
+  }
+}
+renderNotices();
+renderPageNotices();
+</script>
 
 <style id="sticky-header-patch">
   /* Sticky header fix:
