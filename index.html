@@ -740,14 +740,19 @@ td.editing .cell-edit{display:block}
 .nb-textarea{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:7px;padding:8px 12px;font-size:13px;font-family:inherit;resize:vertical;min-height:58px;outline:none;transition:border-color .15s}
 .nb-textarea:focus{border-color:#004D4C}
 #notice-list{padding:10px 16px 14px}
-.ni{display:flex;align-items:flex-start;gap:11px;padding:10px 12px;border-radius:9px;margin-bottom:8px}
+.ni{display:flex;align-items:flex-start;gap:11px;padding:10px 12px;border-radius:9px;margin-bottom:8px;flex-wrap:wrap}
 .ni:last-child{margin-bottom:2px}
 .ni-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.ni-view{display:flex;align-items:flex-start;gap:11px;flex:1;min-width:0}
 .ni-body{flex:1;min-width:0}
 .ni-text{font-size:13px;font-weight:500;color:#1e293b;word-break:break-word;line-height:1.55}
 .ni-date{font-size:10px;color:#94a3b8;margin-top:3px}
-.ni-rm{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:16px;padding:0;flex-shrink:0;line-height:1;transition:color .15s;margin-top:1px}
-.ni-rm:hover{color:#ef4444}
+.ni-edit-form{flex:1 1 100%;margin-top:4px}
+.ni-rm{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:15px;padding:2px 4px;line-height:1;transition:color .15s;border-radius:4px}
+.ni-rm:hover{color:#ef4444;background:#fee2e2}
+.ni-edit{background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;line-height:1;border-radius:4px;opacity:.5;transition:opacity .15s}
+.ni-edit:hover{opacity:1;background:#e0f2fe}
+.ni-edit-form{margin-top:8px;padding:10px;background:rgba(255,255,255,.7);border-radius:8px;border:1px solid rgba(0,0,0,.08)}
 .ni-info{background:#EFF6FF;border-left:4px solid #3B82F6}
 .ni-warn{background:#FFFBEB;border-left:4px solid #F59E0B}
 .ni-urgent{background:#FEF2F2;border-left:4px solid #EF4444;animation:ni-pulse 2.5s ease-in-out infinite}
@@ -5898,16 +5903,69 @@ function noticeDelete(id){
   NOTICES=NOTICES.filter(n=>n.id!==id);
   saveNotices(); renderNotices(); renderPageNotices();
 }
-function _buildNoticeItems(list, showDelete=true){
+function noticeStartEdit(id){
+  // Collapse any other open inline editors first
+  document.querySelectorAll('.ni-edit-form').forEach(f=>f.remove());
+  document.querySelectorAll('.ni-view').forEach(v=>v.style.display='');
+  const n=NOTICES.find(x=>x.id===id); if(!n) return;
+  const row=document.getElementById('ni-row-'+id); if(!row) return;
+  // Hide the view layer
+  row.querySelector('.ni-view').style.display='none';
+  // Build inline edit form
+  const form=document.createElement('div');
+  form.className='ni-edit-form';
+  form.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:7px">
+      <select class="nb-select nie-level" style="flex:1;margin:0">
+        <option value="info" ${n.level==='info'?'selected':''}>ℹ️  Info</option>
+        <option value="warn" ${n.level==='warn'?'selected':''}>⚠️  Warning</option>
+        <option value="urgent" ${n.level==='urgent'?'selected':''}>🚨  Urgent</option>
+      </select>
+      <select class="nb-select nie-cat" style="flex:1;margin:0">
+        <option value="all" ${(!n.cat||n.cat==='all')?'selected':''}>📋 All Pages</option>
+        <option value="vessels" ${n.cat==='vessels'?'selected':''}>🚢 Vessels Only</option>
+        <option value="containers" ${n.cat==='containers'?'selected':''}>📦 Containers Only</option>
+      </select>
+    </div>
+    <textarea class="nb-textarea nie-text" rows="3">${n.text.replace(/</g,'&lt;')}</textarea>
+    <div style="display:flex;gap:8px;margin-top:7px">
+      <button class="btn btn-green" style="flex:1;padding:6px;font-size:12px" onclick="noticeSaveEdit(${id})">💾 Save</button>
+      <button class="btn btn-ghost" style="padding:6px 14px;font-size:12px" onclick="noticeCancelEdit(${id})">Cancel</button>
+      <button style="padding:6px 12px;font-size:12px;border:1px solid #fca5a5;background:#fef2f2;color:#dc2626;border-radius:7px;cursor:pointer" onclick="noticeDelete(${id})">🗑 Delete</button>
+    </div>
+  `;
+  row.appendChild(form);
+  form.querySelector('.nie-text').focus();
+}
+function noticeCancelEdit(id){
+  const row=document.getElementById('ni-row-'+id); if(!row) return;
+  row.querySelector('.ni-edit-form').remove();
+  row.querySelector('.ni-view').style.display='';
+}
+function noticeSaveEdit(id){
+  const row=document.getElementById('ni-row-'+id); if(!row) return;
+  const text=(row.querySelector('.nie-text').value||'').trim(); if(!text) return;
+  const level=row.querySelector('.nie-level').value||'info';
+  const cat=row.querySelector('.nie-cat').value||'all';
+  const i=NOTICES.findIndex(x=>x.id===id); if(i<0) return;
+  NOTICES[i]={...NOTICES[i],level,cat,text};
+  saveNotices(); renderNotices(); renderPageNotices();
+}
+function _buildNoticeItems(list, showControls=true){
   const icons={info:'ℹ️',warn:'⚠️',urgent:'🚨'};
   return list.map(n=>`
-    <div class="ni ni-${n.level}">
+    <div class="ni ni-${n.level}" id="ni-row-${n.id}">
       <span class="ni-icon">${icons[n.level]||'📌'}</span>
-      <div class="ni-body">
-        <div class="ni-text">${n.text.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>
-        <div class="ni-date">${n.ts}${n.cat&&n.cat!=='all'?` · <span style="font-weight:700;color:#004D4C">${CAT_LABELS[n.cat]||''}</span>`:''}</div>
+      <div class="ni-view" style="display:flex;align-items:flex-start;gap:11px;flex:1;min-width:0">
+        <div class="ni-body">
+          <div class="ni-text">${n.text.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>
+          <div class="ni-date">${n.ts}${n.cat&&n.cat!=='all'?` · <span style="font-weight:700;color:#004D4C">${CAT_LABELS[n.cat]||''}</span>`:''}</div>
+        </div>
+        ${showControls?`<div style="display:flex;gap:4px;flex-shrink:0;margin-top:1px">
+          <button class="ni-edit" onclick="noticeStartEdit(${n.id})" title="Edit">✏️</button>
+          <button class="ni-rm" onclick="noticeDelete(${n.id})" title="Delete">✕</button>
+        </div>`:''}
       </div>
-      ${showDelete?`<button class="ni-rm" onclick="noticeDelete(${n.id})" title="Dismiss">✕</button>`:''}
     </div>
   `).join('');
 }
