@@ -699,6 +699,21 @@ td.editing .cell-edit{display:block}
 .ct-exp-row{display:none}
 .ct-exp-row.open{display:table-row}
 .ct-exp-cell{padding:10px 18px 14px 32px;background:#f0f9ff;border-bottom:2px solid #bae6fd}
+/* Route Map */
+.ct-route-map{margin-bottom:14px;padding:12px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px}
+.ct-rm-title{font-size:10px;font-weight:800;color:#334155;letter-spacing:.7px;text-transform:uppercase;margin-bottom:12px}
+.rm-track{display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:4px}
+.rm-step-wrap{display:flex;align-items:center;flex-shrink:0}
+.rm-step{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:80px;max-width:90px;padding:8px 6px;border-radius:10px;text-align:center;transition:all .2s}
+.rm-pending{background:#F8FAFC;border:1.5px solid #E2E8F0;opacity:.6}
+.rm-active{background:#EFF6FF;border:2px solid #3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.rm-done{background:#F0FDF4;border:1.5px solid #86EFAC}
+.rm-icon{font-size:18px;line-height:1}
+.rm-label{font-size:10px;font-weight:700;color:#1e293b;line-height:1.2}
+.rm-sub{font-size:9px;color:#94a3b8;line-height:1.2}
+.rm-date{font-size:9px;font-weight:600;color:#0369a1;margin-top:2px;background:#dbeafe;border-radius:4px;padding:1px 4px}
+.rm-connector{width:28px;height:2px;background:#E2E8F0;flex-shrink:0}
+.rm-conn-done{background:#86EFAC}
 .ct-sh-title{font-size:10px;font-weight:800;color:#0369a1;letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .ct-sh-empty{font-size:11px;color:#94a3b8;margin-bottom:8px}
 .ct-sh-entry{display:flex;align-items:center;gap:7px;padding:5px 9px;background:#fff;border:1px solid #e0f2fe;border-radius:7px;margin-bottom:5px;font-size:11px;flex-wrap:wrap}
@@ -937,20 +952,8 @@ td.editing .cell-edit{display:block}
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Slot–ETA Distribution (days)<span class="ch-toggle">▼</span></h3>
-            <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-dist-chart"></canvas></div>
-          </div>
-        </div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
             <h3 onclick="toggleChart(this)">Avg Slot–ETA by Batch<span class="ch-toggle">▼</span></h3>
             <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-batch-chart"></canvas></div>
-          </div>
-        </div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Avg Slot–ETA by Trucker (days)<span class="ch-toggle">▼</span></h3>
-            <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-trucker-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
@@ -975,8 +978,14 @@ td.editing .cell-edit{display:block}
       <div id="dash-cat-price" class="dash-cat-section">
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Avg Price vs Price T1 by Trucker (€)<span class="ch-toggle">▼</span></h3>
+            <h3 onclick="toggleChart(this)">Avg Price by Trucker (€)<span class="ch-toggle">▼</span></h3>
             <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-avg-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Avg T1 Cost by Batch (€)<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:320px"><canvas id="t1-batch-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
@@ -1132,11 +1141,7 @@ td.editing .cell-edit{display:block}
     <div class="ms-wrap" id="wrap-broker">
       <span class="ms-label">Broker</span>
       <button class="ms-btn" id="btn-broker" onclick="msOpen('broker')">All Brokers</button>
-      <div class="ms-menu" id="menu-broker">
-        <label><input type="checkbox" value="Wispex" onchange="msChange('broker','All Brokers')"> Wispex</label>
-        <label><input type="checkbox" value="Self"   onchange="msChange('broker','All Brokers')"> Self</label>
-        <label><input type="checkbox" value=""       onchange="msChange('broker','All Brokers')"> Not set</label>
-      </div>
+      <div class="ms-menu" id="menu-broker"></div>
     </div>
     <div class="ms-wrap" id="wrap-consignee">
       <span class="ms-label">Consignee</span>
@@ -1162,6 +1167,12 @@ td.editing .cell-edit{display:block}
         <label><input type="checkbox" value="Paid"           onchange="msChange('payment','All')"> Paid</label>
         <label><input type="checkbox" value=""               onchange="msChange('payment','All')"> Not set</label>
       </div>
+    </div>
+    <div class="ms-wrap" id="wrap-eta-date" style="gap:4px">
+      <span class="ms-label">ETA Hub</span>
+      <input type="date" id="ct-date-from" onchange="renderCT()" title="ETA at Hub from" style="height:30px;padding:0 7px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer"/>
+      <span style="color:#94a3b8;font-size:12px;align-self:center">→</span>
+      <input type="date" id="ct-date-to" onchange="renderCT()" title="ETA at Hub to" style="height:30px;padding:0 7px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer"/>
     </div>
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
@@ -1264,6 +1275,12 @@ td.editing .cell-edit{display:block}
         <label><input type="checkbox" value="arrived"   onchange="vtmsChange('ata','All')"> Arrived (ATA set)</label>
         <label><input type="checkbox" value="en-route"  onchange="vtmsChange('ata','All')"> En Route</label>
       </div>
+    </div>
+    <div class="ms-wrap" id="vt-wrap-eta-date" style="gap:4px">
+      <span class="ms-label">ETA</span>
+      <input type="date" id="vt-date-from" onchange="renderVT()" title="ETA from" style="height:30px;padding:0 7px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer"/>
+      <span style="color:#94a3b8;font-size:12px;align-self:center">→</span>
+      <input type="date" id="vt-date-to" onchange="renderVT()" title="ETA to" style="height:30px;padding:0 7px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer"/>
     </div>
     <div class="ml"><button class="btn-reset" onclick="vtResetFilters()">↺ Reset</button></div>
   </div>
@@ -1368,8 +1385,7 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>Batch / Train</label><input type="text" id="f_batch" list="dl-batch"/><datalist id="dl-batch"></datalist></div>
       <div class="form-group"><label>Consignee</label><input type="text" id="f_con" list="dl-con"/><datalist id="dl-con"></datalist></div>
       <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/><datalist id="dl-truck"></datalist></div>
-      <div class="form-group"><label>Broker</label>
-        <select id="f_broker"><option value="">—</option><option value="Wispex">Wispex</option><option value="Self">Self</option></select></div>
+      <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker" placeholder="e.g. Wispex"/><datalist id="dl-broker"><option value="Wispex"/><option value="Self"/></datalist></div>
       <div class="form-group"><label>Tracking</label>
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
@@ -1575,7 +1591,7 @@ td.editing .cell-edit{display:block}
         <div class="form-group"><label>Batch / Train<label class="be-clear-lbl"><input type="checkbox" id="be_clr_batch" onchange="beToggleClear(this,'be_batch')"> × clear</label></label><input type="text" id="be_batch" list="dl-batch"/></div>
         <div class="form-group"><label>Trucker<label class="be-clear-lbl"><input type="checkbox" id="be_clr_truck" onchange="beToggleClear(this,'be_truck')"> × clear</label></label><input type="text" id="be_truck" list="dl-truck"/></div>
         <div class="form-group"><label>Broker<label class="be-clear-lbl"><input type="checkbox" id="be_clr_broker" onchange="beToggleClear(this,'be_broker')"> × clear</label></label>
-          <select id="be_broker"><option value="">— no change —</option><option value="Wispex">Wispex</option><option value="Self">Self</option></select></div>
+          <input type="text" id="be_broker" list="dl-broker" placeholder="e.g. Wispex"/></div>
         <div class="form-group"><label>Consignee<label class="be-clear-lbl"><input type="checkbox" id="be_clr_con" onchange="beToggleClear(this,'be_con')"> × clear</label></label><input type="text" id="be_con" list="dl-con"/></div>
         <div class="form-group"><label>Tracking<label class="be-clear-lbl"><input type="checkbox" id="be_clr_track" onchange="beToggleClear(this,'be_track')"> × clear</label></label>
           <select id="be_track"><option value="">— no change —</option><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
@@ -1718,7 +1734,7 @@ let vtSortCol = 'Port Cut-Off', vtSortDir = 1; // default: nearest cut-off first
 let editId = null, delId = null;
 let importWB = null, importRows = [];
 let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null,
-    slotEtaTruckerChart = null, slotEtaTruckerBatchChart = null, slotChangeTruckerChart = null, hubT1BatchChart = null;
+    slotEtaTruckerBatchChart = null, slotChangeTruckerChart = null, hubT1BatchChart = null;
 
 // ── PERSISTENCE ───────────────────────────────────────────────────
 function loadData(){
@@ -2095,34 +2111,7 @@ function renderDashboard(){
     return (slot&&eta) ? { days: Math.round((slot-eta)/864e5), batch: r['Batch / Train']||'?' } : null;
   }).filter(Boolean);
 
-  // Distribution: buckets ≤−1, 0, 1, 2, 3, 4, 5, 6–10, 11+
-  const buckets=[
-    {label:'< 0',  min:-Infinity, max:-1,  color:'#e53935'},
-    {label:'0',    min:0,         max:0,   color:'#FF7043'},
-    {label:'1',    min:1,         max:1,   color:'#F9A825'},
-    {label:'2',    min:2,         max:2,   color:'#FDD835'},
-    {label:'3',    min:3,         max:3,   color:'#9CCC65'},
-    {label:'4',    min:4,         max:4,   color:'#66BB6A'},
-    {label:'5',    min:5,         max:5,   color:'#43A047'},
-    {label:'6–10', min:6,         max:10,  color:'#2E7D32'},
-    {label:'> 10', min:11,        max:Infinity, color:'#1B5E20'},
-  ];
-  const distCounts = buckets.map(b=> slotEtaDays.filter(x=>x.days>=b.min&&x.days<=b.max).length);
-  if(window.slotEtaDistChart) window.slotEtaDistChart.destroy();
-  window.slotEtaDistChart = new Chart(document.getElementById('slot-eta-dist-chart'),{
-    type:'bar',
-    data:{ labels:buckets.map(b=>b.label), datasets:[{
-      label:'Containers', data:distCounts,
-      backgroundColor:buckets.map(b=>b.color), borderRadius:4
-    }]},
-    options:{ responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>' '+ctx.raw+' container'+(ctx.raw!==1?'s':'')}}},
-      scales:{y:{ticks:{stepSize:1},grid:{color:'rgba(0,0,0,.06)'},title:{display:true,text:'Containers',font:{size:11}}},
-              x:{grid:{display:false},title:{display:true,text:'Days (Slot − ETA)',font:{size:11}}}} }
-  });
-
-  // ── Price vs Price T1 comparison by Trucker ──────────────────────
+  // ── Price by Trucker and T1 Cost by Batch ──────────────────────
   const priceTruckers={};
   CT.forEach(r=>{
     const t=r['Trucker']||'Unknown';
@@ -2151,7 +2140,7 @@ function renderDashboard(){
     }
   };
 
-  // Avg Price vs Avg Price T1
+  // Avg Price by Trucker
   _setPriceNoData('price-trucker-avg-chart');
   if(priceTruckerAvgChart) priceTruckerAvgChart.destroy(); priceTruckerAvgChart=null;
   if(!_noPrice){
@@ -2162,15 +2151,17 @@ function renderDashboard(){
         datasets:[
           { label:'Avg Price (€)',
             data:ptKeys.map(k=>priceTruckers[k].pCount?+(priceTruckers[k].pSum/priceTruckers[k].pCount).toFixed(0):null),
-            backgroundColor:'#004D4C', borderRadius:4 },
-          { label:'Avg Price T1 (€)',
-            data:ptKeys.map(k=>priceTruckers[k].p1Count?+(priceTruckers[k].p1Sum/priceTruckers[k].p1Count).toFixed(0):null),
-            backgroundColor:'#F9A825', borderRadius:4 }
+            backgroundColor:ptKeys.map((_,i)=>['#004D4C','#00695C','#00796B','#00897B','#009688','#26A69A','#4DB6AC','#80CBC4'][i%8]),
+            borderRadius:4 }
         ]
       },
       options:{ responsive:true,maintainAspectRatio:false,
-        plugins:{ legend:{position:'top',labels:{font:{size:11},padding:12}},
-          tooltip:{callbacks:{label:ctx=>ctx.raw!=null?' €'+ctx.raw.toLocaleString()+' avg/container':' —'}} },
+        plugins:{ legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>{
+            if(ctx.raw==null) return ' —';
+            const k=ptKeys[ctx.dataIndex];
+            return [' €'+ctx.raw.toLocaleString()+' avg/container',' ('+priceTruckers[k].pCount+' containers)'];
+          }}} },
         scales:{
           y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
               title:{display:true,text:'Avg Price (€)',font:{size:11}} },
@@ -2178,6 +2169,53 @@ function renderDashboard(){
         }
       }
     });
+  }
+
+  // Avg T1 Cost by Batch (sorted by batch date)
+  const t1ByBatch={};
+  CT.forEach(r=>{
+    const b=r['Batch / Train']||'?';
+    const p1=parseFloat(r['Price T1']);
+    if(isNaN(p1)||p1<=0) return;
+    if(!t1ByBatch[b]) t1ByBatch[b]={sum:0,count:0};
+    t1ByBatch[b].sum+=p1; t1ByBatch[b].count++;
+  });
+  const _bkSort=n=>{const m=String(n).match(/(\d{1,2})\/(\d{1,2})/);if(!m)return'9999/99/99';const mo=+m[1],dy=+m[2],yr=mo>=10?2025:2026;return`${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`;};
+  const t1BatchKeys=Object.keys(t1ByBatch).sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
+  const t1BatchAvgs=t1BatchKeys.map(k=>+(t1ByBatch[k].sum/t1ByBatch[k].count).toFixed(0));
+  const _noT1=t1BatchKeys.length===0;
+  if(window.t1BatchChart) window.t1BatchChart.destroy(); window.t1BatchChart=null;
+  const _t1El=document.getElementById('t1-batch-chart');
+  if(_t1El){
+    const _t1Wrap=_t1El.parentElement; let _t1Ov=_t1Wrap.querySelector('.price-nodata-ov');
+    if(_noT1){
+      _t1El.style.display='none';
+      if(!_t1Ov){_t1Ov=document.createElement('div');_t1Ov.className='price-nodata-ov';_t1Ov.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;height:120px;color:#94a3b8;font-size:12px;gap:6px';_t1Ov.innerHTML='<span style="font-size:28px">📊</span><span>No T1 cost data yet — add Price T1 in Containers tab</span>';_t1Wrap.appendChild(_t1Ov);}
+      _t1Ov.style.display='flex';
+    } else {
+      _t1El.style.display=''; if(_t1Ov) _t1Ov.style.display='none';
+      window.t1BatchChart = new Chart(_t1El,{
+        type:'bar',
+        data:{ labels:t1BatchKeys, datasets:[{
+          label:'Avg T1 Cost (€)',
+          data:t1BatchAvgs,
+          backgroundColor:t1BatchKeys.map((_,i)=>['#F9A825','#FFA000','#FF8F00','#FF6F00','#F57F17','#E65100','#BF360C','#B71C1C'][i%8]),
+          borderRadius:4
+        }]},
+        options:{ responsive:true,maintainAspectRatio:false,
+          plugins:{ legend:{display:false},
+            tooltip:{callbacks:{label:ctx=>{
+              const k=t1BatchKeys[ctx.dataIndex];
+              return [' €'+ctx.raw.toLocaleString()+' avg/container',' ('+t1ByBatch[k].count+' containers)'];
+            }}} },
+          scales:{
+            y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
+                title:{display:true,text:'Avg T1 Cost (€)',font:{size:11}} },
+            x:{ grid:{display:false}, ticks:{maxRotation:35,font:{size:10}} }
+          }
+        }
+      });
+    }
   }
 
   // Total Price vs Total Price T1
@@ -2239,41 +2277,21 @@ function renderDashboard(){
               y:{grid:{display:false}}} }
   });
 
-  // ── Slot–ETA by Trucker ───────────────────────────────────────────
-  // Build trucker averages  (reuse slotEtaDays, add trucker field)
+  // ── Slot–ETA by Trucker × Batch ──────────────────────────────────
+  // Build trucker data (for trucker × batch chart)
   const slotEtaFull = CT.map(r=>{
     const slot=parseDate(r['Scheduled Slot']), eta=parseDate(r['ETA at Hub']);
     if(!slot||!eta) return null;
     return { days: Math.round((slot-eta)/864e5), trucker: r['Trucker']||'Unknown', batch: r['Batch / Train']||'?' };
   }).filter(Boolean);
 
-  // Per-trucker avg
+  // Per-trucker map (used by batch grouping)
   const seTruckerMap={};
   slotEtaFull.forEach(({days,trucker})=>{
     if(!seTruckerMap[trucker]) seTruckerMap[trucker]={sum:0,count:0};
     seTruckerMap[trucker].sum+=days; seTruckerMap[trucker].count++;
   });
   const seTruckerKeys=Object.keys(seTruckerMap).sort();
-  const seTruckerAvgs=seTruckerKeys.map(t=>+(seTruckerMap[t].sum/seTruckerMap[t].count).toFixed(1));
-  const seTruckerColors=seTruckerAvgs.map(v=>v<0?'#e53935':v<=2?'#F9A825':v<=5?'#9CCC65':'#43A047');
-
-  if(slotEtaTruckerChart) slotEtaTruckerChart.destroy();
-  slotEtaTruckerChart = new Chart(document.getElementById('slot-eta-trucker-chart'),{
-    type:'bar', indexAxis:'y',
-    data:{ labels:seTruckerKeys, datasets:[{
-      label:'Avg Days', data:seTruckerAvgs,
-      backgroundColor:seTruckerColors, borderRadius:4
-    }]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>' Avg '+ctx.raw+'d ('+seTruckerMap[seTruckerKeys[ctx.dataIndex]].count+' containers)'}}},
-      scales:{
-        x:{grid:{color:'rgba(0,0,0,.06)'},title:{display:true,text:'Avg days (Slot − ETA)',font:{size:11}},
-           ticks:{callback:v=>v+'d'}},
-        y:{grid:{display:false}}
-      }
-    }
-  });
 
   // Per-trucker × batch grouped bars
   const allBatchesForSE=[...new Set(slotEtaFull.map(x=>x.batch))].sort();
@@ -2728,7 +2746,7 @@ function fillDL(id,key){
   [...new Set(CT.map(r=>r[key]).filter(Boolean))].sort()
     .forEach(v=>{const o=document.createElement('option');o.value=v;dl.appendChild(o);});
 }
-function refreshDLs(){ fillDL('dl-batch','Batch / Train'); fillDL('dl-truck','Trucker'); fillDL('dl-con','Consignee'); }
+function refreshDLs(){ fillDL('dl-batch','Batch / Train'); fillDL('dl-truck','Trucker'); fillDL('dl-con','Consignee'); fillDL('dl-broker','Broker'); }
 
 // ── MULTI-SELECT HELPERS ──────────────────────────────────────────
 // Selections stored in JS state so they survive DOM rebuilds in fillMultiSel
@@ -2779,6 +2797,9 @@ function getCTRowsExcept(excludeId){
   const fcons=excludeId==='consignee'?[]:msGetValues('consignee');
   const fsur=excludeId==='surcharge'?[]:msGetValues('surcharge');
   const fpay=excludeId==='payment'?[]:msGetValues('payment');
+  const _dfEl=document.getElementById('ct-date-from'), _dtEl=document.getElementById('ct-date-to');
+  const _dateFrom=_dfEl&&_dfEl.value?new Date(_dfEl.value):null;
+  const _dateTo=_dtEl&&_dtEl.value?new Date(_dtEl.value+'T23:59:59'):null;
   return CT.filter(r=>{
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
@@ -2796,6 +2817,12 @@ function getCTRowsExcept(excludeId){
       if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
     }
     if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
+    if(_dateFrom||_dateTo){
+      const eta=parseDate(r['ETA at Hub']);
+      if(_dateFrom&&eta&&eta<_dateFrom) return false;
+      if(_dateTo&&eta&&eta>_dateTo) return false;
+      if((_dateFrom||_dateTo)&&!eta) return false;
+    }
     if(qTokens.length){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
                r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
@@ -2830,6 +2857,9 @@ function getCTRows(){
   const fcons=msGetValues('consignee');
   const fsur=msGetValues('surcharge');
   const fpay=msGetValues('payment');
+  const _dfEl=document.getElementById('ct-date-from'), _dtEl=document.getElementById('ct-date-to');
+  const _dateFrom=_dfEl&&_dfEl.value?new Date(_dfEl.value):null;
+  const _dateTo=_dtEl&&_dtEl.value?new Date(_dtEl.value+'T23:59:59'):null;
   return CT.filter(r=>{
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
@@ -2847,6 +2877,12 @@ function getCTRows(){
       if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
     }
     if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
+    if(_dateFrom||_dateTo){
+      const eta=parseDate(r['ETA at Hub']);
+      if(_dateFrom&&eta&&eta<_dateFrom) return false;
+      if(_dateTo&&eta&&eta>_dateTo) return false;
+      if((_dateFrom||_dateTo)&&!eta) return false;
+    }
     if(qTokens.length){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
                r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
@@ -2907,6 +2943,8 @@ function resetFilters(){
   msClear('consignee','All Consignees');
   msClear('surcharge','All');
   msClear('payment','All');
+  const df=document.getElementById('ct-date-from'); if(df) df.value='';
+  const dt=document.getElementById('ct-date-to'); if(dt) dt.value='';
   renderCT();
 }
 
@@ -2957,6 +2995,8 @@ function vtResetFilters(){
   vtmsClear('vgm','All');
   vtmsClear('custom','All');
   vtmsClear('ata','All');
+  const vdf=document.getElementById('vt-date-from'); if(vdf) vdf.value='';
+  const vdt=document.getElementById('vt-date-to'); if(vdt) vdt.value='';
   renderVT();
 }
 
@@ -2971,14 +3011,60 @@ function cascadeStaticMenu(id, hasValueFn){
   });
 }
 
+// ── ROUTE MAP ────────────────────────────────────────────────────
+function buildRouteMap(r){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const etaMala=parseDate(r['ETA in Mala']);
+  const etaHub=parseDate(r['ETA at Hub']);
+  const t1Date=parseDate(r['T1 Date']);
+  const slot=parseDate(r['Scheduled Slot']);
+  const arrDate=parseDate(r['Actual Arrival']);
+  const fmt=d=>d?`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`:'';
+
+  // Determine current stage (0-5)
+  let currentStage=0;
+  if(arrDate) currentStage=5;
+  else if(t1Date&&t1Date<=today) currentStage=4;
+  else if(etaHub&&etaHub<=today) currentStage=3;
+  else if(etaMala&&etaMala<=today) currentStage=2;
+  else if(etaMala) currentStage=1;
+
+  const stages=[
+    { icon:'🚢', label:'China Port',        sub:'Loading',              date:'',            done:currentStage>0, active:currentStage===0 },
+    { icon:'🚂', label:'En Route',          sub:'China → Europe Rail',  date:'',            done:currentStage>1, active:currentStage===1 },
+    { icon:'🛃', label:'Poland Border',     sub:'Malaszewicze',         date:fmt(etaMala),  done:currentStage>2, active:currentStage===2 },
+    { icon:'🏗️', label:'Duisburg Hub',     sub:'ETA at Hub',           date:fmt(etaHub),   done:currentStage>3, active:currentStage===3 },
+    { icon:'📋', label:'T1 Cleared',        sub:'Customs',              date:fmt(t1Date),   done:currentStage>4, active:currentStage===4 },
+    { icon:'🚛', label:'Belgium Delivery',  sub:'Final destination',    date:fmt(slot)||(arrDate?fmt(arrDate):''), done:currentStage>=5, active:currentStage===5 },
+  ];
+
+  const stagesHtml=stages.map((s,i)=>{
+    const cls=s.done?'rm-done':s.active?'rm-active':'rm-pending';
+    const connector=i<stages.length-1?`<div class="rm-connector ${s.done?'rm-conn-done':''}"></div>`:'';
+    return `<div class="rm-step-wrap">
+      <div class="rm-step ${cls}">
+        <div class="rm-icon">${s.icon}</div>
+        <div class="rm-label">${s.label}</div>
+        <div class="rm-sub">${s.sub}</div>
+        ${s.date?`<div class="rm-date">${s.date}</div>`:''}
+      </div>${connector}
+    </div>`;
+  }).join('');
+
+  return `<div class="ct-route-map">
+    <div class="ct-rm-title">🗺️ Shipment Route</div>
+    <div class="rm-track">${stagesHtml}</div>
+  </div>`;
+}
+
 function renderCT(){
   fillMultiSel('batch','Batch / Train','All Batches');
   fillMultiSel('trucker','Trucker','All Truckers');
   fillMultiSel('consignee','Consignee','All Consignees');
+  fillMultiSel('broker','Broker','All Brokers');
   // Cascade static menus: grey out options with no matches in current filter context
   cascadeStaticMenu('tracking',(rows,v)=>rows.some(r=>r['Tracking']===v));
   cascadeStaticMenu('arrival',(rows,v)=>v==='missing'?rows.some(r=>!r['Actual Arrival']):rows.some(r=>!!r['Actual Arrival']));
-  cascadeStaticMenu('broker',(rows,v)=>rows.some(r=>(r['Broker']||'')===v));
   cascadeStaticMenu('surcharge',(rows,v)=>v==='missing'?rows.some(r=>!(r['Surcharge']&&String(r['Surcharge']).trim())):rows.some(r=>!!(r['Surcharge']&&String(r['Surcharge']).trim())));
   cascadeStaticMenu('payment',(rows,v)=>rows.some(r=>(r['Payment Status']||'')===v));
   const rows=getCTRows();
@@ -3198,16 +3284,12 @@ function renderCT(){
       </select></div>
     </td>`;
 
-    // Broker cell (dropdown: Wispex / Self)
+    // Broker cell (editable text with datalist)
     const brokerVal=r['Broker']||'';
-    const brokerBadge=brokerVal==='Wispex'?'<span class="broker-wispex">Wispex</span>':brokerVal==='Self'?'<span class="broker-self">Self</span>':'<span style="color:#ccc">—</span>';
+    const brokerBadge=brokerVal==='Wispex'?'<span class="broker-wispex">Wispex</span>':brokerVal==='Self'?'<span class="broker-self">Self</span>':brokerVal?`<span style="display:inline-block;background:#F1F5F9;color:#334155;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700">${brokerVal}</span>`:'<span style="color:#ccc">—</span>';
     const brokerCell=`<td data-id="${r._id}" data-col="Broker">
       <div class="cell-view" onclick="startEdit(this)">${brokerBadge}</div>
-      <div class="cell-edit"><select onblur="blurEditSelect(this)" onchange="commitEditSelect(this,'Broker',${r._id})">
-        <option value="" ${!brokerVal?'selected':''}>—</option>
-        <option ${brokerVal==='Wispex'?'selected':''}>Wispex</option>
-        <option ${brokerVal==='Self'?'selected':''}>Self</option>
-      </select></div>
+      <div class="cell-edit"><input type="text" list="dl-broker" value="${brokerVal.replace(/"/g,'&quot;')}" placeholder="e.g. Wispex" onblur="commitEdit(this,'Broker',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:110px"/></div>
     </td>`;
 
     // split editCells into groups
@@ -3442,7 +3524,7 @@ function renderCT(){
       </td>
     </tr>
     <tr class="ct-exp-row${ctIsOpen?' open':''}" id="ctexp-${r._id}">
-      <td class="ct-exp-cell" colspan="99">${slotHistSection}</td>
+      <td class="ct-exp-cell" colspan="99">${buildRouteMap(r)}${slotHistSection}</td>
     </tr>`;
   }).join('');
   // Dynamically set left offsets for frozen columns based on actual rendered widths
@@ -3877,6 +3959,9 @@ function renderVT(){
   const _vtfVgm=vtmsGetValues('vgm');
   const _vtfCustom=vtmsGetValues('custom');
   const _vtfAta=vtmsGetValues('ata');
+  const _vtDfEl=document.getElementById('vt-date-from'), _vtDtEl=document.getElementById('vt-date-to');
+  const _vtDateFrom=_vtDfEl&&_vtDfEl.value?new Date(_vtDfEl.value):null;
+  const _vtDateTo=_vtDtEl&&_vtDtEl.value?new Date(_vtDtEl.value+'T23:59:59'):null;
   const vtRows=vtSorted.filter(r=>{
     if(_vtfPort.length&&!_vtfPort.includes(r['Port']||'')) return false;
     if(_vtfCarrier.length&&!_vtfCarrier.includes(r['Carrier']||'')) return false;
@@ -3897,6 +3982,12 @@ function renderVT(){
       const hasAta=!!(r['ATA (Actual)']&&String(r['ATA (Actual)']).trim());
       if(_vtfAta.includes('arrived')&&!hasAta) return false;
       if(_vtfAta.includes('en-route')&&hasAta) return false;
+    }
+    if(_vtDateFrom||_vtDateTo){
+      const eta=parseDate(r['ETA (Arrival)']);
+      if(_vtDateFrom&&eta&&eta<_vtDateFrom) return false;
+      if(_vtDateTo&&eta&&eta>_vtDateTo) return false;
+      if((_vtDateFrom||_vtDateTo)&&!eta) return false;
     }
     if(_vtTokens.length){
       const haystack=[r['Port'],r['Carrier'],r['Booking / BC No.'],r['Vessel Name'],r['Order No.'],r['Remark'],...(Array.isArray(r.containers)?r.containers:[])].filter(Boolean).join(' ').toLowerCase();
