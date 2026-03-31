@@ -1338,7 +1338,17 @@ td.editing .cell-edit{display:block}
       <input type="text" id="se-recipient" placeholder="e.g. Warehouse Team" style="width:190px" oninput="buildSlotEmails()"/>
       <label style="margin-left:8px">Sender</label>
       <input type="text" id="se-sender" placeholder="e.g. Owen" style="width:120px" oninput="buildSlotEmails()"/>
+      <button class="se-copy-btn" onclick="seToggleContacts()" id="se-contacts-btn" style="margin-left:8px;background:#f0f9ff;color:#0369a1;border-color:#bae6fd">📋 Contacts</button>
       <button class="se-copy-btn" id="se-copy-all-btn" onclick="copyAllSlotEmails()" style="margin-left:auto">⎘ Copy All</button>
+    </div>
+    <!-- Contacts Management Panel -->
+    <div id="se-contacts-panel" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="font-weight:700;font-size:14px;color:#0f172a">📋 Consignee Contacts</span>
+        <span style="font-size:11px;color:#6b7280;flex:1">Used to populate "To:" in slot emails. Matched by consignee name.</span>
+        <button class="se-copy-btn" onclick="seAddContact()" style="background:#d1fae5;color:#065f46;border-color:#6ee7b7;font-size:12px">+ Add</button>
+      </div>
+      <div id="se-contacts-list"></div>
     </div>
     <div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Filter by Batch</div>
@@ -1363,7 +1373,7 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>Tracking</label>
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
-      <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+5d)</span></label><input type="text" id="f_eta" placeholder="YYYY/MM/DD"/></div>
+      <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+4d)</span></label><input type="text" id="f_eta" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>T1 Date <span style="font-size:10px;color:var(--muted);font-weight:400">T1 customs cleared</span></label><input type="text" id="f_t1date" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: same as Hub)</span></label><input type="text" id="f_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
       <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr" placeholder="YYYY/MM/DD"/></div>
@@ -1414,13 +1424,13 @@ td.editing .cell-edit{display:block}
         </label>
       </div>
       <div class="form-group full">
-        <label>Container No. &amp; Master B/L — one pair per line
+        <label>Container No., Master B/L &amp; Scheduled Slot — one per line
           <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px">
-            Format: <code style="background:#f0f2f8;padding:1px 5px;border-radius:4px">CONTAINER_NO, MASTER_BL</code>
-            &nbsp;—&nbsp; Master B/L is optional (can paste container numbers only)
+            Format: <code style="background:#f0f2f8;padding:1px 5px;border-radius:4px">CONTAINER_NO, MASTER_BL, SLOT</code>
+            &nbsp;—&nbsp; Master B/L and Slot are optional &nbsp;|&nbsp; use <code style="background:#f0f2f8;padding:1px 5px;border-radius:4px">CONTAINER_NO,, SLOT</code> to skip B/L
           </span>
         </label>
-        <textarea id="b_nos" rows="10" style="border:1px solid var(--border);border-radius:7px;padding:8px;font-family:monospace;font-size:12px;resize:vertical" placeholder="NEPU4592465, OyTM202602248261&#10;SEKU6528621, OyTM202602254802&#10;MSCU1234567&#10;…" oninput="bulkPreview()"></textarea>
+        <textarea id="b_nos" rows="10" style="border:1px solid var(--border);border-radius:7px;padding:8px;font-family:monospace;font-size:12px;resize:vertical" placeholder="NEPU4592465, OyTM202602248261, 2026/04/08 10:00&#10;SEKU6528621, OyTM202602254802, 2026/04/09 14:00&#10;MSCU1234567,, 2026/04/10 08:30&#10;TCNU9876543&#10;…" oninput="bulkPreview()"></textarea>
         <div id="b_parsed_preview" style="margin-top:6px;font-size:11px;color:var(--muted);max-height:120px;overflow-y:auto"></div>
       </div>
     </div>
@@ -4569,13 +4579,17 @@ function openBulk(){
 }
 function closeBulk(){ document.getElementById('bulk-overlay').classList.remove('open'); }
 function parseBulkPairs(){
-  // Each line: "CONTAINER_NO" or "CONTAINER_NO, MASTER_BL" (comma/tab separated)
+  // Each line: "CONTAINER_NO" or "CONTAINER_NO, MASTER_BL" or "CONTAINER_NO, MASTER_BL, SLOT" or "CONTAINER_NO,, SLOT"
   return document.getElementById('b_nos').value
     .split(/\n/)
     .map(line=>{
-      const parts=line.split(/[\t,]+/).map(s=>s.trim()).filter(Boolean);
-      if(!parts.length) return null;
-      return { cn: parts[0].toUpperCase(), bl: parts[1]||'' };
+      // Split on comma or tab, preserving empty fields (for "CN,, SLOT" pattern)
+      const raw=line.split(/\t|,/).map(s=>s.trim());
+      const cn=(raw[0]||'').toUpperCase();
+      if(!cn) return null;
+      const bl=raw[1]||'';
+      const slot=raw[2]||'';
+      return { cn, bl, slot };
     })
     .filter(Boolean);
 }
@@ -4588,16 +4602,18 @@ function bulkPreview(){
   const dupes=pairs.filter(p=>exist.has(p.cn));
   if(dupes.length){ err.textContent='⚠️ Already in tracker: '+dupes.slice(0,5).map(p=>p.cn).join(', ')+(dupes.length>5?' + '+(dupes.length-5)+' more':''); err.style.display='block'; }
   const withBL=pairs.filter(p=>p.bl).length;
-  ok.textContent='✓ '+pairs.length+' container'+(pairs.length!==1?'s':'')+' ready — '+withBL+' with Master B/L';
+  const withSlot=pairs.filter(p=>p.slot).length;
+  ok.textContent='✓ '+pairs.length+' container'+(pairs.length!==1?'s':'')+' ready'+(withBL?' — '+withBL+' with Master B/L':'')+(withSlot?' — '+withSlot+' with per-row Slot':'');
   ok.style.display='block';
   // Show parsed pairs as a mini-table preview
   preview.innerHTML='<table style="border-collapse:collapse;width:100%">'+
-    '<tr style="background:#f0f2f8"><th style="padding:3px 8px;text-align:left;font-size:11px">Container No.</th><th style="padding:3px 8px;text-align:left;font-size:11px">Master B/L</th></tr>'+
+    '<tr style="background:#f0f2f8"><th style="padding:3px 8px;text-align:left;font-size:11px">Container No.</th><th style="padding:3px 8px;text-align:left;font-size:11px">Master B/L</th><th style="padding:3px 8px;text-align:left;font-size:11px">Scheduled Slot</th></tr>'+
     pairs.slice(0,20).map(p=>`<tr style="border-bottom:1px solid #eee">
       <td style="padding:2px 8px;font-family:monospace;font-size:11px">${p.cn}</td>
       <td style="padding:2px 8px;font-size:11px;color:${p.bl?'var(--navy)':'#ccc'}">${p.bl||'—'}</td>
+      <td style="padding:2px 8px;font-size:11px;color:${p.slot?'#059669':'#ccc'}">${p.slot||'—'}</td>
     </tr>`).join('')+
-    (pairs.length>20?`<tr><td colspan="2" style="padding:3px 8px;font-size:10px;color:var(--muted)">… and ${pairs.length-20} more</td></tr>`:'')+'</table>';
+    (pairs.length>20?`<tr><td colspan="3" style="padding:3px 8px;font-size:10px;color:var(--muted)">… and ${pairs.length-20} more</td></tr>`:'')+'</table>';
 }
 function saveBulk(){
   const pairs=parseBulkPairs(), err=document.getElementById('b_err');
@@ -4609,7 +4625,7 @@ function saveBulk(){
     'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'T1 Date':g('b_t1date'),
     'Scheduled Slot':g('b_slot'),'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
     'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','T1 Payment Status':'','Broker':'','Remark':''};
-  pairs.forEach(p=>CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,_id:nextId++}));
+  pairs.forEach(p=>CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,'Scheduled Slot':p.slot||shared['Scheduled Slot'],_id:nextId++}));
   saveData(); closeBulk(); renderCT();
 }
 
@@ -4811,6 +4827,7 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 loadData();
+seLoadContacts();
 // ── Migrate old Payment Status values ────────────────────────────
 (function migratePayStatus(){
   let changed=false;
@@ -5081,6 +5098,76 @@ function seBatchCollapse(batchKey){
   if(sec) sec.classList.toggle('collapsed');
 }
 
+// ── Consignee Contacts ─────────────────────────────────────────────
+const SE_CONTACTS_KEY = 'LOGISTICS_SE_CONTACTS';
+let SE_CONTACTS = [];  // [{id, label, emails}]
+
+function seLoadContacts(){
+  try{ const s=localStorage.getItem(SE_CONTACTS_KEY); if(s) SE_CONTACTS=JSON.parse(s); }catch(e){}
+  if(!SE_CONTACTS.length){
+    SE_CONTACTS=[
+      {id:1, label:'Skyline',    emails:'temu@qtradegroup.com, candy.tang@qtlogistics.eu'},
+      {id:2, label:'VIA EUROPE', emails:'inbound@viaeurope.com, account-tm@viaeurope.com, planningDDS-lgg@viaeurope.com'},
+      {id:3, label:'Flying',     emails:'ops@flyinglogisticssprl.be, flyingdispatch@flyinglogisticssprl.be, flyingcustoms@flyinglogisticssprl.be, David@flyinglogisticssprl.be, team@topglobal.be, ops-uk@ultralinkexpress.co.uk, temu@hh-aviation.co.uk'},
+      {id:4, label:'HSH',        emails:'ops1@hshworld.eu, operation@hshworld.eu, ydh1@hshworld.eu, ydh2@hshworld.eu, ops6@hshworld.eu, lggops@ydhexpress.com, customsteam@hshworld.eu'},
+      {id:5, label:'CACESA',     emails:'int.coordinators@cacesa.com, operations.lgg@cacesa.com, beryl.li@temu.com, giulia.zhang@temu.com, farrah.ouyang@temu.com'}
+    ];
+    seSaveContacts();
+  }
+}
+function seSaveContacts(){ try{ localStorage.setItem(SE_CONTACTS_KEY,JSON.stringify(SE_CONTACTS)); }catch(e){} }
+function seGetContactsFor(consignee){
+  const lc=(consignee||'').toLowerCase();
+  return SE_CONTACTS.find(c=>lc.includes(c.label.toLowerCase())||c.label.toLowerCase().includes(lc))||null;
+}
+let _seContactNextId=100;
+function seAddContact(){
+  _seContactNextId++;
+  SE_CONTACTS.push({id:_seContactNextId, label:'', emails:''});
+  seRenderContactsList();
+}
+function seDeleteContact(id){
+  SE_CONTACTS=SE_CONTACTS.filter(c=>c.id!==id);
+  seSaveContacts(); seRenderContactsList(); buildSlotEmails();
+}
+function seSaveContactEdit(id){
+  const lbl=(document.getElementById('sec-lbl-'+id)||{}).value||'';
+  const em=(document.getElementById('sec-em-'+id)||{}).value||'';
+  const c=SE_CONTACTS.find(x=>x.id===id); if(!c) return;
+  c.label=lbl.trim(); c.emails=em.trim();
+  seSaveContacts(); seRenderContactsList(); buildSlotEmails();
+}
+function seRenderContactsList(){
+  const el=document.getElementById('se-contacts-list'); if(!el) return;
+  if(!SE_CONTACTS.length){ el.innerHTML='<div style="color:#9ca3af;font-size:12px;padding:4px">No contacts yet. Click + Add.</div>'; return; }
+  el.innerHTML=SE_CONTACTS.map(c=>`
+    <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px">
+      <div style="flex:0 0 120px">
+        <div style="font-size:10px;font-weight:600;color:#6b7280;margin-bottom:3px">CONSIGNEE LABEL</div>
+        <input id="sec-lbl-${c.id}" type="text" value="${(c.label||'').replace(/"/g,'&quot;')}" placeholder="e.g. VIA EUROPE"
+          style="width:100%;padding:5px 7px;border:1px solid #d1d5db;border-radius:6px;font-size:12px" oninput="seSaveContactEdit(${c.id})"/>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:10px;font-weight:600;color:#6b7280;margin-bottom:3px">EMAIL ADDRESSES (comma-separated)</div>
+        <textarea id="sec-em-${c.id}" rows="2" style="width:100%;padding:5px 7px;border:1px solid #d1d5db;border-radius:6px;font-size:11px;font-family:monospace;resize:vertical" oninput="seSaveContactEdit(${c.id})">${c.emails||''}</textarea>
+      </div>
+      <button onclick="seDeleteContact(${c.id})" style="margin-top:18px;background:none;border:none;color:#ef4444;font-size:16px;cursor:pointer;padding:2px 4px" title="Delete">🗑</button>
+    </div>`).join('');
+}
+function seToggleContacts(){
+  const panel=document.getElementById('se-contacts-panel');
+  const btn=document.getElementById('se-contacts-btn');
+  if(!panel) return;
+  const open=panel.style.display==='none';
+  panel.style.display=open?'block':'none';
+  btn.style.background=open?'#0369a1':'#f0f9ff';
+  btn.style.color=open?'#fff':'#0369a1';
+  if(open) seRenderContactsList();
+}
+function seCopyEmails(txt){
+  navigator.clipboard.writeText(txt).then(()=>showToast('📋 Emails copied!'));
+}
+
 function buildSlotEmails(){
   const recipient = (document.getElementById('se-recipient').value||'').trim() || 'Warehouse Team';
   const sender    = (document.getElementById('se-sender').value||'').trim() || '';
@@ -5188,6 +5275,14 @@ ${slotLines}
 
 Thank you${sender ? ',\n'+sender : ''}`;
 
+      const _contact=seGetContactsFor(g.consignee);
+      const _toHtml=_contact
+        ? `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:#f0f9ff;border-bottom:1px solid #bae6fd;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;color:#0369a1;white-space:nowrap;margin-top:1px">To:</span>
+            <span style="font-size:11px;color:#0c4a6e;flex:1;word-break:break-all;font-family:monospace">${_contact.emails}</span>
+            <button onclick="seCopyEmails('${_contact.emails.replace(/'/g,"\\'")}')" style="flex-shrink:0;background:#0369a1;color:#fff;border:none;border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;white-space:nowrap">⎘ Copy To:</button>
+          </div>`
+        : `<div style="padding:5px 10px;background:#fffbeb;border-bottom:1px solid #fde68a;font-size:11px;color:#92400e">⚠️ No contacts found for <b>${g.consignee}</b> — <button onclick="seToggleContacts()" style="background:none;border:none;color:#0369a1;cursor:pointer;font-size:11px;padding:0;text-decoration:underline">add contacts</button></div>`;
       emailsHtml += `<div class="se-group" id="se-group-${gi}" style="margin:0">
         <div class="se-group-hdr">
           <div>
@@ -5196,6 +5291,7 @@ Thank you${sender ? ',\n'+sender : ''}`;
           </div>
           <button class="se-copy-btn" id="se-cbtn-${gi}" onclick="copySlotEmail(${gi})">⎘ Copy</button>
         </div>
+        ${_toHtml}
         <div class="se-email-body">
           <div class="se-subject">Subject <span>${subject}</span></div>
           <div class="se-pre" id="se-pre-${gi}">${emailText}</div>
