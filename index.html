@@ -3445,7 +3445,7 @@ function renderTodayDeliveries(){
   const el=document.getElementById('today-deliveries-widget');
   if(!el) return;
   const todayStr=formatDate(new Date());
-  const todayRows=CT.filter(r=>r['Scheduled Slot']===todayStr&&r['Tracking']!=='Arrived');
+  const todayRows=CT.filter(r=>(r['Scheduled Slot']||'').startsWith(todayStr)&&r['Tracking']!=='Arrived');
   if(!todayRows.length){ el.style.display='none'; el.innerHTML=''; return; }
   // Group by trucker
   const byTrucker={};
