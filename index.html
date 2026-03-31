@@ -4559,7 +4559,7 @@ function saveRow(){
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
-  if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0) CT[i]={...CT[i],...u}; }
+  if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0){ CT[i]={...CT[i],...u}; if(u['Scheduled Slot']) delete CT[i]._slotAuto; } }
   else { u._id=nextId++; CT.push(u); }
   saveData(); closeModal(); renderCT();
 }
@@ -4644,7 +4644,7 @@ function saveBulk(){
       Object.entries(shared).forEach(([k,v])=>{ if(v) existing[k]=v; });
       if(p.bl) existing['Master B/L']=p.bl;
       const rowSlot=p.slot||shared['Scheduled Slot'];
-      if(rowSlot) existing['Scheduled Slot']=rowSlot;
+      if(rowSlot){ existing['Scheduled Slot']=rowSlot; delete existing._slotAuto; }
       updated++;
     } else {
       CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,'Scheduled Slot':p.slot||shared['Scheduled Slot'],_id:nextId++});
@@ -5143,8 +5143,10 @@ function seLoadContacts(){
 }
 function seSaveContacts(){ try{ localStorage.setItem(SE_CONTACTS_KEY,JSON.stringify(SE_CONTACTS)); }catch(e){} }
 function seGetContactsFor(consignee){
-  const lc=(consignee||'').toLowerCase();
-  return SE_CONTACTS.find(c=>lc.includes(c.label.toLowerCase())||c.label.toLowerCase().includes(lc))||null;
+  try{
+    const lc=(consignee||'').toLowerCase();
+    return SE_CONTACTS.find(c=>c.label&&c.emails&&(lc.includes(c.label.toLowerCase())||c.label.toLowerCase().includes(lc)))||null;
+  }catch(e){ return null; }
 }
 let _seContactNextId=100;
 function seAddContact(){
@@ -5263,6 +5265,7 @@ function buildSlotEmails(){
     gs.forEach(g => {
       const gi = emailIdx++;
       const qty = g.rows.length;
+      try {
 
       // Sort all rows by date then time
       const sortedRows = g.rows.slice().sort((a,b)=>{
@@ -5323,6 +5326,7 @@ Thank you${sender ? ',\n'+sender : ''}`;
           <div class="se-pre" id="se-pre-${gi}">${emailText}</div>
         </div>
       </div>`;
+      } catch(e){ emailsHtml += `<div class="se-group" style="padding:10px 14px;color:#ef4444;font-size:12px">⚠️ Error rendering email for ${g.consignee}: ${e.message}</div>`; }
     });
 
     html += `<div class="se-batch-section" id="se-sec-${batchKey}">
