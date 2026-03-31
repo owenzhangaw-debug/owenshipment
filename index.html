@@ -4853,7 +4853,6 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 loadData();
-seLoadContacts();
 // ── Migrate old Payment Status values ────────────────────────────
 (function migratePayStatus(){
   let changed=false;
@@ -6162,6 +6161,7 @@ function renderPageNotices(){
 }
 renderNotices();
 renderPageNotices();
+seLoadContacts();
 </script>
 
 <style id="sticky-header-patch">
