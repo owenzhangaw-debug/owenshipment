@@ -6,6 +6,7 @@
 <title>Owen Zhang</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -814,6 +815,8 @@ td.editing .cell-edit{display:block}
 .fb-empty{text-align:center;padding:40px;color:#aaa;font-size:14px}
 .fb-tag-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .fb-tag{font-size:10px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:1px 7px}
+.chart-subtitle{font-size:10px;color:var(--muted);margin:-10px 0 10px;letter-spacing:0;font-weight:500;text-transform:none;padding-left:1px}
+.chart-kpi-num{font-size:32px;font-weight:800;color:var(--text);line-height:1;margin-bottom:2px}
 </style>
 </head>
 <body>
@@ -936,18 +939,21 @@ td.editing .cell-edit{display:block}
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Delivered by Month<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Total containers with Actual Arrival recorded</p>
             <div class="chart-wrap" style="height:320px"><canvas id="monthly-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Avg Slot–ETA by Batch<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Days between Scheduled Slot and ETA at Hub</p>
             <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-batch-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Slot–ETA by Trucker &amp; Batch<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Days between slot and ETA, grouped by trucker and batch</p>
             <div class="chart-wrap" style="height:360px"><canvas id="slot-eta-trucker-batch-chart"></canvas></div>
           </div>
         </div>
@@ -958,6 +964,7 @@ td.editing .cell-edit{display:block}
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">ETA Duisburg → T1 Cleared (days per batch)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Business days from ETA Hub arrival to T1 customs clearance</p>
             <div class="chart-wrap" style="height:300px"><canvas id="hub-t1-batch-chart"></canvas></div>
           </div>
         </div>
@@ -968,24 +975,28 @@ td.editing .cell-edit{display:block}
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Avg Price by Trucker (€)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Average freight price per container by trucker</p>
             <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-avg-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Avg T1 Cost by Batch (€)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Average T1 customs cost per container by batch</p>
             <div class="chart-wrap" style="height:320px"><canvas id="t1-batch-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Total Freight Cost by Trucker (€)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Sum of all freight prices by trucker</p>
             <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-total-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Total Freight Cost by Broker (€)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Sum of all freight prices by broker</p>
             <div class="chart-wrap" style="height:260px"><canvas id="price-broker-total-chart"></canvas></div>
           </div>
         </div>
@@ -1021,21 +1032,36 @@ td.editing .cell-edit{display:block}
 
       <!-- ── QUANTITY ── -->
       <div id="dash-cat-qty" class="dash-cat-section">
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Container Tracking Status<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Breakdown by current tracking state</p>
+            <div class="chart-wrap" style="height:260px"><canvas id="tracking-donut-chart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Delivery Rate by Trucker<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">% containers with Actual Arrival recorded</p>
+            <div class="chart-wrap" style="height:260px"><canvas id="delivery-rate-chart"></canvas></div>
+          </div>
+        </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Containers by Batch<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Total containers per batch / train</p>
             <div class="chart-wrap" style="height:320px"><canvas id="batch-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Total Containers by Consignee<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Container count by consignee</p>
             <div class="chart-wrap" style="height:320px"><canvas id="consignee-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Slot Reschedules by Trucker<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Number of slot changes caused by trucker or consignee</p>
             <div class="chart-wrap" style="height:260px"><canvas id="slot-change-trucker-chart"></canvas></div>
           </div>
         </div>
@@ -1699,6 +1725,12 @@ const LS_VT = 'owenz_vt_v1';
 let CT = [], VT = [], nextId = 1, vtNextId = 1;
 let ctSortCol = 'Batch / Train', ctSortDir = 1;
 let _currentPage = 'dashboard';
+// Register Chart.js datalabels plugin with display:false by default
+if(typeof ChartDataLabels !== 'undefined'){
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels',{display:false});
+}
+
 // ── TRAIN DATE OVERRIDES (per-batch manual Mala/Duisburg ETAs) ────────────
 let _bpTrainDates = {};  // { batchName: { depart:'YYYY-MM-DD', etaMala:'YYYY-MM-DD', etaDuis:'YYYY-MM-DD' } }
 const _bpTrainKey = 'owenz_bptrain_v1';
@@ -2063,11 +2095,14 @@ function renderDashboard(){
     data:{ labels:mLabels, datasets:[{
       label:'Containers Delivered',
       data:mKeys.map(k=>monthly[k]),
-      backgroundColor:'#43A047',borderColor:'#2e7d32',borderWidth:1,borderRadius:4
+      backgroundColor:'#1e40af',borderRadius:5
     }]},
     options:{ responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{y:{ticks:{stepSize:5},grid:{color:'rgba(0,0,0,.06)'}},x:{grid:{display:false}}} }
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:true,anchor:'end',align:'top',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v}
+      },
+      scales:{y:{ticks:{stepSize:5},grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true},x:{grid:{display:false}}} }
   });
 
   // Batch bar
@@ -2080,11 +2115,14 @@ function renderDashboard(){
     data:{ labels:bKeys, datasets:[{
       label:'Containers',
       data:bKeys.map(k=>bCounts[k]),
-      backgroundColor:'#004D4C',borderRadius:4
+      backgroundColor:'#1e40af',borderRadius:5
     }]},
     options:{ responsive:true,maintainAspectRatio:false,indexAxis:'y',
-      plugins:{legend:{display:false}},
-      scales:{x:{ticks:{stepSize:5}},y:{grid:{display:false}}} }
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v}
+      },
+      scales:{x:{ticks:{stepSize:5},grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true},y:{grid:{display:false}}} }
   });
 
 
@@ -2129,27 +2167,29 @@ function renderDashboard(){
   if(priceTruckerAvgChart) priceTruckerAvgChart.destroy(); priceTruckerAvgChart=null;
   if(!_noPrice){
     priceTruckerAvgChart = new Chart(document.getElementById('price-trucker-avg-chart'),{
-      type:'bar',
+      type:'bar',indexAxis:'y',
       data:{
         labels:ptKeys,
         datasets:[
           { label:'Avg Price (€)',
             data:ptKeys.map(k=>priceTruckers[k].pCount?+(priceTruckers[k].pSum/priceTruckers[k].pCount).toFixed(0):null),
-            backgroundColor:ptKeys.map((_,i)=>['#004D4C','#00695C','#00796B','#00897B','#009688','#26A69A','#4DB6AC','#80CBC4'][i%8]),
-            borderRadius:4 }
+            backgroundColor:'#1e40af',
+            borderRadius:5 }
         ]
       },
       options:{ responsive:true,maintainAspectRatio:false,
         plugins:{ legend:{display:false},
+          datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',
+            formatter:v=>v!=null?'€'+v.toLocaleString():''
+          },
           tooltip:{callbacks:{label:ctx=>{
             if(ctx.raw==null) return ' —';
             const k=ptKeys[ctx.dataIndex];
             return [' €'+ctx.raw.toLocaleString()+' avg/container',' ('+priceTruckers[k].pCount+' containers)'];
           }}} },
         scales:{
-          y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
-              title:{display:true,text:'Avg Price (€)',font:{size:11}} },
-          x:{ grid:{display:false} }
+          x:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:true},
+          y:{ grid:{display:false} }
         }
       }
     });
@@ -2179,23 +2219,23 @@ function renderDashboard(){
     } else {
       _t1El.style.display=''; if(_t1Ov) _t1Ov.style.display='none';
       window.t1BatchChart = new Chart(_t1El,{
-        type:'bar',
+        type:'bar',indexAxis:'y',
         data:{ labels:t1BatchKeys, datasets:[{
           label:'Avg T1 Cost (€)',
           data:t1BatchAvgs,
-          backgroundColor:t1BatchKeys.map((_,i)=>['#F9A825','#FFA000','#FF8F00','#FF6F00','#F57F17','#E65100','#BF360C','#B71C1C'][i%8]),
-          borderRadius:4
+          backgroundColor:'#f59e0b',
+          borderRadius:5
         }]},
         options:{ responsive:true,maintainAspectRatio:false,
           plugins:{ legend:{display:false},
+            datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#92400e',formatter:v=>v!=null?'€'+v.toLocaleString():''},
             tooltip:{callbacks:{label:ctx=>{
               const k=t1BatchKeys[ctx.dataIndex];
               return [' €'+ctx.raw.toLocaleString()+' avg/container',' ('+t1ByBatch[k].count+' containers)'];
             }}} },
           scales:{
-            y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
-                title:{display:true,text:'Avg T1 Cost (€)',font:{size:11}} },
-            x:{ grid:{display:false}, ticks:{maxRotation:35,font:{size:10}} }
+            x:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:true},
+            y:{ grid:{display:false} }
           }
         }
       });
@@ -2207,27 +2247,27 @@ function renderDashboard(){
   if(priceTruckerTotalChart) priceTruckerTotalChart.destroy(); priceTruckerTotalChart=null;
   if(!_noPrice){
     priceTruckerTotalChart = new Chart(document.getElementById('price-trucker-total-chart'),{
-        type:'bar',
+        type:'bar',indexAxis:'y',
         data:{
           labels:ptKeys,
           datasets:[
             { label:'Total Freight (€)',
               data:ptKeys.map(k=>priceTruckers[k].pCount?+priceTruckers[k].pSum.toFixed(0):null),
-              backgroundColor:ptKeys.map((_,i)=>['#004D4C','#00695C','#00796B','#00897B','#009688','#26A69A','#4DB6AC','#80CBC4'][i%8]),
-              borderRadius:4 }
+              backgroundColor:'#1e40af',
+              borderRadius:5 }
           ]
         },
         options:{ responsive:true,maintainAspectRatio:false,
           plugins:{ legend:{display:false},
+            datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v!=null?'€'+v.toLocaleString():''},
             tooltip:{callbacks:{label:ctx=>{
               if(ctx.raw==null) return ' —';
               const k=ptKeys[ctx.dataIndex];
               return [' €'+ctx.raw.toLocaleString()+' total',' ('+priceTruckers[k].pCount+' containers)'];
             }}} },
           scales:{
-            y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
-                title:{display:true,text:'Total Freight (€)',font:{size:11}} },
-            x:{ grid:{display:false} }
+            x:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:true},
+            y:{ grid:{display:false} }
           }
         }
       });
@@ -2251,18 +2291,18 @@ function renderDashboard(){
       data:{ labels:pbKeys, datasets:[{
         label:'Total Freight (€)',
         data:pbKeys.map(k=>+priceBrokers[k].sum.toFixed(0)),
-        backgroundColor:['#004D4C','#00695C','#00796B','#0288D1','#1565C0','#6A1B9A'],
-        borderRadius:4
+        backgroundColor:['#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd'],
+        borderRadius:5
       }]},
       options:{ responsive:true,maintainAspectRatio:false,
         plugins:{ legend:{display:false},
+          datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v!=null?'€'+v.toLocaleString():''},
           tooltip:{callbacks:{label:ctx=>{
             const k=pbKeys[ctx.dataIndex];
             return [' €'+ctx.raw.toLocaleString()+' total',' ('+priceBrokers[k].count+' containers)'];
           }}} },
         scales:{
-          x:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
-              title:{display:true,text:'Total Freight (€)',font:{size:11}} },
+          x:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:true},
           y:{ grid:{display:false} }
         }
       }
@@ -2287,9 +2327,10 @@ function renderDashboard(){
     }]},
     options:{ responsive:true,maintainAspectRatio:false, indexAxis:'y',
       plugins:{legend:{display:false},
+        datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v+'d'},
         tooltip:{callbacks:{label:ctx=>' Avg '+ctx.raw+' days'}}},
       scales:{x:{grid:{color:'rgba(0,0,0,.06)'},title:{display:true,text:'Avg days (Slot − ETA)',font:{size:11}},
-               ticks:{callback:v=>v+'d'}},
+               ticks:{callback:v=>v+'d'},beginAtZero:true},
               y:{grid:{display:false}}} }
   });
 
@@ -2342,30 +2383,110 @@ function renderDashboard(){
   // Sort descending by count
   const conKeys=Object.keys(conCounts).sort((a,b)=>conCounts[b]-conCounts[a]);
   const conVals=conKeys.map(k=>conCounts[k]);
-  const conPalette=['#004D4C','#43A047','#F9A825','#e53935','#7B1FA2','#00838F',
-                    '#E64A19','#5D4037','#546E7A','#2E7D32','#0288D1','#C62828'];
-  const conColors=conKeys.map((_,i)=>conPalette[i%conPalette.length]);
 
   if(consigneeChart) consigneeChart.destroy();
   consigneeChart = new Chart(document.getElementById('consignee-chart'),{
-    type:'bar',
+    type:'doughnut',
     data:{ labels:conKeys, datasets:[{
-      label:'Containers',
       data:conVals,
-      backgroundColor:conColors,
-      borderRadius:4
+      backgroundColor:['#1e40af','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe',
+                       '#1e3a8a','#1d4ed8','#0ea5e9','#0284c7','#0369a1'],
+      borderWidth:2,borderColor:'#fff',hoverOffset:8
     }]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>` ${ctx.raw} container${ctx.raw!==1?'s':''}`}} },
-      scales:{
-        y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{stepSize:1},
-            title:{display:true,text:'Containers',font:{size:11}} },
-        x:{ grid:{display:false},
-            ticks:{maxRotation:35,minRotation:0,font:{size:11}} }
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'55%',
+      plugins:{
+        legend:{position:'right',labels:{font:{size:11},padding:8,boxWidth:12,generateLabels:function(chart){
+          const ds=chart.data.datasets[0];
+          return chart.data.labels.map((lbl,i)=>({
+            text: lbl+' ('+ds.data[i]+')',
+            fillStyle:ds.backgroundColor[i],strokeStyle:'#fff',lineWidth:2,index:i
+          }));
+        }}},
+        datalabels:{
+          display:true,
+          formatter:(value,ctx)=>{
+            const total=ctx.dataset.data.reduce((a,b)=>a+b,0);
+            const pct=((value/total)*100).toFixed(1);
+            return pct>4?pct+'%':'';
+          },
+          color:'#fff',font:{size:11,weight:'700'}
+        },
+        tooltip:{callbacks:{label:ctx=>{
+          const total=ctx.dataset.data.reduce((a,b)=>a+b,0);
+          const pct=((ctx.raw/total)*100).toFixed(1);
+          return ` ${ctx.label}: ${ctx.raw} (${pct}%)`;
+        }}}
       }
     }
   });
+
+  // ── Container Tracking Status Donut ──────────────────────────────
+  const trackCounts = {
+    'Arrived': CT.filter(r=>r['Tracking']==='Arrived').length,
+    'T1 In Progress': CT.filter(r=>r['Tracking']==='T1').length,
+    'In Transit': CT.filter(r=>!r['Tracking']||r['Tracking']==='None').length
+  };
+  const trackKeys=Object.keys(trackCounts).filter(k=>trackCounts[k]>0);
+  const trackVals=trackKeys.map(k=>trackCounts[k]);
+  if(window.trackingDonutChart) window.trackingDonutChart.destroy();
+  const _tdEl=document.getElementById('tracking-donut-chart');
+  if(_tdEl){
+    window.trackingDonutChart=new Chart(_tdEl,{
+      type:'doughnut',
+      data:{labels:trackKeys,datasets:[{
+        data:trackVals,
+        backgroundColor:['#10b981','#f59e0b','#3b82f6'],
+        borderWidth:2,borderColor:'#fff',hoverOffset:8
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+        plugins:{
+          legend:{position:'bottom',labels:{font:{size:11},padding:10,boxWidth:12}},
+          datalabels:{display:true,
+            formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((v/t)*100).toFixed(0);return p>5?p+'%':'';},
+            color:'#fff',font:{size:12,weight:'700'}
+          },
+          tooltip:{callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((ctx.raw/t)*100).toFixed(1);return` ${ctx.label}: ${ctx.raw} containers (${p}%)`;
+          }}}
+        }
+      }
+    });
+  }
+
+  // ── Delivery Rate by Trucker ──────────────────────────────────────
+  const deliveryRate={};
+  CT.forEach(r=>{
+    const t=r['Trucker']||'Unknown';
+    if(!deliveryRate[t]) deliveryRate[t]={total:0,delivered:0};
+    deliveryRate[t].total++;
+    if(r['Actual Arrival']) deliveryRate[t].delivered++;
+  });
+  const drKeys=Object.keys(deliveryRate).filter(k=>deliveryRate[k].total>0).sort((a,b)=>
+    (deliveryRate[b].delivered/deliveryRate[b].total)-(deliveryRate[a].delivered/deliveryRate[a].total));
+  const drRates=drKeys.map(k=>+(deliveryRate[k].delivered/deliveryRate[k].total*100).toFixed(1));
+  const drColors=drRates.map(v=>v>=80?'#10b981':v>=50?'#f59e0b':'#ef4444');
+  if(window.deliveryRateChart) window.deliveryRateChart.destroy();
+  const _drEl=document.getElementById('delivery-rate-chart');
+  if(_drEl){
+    window.deliveryRateChart=new Chart(_drEl,{
+      type:'bar',indexAxis:'y',
+      data:{labels:drKeys,datasets:[{
+        label:'Delivery Rate %',data:drRates,
+        backgroundColor:drColors,borderRadius:5
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151',
+            formatter:v=>v+'%'},
+          tooltip:{callbacks:{label:ctx=>{const k=drKeys[ctx.dataIndex];return` ${deliveryRate[k].delivered}/${deliveryRate[k].total} delivered (${ctx.raw}%)`;
+          }}}
+        },
+        scales:{
+          x:{min:0,max:100,grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>v+'%'},beginAtZero:true},
+          y:{grid:{display:false}}
+        }
+      }
+    });
+  }
 
   // ── Slot Reschedules by Trucker ──────────────────────────────────
   const _scTruckerMap={};
@@ -2383,22 +2504,22 @@ function renderDashboard(){
   if(slotChangeTruckerChart) slotChangeTruckerChart.destroy();
   if(_scKeys.length){
     slotChangeTruckerChart = new Chart(document.getElementById('slot-change-trucker-chart'),{
-      type:'bar',
+      type:'bar',indexAxis:'y',
       data:{
         labels:_scKeys,
         datasets:[
-          {label:'By Trucker',data:_scKeys.map(k=>_scTruckerMap[k].byTrucker),backgroundColor:'#f97316',borderRadius:4},
-          {label:'By Consignee',data:_scKeys.map(k=>_scTruckerMap[k].byCon),backgroundColor:'#a78bfa',borderRadius:4}
+          {label:'By Trucker',data:_scKeys.map(k=>_scTruckerMap[k].byTrucker),backgroundColor:'#ef4444',borderRadius:4},
+          {label:'By Consignee',data:_scKeys.map(k=>_scTruckerMap[k].byCon),backgroundColor:'#8b5cf6',borderRadius:4}
         ]
       },
       options:{
         responsive:true, maintainAspectRatio:false,
         plugins:{legend:{position:'bottom',labels:{font:{size:11}}},
+          datalabels:{display:true,anchor:'center',align:'center',font:{size:10,weight:'700'},color:'#fff',formatter:v=>v>0?v:''},
           tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw} change${ctx.raw!==1?'s':''}`}}},
         scales:{
-          x:{stacked:true,grid:{display:false},ticks:{font:{size:12}}},
-          y:{stacked:true,ticks:{stepSize:1},grid:{color:'rgba(0,0,0,.06)'},
-             title:{display:true,text:'# Reschedules',font:{size:11}}}
+          x:{stacked:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:12},stepSize:1},beginAtZero:true},
+          y:{stacked:true,grid:{display:false}}
         }
       }
     });
@@ -2448,7 +2569,7 @@ function renderDashboard(){
       return;
     }
     hubT1BatchChart=new Chart(cvs,{
-      type:'bar',
+      type:'bar',indexAxis:'y',
       data:{
         labels:bKeys,
         datasets:[{
@@ -2462,6 +2583,7 @@ function renderDashboard(){
         responsive:true,maintainAspectRatio:false,
         plugins:{
           legend:{display:false},
+          datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v+'d'},
           tooltip:{callbacks:{
             label:ctx=>{
               const b=bKeys[ctx.dataIndex];
@@ -2470,10 +2592,8 @@ function renderDashboard(){
           }}
         },
         scales:{
-          x:{grid:{display:false},ticks:{font:{size:11}}},
-          y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},
-             title:{display:true,text:'Business Days (ETA Hub → T1 cleared)',font:{size:11}},
-             ticks:{stepSize:1}}
+          x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:11}}},
+          y:{grid:{display:false}}
         }
       }
     });
