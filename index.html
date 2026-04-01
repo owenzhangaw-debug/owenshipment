@@ -2183,7 +2183,7 @@ function renderDashboard(){
   if(priceTruckerAvgChart) priceTruckerAvgChart.destroy(); priceTruckerAvgChart=null;
   if(!_noPriceBatch){
     priceTruckerAvgChart = new Chart(document.getElementById('price-trucker-avg-chart'),{
-      type:'bar',indexAxis:'y',
+      type:'bar',
       data:{
         labels:pbBatchKeys,
         datasets:[{
@@ -2193,7 +2193,7 @@ function renderDashboard(){
           borderRadius:5
         }]
       },
-      options:{ responsive:true,maintainAspectRatio:false,
+      options:{ responsive:true,maintainAspectRatio:false,indexAxis:'y',
         layout:{padding:{right:70}},
         plugins:{ legend:{display:false},
           datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',
@@ -2235,14 +2235,14 @@ function renderDashboard(){
     } else {
       _t1El.style.display=''; if(_t1Ov) _t1Ov.style.display='none';
       window.t1BatchChart = new Chart(_t1El,{
-        type:'bar',indexAxis:'y',
+        type:'bar',
         data:{ labels:t1BatchKeys, datasets:[{
           label:'Avg T1 Cost (€)',
           data:t1BatchAvgs,
           backgroundColor:'#f59e0b',
           borderRadius:5
         }]},
-        options:{ responsive:true,maintainAspectRatio:false,
+        options:{ responsive:true,maintainAspectRatio:false,indexAxis:'y',
           layout:{padding:{right:75}},
           plugins:{ legend:{display:false},
             datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#92400e',formatter:v=>v!=null?'€'+v.toLocaleString():'',clamp:true},
@@ -2264,7 +2264,7 @@ function renderDashboard(){
   if(priceTruckerTotalChart) priceTruckerTotalChart.destroy(); priceTruckerTotalChart=null;
   if(!_noPrice){
     priceTruckerTotalChart = new Chart(document.getElementById('price-trucker-total-chart'),{
-        type:'bar',indexAxis:'y',
+        type:'bar',
         data:{
           labels:ptKeys,
           datasets:[
@@ -2274,7 +2274,7 @@ function renderDashboard(){
               borderRadius:5 }
           ]
         },
-        options:{ responsive:true,maintainAspectRatio:false,
+        options:{ responsive:true,maintainAspectRatio:false,indexAxis:'y',
           layout:{padding:{right:80}},
           plugins:{ legend:{display:false},
             datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v!=null?'€'+v.toLocaleString():'',clamp:true},
@@ -2305,14 +2305,14 @@ function renderDashboard(){
   if(window.priceBrokerTotalChart) window.priceBrokerTotalChart.destroy(); window.priceBrokerTotalChart=null;
   if(pbKeys.length){
     window.priceBrokerTotalChart = new Chart(document.getElementById('price-broker-total-chart'),{
-      type:'bar', indexAxis:'y',
+      type:'bar',
       data:{ labels:pbKeys, datasets:[{
         label:'Total Freight (€)',
         data:pbKeys.map(k=>+priceBrokers[k].sum.toFixed(0)),
         backgroundColor:['#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd'],
         borderRadius:5
       }]},
-      options:{ responsive:true,maintainAspectRatio:false,
+      options:{ responsive:true,maintainAspectRatio:false,indexAxis:'y',
         layout:{padding:{right:80}},
         plugins:{ legend:{display:false},
           datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v!=null?'€'+v.toLocaleString():'',clamp:true},
@@ -2490,12 +2490,12 @@ function renderDashboard(){
   const _drEl=document.getElementById('delivery-rate-chart');
   if(_drEl){
     window.deliveryRateChart=new Chart(_drEl,{
-      type:'bar',indexAxis:'y',
+      type:'bar',
       data:{labels:drKeys,datasets:[{
         label:'On Time Rate %',data:drRates,
         backgroundColor:drColors,borderRadius:5
       }]},
-      options:{responsive:true,maintainAspectRatio:false,
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
         layout:{padding:{right:55}},
         plugins:{legend:{display:false},
           datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151',
@@ -2527,7 +2527,7 @@ function renderDashboard(){
   if(slotChangeTruckerChart) slotChangeTruckerChart.destroy();
   if(_scKeys.length){
     slotChangeTruckerChart = new Chart(document.getElementById('slot-change-trucker-chart'),{
-      type:'bar',indexAxis:'y',
+      type:'bar',
       data:{
         labels:_scKeys,
         datasets:[
@@ -2536,7 +2536,7 @@ function renderDashboard(){
         ]
       },
       options:{
-        responsive:true, maintainAspectRatio:false,
+        responsive:true, maintainAspectRatio:false,indexAxis:'y',
         plugins:{legend:{position:'bottom',labels:{font:{size:11}}},
           datalabels:{display:true,anchor:'center',align:'center',font:{size:10,weight:'700'},color:'#fff',formatter:v=>v>0?v:''},
           tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw} change${ctx.raw!==1?'s':''}`}}},
@@ -2592,7 +2592,7 @@ function renderDashboard(){
       return;
     }
     hubT1BatchChart=new Chart(cvs,{
-      type:'bar',indexAxis:'y',
+      type:'bar',
       data:{
         labels:bKeys,
         datasets:[{
@@ -2603,7 +2603,7 @@ function renderDashboard(){
         }]
       },
       options:{
-        responsive:true,maintainAspectRatio:false,
+        responsive:true,maintainAspectRatio:false,indexAxis:'y',
         layout:{padding:{right:45}},
         plugins:{
           legend:{display:false},
