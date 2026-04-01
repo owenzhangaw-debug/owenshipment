@@ -2164,6 +2164,9 @@ function renderDashboard(){
     }
   };
 
+  // Batch sort helper (shared by Avg Price by Batch + Avg T1 Cost by Batch)
+  const _bkSort=n=>{const m=String(n).match(/(\d{1,2})\/(\d{1,2})/);if(!m)return'9999/99/99';const mo=+m[1],dy=+m[2],yr=mo>=10?2025:2026;return`${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`;};
+
   // Avg Price by Batch
   const priceByBatch={};
   CT.forEach(r=>{
@@ -2218,7 +2221,6 @@ function renderDashboard(){
     if(!t1ByBatch[b]) t1ByBatch[b]={sum:0,count:0};
     t1ByBatch[b].sum+=p1; t1ByBatch[b].count++;
   });
-  const _bkSort=n=>{const m=String(n).match(/(\d{1,2})\/(\d{1,2})/);if(!m)return'9999/99/99';const mo=+m[1],dy=+m[2],yr=mo>=10?2025:2026;return`${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`;};
   const t1BatchKeys=Object.keys(t1ByBatch).sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
   const t1BatchAvgs=t1BatchKeys.map(k=>+(t1ByBatch[k].sum/t1ByBatch[k].count).toFixed(0));
   const _noT1=t1BatchKeys.length===0;
