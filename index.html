@@ -1714,7 +1714,7 @@ function setBpTrainDate(batchName, field, val){
   renderCT();
 }
 const ctExpanded = new Set();
-let vtSortCol = '_addedAt', vtSortDir = -1; // default: newest added first
+let vtSortCol = 'ETS (Departure)', vtSortDir = -1; // default: latest ETS first
 let editId = null, delId = null;
 let importWB = null, importRows = [];
 let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null,
