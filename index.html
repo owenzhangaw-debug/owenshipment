@@ -699,21 +699,10 @@ td.editing .cell-edit{display:block}
 .ct-exp-row{display:none}
 .ct-exp-row.open{display:table-row}
 .ct-exp-cell{padding:10px 18px 14px 32px;background:#f0f9ff;border-bottom:2px solid #bae6fd}
-/* Route Map */
-.ct-route-map{margin-bottom:14px;padding:12px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px}
-.ct-rm-title{font-size:10px;font-weight:800;color:#334155;letter-spacing:.7px;text-transform:uppercase;margin-bottom:12px}
-.rm-track{display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:4px}
-.rm-step-wrap{display:flex;align-items:center;flex-shrink:0}
-.rm-step{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:80px;max-width:90px;padding:8px 6px;border-radius:10px;text-align:center;transition:all .2s}
-.rm-pending{background:#F8FAFC;border:1.5px solid #E2E8F0;opacity:.6}
-.rm-active{background:#EFF6FF;border:2px solid #3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
-.rm-done{background:#F0FDF4;border:1.5px solid #86EFAC}
-.rm-icon{font-size:18px;line-height:1}
-.rm-label{font-size:10px;font-weight:700;color:#1e293b;line-height:1.2}
-.rm-sub{font-size:9px;color:#94a3b8;line-height:1.2}
-.rm-date{font-size:9px;font-weight:600;color:#0369a1;margin-top:2px;background:#dbeafe;border-radius:4px;padding:1px 4px}
-.rm-connector{width:28px;height:2px;background:#E2E8F0;flex-shrink:0}
-.rm-conn-done{background:#86EFAC}
+/* Column Date Filter Button */
+.cdf-btn{display:inline-block;margin-left:4px;font-size:10px;color:#94a3b8;cursor:pointer;padding:0 2px;border-radius:3px;line-height:1;vertical-align:middle;transition:color .15s,background .15s}
+.cdf-btn:hover{color:#004D4C;background:rgba(0,77,76,.08)}
+.cdf-btn.cdf-active{color:#fff;background:#004D4C;border-radius:3px}
 .ct-sh-title{font-size:10px;font-weight:800;color:#0369a1;letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .ct-sh-empty{font-size:11px;color:#94a3b8;margin-bottom:8px}
 .ct-sh-entry{display:flex;align-items:center;gap:7px;padding:5px 9px;background:#fff;border:1px solid #e0f2fe;border-radius:7px;margin-bottom:5px;font-size:11px;flex-wrap:wrap}
@@ -994,6 +983,12 @@ td.editing .cell-edit{display:block}
             <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-total-chart"></canvas></div>
           </div>
         </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Total Freight Cost by Broker (€)<span class="ch-toggle">▼</span></h3>
+            <div class="chart-wrap" style="height:260px"><canvas id="price-broker-total-chart"></canvas></div>
+          </div>
+        </div>
         <div id="surcharge-summary-row" class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card" style="padding:16px 18px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1168,12 +1163,6 @@ td.editing .cell-edit{display:block}
         <label><input type="checkbox" value=""               onchange="msChange('payment','All')"> Not set</label>
       </div>
     </div>
-    <div class="ms-wrap" id="wrap-eta-date" style="gap:4px">
-      <span class="ms-label">ETA Hub</span>
-      <input type="date" id="ct-date-from" onchange="renderCT()" title="ETA at Hub from" style="height:30px;padding:0 7px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer"/>
-      <span style="color:#94a3b8;font-size:12px;align-self:center">→</span>
-      <input type="date" id="ct-date-to" onchange="renderCT()" title="ETA at Hub to" style="height:30px;padding:0 7px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer"/>
-    </div>
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
@@ -1195,12 +1184,12 @@ td.editing .cell-edit{display:block}
           <th class="fc-4" onclick="ctSort('Consignee')">Consignee ↕</th>
           <th onclick="ctSort('Trucker')">Trucker ↕</th>
           <th class="no-sort">Broker</th>
-          <th onclick="ctSort('ETA in Mala')" title="ETA at Port of Malaysia">ETA in Mala ↕</th>
-          <th onclick="ctSort('ETA at Hub')">ETA at Hub ↕</th>
-          <th onclick="ctSort('T1 Date')" title="Date when T1 customs cleared at Duisburg">T1 ↕</th>
-          <th onclick="ctSort('Scheduled Slot')">Scheduled Slot ↕</th>
-          <th onclick="ctSort('Actual Arrival')">Actual Arrival ↕</th>
-          <th onclick="ctSort('Deadline')">Deadline ↕</th>
+          <th onclick="ctSort('ETA in Mala')" title="ETA at Port of Malaysia">ETA in Mala ↕<span class="cdf-btn" id="cdf-ct-btn-ETA in Mala" onclick="openColDF('ct','ETA in Mala',this,event)" title="Filter by date">▾</span></th>
+          <th onclick="ctSort('ETA at Hub')">ETA at Hub ↕<span class="cdf-btn" id="cdf-ct-btn-ETA at Hub" onclick="openColDF('ct','ETA at Hub',this,event)" title="Filter by date">▾</span></th>
+          <th onclick="ctSort('T1 Date')" title="Date when T1 customs cleared at Duisburg">T1 ↕<span class="cdf-btn" id="cdf-ct-btn-T1 Date" onclick="openColDF('ct','T1 Date',this,event)" title="Filter by date">▾</span></th>
+          <th onclick="ctSort('Scheduled Slot')">Scheduled Slot ↕<span class="cdf-btn" id="cdf-ct-btn-Scheduled Slot" onclick="openColDF('ct','Scheduled Slot',this,event)" title="Filter by date">▾</span></th>
+          <th onclick="ctSort('Actual Arrival')">Actual Arrival ↕<span class="cdf-btn" id="cdf-ct-btn-Actual Arrival" onclick="openColDF('ct','Actual Arrival',this,event)" title="Filter by date">▾</span></th>
+          <th onclick="ctSort('Deadline')">Deadline ↕<span class="cdf-btn" id="cdf-ct-btn-Deadline" onclick="openColDF('ct','Deadline',this,event)" title="Filter by date">▾</span></th>
           <th>Days (Slot–ETA)</th>
           <th class="no-sort">CMR</th>
           <th class="no-sort">Tracking</th>
@@ -1276,12 +1265,6 @@ td.editing .cell-edit{display:block}
         <label><input type="checkbox" value="en-route"  onchange="vtmsChange('ata','All')"> En Route</label>
       </div>
     </div>
-    <div class="ms-wrap" id="vt-wrap-eta-date" style="gap:4px">
-      <span class="ms-label">ETA</span>
-      <input type="date" id="vt-date-from" onchange="renderVT()" title="ETA from" style="height:30px;padding:0 7px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer"/>
-      <span style="color:#94a3b8;font-size:12px;align-self:center">→</span>
-      <input type="date" id="vt-date-to" onchange="renderVT()" title="ETA to" style="height:30px;padding:0 7px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer"/>
-    </div>
     <div class="ml"><button class="btn-reset" onclick="vtResetFilters()">↺ Reset</button></div>
   </div>
   <div style="margin:0 0 8px">
@@ -1301,10 +1284,10 @@ td.editing .cell-edit{display:block}
           <th onclick="vtSort('Booking / BC No.')" data-vtcol="Booking / BC No.">Booking / BC No. ↕</th>
           <th onclick="vtSort('Container Qty')" data-vtcol="Container Qty">Container Qty ↕</th>
           <th onclick="vtSort('Vessel Name')" data-vtcol="Vessel Name">Vessel Name ↕</th>
-          <th onclick="vtSort('ETS (Departure)')" data-vtcol="ETS (Departure)">ETS (Departure) ↕</th>
-          <th onclick="vtSort('ETA (Arrival)')" data-vtcol="ETA (Arrival)">ETA (Arrival) ↕</th>
-          <th onclick="vtSort('ATA (Actual)')" data-vtcol="ATA (Actual)">ATA (Actual) ↕</th>
-          <th onclick="vtSort('Port Cut-Off')" data-vtcol="Port Cut-Off">Port Cut-Off ↕</th>
+          <th onclick="vtSort('ETS (Departure)')" data-vtcol="ETS (Departure)">ETS (Departure) ↕<span class="cdf-btn" id="cdf-vt-btn-ETS (Departure)" onclick="openColDF('vt','ETS (Departure)',this,event)" title="Filter by date">▾</span></th>
+          <th onclick="vtSort('ETA (Arrival)')" data-vtcol="ETA (Arrival)">ETA (Arrival) ↕<span class="cdf-btn" id="cdf-vt-btn-ETA (Arrival)" onclick="openColDF('vt','ETA (Arrival)',this,event)" title="Filter by date">▾</span></th>
+          <th onclick="vtSort('ATA (Actual)')" data-vtcol="ATA (Actual)">ATA (Actual) ↕<span class="cdf-btn" id="cdf-vt-btn-ATA (Actual)" onclick="openColDF('vt','ATA (Actual)',this,event)" title="Filter by date">▾</span></th>
+          <th onclick="vtSort('Port Cut-Off')" data-vtcol="Port Cut-Off">Port Cut-Off ↕<span class="cdf-btn" id="cdf-vt-btn-Port Cut-Off" onclick="openColDF('vt','Port Cut-Off',this,event)" title="Filter by date">▾</span></th>
           <th onclick="vtSort('Barge Date')" data-vtcol="Barge Date">Barge Date ↕</th>
           <th onclick="vtSort('Days to Cut-Off')" data-vtcol="Days to Cut-Off">Days to Cut-Off ↕</th>
           <th class="no-sort" style="text-align:center">VGM</th>
@@ -2218,7 +2201,7 @@ function renderDashboard(){
     }
   }
 
-  // Total Price vs Total Price T1
+  // Total Freight Cost by Trucker (Price only)
   _setPriceNoData('price-trucker-total-chart');
   if(priceTruckerTotalChart) priceTruckerTotalChart.destroy(); priceTruckerTotalChart=null;
   if(!_noPrice){
@@ -2227,30 +2210,62 @@ function renderDashboard(){
         data:{
           labels:ptKeys,
           datasets:[
-            { label:'Total Price (€)',
+            { label:'Total Freight (€)',
               data:ptKeys.map(k=>priceTruckers[k].pCount?+priceTruckers[k].pSum.toFixed(0):null),
-              backgroundColor:'#004D4C', borderRadius:4 },
-            { label:'Total Price T1 (€)',
-              data:ptKeys.map(k=>priceTruckers[k].p1Count?+priceTruckers[k].p1Sum.toFixed(0):null),
-              backgroundColor:'#F9A825', borderRadius:4 }
+              backgroundColor:ptKeys.map((_,i)=>['#004D4C','#00695C','#00796B','#00897B','#009688','#26A69A','#4DB6AC','#80CBC4'][i%8]),
+              borderRadius:4 }
           ]
         },
         options:{ responsive:true,maintainAspectRatio:false,
-          plugins:{ legend:{position:'top',labels:{font:{size:11},padding:12}},
+          plugins:{ legend:{display:false},
             tooltip:{callbacks:{label:ctx=>{
               if(ctx.raw==null) return ' —';
               const k=ptKeys[ctx.dataIndex];
-              const isT1=ctx.datasetIndex===1;
-              const count=isT1?priceTruckers[k].p1Count:priceTruckers[k].pCount;
-              return [' €'+ctx.raw.toLocaleString()+' total',' ('+count+' containers)'];
+              return [' €'+ctx.raw.toLocaleString()+' total',' ('+priceTruckers[k].pCount+' containers)'];
             }}} },
           scales:{
             y:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
-                title:{display:true,text:'Total (€)',font:{size:11}} },
+                title:{display:true,text:'Total Freight (€)',font:{size:11}} },
             x:{ grid:{display:false} }
           }
         }
       });
+  }
+
+  // ── Total Freight Cost by Broker ─────────────────────────────────
+  const priceBrokers={};
+  CT.forEach(r=>{
+    const b=r['Broker']||'(No Broker)';
+    const p=parseFloat(r['Price']);
+    if(isNaN(p)||p<=0) return;
+    if(!priceBrokers[b]) priceBrokers[b]={sum:0,count:0};
+    priceBrokers[b].sum+=p; priceBrokers[b].count++;
+  });
+  const pbKeys=Object.keys(priceBrokers).sort();
+  _setPriceNoData('price-broker-total-chart');
+  if(window.priceBrokerTotalChart) window.priceBrokerTotalChart.destroy(); window.priceBrokerTotalChart=null;
+  if(pbKeys.length){
+    window.priceBrokerTotalChart = new Chart(document.getElementById('price-broker-total-chart'),{
+      type:'bar', indexAxis:'y',
+      data:{ labels:pbKeys, datasets:[{
+        label:'Total Freight (€)',
+        data:pbKeys.map(k=>+priceBrokers[k].sum.toFixed(0)),
+        backgroundColor:['#004D4C','#00695C','#00796B','#0288D1','#1565C0','#6A1B9A'],
+        borderRadius:4
+      }]},
+      options:{ responsive:true,maintainAspectRatio:false,
+        plugins:{ legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>{
+            const k=pbKeys[ctx.dataIndex];
+            return [' €'+ctx.raw.toLocaleString()+' total',' ('+priceBrokers[k].count+' containers)'];
+          }}} },
+        scales:{
+          x:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},
+              title:{display:true,text:'Total Freight (€)',font:{size:11}} },
+          y:{ grid:{display:false} }
+        }
+      }
+    });
   }
 
   // Per-batch average Slot–ETA
@@ -2748,6 +2763,85 @@ function fillDL(id,key){
 }
 function refreshDLs(){ fillDL('dl-batch','Batch / Train'); fillDL('dl-truck','Trucker'); fillDL('dl-con','Consignee'); fillDL('dl-broker','Broker'); }
 
+// ── COLUMN DATE FILTER ────────────────────────────────────────────
+let _ctColDateFilters={};  // {colName:{from:Date|null,to:Date|null}}
+let _vtColDateFilters={};
+let _cdfActiveTable='ct', _cdfActiveCol='';
+
+function _updateCDFBtns(table){
+  const filters=table==='ct'?_ctColDateFilters:_vtColDateFilters;
+  document.querySelectorAll('.cdf-btn').forEach(btn=>{
+    const id=btn.id||'';
+    if(!id.startsWith('cdf-'+table+'-btn-')) return;
+    const col=id.replace('cdf-'+table+'-btn-','');
+    const f=filters[col];
+    const active=f&&(f.from||f.to);
+    btn.classList.toggle('cdf-active',!!active);
+  });
+}
+
+function _cdfSetFields(prefix, d){
+  const g=id=>document.getElementById(id);
+  if(d){ g(prefix+'-month').value=d.getMonth()+1; g(prefix+'-day').value=d.getDate(); g(prefix+'-year').value=d.getFullYear(); }
+  else { g(prefix+'-month').value=''; g(prefix+'-day').value=''; g(prefix+'-year').value=''; }
+}
+function _cdfReadFields(prefix, isTo){
+  const g=id=>(document.getElementById(id)||{}).value||'';
+  const mo=parseInt(g(prefix+'-month')), dy=parseInt(g(prefix+'-day'));
+  let yr=parseInt(g(prefix+'-year'));
+  if(!mo) return null;
+  if(!yr) yr=new Date().getFullYear();
+  const day=(!dy||dy<1)?( isTo ? new Date(yr,mo,0).getDate() : 1 ) : dy;
+  const d=new Date(yr, mo-1, day);
+  if(isTo) d.setHours(23,59,59,999);
+  return isNaN(d.getTime())?null:d;
+}
+
+function openColDF(table,col,btn,event){
+  event.stopPropagation();
+  const popup=document.getElementById('col-date-filter-popup');
+  if(!popup) return;
+  _cdfActiveTable=table; _cdfActiveCol=col;
+  document.getElementById('cdf-popup-title').textContent=col;
+  const filters=table==='ct'?_ctColDateFilters:_vtColDateFilters;
+  const f=filters[col]||{};
+  _cdfSetFields('cdf-from', f.from||null);
+  _cdfSetFields('cdf-to', f.to||null);
+  // Position popup near button
+  const rect=btn.getBoundingClientRect();
+  popup.style.display='block';
+  const pw=popup.offsetWidth||260, ph=popup.offsetHeight||180;
+  let left=rect.left, top=rect.bottom+4;
+  if(left+pw>window.innerWidth-8) left=window.innerWidth-pw-8;
+  if(top+ph>window.innerHeight-8) top=rect.top-ph-4;
+  popup.style.left=left+'px'; popup.style.top=top+'px';
+}
+
+function applyColDF(){
+  const from=_cdfReadFields('cdf-from', false);
+  const to=_cdfReadFields('cdf-to', true);
+  const filters=_cdfActiveTable==='ct'?_ctColDateFilters:_vtColDateFilters;
+  if(from||to) filters[_cdfActiveCol]={from,to};
+  else delete filters[_cdfActiveCol];
+  _updateCDFBtns(_cdfActiveTable);
+  document.getElementById('col-date-filter-popup').style.display='none';
+  if(_cdfActiveTable==='ct') renderCT(); else renderVT();
+}
+
+function clearColDF(){
+  const filters=_cdfActiveTable==='ct'?_ctColDateFilters:_vtColDateFilters;
+  delete filters[_cdfActiveCol];
+  _updateCDFBtns(_cdfActiveTable);
+  document.getElementById('col-date-filter-popup').style.display='none';
+  if(_cdfActiveTable==='ct') renderCT(); else renderVT();
+}
+
+document.addEventListener('click',function(e){
+  const popup=document.getElementById('col-date-filter-popup');
+  if(popup&&popup.style.display!=='none'&&!popup.contains(e.target)&&!e.target.classList.contains('cdf-btn'))
+    popup.style.display='none';
+});
+
 // ── MULTI-SELECT HELPERS ──────────────────────────────────────────
 // Selections stored in JS state so they survive DOM rebuilds in fillMultiSel
 const _msState={};
@@ -2797,9 +2891,6 @@ function getCTRowsExcept(excludeId){
   const fcons=excludeId==='consignee'?[]:msGetValues('consignee');
   const fsur=excludeId==='surcharge'?[]:msGetValues('surcharge');
   const fpay=excludeId==='payment'?[]:msGetValues('payment');
-  const _dfEl=document.getElementById('ct-date-from'), _dtEl=document.getElementById('ct-date-to');
-  const _dateFrom=_dfEl&&_dfEl.value?new Date(_dfEl.value):null;
-  const _dateTo=_dtEl&&_dtEl.value?new Date(_dtEl.value+'T23:59:59'):null;
   return CT.filter(r=>{
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
@@ -2817,11 +2908,12 @@ function getCTRowsExcept(excludeId){
       if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
     }
     if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
-    if(_dateFrom||_dateTo){
-      const eta=parseDate(r['ETA at Hub']);
-      if(_dateFrom&&eta&&eta<_dateFrom) return false;
-      if(_dateTo&&eta&&eta>_dateTo) return false;
-      if((_dateFrom||_dateTo)&&!eta) return false;
+    for(const [col,{from,to}] of Object.entries(_ctColDateFilters)){
+      if(!from&&!to) continue;
+      const d=parseDate(r[col]);
+      if(!d) return false;
+      if(from&&d<from) return false;
+      if(to&&d>to) return false;
     }
     if(qTokens.length){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
@@ -2857,9 +2949,6 @@ function getCTRows(){
   const fcons=msGetValues('consignee');
   const fsur=msGetValues('surcharge');
   const fpay=msGetValues('payment');
-  const _dfEl=document.getElementById('ct-date-from'), _dtEl=document.getElementById('ct-date-to');
-  const _dateFrom=_dfEl&&_dfEl.value?new Date(_dfEl.value):null;
-  const _dateTo=_dtEl&&_dtEl.value?new Date(_dtEl.value+'T23:59:59'):null;
   return CT.filter(r=>{
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
@@ -2877,11 +2966,12 @@ function getCTRows(){
       if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
     }
     if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
-    if(_dateFrom||_dateTo){
-      const eta=parseDate(r['ETA at Hub']);
-      if(_dateFrom&&eta&&eta<_dateFrom) return false;
-      if(_dateTo&&eta&&eta>_dateTo) return false;
-      if((_dateFrom||_dateTo)&&!eta) return false;
+    for(const [col,{from,to}] of Object.entries(_ctColDateFilters)){
+      if(!from&&!to) continue;
+      const d=parseDate(r[col]);
+      if(!d) return false;
+      if(from&&d<from) return false;
+      if(to&&d>to) return false;
     }
     if(qTokens.length){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
@@ -2943,8 +3033,7 @@ function resetFilters(){
   msClear('consignee','All Consignees');
   msClear('surcharge','All');
   msClear('payment','All');
-  const df=document.getElementById('ct-date-from'); if(df) df.value='';
-  const dt=document.getElementById('ct-date-to'); if(dt) dt.value='';
+  _ctColDateFilters={}; _updateCDFBtns('ct');
   renderCT();
 }
 
@@ -2995,8 +3084,7 @@ function vtResetFilters(){
   vtmsClear('vgm','All');
   vtmsClear('custom','All');
   vtmsClear('ata','All');
-  const vdf=document.getElementById('vt-date-from'); if(vdf) vdf.value='';
-  const vdt=document.getElementById('vt-date-to'); if(vdt) vdt.value='';
+  _vtColDateFilters={}; _updateCDFBtns('vt');
   renderVT();
 }
 
@@ -3009,52 +3097,6 @@ function cascadeStaticMenu(id, hasValueFn){
     const hasMatch=hasValueFn(rows, cb.value);
     label.style.opacity=hasMatch?'1':'0.35';
   });
-}
-
-// ── ROUTE MAP ────────────────────────────────────────────────────
-function buildRouteMap(r){
-  const today=new Date(); today.setHours(0,0,0,0);
-  const etaMala=parseDate(r['ETA in Mala']);
-  const etaHub=parseDate(r['ETA at Hub']);
-  const t1Date=parseDate(r['T1 Date']);
-  const slot=parseDate(r['Scheduled Slot']);
-  const arrDate=parseDate(r['Actual Arrival']);
-  const fmt=d=>d?`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`:'';
-
-  // Determine current stage (0-5)
-  let currentStage=0;
-  if(arrDate) currentStage=5;
-  else if(t1Date&&t1Date<=today) currentStage=4;
-  else if(etaHub&&etaHub<=today) currentStage=3;
-  else if(etaMala&&etaMala<=today) currentStage=2;
-  else if(etaMala) currentStage=1;
-
-  const stages=[
-    { icon:'🚢', label:'China Port',        sub:'Loading',              date:'',            done:currentStage>0, active:currentStage===0 },
-    { icon:'🚂', label:'En Route',          sub:'China → Europe Rail',  date:'',            done:currentStage>1, active:currentStage===1 },
-    { icon:'🛃', label:'Poland Border',     sub:'Malaszewicze',         date:fmt(etaMala),  done:currentStage>2, active:currentStage===2 },
-    { icon:'🏗️', label:'Duisburg Hub',     sub:'ETA at Hub',           date:fmt(etaHub),   done:currentStage>3, active:currentStage===3 },
-    { icon:'📋', label:'T1 Cleared',        sub:'Customs',              date:fmt(t1Date),   done:currentStage>4, active:currentStage===4 },
-    { icon:'🚛', label:'Belgium Delivery',  sub:'Final destination',    date:fmt(slot)||(arrDate?fmt(arrDate):''), done:currentStage>=5, active:currentStage===5 },
-  ];
-
-  const stagesHtml=stages.map((s,i)=>{
-    const cls=s.done?'rm-done':s.active?'rm-active':'rm-pending';
-    const connector=i<stages.length-1?`<div class="rm-connector ${s.done?'rm-conn-done':''}"></div>`:'';
-    return `<div class="rm-step-wrap">
-      <div class="rm-step ${cls}">
-        <div class="rm-icon">${s.icon}</div>
-        <div class="rm-label">${s.label}</div>
-        <div class="rm-sub">${s.sub}</div>
-        ${s.date?`<div class="rm-date">${s.date}</div>`:''}
-      </div>${connector}
-    </div>`;
-  }).join('');
-
-  return `<div class="ct-route-map">
-    <div class="ct-rm-title">🗺️ Shipment Route</div>
-    <div class="rm-track">${stagesHtml}</div>
-  </div>`;
 }
 
 function renderCT(){
@@ -3524,7 +3566,7 @@ function renderCT(){
       </td>
     </tr>
     <tr class="ct-exp-row${ctIsOpen?' open':''}" id="ctexp-${r._id}">
-      <td class="ct-exp-cell" colspan="99">${buildRouteMap(r)}${slotHistSection}</td>
+      <td class="ct-exp-cell" colspan="99">${slotHistSection}</td>
     </tr>`;
   }).join('');
   // Dynamically set left offsets for frozen columns based on actual rendered widths
@@ -3536,46 +3578,79 @@ function renderCT(){
 function renderTodayDeliveries(){
   const el=document.getElementById('today-deliveries-widget');
   if(!el) return;
-  const todayStr=formatDate(new Date());
-  const todayRows=CT.filter(r=>(r['Scheduled Slot']||'').startsWith(todayStr)&&r['Tracking']!=='Arrived');
-  if(!todayRows.length){ el.style.display='none'; el.innerHTML=''; return; }
-  // Group by trucker
-  const byTrucker={};
-  todayRows.forEach(r=>{
-    const key=r['Trucker']||'⚠️ No Trucker Assigned';
-    if(!byTrucker[key]) byTrucker[key]=[];
-    byTrucker[key].push(r);
+  const today=new Date(); today.setHours(0,0,0,0);
+  const todayStr=formatDate(today);
+
+  const pending=CT.filter(r=>r['Tracking']!=='Arrived'&&!r['Actual Arrival']&&r['Scheduled Slot']);
+  const todayRows=pending.filter(r=>(r['Scheduled Slot']||'').startsWith(todayStr));
+  const overdueRows=pending.filter(r=>{
+    const s=parseDate(r['Scheduled Slot']);
+    return s&&s<today;
   });
-  const truckerKeys=Object.keys(byTrucker).sort();
-  let html=`<div style="background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e2e8f0;overflow:hidden">
-    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#065f46,#059669);color:#fff">
+
+  if(!todayRows.length&&!overdueRows.length){ el.style.display='none'; el.innerHTML=''; return; }
+
+  // Helper: build a trucker-grouped card grid
+  function buildSection(rows, headerBg, headerGradient, rowBorderColor, rowBg, rowTextColor){
+    const byTrucker={};
+    rows.forEach(r=>{
+      const key=r['Trucker']||'⚠️ No Trucker';
+      if(!byTrucker[key]) byTrucker[key]=[];
+      byTrucker[key].push(r);
+    });
+    let h=`<div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px">`;
+    Object.keys(byTrucker).sort().forEach(tk=>{
+      const tRows=byTrucker[tk];
+      const noTruck=!tRows[0]['Trucker'];
+      h+=`<div style="flex:1;min-width:200px;border:1px solid ${noTruck?'#fde68a':rowBorderColor};border-radius:10px;overflow:hidden">
+        <div style="background:${noTruck?'#fffbeb':rowBg};padding:6px 10px;font-weight:700;font-size:12px;color:${noTruck?'#92400e':rowTextColor};border-bottom:1px solid ${noTruck?'#fde68a':rowBorderColor}">🚛 ${tk} <span style="font-weight:400;color:#6b7280">(${tRows.length})</span></div>
+        <div style="padding:6px 10px">`;
+      tRows.forEach(r=>{
+        const cn=r['Container No.']||'—';
+        const slot=r['Scheduled Slot']||'';
+        const slotDate=slot.split(' ')[0];
+        const consignee=r['Consignee']||'—';
+        const batch=r['Batch / Train']||'';
+        const cmr=r['CMR']?'<span style="background:#d1fae5;color:#065f46;border-radius:3px;padding:0 5px;font-size:10px;font-weight:700">CMR✓</span>':'';
+        const slotBadge=overdueRows.includes(r)?`<span style="background:#fee2e2;color:#dc2626;border-radius:3px;padding:0 5px;font-size:10px;font-weight:700">📅 ${slotDate}</span>`:'';
+        h+=`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f3f4f6;flex-wrap:wrap">
+          <span style="font-family:monospace;font-weight:700;font-size:12px;color:${rowTextColor}">${cn}</span>
+          <span style="color:#374151;font-size:12px;flex:1;min-width:80px">${consignee}</span>
+          ${batch?`<span style="background:#ede9fe;color:#6d28d9;border-radius:3px;padding:0 5px;font-size:10px;font-weight:700">${batch}</span>`:''}
+          ${slotBadge}${cmr}
+        </div>`;
+      });
+      h+=`</div></div>`;
+    });
+    h+=`</div>`;
+    return h;
+  }
+
+  let html=`<div style="background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e2e8f0;overflow:hidden">`;
+
+  // ── Today section ──────────────────────────────────────────────
+  if(todayRows.length){
+    html+=`<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#065f46,#059669);color:#fff">
       <span style="font-size:20px">🚛</span>
       <span style="font-weight:700;font-size:15px">Today's Deliveries</span>
       <span style="background:rgba(255,255,255,0.25);border-radius:20px;padding:2px 10px;font-size:13px;font-weight:600">${todayRows.length} container${todayRows.length>1?'s':''}</span>
       <span style="margin-left:auto;font-size:13px;opacity:.85">${todayStr}</span>
-    </div>
-    <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px">`;
-  truckerKeys.forEach(tk=>{
-    const rows=byTrucker[tk];
-    const noTrucker=!rows[0]['Trucker'];
-    html+=`<div style="flex:1;min-width:200px;border:1px solid ${noTrucker?'#fde68a':'#d1fae5'};border-radius:10px;overflow:hidden">
-      <div style="background:${noTrucker?'#fffbeb':'#ecfdf5'};padding:6px 10px;font-weight:700;font-size:12px;color:${noTrucker?'#92400e':'#065f46'};border-bottom:1px solid ${noTrucker?'#fde68a':'#d1fae5'}">🚛 ${tk} <span style="font-weight:400;color:#6b7280">(${rows.length})</span></div>
-      <div style="padding:6px 10px">`;
-    rows.forEach(r=>{
-      const cn=r['Container No.']||'—';
-      const consignee=r['Consignee']||'—';
-      const batch=r['Batch / Train']||'';
-      const cmr=r['CMR']?'<span style="background:#d1fae5;color:#065f46;border-radius:3px;padding:0 5px;font-size:10px;font-weight:700">CMR✓</span>':'';
-      html+=`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f3f4f6;flex-wrap:wrap">
-        <span style="font-family:monospace;font-weight:700;font-size:12px;color:#065f46">${cn}</span>
-        <span style="color:#374151;font-size:12px;flex:1;min-width:80px">${consignee}</span>
-        ${batch?`<span style="background:#ede9fe;color:#6d28d9;border-radius:3px;padding:0 5px;font-size:10px;font-weight:700">${batch}</span>`:''}
-        ${cmr}
-      </div>`;
-    });
-    html+=`</div></div>`;
-  });
-  html+=`</div></div>`;
+    </div>`;
+    html+=buildSection(todayRows,'#065f46','#059669','#d1fae5','#ecfdf5','#065f46');
+  }
+
+  // ── Overdue section ────────────────────────────────────────────
+  if(overdueRows.length){
+    const border=todayRows.length?'border-top:2px solid #fee2e2':'';
+    html+=`<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;${border}">
+      <span style="font-size:20px">⚠️</span>
+      <span style="font-weight:700;font-size:15px">Undelivered (Overdue)</span>
+      <span style="background:rgba(255,255,255,0.25);border-radius:20px;padding:2px 10px;font-size:13px;font-weight:600">${overdueRows.length} container${overdueRows.length>1?'s':''}</span>
+    </div>`;
+    html+=buildSection(overdueRows,'#991b1b','#dc2626','#fecaca','#fff1f2','#991b1b');
+  }
+
+  html+=`</div>`;
   el.innerHTML=html;
   el.style.display='block';
 }
@@ -3959,9 +4034,6 @@ function renderVT(){
   const _vtfVgm=vtmsGetValues('vgm');
   const _vtfCustom=vtmsGetValues('custom');
   const _vtfAta=vtmsGetValues('ata');
-  const _vtDfEl=document.getElementById('vt-date-from'), _vtDtEl=document.getElementById('vt-date-to');
-  const _vtDateFrom=_vtDfEl&&_vtDfEl.value?new Date(_vtDfEl.value):null;
-  const _vtDateTo=_vtDtEl&&_vtDtEl.value?new Date(_vtDtEl.value+'T23:59:59'):null;
   const vtRows=vtSorted.filter(r=>{
     if(_vtfPort.length&&!_vtfPort.includes(r['Port']||'')) return false;
     if(_vtfCarrier.length&&!_vtfCarrier.includes(r['Carrier']||'')) return false;
@@ -3983,11 +4055,12 @@ function renderVT(){
       if(_vtfAta.includes('arrived')&&!hasAta) return false;
       if(_vtfAta.includes('en-route')&&hasAta) return false;
     }
-    if(_vtDateFrom||_vtDateTo){
-      const eta=parseDate(r['ETA (Arrival)']);
-      if(_vtDateFrom&&eta&&eta<_vtDateFrom) return false;
-      if(_vtDateTo&&eta&&eta>_vtDateTo) return false;
-      if((_vtDateFrom||_vtDateTo)&&!eta) return false;
+    for(const [col,{from,to}] of Object.entries(_vtColDateFilters)){
+      if(!from&&!to) continue;
+      const d=parseDate(r[col]);
+      if(!d) return false;
+      if(from&&d<from) return false;
+      if(to&&d>to) return false;
     }
     if(_vtTokens.length){
       const haystack=[r['Port'],r['Carrier'],r['Booking / BC No.'],r['Vessel Name'],r['Order No.'],r['Remark'],...(Array.isArray(r.containers)?r.containers:[])].filter(Boolean).join(' ').toLowerCase();
@@ -6274,6 +6347,46 @@ seLoadContacts();
   }
 </style>
 
+<!-- ── COLUMN DATE FILTER POPUP ── -->
+<div id="col-date-filter-popup" style="display:none;position:fixed;z-index:99999;background:#fff;border:1.5px solid #d1d5db;border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.18);min-width:240px">
+  <div id="cdf-popup-title" style="font-size:11px;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px"></div>
+  <div style="display:grid;grid-template-columns:auto 1fr;align-items:center;gap:6px 10px">
+    <span style="font-size:11px;color:#64748b;font-weight:600">From</span>
+    <div style="display:flex;gap:4px">
+      <select id="cdf-from-month" style="flex:2;padding:5px 4px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff">
+        <option value="">Month</option>
+        <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+        <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+        <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+      </select>
+      <input type="number" id="cdf-from-day" min="1" max="31" placeholder="Day" style="flex:1;padding:5px 4px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;width:46px"/>
+      <select id="cdf-from-year" style="flex:1;padding:5px 4px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff">
+        <option value="">Year</option>
+        <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+      </select>
+    </div>
+    <span style="font-size:11px;color:#64748b;font-weight:600">To</span>
+    <div style="display:flex;gap:4px">
+      <select id="cdf-to-month" style="flex:2;padding:5px 4px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff">
+        <option value="">Month</option>
+        <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+        <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+        <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+      </select>
+      <input type="number" id="cdf-to-day" min="1" max="31" placeholder="Day" style="flex:1;padding:5px 4px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;width:46px"/>
+      <select id="cdf-to-year" style="flex:1;padding:5px 4px;border:1.5px solid #d1d5db;border-radius:7px;font-size:12px;color:#1e293b;background:#fff">
+        <option value="">Year</option>
+        <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button onclick="applyColDF()" style="flex:1;padding:6px;background:#004D4C;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Apply</button>
+    <button onclick="clearColDF()" style="flex:1;padding:6px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Clear</button>
+  </div>
+</div>
 
 </body>
 </html>
