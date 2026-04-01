@@ -974,8 +974,8 @@ td.editing .cell-edit{display:block}
       <div id="dash-cat-price" class="dash-cat-section">
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Avg Price by Trucker (€)<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Average freight price per container by trucker</p>
+            <h3 onclick="toggleChart(this)">Avg Price by Batch (€)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Average freight price per container by batch / train</p>
             <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-avg-chart"></canvas></div>
           </div>
         </div>
@@ -1039,8 +1039,8 @@ td.editing .cell-edit{display:block}
             <div class="chart-wrap" style="height:260px"><canvas id="tracking-donut-chart"></canvas></div>
           </div>
           <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Delivery Rate by Trucker<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">% containers with Actual Arrival recorded</p>
+            <h3 onclick="toggleChart(this)">On Time Rate by Trucker<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">% containers delivered on or before Scheduled Slot</p>
             <div class="chart-wrap" style="height:260px"><canvas id="delivery-rate-chart"></canvas></div>
           </div>
         </div>
@@ -2098,9 +2098,10 @@ function renderDashboard(){
       backgroundColor:'#1e40af',borderRadius:5
     }]},
     options:{ responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:22}},
       plugins:{
         legend:{display:false},
-        datalabels:{display:true,anchor:'end',align:'top',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v}
+        datalabels:{display:true,anchor:'end',align:'top',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v,clamp:true}
       },
       scales:{y:{ticks:{stepSize:5},grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true},x:{grid:{display:false}}} }
   });
@@ -2118,9 +2119,10 @@ function renderDashboard(){
       backgroundColor:'#1e40af',borderRadius:5
     }]},
     options:{ responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      layout:{padding:{right:40}},
       plugins:{
         legend:{display:false},
-        datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v}
+        datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v,clamp:true}
       },
       scales:{x:{ticks:{stepSize:5},grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true},y:{grid:{display:false}}} }
   });
@@ -2162,30 +2164,42 @@ function renderDashboard(){
     }
   };
 
-  // Avg Price by Trucker
+  // Avg Price by Batch
+  const priceByBatch={};
+  CT.forEach(r=>{
+    const b=r['Batch / Train']||'?';
+    const p=parseFloat(r['Price']);
+    if(isNaN(p)||p<=0) return;
+    if(!priceByBatch[b]) priceByBatch[b]={sum:0,count:0};
+    priceByBatch[b].sum+=p; priceByBatch[b].count++;
+  });
+  const pbBatchKeys=Object.keys(priceByBatch).sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
+  const pbBatchAvgs=pbBatchKeys.map(k=>+(priceByBatch[k].sum/priceByBatch[k].count).toFixed(0));
+  const _noPriceBatch=pbBatchKeys.length===0;
   _setPriceNoData('price-trucker-avg-chart');
   if(priceTruckerAvgChart) priceTruckerAvgChart.destroy(); priceTruckerAvgChart=null;
-  if(!_noPrice){
+  if(!_noPriceBatch){
     priceTruckerAvgChart = new Chart(document.getElementById('price-trucker-avg-chart'),{
       type:'bar',indexAxis:'y',
       data:{
-        labels:ptKeys,
-        datasets:[
-          { label:'Avg Price (€)',
-            data:ptKeys.map(k=>priceTruckers[k].pCount?+(priceTruckers[k].pSum/priceTruckers[k].pCount).toFixed(0):null),
-            backgroundColor:'#1e40af',
-            borderRadius:5 }
-        ]
+        labels:pbBatchKeys,
+        datasets:[{
+          label:'Avg Price (€)',
+          data:pbBatchAvgs,
+          backgroundColor:'#1e40af',
+          borderRadius:5
+        }]
       },
       options:{ responsive:true,maintainAspectRatio:false,
+        layout:{padding:{right:70}},
         plugins:{ legend:{display:false},
           datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',
-            formatter:v=>v!=null?'€'+v.toLocaleString():''
+            formatter:v=>v!=null?'€'+v.toLocaleString():'',clamp:true
           },
           tooltip:{callbacks:{label:ctx=>{
             if(ctx.raw==null) return ' —';
-            const k=ptKeys[ctx.dataIndex];
-            return [' €'+ctx.raw.toLocaleString()+' avg/container',' ('+priceTruckers[k].pCount+' containers)'];
+            const k=pbBatchKeys[ctx.dataIndex];
+            return [' €'+ctx.raw.toLocaleString()+' avg/container',' ('+priceByBatch[k].count+' containers)'];
           }}} },
         scales:{
           x:{ grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:true},
@@ -2227,8 +2241,9 @@ function renderDashboard(){
           borderRadius:5
         }]},
         options:{ responsive:true,maintainAspectRatio:false,
+          layout:{padding:{right:75}},
           plugins:{ legend:{display:false},
-            datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#92400e',formatter:v=>v!=null?'€'+v.toLocaleString():''},
+            datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#92400e',formatter:v=>v!=null?'€'+v.toLocaleString():'',clamp:true},
             tooltip:{callbacks:{label:ctx=>{
               const k=t1BatchKeys[ctx.dataIndex];
               return [' €'+ctx.raw.toLocaleString()+' avg/container',' ('+t1ByBatch[k].count+' containers)'];
@@ -2258,8 +2273,9 @@ function renderDashboard(){
           ]
         },
         options:{ responsive:true,maintainAspectRatio:false,
+          layout:{padding:{right:80}},
           plugins:{ legend:{display:false},
-            datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v!=null?'€'+v.toLocaleString():''},
+            datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v!=null?'€'+v.toLocaleString():'',clamp:true},
             tooltip:{callbacks:{label:ctx=>{
               if(ctx.raw==null) return ' —';
               const k=ptKeys[ctx.dataIndex];
@@ -2295,8 +2311,9 @@ function renderDashboard(){
         borderRadius:5
       }]},
       options:{ responsive:true,maintainAspectRatio:false,
+        layout:{padding:{right:80}},
         plugins:{ legend:{display:false},
-          datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v!=null?'€'+v.toLocaleString():''},
+          datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#1e3a8a',formatter:v=>v!=null?'€'+v.toLocaleString():'',clamp:true},
           tooltip:{callbacks:{label:ctx=>{
             const k=pbKeys[ctx.dataIndex];
             return [' €'+ctx.raw.toLocaleString()+' total',' ('+priceBrokers[k].count+' containers)'];
@@ -2326,8 +2343,9 @@ function renderDashboard(){
       backgroundColor:seColors, borderRadius:4
     }]},
     options:{ responsive:true,maintainAspectRatio:false, indexAxis:'y',
+      layout:{padding:{right:45}},
       plugins:{legend:{display:false},
-        datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v+'d'},
+        datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v+'d',clamp:true},
         tooltip:{callbacks:{label:ctx=>' Avg '+ctx.raw+' days'}}},
       scales:{x:{grid:{color:'rgba(0,0,0,.06)'},title:{display:true,text:'Avg days (Slot − ETA)',font:{size:11}},
                ticks:{callback:v=>v+'d'},beginAtZero:true},
@@ -2452,17 +2470,19 @@ function renderDashboard(){
     });
   }
 
-  // ── Delivery Rate by Trucker ──────────────────────────────────────
-  const deliveryRate={};
+  // ── On Time Rate by Trucker ──────────────────────────────────────
+  const onTimeRate={};
   CT.forEach(r=>{
     const t=r['Trucker']||'Unknown';
-    if(!deliveryRate[t]) deliveryRate[t]={total:0,delivered:0};
-    deliveryRate[t].total++;
-    if(r['Actual Arrival']) deliveryRate[t].delivered++;
+    const arrD=parseDate(r['Actual Arrival']), slotD=parseDate(r['Scheduled Slot']);
+    if(!slotD) return; // skip containers with no scheduled slot
+    if(!onTimeRate[t]) onTimeRate[t]={total:0,onTime:0};
+    onTimeRate[t].total++;
+    if(arrD&&arrD<=slotD) onTimeRate[t].onTime++;
   });
-  const drKeys=Object.keys(deliveryRate).filter(k=>deliveryRate[k].total>0).sort((a,b)=>
-    (deliveryRate[b].delivered/deliveryRate[b].total)-(deliveryRate[a].delivered/deliveryRate[a].total));
-  const drRates=drKeys.map(k=>+(deliveryRate[k].delivered/deliveryRate[k].total*100).toFixed(1));
+  const drKeys=Object.keys(onTimeRate).filter(k=>onTimeRate[k].total>0)
+    .sort((a,b)=>(onTimeRate[b].onTime/onTimeRate[b].total)-(onTimeRate[a].onTime/onTimeRate[a].total));
+  const drRates=drKeys.map(k=>+(onTimeRate[k].onTime/onTimeRate[k].total*100).toFixed(1));
   const drColors=drRates.map(v=>v>=80?'#10b981':v>=50?'#f59e0b':'#ef4444');
   if(window.deliveryRateChart) window.deliveryRateChart.destroy();
   const _drEl=document.getElementById('delivery-rate-chart');
@@ -2470,14 +2490,15 @@ function renderDashboard(){
     window.deliveryRateChart=new Chart(_drEl,{
       type:'bar',indexAxis:'y',
       data:{labels:drKeys,datasets:[{
-        label:'Delivery Rate %',data:drRates,
+        label:'On Time Rate %',data:drRates,
         backgroundColor:drColors,borderRadius:5
       }]},
       options:{responsive:true,maintainAspectRatio:false,
+        layout:{padding:{right:55}},
         plugins:{legend:{display:false},
           datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151',
             formatter:v=>v+'%'},
-          tooltip:{callbacks:{label:ctx=>{const k=drKeys[ctx.dataIndex];return` ${deliveryRate[k].delivered}/${deliveryRate[k].total} delivered (${ctx.raw}%)`;
+          tooltip:{callbacks:{label:ctx=>{const k=drKeys[ctx.dataIndex];return` ${onTimeRate[k].onTime}/${onTimeRate[k].total} on time (${ctx.raw}%)`;
           }}}
         },
         scales:{
@@ -2581,9 +2602,10 @@ function renderDashboard(){
       },
       options:{
         responsive:true,maintainAspectRatio:false,
+        layout:{padding:{right:45}},
         plugins:{
           legend:{display:false},
-          datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v+'d'},
+          datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v+'d',clamp:true},
           tooltip:{callbacks:{
             label:ctx=>{
               const b=bKeys[ctx.dataIndex];
@@ -2592,7 +2614,7 @@ function renderDashboard(){
           }}
         },
         scales:{
-          x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:11}}},
+          x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:11},callback:v=>v+'d'}},
           y:{grid:{display:false}}
         }
       }
