@@ -2477,10 +2477,10 @@ function renderDashboard(){
   CT.forEach(r=>{
     const t=r['Trucker']||'Unknown';
     const arrD=parseDate(r['Actual Arrival']), slotD=parseDate(r['Scheduled Slot']);
-    if(!slotD) return; // skip containers with no scheduled slot
+    if(!slotD || !arrD) return; // only count containers that have both slot AND actual arrival
     if(!onTimeRate[t]) onTimeRate[t]={total:0,onTime:0};
     onTimeRate[t].total++;
-    if(arrD&&arrD<=slotD) onTimeRate[t].onTime++;
+    if(arrD<=slotD) onTimeRate[t].onTime++;
   });
   const drKeys=Object.keys(onTimeRate).filter(k=>onTimeRate[k].total>0)
     .sort((a,b)=>(onTimeRate[b].onTime/onTimeRate[b].total)-(onTimeRate[a].onTime/onTimeRate[a].total));
