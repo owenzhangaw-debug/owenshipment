@@ -1295,6 +1295,7 @@ td.editing .cell-edit{display:block}
           <th onclick="vtSort('Status')" data-vtcol="Status">Status ↕</th>
           <th onclick="vtSort('Order No.')" data-vtcol="Order No.">Order No. ↕</th>
           <th onclick="vtSort('Remark')" data-vtcol="Remark">Remark ↕</th>
+          <th onclick="vtSort('_addedAt')" data-vtcol="_addedAt">Date Added ↕</th>
           <th class="no-sort"></th>
           <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="vt-sel-all" onchange="vtSelAll(this.checked)" title="Select all" style="width:14px;height:14px;cursor:pointer"/></th>
         </tr></thead>
@@ -1713,7 +1714,7 @@ function setBpTrainDate(batchName, field, val){
   renderCT();
 }
 const ctExpanded = new Set();
-let vtSortCol = 'Port Cut-Off', vtSortDir = 1; // default: nearest cut-off first
+let vtSortCol = '_addedAt', vtSortDir = -1; // default: newest added first
 let editId = null, delId = null;
 let importWB = null, importRows = [];
 let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null,
@@ -3989,7 +3990,7 @@ function vtSaveNewVessel(){
     'Remark':g('vta-remark'),
     'VGM':false,'Custom':false,
     containers:[],vesselHistory:[],bargeRollHistory:[],
-    _id:vtNextId++
+    _id:vtNextId++, _addedAt:new Date().toISOString()
   };
   VT.push(v); saveVT(); renderVT(); renderDashboard();
   document.getElementById('vt-add-overlay').classList.remove('open');
@@ -3998,7 +3999,7 @@ function vtSaveNewVessel(){
 function openAddVessel(){
   const v={Port:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
     'ETS (Departure)':'','ETA (Arrival)':'','ATA (Actual)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
-    Status:'Scheduled','Remark':'','VGM':false,'Custom':false,containers:[],vesselHistory:[],_id:vtNextId++};
+    Status:'Scheduled','Remark':'','VGM':false,'Custom':false,containers:[],vesselHistory:[],_id:vtNextId++,_addedAt:new Date().toISOString()};
   VT.push(v); saveVT(); renderVT(); renderDashboard();
 }
 function openDelVessel(id){
@@ -4008,7 +4009,7 @@ function openDelVessel(id){
 function renderVT(){
   const _vtTotalCt=VT.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0);
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'];
-  const TOTAL_COLS=19; // expand + 15 data cols + del + sel
+  const TOTAL_COLS=20; // expand + 15 data cols + date added + del + sel
 
   // ── Fill dynamic filter menus (Port, Carrier) ─────────────────────
   vtFillMultiSel('port','Port','All Ports');
@@ -4083,10 +4084,13 @@ function renderVT(){
   }
   _vtNoData.style.display=vtRows.length?'none':'block';
 
-  // Update sort indicators on column headers
+  // Update sort indicators on column headers (preserve ▾ filter spans)
   document.querySelectorAll('#page-vessels thead th[data-vtcol]').forEach(th=>{
     const col=th.dataset.vtcol;
-    th.textContent=col+(col===vtSortCol?(vtSortDir===1?' ↑':' ↓'):' ↕');
+    const _cdfSpan=th.querySelector('.cdf-btn');
+    const label=col==='_addedAt'?'Date Added':col;
+    th.textContent=label+(col===vtSortCol?(vtSortDir===1?' ↑':' ↓'):' ↕');
+    if(_cdfSpan) th.appendChild(_cdfSpan);
   });
 
   document.getElementById('vt-body').innerHTML=vtRows.map(r=>{
@@ -4171,6 +4175,7 @@ function renderVT(){
       ${vtCell(r,'Status',{select:STATUS_OPTS})}
       ${vtCell(r,'Order No.')}
       ${vtCell(r,'Remark')}
+      <td style="padding:7px 10px;text-align:center;white-space:nowrap">${r._addedAt?(()=>{const _d=new Date(r._addedAt);return`<span style="font-size:11px;color:#64748b">${String(_d.getMonth()+1).padStart(2,'0')}/${String(_d.getDate()).padStart(2,'0')}/${String(_d.getFullYear()).slice(2)}</span>`;})():'<span style="color:#ccc">—</span>'}</td>
       <td style="padding:4px 6px;text-align:center">
         <button class="btn-del-row" onclick="openDelVessel(${r._id})" title="Delete">✕</button>
       </td>
