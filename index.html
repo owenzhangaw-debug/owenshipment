@@ -1348,6 +1348,7 @@ td.editing .cell-edit{display:block}
       <table>
         <thead><tr>
           <th class="no-sort" style="width:32px"></th>
+          <th onclick="vtSort('CY')" data-vtcol="CY">CY ↕</th>
           <th onclick="vtSort('Port')" data-vtcol="Port">Port ↕</th>
           <th onclick="vtSort('Carrier')" data-vtcol="Carrier">Carrier ↕</th>
           <th onclick="vtSort('Booking / BC No.')" data-vtcol="Booking / BC No.">Booking / BC No. ↕</th>
@@ -4222,7 +4223,7 @@ function vtSaveNewVessel(){
 }
 
 function openAddVessel(){
-  const v={Port:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
+  const v={CY:'',Port:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
     'ETS (Departure)':'','ETA (Arrival)':'','ATA (Actual)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
     Status:'Scheduled','Remark':'','VGM':false,'Custom':false,containers:[],vesselHistory:[],_id:vtNextId++,_addedAt:new Date().toISOString()};
   VT.push(v); saveVT(); renderVT(); renderDashboard();
@@ -4234,7 +4235,7 @@ function openDelVessel(id){
 function renderVT(){
   const _vtTotalCt=VT.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0);
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'];
-  const TOTAL_COLS=20; // expand + 15 data cols + date added + del + sel
+  const TOTAL_COLS=21; // expand + CY + 15 data cols + date added + del + sel
 
   // ── Fill dynamic filter menus (Port, Carrier) ─────────────────────
   vtFillMultiSel('port','Port','All Ports');
@@ -4289,7 +4290,7 @@ function renderVT(){
       if(to&&d>to) return false;
     }
     if(_vtTokens.length){
-      const haystack=[r['Port'],r['Carrier'],r['Booking / BC No.'],r['Vessel Name'],r['Order No.'],r['Remark'],...(Array.isArray(r.containers)?r.containers:[])].filter(Boolean).join(' ').toLowerCase();
+      const haystack=[r['CY'],r['Port'],r['Carrier'],r['Booking / BC No.'],r['Vessel Name'],r['Order No.'],r['Remark'],...(Array.isArray(r.containers)?r.containers:[])].filter(Boolean).join(' ').toLowerCase();
       if(!_vtTokens.every(t=>haystack.includes(t))) return false;
     }
     return true;
@@ -4384,6 +4385,7 @@ function renderVT(){
         <button class="vt-expand-btn" onclick="vtToggleExpand(${r._id})" title="${isOpen?'Collapse':'Expand'}">${isOpen?'▼':'▶'}</button>
         ${cnCount?`<span style="font-size:10px;color:var(--blue);font-weight:700">${cnCount}</span>`:''}
       </td>
+      ${vtCell(r,'CY')}
       ${vtCell(r,'Port')}
       ${vtCell(r,'Carrier')}
       ${vtCell(r,'Booking / BC No.')}
