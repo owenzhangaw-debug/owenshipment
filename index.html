@@ -4657,11 +4657,12 @@ function renderSOC(){
       <div class="soc-yard-hdr">
         <div class="soc-yard-hdr-left" onclick="socToggleYard('${yard.yard}')">
           <span class="soc-toggle">▼</span>
-          <div class="soc-yard-name">${yard.yard}</div>
-          <div class="soc-yard-counts">
-            <span class="soc-badge soc-avail">${st.available} available</span>
-            ${st.booked>0?`<span class="soc-badge soc-book">${st.booked} booked</span>`:''}
-          </div>
+          <div>
+            <div class="soc-yard-name">${yard.yard}</div>
+            <div class="soc-yard-counts">
+              <span class="soc-badge soc-avail">${st.available} available</span>
+              ${st.booked>0?`<span class="soc-badge soc-book">${st.booked} booked</span>`:''}
+            </div>
           </div>
         </div>
         <button class="btn btn-blue" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();openSOCModal('${yard.yard}')">+ Add</button>
