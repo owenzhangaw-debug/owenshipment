@@ -1267,6 +1267,12 @@ td.editing .cell-edit{display:block}
   </div>
 
   <div class="tbl-card">
+    <!-- Inline selection bar — appears inside the card when rows are ticked -->
+    <div id="ct-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px 8px 0 0;padding:9px 16px;font-size:13px;font-weight:600">
+      <span id="ct-inline-sel-count">0 selected</span>
+      <button onclick="openBulkEdit()" style="background:#fff;color:#004D4C;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
+      <button onclick="clearAllSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
+    </div>
     <div class="tbl-top">
       <h3>Container List</h3><span id="ct-count"></span>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
@@ -6353,12 +6359,20 @@ function clearAllSel(){
 }
 function updateSelBar(){
   const total=ctSel.size+vtSel.size;
+  // Floating bottom bar (kept for vessel selection fallback)
   const bar=document.getElementById('sel-bar');
   bar.classList.toggle('show', total>0);
   document.getElementById('sel-bar-count').textContent=
     (ctSel.size?ctSel.size+' container'+(ctSel.size!==1?'s':''):'')
     +(ctSel.size&&vtSel.size?' + ':'')
     +(vtSel.size?vtSel.size+' vessel'+(vtSel.size!==1?'s':''):'');
+  // Inline action bar inside the table card — always visible when rows are ticked
+  const inlineBar=document.getElementById('ct-inline-sel-bar');
+  if(inlineBar){
+    inlineBar.style.display=ctSel.size>0?'flex':'none';
+    const cnt=document.getElementById('ct-inline-sel-count');
+    if(cnt) cnt.textContent=ctSel.size+' container'+(ctSel.size!==1?'s':'')+' selected';
+  }
 }
 
 // ── BULK EDIT ─────────────────────────────────────────────────────
