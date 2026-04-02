@@ -823,13 +823,17 @@ td.editing .cell-edit{display:block}
 .soc-section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
 .soc-yards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
 .soc-yard-card{background:var(--card);border-radius:var(--rad);padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid #004D4C}
-.soc-yard-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.soc-yard-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.soc-yard-hdr-left{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;flex:1}
 .soc-yard-name{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.3px}
 .soc-yard-counts{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
 .soc-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
 .soc-avail{background:#ECFDF5;color:#059669}
 .soc-book{background:#FEF3C7;color:#D97706}
+.soc-toggle{font-size:12px;color:#94a3b8;transition:transform .2s;line-height:1;margin-left:4px}
+.soc-yard-card.collapsed .soc-toggle{transform:rotate(-90deg)}
 .soc-cn-list{display:flex;flex-wrap:wrap;gap:5px;min-height:24px}
+.soc-yard-card.collapsed .soc-cn-list{display:none;margin-top:0}
 .soc-cn-tag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 7px;border-radius:5px;white-space:nowrap}
 .soc-cn-free{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
 .soc-cn-booked{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;opacity:.8}
@@ -4586,6 +4590,12 @@ function socYardStats(yard){
 }
 
 let _socAddYard='';
+const _socCollapsed=new Set(SOC_YARDS.map(y=>y.yard)); // start all collapsed
+function socToggleYard(yardName){
+  if(_socCollapsed.has(yardName)) _socCollapsed.delete(yardName);
+  else _socCollapsed.add(yardName);
+  renderSOC();
+}
 function openSOCModal(yard){
   _socAddYard=yard||SOC_YARDS[0].yard;
   document.getElementById('soc-modal-yard').value=_socAddYard;
@@ -4642,16 +4652,19 @@ function renderSOC(){
       <span style="font-size:11px;color:#64748b;font-weight:600">+${yard.manualAmount} untracked containers</span>
       <button onclick="socClearManual('${yard.yard}')" style="font-size:10px;color:#ef4444;background:none;border:none;cursor:pointer;margin-left:6px">clear</button>
     </div>`:'';
-    return `<div class="soc-yard-card">
+    const isCollapsed=_socCollapsed.has(yard.yard);
+    return `<div class="soc-yard-card${isCollapsed?' collapsed':''}">
       <div class="soc-yard-hdr">
-        <div>
+        <div class="soc-yard-hdr-left" onclick="socToggleYard('${yard.yard}')">
+          <span class="soc-toggle">▼</span>
           <div class="soc-yard-name">${yard.yard}</div>
           <div class="soc-yard-counts">
             <span class="soc-badge soc-avail">${st.available} available</span>
             ${st.booked>0?`<span class="soc-badge soc-book">${st.booked} booked</span>`:''}
           </div>
+          </div>
         </div>
-        <button class="btn btn-blue" style="font-size:11px;padding:4px 10px" onclick="openSOCModal('${yard.yard}')">+ Add</button>
+        <button class="btn btn-blue" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();openSOCModal('${yard.yard}')">+ Add</button>
       </div>
       <div class="soc-cn-list">${namedHtml}${manualHtml}${!namedHtml&&!manualHtml?'<span style="color:#94a3b8;font-size:11px">No containers recorded</span>':''}</div>
     </div>`;
