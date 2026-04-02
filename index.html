@@ -1279,6 +1279,11 @@ td.editing .cell-edit{display:block}
 
   <!-- VT Filter Row — below progress cards, above table -->
   <div class="toolbar" style="margin:0 0 8px" id="vt-filter-toolbar">
+    <div class="ms-wrap" id="vt-wrap-cy">
+      <span class="ms-label">CY</span>
+      <button class="ms-btn" id="vt-btn-cy" onclick="vtmsOpen('cy')">All CYs</button>
+      <div class="ms-menu" id="vt-menu-cy"></div>
+    </div>
     <div class="ms-wrap" id="vt-wrap-port">
       <span class="ms-label">Port</span>
       <button class="ms-btn" id="vt-btn-port" onclick="vtmsOpen('port')">All Ports</button>
@@ -3305,6 +3310,7 @@ function vtResetFilters(){
   const s=document.getElementById('vt-f-search'); if(s) s.value='';
   const msg=document.getElementById('vt-search-msg'); if(msg) msg.textContent='';
   document.querySelectorAll('.vt-search-highlight').forEach(el=>el.classList.remove('vt-search-highlight'));
+  vtmsClear('cy','All CYs');
   vtmsClear('port','All Ports');
   vtmsClear('carrier','All Carriers');
   vtmsClear('status','All Statuses');
@@ -4238,6 +4244,7 @@ function renderVT(){
   const TOTAL_COLS=21; // expand + CY + 15 data cols + date added + del + sel
 
   // ── Fill dynamic filter menus (Port, Carrier) ─────────────────────
+  vtFillMultiSel('cy','CY','All CYs');
   vtFillMultiSel('port','Port','All Ports');
   vtFillMultiSel('carrier','Carrier','All Carriers');
 
@@ -4255,6 +4262,7 @@ function renderVT(){
   // ── Apply VT filters ──────────────────────────────────────────────
   const _vtQ=(document.getElementById('vt-f-search')?document.getElementById('vt-f-search').value||'':'').toLowerCase().trim();
   const _vtTokens=_vtQ?_vtQ.split(/[\s,;]+/).filter(Boolean):[];
+  const _vtfCy=vtmsGetValues('cy');
   const _vtfPort=vtmsGetValues('port');
   const _vtfCarrier=vtmsGetValues('carrier');
   const _vtfStatus=vtmsGetValues('status');
@@ -4262,6 +4270,7 @@ function renderVT(){
   const _vtfCustom=vtmsGetValues('custom');
   const _vtfAta=vtmsGetValues('ata');
   const vtRows=vtSorted.filter(r=>{
+    if(_vtfCy.length&&!_vtfCy.includes(r['CY']||'')) return false;
     if(_vtfPort.length&&!_vtfPort.includes(r['Port']||'')) return false;
     if(_vtfCarrier.length&&!_vtfCarrier.includes(r['Carrier']||'')) return false;
     if(_vtfStatus.length&&!_vtfStatus.includes(r['Status']||'')) return false;
