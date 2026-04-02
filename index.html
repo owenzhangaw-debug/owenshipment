@@ -5581,6 +5581,64 @@ function fixT1RuleViolations(){
   return fixed;
 }
 fixT1RuleViolations();
+
+// Silently restagger all _slotAuto qualifying containers (same algorithm as ⚡ Auto Slots)
+// Called at startup AND after cloud sync so JSONBin can't restore same-time duplicates
+function silentRestaggerAutoSlots(){
+  function _pds(s){ const p=s.split('/'); return new Date(+p[0],+p[1]-1,+p[2]); }
+  function _fmtD(d){ return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0'); }
+  function _skip(d){ const x=new Date(d); while(x.getDay()===0||x.getDay()===6) x.setDate(x.getDate()+1); return x; }
+
+  const pool = CT.filter(r =>
+    r._slotAuto &&
+    r['ETA at Hub'] &&
+    r['Tracking'] !== 'Arrived' &&
+    !r['Actual Arrival']
+  );
+  if(!pool.length) return 0;
+
+  const groups = {};
+  pool.forEach(r => {
+    const con = (r['Consignee']||'').trim();
+    const eta = (r['ETA at Hub']||'').trim().split(' ')[0];
+    const k = con+'||'+eta;
+    if(!groups[k]) groups[k] = {con, eta, rows:[]};
+    groups[k].rows.push(r);
+  });
+
+  let assigned = 0;
+  Object.values(groups).forEach(g => {
+    const fullSlots = getConsigneeSlotWindow(g.con);
+    const firstDaySlots = fullSlots.filter(h => h >= 14);
+    const slotsFirstDay = firstDaySlots.length ? firstDaySlots : fullSlots;
+
+    g.rows.sort((a,b) => (a['Container No.']||'').localeCompare(b['Container No.']||''));
+
+    let curDate = _skip((()=>{ const d=_pds(g.eta); d.setDate(d.getDate()+1); return d; })());
+    let isFirstDay = true, slotIdx = 0;
+
+    g.rows.forEach(r => {
+      const i = CT.findIndex(x => x._id === r._id); if(i<0) return;
+      let safety = 0;
+      while(true){
+        const daySlots = isFirstDay ? slotsFirstDay : fullSlots;
+        if(slotIdx < daySlots.length){
+          CT[i]['Scheduled Slot'] = _fmtD(curDate)+' '+String(daySlots[slotIdx]).padStart(2,'0')+':00';
+          CT[i]._slotAuto = true;
+          assigned++; slotIdx++; break;
+        } else {
+          const nd = new Date(curDate); nd.setDate(nd.getDate()+1);
+          curDate = _skip(nd); isFirstDay = false; slotIdx = 0;
+        }
+        if(++safety > 365) break;
+      }
+    });
+  });
+  if(assigned) saveData();
+  return assigned;
+}
+silentRestaggerAutoSlots();
+
 // ── Migrate old Payment Status values ────────────────────────────
 (function migratePayStatus(){
   let changed=false;
@@ -6208,6 +6266,7 @@ async function pullFromCloud(manual=false){
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
     fixT1RuleViolations();
+    silentRestaggerAutoSlots();
     renderCT(); renderVT(); renderDashboard(); renderSOC();
     if(manual){
       const ok=document.getElementById('sync-ok');
