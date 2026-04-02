@@ -837,7 +837,13 @@ td.editing .cell-edit{display:block}
 .soc-cn-tag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 7px;border-radius:5px;white-space:nowrap}
 .soc-cn-free{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
 .soc-cn-booked{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;opacity:.8}
+.soc-cn-stale{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
 .soc-cn-status{font-size:9px;margin-left:2px}
+.soc-cn-age{font-size:9px;margin-left:3px;opacity:.75}
+.soc-rule-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px}
+.soc-rule-over{background:#FEE2E2;color:#991B1B}
+.soc-rule-stale{background:#FEF3C7;color:#92400E}
+.soc-rule-ok{background:#ECFDF5;color:#065F46}
 .soc-manual-row{display:flex;align-items:center;width:100%;margin-top:4px}
 /* SOC Modal */
 #soc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -1146,6 +1152,15 @@ td.editing .cell-edit{display:block}
           <span id="custom-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
         </h3>
         <div id="custom-alert-list" style="font-size:12px"></div>
+      </div>
+
+      <!-- SOC Rule Violations -->
+      <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
+        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:16px">🏗️</span> SOC Inventory Rules
+          <span id="soc-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#e8f5e9;color:#2e7d32;border-radius:8px;padding:2px 8px">All OK</span>
+        </h3>
+        <div id="soc-alert-list" style="font-size:12px"></div>
       </div>
     </div><!-- end dash-col RIGHT -->
 
@@ -1829,7 +1844,25 @@ function initSeed(){
 function saveData(){ try{ localStorage.setItem(LS_CT, JSON.stringify(CT)); }catch(e){} cloudAutoSave(); }
 function saveVT(){ try{ localStorage.setItem(LS_VT, JSON.stringify(VT)); }catch(e){} cloudAutoSave(); }
 function saveSOC(){ try{ localStorage.setItem(SOC_KEY, JSON.stringify(SOC_YARDS)); }catch(e){} cloudAutoSave(); }
-function loadSOC(){ try{ const d=localStorage.getItem(SOC_KEY); if(d){ const p=JSON.parse(d); if(Array.isArray(p)) SOC_YARDS=p; } }catch(e){} }
+function loadSOC(){
+  try{
+    const d=localStorage.getItem(SOC_KEY);
+    if(d){
+      const p=JSON.parse(d);
+      if(Array.isArray(p)){
+        // Migrate old string entries → {cn, addedAt} objects
+        p.forEach(yard=>{
+          if(Array.isArray(yard.containers)){
+            yard.containers=yard.containers.map(e=>
+              typeof e==='string'?{cn:e,addedAt:new Date().toISOString().slice(0,10)}:e
+            );
+          }
+        });
+        SOC_YARDS=p;
+      }
+    }
+  }catch(e){}
+}
 
 // ── PAGE NAV ──────────────────────────────────────────────────────
 function showPage(p){
@@ -2818,6 +2851,31 @@ function renderDashboard(){
     custEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All active vessels have Custom filed</div>';
   } else {
     custEl.innerHTML=customRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span>${r['Booking / BC No.']?`<span style="color:#c62828;font-size:10px;font-weight:600;background:#fdecea;padding:1px 7px;border-radius:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r['Booking / BC No.']}">${r['Booking / BC No.']}</span>`:''}  <span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
+  }
+
+  // ── SOC Rule Violations ───────────────────────────────────────
+  const socAlertEl=document.getElementById('soc-alert-list');
+  const socAlertBadge=document.getElementById('soc-alert-badge');
+  if(socAlertEl&&socAlertBadge){
+    const socViolations=[];
+    SOC_YARDS.forEach(yard=>{
+      const st=socYardStats(yard);
+      if(st.overCapacity) socViolations.push({yard:yard.yard, type:'over', val:st.available});
+      if(st.staleCount>0) socViolations.push({yard:yard.yard, type:'stale', val:st.staleCount});
+    });
+    if(!socViolations.length){
+      socAlertBadge.textContent='All OK';
+      socAlertBadge.style.background='#e8f5e9'; socAlertBadge.style.color='#2e7d32';
+      socAlertEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No rule violations — inventory within limits</div>';
+    } else {
+      socAlertBadge.textContent=socViolations.length+' alert'+(socViolations.length>1?'s':'');
+      socAlertBadge.style.background='#fdecea'; socAlertBadge.style.color='#c62828';
+      socAlertEl.innerHTML=socViolations.map(v=>{
+        if(v.type==='over') return `<div class="vt-alert-row"><span style="font-size:15px">🔴</span><span style="flex:1;font-weight:600;color:#991B1B">${v.yard}</span><span style="font-size:11px;background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:6px;font-weight:700">Over capacity: ${v.val}/${SOC_MAX_UNITS} units</span></div>`;
+        if(v.type==='stale') return `<div class="vt-alert-row"><span style="font-size:15px">🟠</span><span style="flex:1;font-weight:600;color:#92400E">${v.yard}</span><span style="font-size:11px;background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:6px;font-weight:700">${v.val} container${v.val>1?'s':''} over ${SOC_MAX_DAYS} days</span></div>`;
+        return '';
+      }).join('');
+    }
   }
 
   // ── Mala Pipeline ─────────────────────────────────────────────
@@ -4583,21 +4641,35 @@ function vtRemoveContainer(id, cn){
 }
 
 // ── SOC INVENTORY ────────────────────────────────────────────────
+const SOC_MAX_UNITS = 20;   // max on-site inventory per yard
+const SOC_MAX_DAYS  = 10;   // max days a container may stay on-site
+
+// Helpers for {cn, addedAt} entries (backwards-compatible with plain strings)
+function socCnStr(e){ return typeof e==='string'?e:e.cn; }
+function socCnDate(e){ return (typeof e==='string'||!e.addedAt)?null:e.addedAt; }
+function socDaysOnSite(e){
+  const d=socCnDate(e); if(!d) return null;
+  const added=new Date(d); added.setHours(0,0,0,0);
+  const now=new Date(); now.setHours(0,0,0,0);
+  return Math.round((now-added)/864e5);
+}
+
 function socGetAllBookedCNs(){
-  // All container numbers currently assigned to any vessel booking
   const booked=new Set();
   VT.forEach(v=>{ if(Array.isArray(v.containers)) v.containers.forEach(cn=>booked.add(cn.toUpperCase())); });
   return booked;
 }
 function socYardStats(yard){
   const bookedAll=socGetAllBookedCNs();
-  const named=yard.containers.map(cn=>cn.toUpperCase());
+  const named=yard.containers.map(e=>socCnStr(e).toUpperCase());
   const namedBooked=named.filter(cn=>bookedAll.has(cn)).length;
   const namedAvail=named.length - namedBooked;
   const total=named.length + (yard.manualAmount||0);
   const available=namedAvail + (yard.manualAmount||0);
   const booked=namedBooked;
-  return {total, available, booked, namedBooked, namedAvail};
+  const staleCount=yard.containers.filter(e=>{ const d=socDaysOnSite(e); return d!==null&&d>SOC_MAX_DAYS; }).length;
+  const overCapacity=available>SOC_MAX_UNITS;
+  return {total, available, booked, namedBooked, namedAvail, staleCount, overCapacity};
 }
 
 let _socAddYard='';
@@ -4630,7 +4702,11 @@ function saveSOCEntry(){
   if(type==='numbers'){
     const raw=document.getElementById('soc-modal-cns').value;
     const cns=raw.split(/[\n,]+/).map(s=>s.trim().toUpperCase()).filter(Boolean);
-    cns.forEach(cn=>{ if(!yard.containers.includes(cn)) yard.containers.push(cn); });
+    const today=new Date().toISOString().slice(0,10);
+    cns.forEach(cn=>{
+      if(!yard.containers.some(e=>socCnStr(e)===cn))
+        yard.containers.push({cn, addedAt:today});
+    });
   } else {
     const amt=parseInt(document.getElementById('soc-modal-amount').value)||0;
     yard.manualAmount=(yard.manualAmount||0)+amt;
@@ -4639,7 +4715,7 @@ function saveSOCEntry(){
 }
 function socRemoveCN(yardName, cn){
   const yard=SOC_YARDS.find(y=>y.yard===yardName); if(!yard) return;
-  yard.containers=yard.containers.filter(c=>c!==cn);
+  yard.containers=yard.containers.filter(e=>socCnStr(e)!==cn);
   saveSOC(); renderSOC(); renderDashboard();
 }
 function socClearManual(yardName){
@@ -4652,10 +4728,16 @@ function renderSOC(){
   const bookedAll=socGetAllBookedCNs();
   wrap.innerHTML=SOC_YARDS.map(yard=>{
     const st=socYardStats(yard);
-    const namedHtml=yard.containers.length?yard.containers.map(cn=>{
+    const namedHtml=yard.containers.length?yard.containers.map(entry=>{
+      const cn=socCnStr(entry);
+      const days=socDaysOnSite(entry);
       const isBooked=bookedAll.has(cn.toUpperCase());
-      return `<span class="soc-cn-tag ${isBooked?'soc-cn-booked':'soc-cn-free'}">
-        ${cn}${isBooked?'<span class="soc-cn-status">⚓</span>':''}
+      const isStale=days!==null&&days>SOC_MAX_DAYS;
+      let cls=isBooked?'soc-cn-booked':isStale?'soc-cn-stale':'soc-cn-free';
+      const ageLabel=days!==null?`<span class="soc-cn-age">${days}d</span>`:'';
+      const staleWarning=isStale?`<span class="soc-cn-status" title="Over ${SOC_MAX_DAYS} days on site">⚠</span>`:'';
+      return `<span class="soc-cn-tag ${cls}" title="${days!==null?'On site: '+days+' day(s)':'No date recorded'}">
+        ${cn}${ageLabel}${isBooked?'<span class="soc-cn-status">⚓</span>':''}${staleWarning}
         <button class="vt-cn-rm" onclick="socRemoveCN('${yard.yard}','${cn}')" title="Remove">✕</button>
       </span>`;
     }).join(''):'';
@@ -4664,12 +4746,15 @@ function renderSOC(){
       <button onclick="socClearManual('${yard.yard}')" style="font-size:10px;color:#ef4444;background:none;border:none;cursor:pointer;margin-left:6px">clear</button>
     </div>`:'';
     const isCollapsed=_socCollapsed.has(yard.yard);
+    // Warning badges
+    const overBadge=st.overCapacity?`<span class="soc-rule-badge soc-rule-over" title="Exceeds ${SOC_MAX_UNITS}-unit limit">⚠ ${st.available}/${SOC_MAX_UNITS}</span>`:'';
+    const staleBadge=st.staleCount>0?`<span class="soc-rule-badge soc-rule-stale" title="${st.staleCount} container(s) on-site over ${SOC_MAX_DAYS} days">⏰ ${st.staleCount} stale</span>`:'';
     return `<div class="soc-yard-card${isCollapsed?' collapsed':''}">
       <div class="soc-yard-hdr">
         <div class="soc-yard-hdr-left" onclick="socToggleYard('${yard.yard}')">
           <span class="soc-toggle">▼</span>
           <div>
-            <div class="soc-yard-name">${yard.yard}</div>
+            <div class="soc-yard-name">${yard.yard}${overBadge}${staleBadge}</div>
             <div class="soc-yard-counts">
               <span class="soc-badge soc-avail">${st.available} available</span>
               ${st.booked>0?`<span class="soc-badge soc-book">${st.booked} booked</span>`:''}
