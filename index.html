@@ -817,6 +817,29 @@ td.editing .cell-edit{display:block}
 .fb-tag{font-size:10px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:1px 7px}
 .chart-subtitle{font-size:10px;color:var(--muted);margin:-10px 0 10px;letter-spacing:0;font-weight:500;text-transform:none;padding-left:1px}
 .chart-kpi-num{font-size:32px;font-weight:800;color:var(--text);line-height:1;margin-bottom:2px}
+/* ── SOC INVENTORY ── */
+.soc-section{margin-bottom:18px}
+.soc-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.soc-section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+.soc-yards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.soc-yard-card{background:var(--card);border-radius:var(--rad);padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid #004D4C}
+.soc-yard-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.soc-yard-name{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.soc-yard-counts{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.soc-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.soc-avail{background:#ECFDF5;color:#059669}
+.soc-book{background:#FEF3C7;color:#D97706}
+.soc-cn-list{display:flex;flex-wrap:wrap;gap:5px;min-height:24px}
+.soc-cn-tag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 7px;border-radius:5px;white-space:nowrap}
+.soc-cn-free{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
+.soc-cn-booked{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;opacity:.8}
+.soc-cn-status{font-size:9px;margin-left:2px}
+.soc-manual-row{display:flex;align-items:center;width:100%;margin-top:4px}
+/* SOC Modal */
+#soc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+#soc-overlay.open{opacity:1;pointer-events:all}
+#soc-modal{background:#fff;border-radius:14px;padding:28px 28px 22px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+#soc-modal h2{font-size:16px;font-weight:800;margin-bottom:18px;color:var(--text)}
 </style>
 </head>
 <body>
@@ -1032,6 +1055,13 @@ td.editing .cell-edit{display:block}
 
       <!-- ── QUANTITY ── -->
       <div id="dash-cat-qty" class="dash-cat-section">
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">SOC Inventory by Yard<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Available vs booked SOC containers per container yard</p>
+            <div class="chart-wrap" style="height:200px"><canvas id="soc-inventory-chart"></canvas></div>
+          </div>
+        </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Container Tracking Status<span class="ch-toggle">▼</span></h3>
@@ -1293,6 +1323,15 @@ td.editing .cell-edit{display:block}
     </div>
     <div class="ml"><button class="btn-reset" onclick="vtResetFilters()">↺ Reset</button></div>
   </div>
+  <!-- SOC Inventory -->
+  <div class="soc-section">
+    <div class="soc-section-hdr">
+      <span class="soc-section-title">📦 SOC Container Inventory</span>
+      <button class="btn btn-blue" style="font-size:11px;padding:5px 12px" onclick="openSOCModal('')">+ Add Containers</button>
+    </div>
+    <div class="soc-yards" id="soc-yards-wrap"></div>
+  </div>
+
   <div style="margin:0 0 8px">
     <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port, container no…" oninput="vtCombinedSearch(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
     <span id="vt-search-msg" class="vt-search-msg" style="display:block;margin-top:4px;padding-left:4px"></span>
@@ -1722,7 +1761,13 @@ const VT_SEED = [{"Port": "ANTWERP", "Carrier": "RHENUS", "Booking / BC No.": "5
 
 const LS_CT = 'owenz_ct_v3';
 const LS_VT = 'owenz_vt_v1';
+const SOC_KEY = 'owenz_soc_v1';
 let CT = [], VT = [], nextId = 1, vtNextId = 1;
+let SOC_YARDS = [
+  { yard: 'DIT',     containers: [], manualAmount: 0 },
+  { yard: 'DGT',     containers: [], manualAmount: 0 },
+  { yard: 'ADAMPOL', containers: [], manualAmount: 0 }
+];
 let ctSortCol = 'Batch / Train', ctSortDir = 1;
 let _currentPage = 'dashboard';
 // Register Chart.js datalabels plugin with display:false by default
@@ -1764,6 +1809,7 @@ function loadData(){
     if(sv){ VT = JSON.parse(sv); vtNextId = Math.max(0,...VT.map(r=>r._id||0))+1; }
     else { VT = VT_SEED.map((r,i)=>({...r, _id:i+1})); vtNextId = VT.length+1; }
   } catch(e){ VT = VT_SEED.map((r,i)=>({...r, _id:i+1})); vtNextId = VT.length+1; }
+  loadSOC();
 }
 function initSeed(){
   CT = CT_SEED.map((r,i)=>({...r, _id:i+1}));
@@ -1772,6 +1818,8 @@ function initSeed(){
 }
 function saveData(){ try{ localStorage.setItem(LS_CT, JSON.stringify(CT)); }catch(e){} cloudAutoSave(); }
 function saveVT(){ try{ localStorage.setItem(LS_VT, JSON.stringify(VT)); }catch(e){} cloudAutoSave(); }
+function saveSOC(){ try{ localStorage.setItem(SOC_KEY, JSON.stringify(SOC_YARDS)); }catch(e){} cloudAutoSave(); }
+function loadSOC(){ try{ const d=localStorage.getItem(SOC_KEY); if(d){ const p=JSON.parse(d); if(Array.isArray(p)) SOC_YARDS=p; } }catch(e){} }
 
 // ── PAGE NAV ──────────────────────────────────────────────────────
 function showPage(p){
@@ -1791,7 +1839,7 @@ function showPage(p){
   }
   if(p==='dashboard') renderDashboard();
   if(p==='containers'){ renderCT(); if(typeof renderPageNotices==='function') renderPageNotices(); }
-  if(p==='vessels'){ renderVT(); if(typeof renderPageNotices==='function') renderPageNotices(); }
+  if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); }
   if(p==='feedback') renderFeedback();
 }
 function _contextAdd(){
@@ -2773,6 +2821,35 @@ function renderDashboard(){
     .sort((a,b)=>a.malaDt-b.malaDt);
 
   renderTruckerReviews();
+
+  // ── SOC Inventory Chart ──────────────────────────────────────
+  if(window.socInventoryChart) window.socInventoryChart.destroy();
+  const _socEl=document.getElementById('soc-inventory-chart');
+  if(_socEl){
+    const socLabels=SOC_YARDS.map(y=>y.yard);
+    const socStats=SOC_YARDS.map(y=>socYardStats(y));
+    window.socInventoryChart=new Chart(_socEl,{
+      type:'bar',
+      data:{
+        labels:socLabels,
+        datasets:[
+          {label:'Available',data:socStats.map(s=>s.available),backgroundColor:'#10b981',borderRadius:5},
+          {label:'Booked',data:socStats.map(s=>s.booked),backgroundColor:'#f59e0b',borderRadius:5}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:20}},
+        plugins:{
+          legend:{position:'bottom',labels:{font:{size:11},padding:10,boxWidth:12}},
+          datalabels:{display:true,anchor:'end',align:'top',font:{size:11,weight:'700'},color:'#374151',formatter:v=>v>0?v:'',clamp:true}
+        },
+        scales:{
+          x:{grid:{display:false}},
+          y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{stepSize:1}}
+        }
+      }
+    });
+  }
 }
 
 function applyMalaHubById(id){ applyMalaHub(id); renderDashboard(); }
@@ -4477,7 +4554,7 @@ function vtAddContainer(id){
   if(!Array.isArray(VT[i].containers)) VT[i].containers=[];
   if(VT[i].containers.includes(cn)){ inp.value=''; return; }
   VT[i].containers.push(cn);
-  saveVT(); renderVT();
+  saveVT(); renderVT(); renderSOC(); renderDashboard();
   // re-focus after re-render
   const newInp=document.getElementById('vt-cn-inp-'+id);
   if(newInp) newInp.focus();
@@ -4487,7 +4564,98 @@ function vtRemoveContainer(id, cn){
   const i=VT.findIndex(r=>r._id===id); if(i<0) return;
   if(!Array.isArray(VT[i].containers)) return;
   VT[i].containers=VT[i].containers.filter(c=>c!==cn);
-  saveVT(); renderVT();
+  saveVT(); renderVT(); renderSOC(); renderDashboard();
+}
+
+// ── SOC INVENTORY ────────────────────────────────────────────────
+function socGetAllBookedCNs(){
+  // All container numbers currently assigned to any vessel booking
+  const booked=new Set();
+  VT.forEach(v=>{ if(Array.isArray(v.containers)) v.containers.forEach(cn=>booked.add(cn.toUpperCase())); });
+  return booked;
+}
+function socYardStats(yard){
+  const bookedAll=socGetAllBookedCNs();
+  const named=yard.containers.map(cn=>cn.toUpperCase());
+  const namedBooked=named.filter(cn=>bookedAll.has(cn)).length;
+  const namedAvail=named.length - namedBooked;
+  const total=named.length + (yard.manualAmount||0);
+  const available=namedAvail + (yard.manualAmount||0);
+  const booked=namedBooked;
+  return {total, available, booked, namedBooked, namedAvail};
+}
+
+let _socAddYard='';
+function openSOCModal(yard){
+  _socAddYard=yard||SOC_YARDS[0].yard;
+  document.getElementById('soc-modal-yard').value=_socAddYard;
+  document.getElementById('soc-modal-cns').value='';
+  document.getElementById('soc-modal-amount').value='';
+  document.getElementById('soc-entry-type').value='numbers';
+  socToggleEntryType();
+  document.getElementById('soc-overlay').classList.add('open');
+}
+function closeSOCModal(){ document.getElementById('soc-overlay').classList.remove('open'); }
+function socToggleEntryType(){
+  const t=document.getElementById('soc-entry-type').value;
+  document.getElementById('soc-numbers-row').style.display=t==='numbers'?'':'none';
+  document.getElementById('soc-amount-row').style.display=t==='amount'?'':'none';
+}
+function saveSOCEntry(){
+  const yardName=document.getElementById('soc-modal-yard').value.trim();
+  const type=document.getElementById('soc-entry-type').value;
+  let yard=SOC_YARDS.find(y=>y.yard===yardName);
+  if(!yard){ yard={yard:yardName,containers:[],manualAmount:0}; SOC_YARDS.push(yard); }
+  if(type==='numbers'){
+    const raw=document.getElementById('soc-modal-cns').value;
+    const cns=raw.split(/[\n,]+/).map(s=>s.trim().toUpperCase()).filter(Boolean);
+    cns.forEach(cn=>{ if(!yard.containers.includes(cn)) yard.containers.push(cn); });
+  } else {
+    const amt=parseInt(document.getElementById('soc-modal-amount').value)||0;
+    yard.manualAmount=(yard.manualAmount||0)+amt;
+  }
+  saveSOC(); renderSOC(); renderDashboard(); closeSOCModal();
+}
+function socRemoveCN(yardName, cn){
+  const yard=SOC_YARDS.find(y=>y.yard===yardName); if(!yard) return;
+  yard.containers=yard.containers.filter(c=>c!==cn);
+  saveSOC(); renderSOC(); renderDashboard();
+}
+function socClearManual(yardName){
+  const yard=SOC_YARDS.find(y=>y.yard===yardName); if(!yard) return;
+  yard.manualAmount=0;
+  saveSOC(); renderSOC(); renderDashboard();
+}
+function renderSOC(){
+  const wrap=document.getElementById('soc-yards-wrap'); if(!wrap) return;
+  const bookedAll=socGetAllBookedCNs();
+  wrap.innerHTML=SOC_YARDS.map(yard=>{
+    const st=socYardStats(yard);
+    const namedHtml=yard.containers.length?yard.containers.map(cn=>{
+      const isBooked=bookedAll.has(cn.toUpperCase());
+      return `<span class="soc-cn-tag ${isBooked?'soc-cn-booked':'soc-cn-free'}">
+        ${cn}${isBooked?'<span class="soc-cn-status">⚓</span>':''}
+        <button class="vt-cn-rm" onclick="socRemoveCN('${yard.yard}','${cn}')" title="Remove">✕</button>
+      </span>`;
+    }).join(''):'';
+    const manualHtml=yard.manualAmount>0?`<div class="soc-manual-row">
+      <span style="font-size:11px;color:#64748b;font-weight:600">+${yard.manualAmount} untracked containers</span>
+      <button onclick="socClearManual('${yard.yard}')" style="font-size:10px;color:#ef4444;background:none;border:none;cursor:pointer;margin-left:6px">clear</button>
+    </div>`:'';
+    return `<div class="soc-yard-card">
+      <div class="soc-yard-hdr">
+        <div>
+          <div class="soc-yard-name">${yard.yard}</div>
+          <div class="soc-yard-counts">
+            <span class="soc-badge soc-avail">${st.available} available</span>
+            ${st.booked>0?`<span class="soc-badge soc-book">${st.booked} booked</span>`:''}
+          </div>
+        </div>
+        <button class="btn btn-blue" style="font-size:11px;padding:4px 10px" onclick="openSOCModal('${yard.yard}')">+ Add</button>
+      </div>
+      <div class="soc-cn-list">${namedHtml}${manualHtml}${!namedHtml&&!manualHtml?'<span style="color:#94a3b8;font-size:11px">No containers recorded</span>':''}</div>
+    </div>`;
+  }).join('');
 }
 
 function vtToggleFlag(id, col, checked){
@@ -5745,7 +5913,7 @@ async function pushToCloud(manual=false){
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB,NOTICES,_ts:Date.now()})
+      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
@@ -5782,9 +5950,10 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.CT){ CT=rec.CT; nextId=Math.max(0,...CT.map(r=>r._id||0))+1; localStorage.setItem(LS_CT,JSON.stringify(CT)); }
     if(rec&&rec.VT){ VT=rec.VT; vtNextId=Math.max(0,...VT.map(r=>r._id||0))+1; localStorage.setItem(LS_VT,JSON.stringify(VT)); }
     if(rec&&rec.FB){ FB=rec.FB; localStorage.setItem(FB_KEY,JSON.stringify(FB)); }
+    if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
-    renderCT(); renderVT(); renderDashboard();
+    renderCT(); renderVT(); renderDashboard(); renderSOC();
     if(manual){
       const ok=document.getElementById('sync-ok');
       ok.textContent='✓ Data pulled from cloud successfully.'; ok.style.display='block';
@@ -6474,6 +6643,7 @@ function renderPageNotices(){
 }
 renderNotices();
 renderPageNotices();
+renderSOC();
 seLoadContacts();
 </script>
 
@@ -6534,6 +6704,38 @@ seLoadContacts();
   <div style="display:flex;gap:8px;margin-top:12px">
     <button onclick="applyColDF()" style="flex:1;padding:6px;background:#004D4C;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Apply</button>
     <button onclick="clearColDF()" style="flex:1;padding:6px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Clear</button>
+  </div>
+</div>
+
+<!-- SOC Add Modal -->
+<div id="soc-overlay" onclick="if(event.target===this)closeSOCModal()">
+  <div id="soc-modal">
+    <h2>Add SOC Containers</h2>
+    <div class="form-group">
+      <label>Yard</label>
+      <select id="soc-modal-yard">
+        <option>DIT</option><option>DGT</option><option>ADAMPOL</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Entry Type</label>
+      <select id="soc-entry-type" onchange="socToggleEntryType()">
+        <option value="numbers">Container Numbers</option>
+        <option value="amount">Amount Only</option>
+      </select>
+    </div>
+    <div id="soc-numbers-row" class="form-group">
+      <label>Container Numbers <span style="font-weight:400;color:var(--muted)">(one per line or comma-separated)</span></label>
+      <textarea id="soc-modal-cns" rows="5" placeholder="MSCU1234567&#10;TCKU9876543&#10;..." style="width:100%;font-size:12px;font-family:monospace;resize:vertical;border:1px solid var(--border);border-radius:7px;padding:8px"></textarea>
+    </div>
+    <div id="soc-amount-row" class="form-group" style="display:none">
+      <label>Number of containers to add</label>
+      <input type="number" id="soc-modal-amount" min="1" placeholder="e.g. 15" style="width:100%"/>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn btn-blue" onclick="saveSOCEntry()">Save</button>
+      <button class="btn btn-ghost" style="background:#f1f5f9;color:var(--text)" onclick="closeSOCModal()">Cancel</button>
+    </div>
   </div>
 </div>
 
