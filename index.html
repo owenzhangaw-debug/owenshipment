@@ -1465,7 +1465,7 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
       <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+4d)</span></label><input type="text" id="f_eta" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>T1 Date <span style="font-size:10px;color:var(--muted);font-weight:400">T1 customs cleared</span></label><input type="text" id="f_t1date" placeholder="YYYY/MM/DD"/></div>
-      <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: same as Hub)</span></label><input type="text" id="f_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
+      <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: next working day after Hub, afternoon)</span></label><input type="text" id="f_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
       <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>Deadline</label><input type="text" id="f_dl" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>Pickup Ref</label><input type="text" id="f_ref"/></div>
@@ -5551,16 +5551,20 @@ function autoGenerateSlots(){
         <h2 style="margin:0">⚡ Auto Slot Generation</h2>
         <button class="mbtn-cancel" onclick="document.getElementById('as-overlay').remove()">✕</button>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;background:#F0EFEF;border-radius:8px;padding:9px 13px;line-height:1.6">
-        Applies to: <strong>Tracking = None</strong> · <strong>No Actual Arrival</strong> · <strong>ETA filled</strong><br>
-        Time rules: VIA EUROPE 6–22 · Flying 8–16 · Others 8–20 (2-hr intervals)
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;background:#F0EFEF;border-radius:8px;padding:9px 13px;line-height:1.7">
+        <strong>T1 Timing Rule:</strong> ATB cannot be received on arrival day → T1 issued next working day (afternoon) → earliest slot = <strong>next working day after ETA, 14:00+</strong><br>
+        <span style="font-size:11px">VIA EUROPE 6–22 · Flying 8–16 · Others 8–20 · First-day slots from 14:00</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:8px 12px">
+        <input type="checkbox" id="as-force-override" style="width:15px;height:15px;cursor:pointer;accent-color:#d97706"/>
+        <label for="as-force-override" style="font-size:12px;font-weight:600;color:#92400E;cursor:pointer">🔄 Force recalculate — also override containers with existing manual slots</label>
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Select Batches</div>
       <div style="display:flex;gap:6px;margin-bottom:10px">
-        <button class="mbtn-cancel" style="font-size:11px;padding:4px 10px" onclick="document.querySelectorAll('#as-overlay input[type=checkbox]').forEach(c=>c.checked=true)">All</button>
-        <button class="mbtn-cancel" style="font-size:11px;padding:4px 10px" onclick="document.querySelectorAll('#as-overlay input[type=checkbox]').forEach(c=>c.checked=false)">None</button>
+        <button class="mbtn-cancel" style="font-size:11px;padding:4px 10px" onclick="document.querySelectorAll('#as-overlay input[type=checkbox][id!=as-force-override]').forEach(c=>c.checked=true)">All</button>
+        <button class="mbtn-cancel" style="font-size:11px;padding:4px 10px" onclick="document.querySelectorAll('#as-overlay input[type=checkbox][id!=as-force-override]').forEach(c=>c.checked=false)">None</button>
       </div>
-      <div id="as-batch-list" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;margin-bottom:18px">${pillsHtml}</div>
+      <div id="as-batch-list" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;margin-bottom:18px">${pillsHtml}</div>
       <div class="modal-btns">
         <button class="mbtn-cancel" onclick="document.getElementById('as-overlay').remove()">Cancel</button>
         <button class="mbtn-save" onclick="applyAutoSlots()">⚡ Generate Slots</button>
@@ -5574,9 +5578,11 @@ function applyAutoSlots(){
   const checked = [...overlay.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.value);
   if(!checked.length){ showToast('No batches selected.'); return; }
 
+  const forceOverride = !!(document.getElementById('as-force-override')&&document.getElementById('as-force-override').checked);
+
   const pool = CT.filter(r => asQualifies(r) &&
     checked.includes((r['Batch / Train']||'No Batch').trim()) &&
-    (!r['Scheduled Slot'] || r['Scheduled Slot'].toString().trim()==='' || r._slotAuto)
+    (forceOverride || !r['Scheduled Slot'] || r['Scheduled Slot'].toString().trim()==='' || r._slotAuto)
   );
 
   // ── Date helpers ──────────────────────────────────────────────
@@ -5589,8 +5595,8 @@ function applyAutoSlots(){
            String(dt.getMonth()+1).padStart(2,'0') + '/' +
            String(dt.getDate()).padStart(2,'0');
   }
-  function skipSunday(dt){
-    // Advance past Saturday and Sunday
+  function skipWeekend(dt){
+    // Advance past Saturday (6) and Sunday (0) to next working day
     const d = new Date(dt);
     while(d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate()+1);
     return d;
@@ -5600,11 +5606,12 @@ function applyAutoSlots(){
     d.setDate(d.getDate()+1);
     return d;
   }
-  // First available date = ETA + 1 calendar day, skip weekends
-  function firstAvailableDate(etaDateStr){
+  // T1 Rule: ATB cannot be received on arrival day → T1 issued NEXT WORKING DAY (afternoon)
+  // → Earliest slot = next working day after ETA at Hub, from 14:00 onwards
+  function nextWorkingDayAfterETA(etaDateStr){
     let d = parseDateStr(etaDateStr);
-    d.setDate(d.getDate()+1);  // +1 day (processing time)
-    d = skipSunday(d);
+    d.setDate(d.getDate()+1); // move off arrival day (T1 not possible same day)
+    d = skipWeekend(d);       // skip Saturday/Sunday to land on a working day
     return d;
   }
 
@@ -5621,8 +5628,8 @@ function applyAutoSlots(){
   let assigned = 0;
   Object.values(groups).forEach(g => {
     const fullSlots = getConsigneeSlotWindow(g.consignee);
-    // First day: only slots from 16:00+ (afternoon; train still clearing in morning)
-    const firstDaySlots = fullSlots.filter(h => h >= 16);
+    // First day: T1 received afternoon → only slots from 14:00+ on first working day after ETA
+    const firstDaySlots = fullSlots.filter(h => h >= 14);
     const slotsFirstDay = firstDaySlots.length ? firstDaySlots : fullSlots;
 
     g.rows.sort((a,b)=>{
@@ -5631,8 +5638,8 @@ function applyAutoSlots(){
       return (a['Container No.']||'').localeCompare(b['Container No.']||'');
     });
 
-    // Start assigning from firstAvailableDate
-    let currentDate = firstAvailableDate(g.etaDate);
+    // Start assigning from next working day after ETA (T1 rule)
+    let currentDate = nextWorkingDayAfterETA(g.etaDate);
     let isFirstDay  = true;
     let slotIdx     = 0;
 
@@ -5652,8 +5659,8 @@ function applyAutoSlots(){
           slotIdx++;
           break;
         } else {
-          // Move to next calendar day, skip Sunday
-          currentDate = skipSunday(nextDay(currentDate));
+          // Move to next calendar day, skip weekends
+          currentDate = skipWeekend(nextDay(currentDate));
           isFirstDay  = false;
           slotIdx     = 0;
         }
