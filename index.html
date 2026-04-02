@@ -5522,18 +5522,65 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 loadData();
-// ── Auto-fix T1 Rule violations on load ──────────────────────────
-// Slot must be AFTER ETA at Hub (ATB/T1 cannot be issued on arrival day)
-(function autoFixT1Violations(){
-  let fixed=0;
-  CT.forEach(r=>{
-    if(r['Scheduled Slot'] && r['ETA at Hub'] && r['Tracking']!=='Arrived' && slotViolatesT1Rule(r['Scheduled Slot'],r['ETA at Hub'])){
-      const corrected=calcEarliestSlot(r['ETA at Hub']);
-      if(corrected){ r['Scheduled Slot']=corrected; r._slotAuto=true; fixed++; }
-    }
+// ── T1 Rule fix — called on load AND after every cloud sync pull ──
+// Groups bad-slot containers by consignee+ETA, assigns correct times
+// using each consignee's slot window (same logic as ⚡ Auto Slots)
+function fixT1RuleViolations(){
+  const badCt=CT.filter(r=>
+    r['Scheduled Slot'] && r['ETA at Hub'] &&
+    r['Tracking']!=='Arrived' && !r['Actual Arrival'] &&
+    slotViolatesT1Rule(r['Scheduled Slot'], r['ETA at Hub'])
+  );
+  if(!badCt.length) return 0;
+
+  function _pds(s){ const p=s.split('/'); return new Date(+p[0],+p[1]-1,+p[2]); }
+  function _fmtD(d){ return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0'); }
+  function _skipWknd(d){ const x=new Date(d); while(x.getDay()===0||x.getDay()===6) x.setDate(x.getDate()+1); return x; }
+
+  // Group by consignee + ETAHub (same as ⚡ Auto Slots)
+  const groups={};
+  badCt.forEach(r=>{
+    const con=(r['Consignee']||'').trim();
+    const eta=(r['ETA at Hub']||'').trim().split(' ')[0];
+    const k=con+'||'+eta;
+    if(!groups[k]) groups[k]={con,eta,rows:[]};
+    groups[k].rows.push(r);
   });
-  if(fixed){ saveData(); console.log('[T1 Rule] Auto-corrected '+fixed+' slot(s) to next working day.'); }
-})();
+
+  let fixed=0;
+  Object.values(groups).forEach(g=>{
+    const fullSlots=getConsigneeSlotWindow(g.con);
+    // First day: T1 arrives afternoon → 14:00+
+    const firstDaySlots=fullSlots.filter(h=>h>=14);
+    const slotsFirstDay=firstDaySlots.length?firstDaySlots:fullSlots;
+
+    g.rows.sort((a,b)=>(a['Container No.']||'').localeCompare(b['Container No.']||''));
+
+    let curDate=_skipWknd((()=>{ const d=_pds(g.eta); d.setDate(d.getDate()+1); return d; })());
+    let isFirstDay=true, slotIdx=0;
+
+    g.rows.forEach(r=>{
+      const i=CT.findIndex(x=>x._id===r._id); if(i<0) return;
+      let safety=0;
+      while(true){
+        const daySlots=isFirstDay?slotsFirstDay:fullSlots;
+        if(slotIdx<daySlots.length){
+          CT[i]['Scheduled Slot']=_fmtD(curDate)+' '+String(daySlots[slotIdx]).padStart(2,'0')+':00';
+          CT[i]._slotAuto=true;
+          fixed++; slotIdx++; break;
+        } else {
+          const nd=new Date(curDate); nd.setDate(nd.getDate()+1);
+          curDate=_skipWknd(nd);
+          isFirstDay=false; slotIdx=0;
+        }
+        if(++safety>365) break;
+      }
+    });
+  });
+  if(fixed) saveData();
+  return fixed;
+}
+fixT1RuleViolations();
 // ── Migrate old Payment Status values ────────────────────────────
 (function migratePayStatus(){
   let changed=false;
@@ -6160,6 +6207,7 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
+    fixT1RuleViolations();
     renderCT(); renderVT(); renderDashboard(); renderSOC();
     if(manual){
       const ok=document.getElementById('sync-ok');
