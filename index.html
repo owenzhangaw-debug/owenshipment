@@ -1154,6 +1154,15 @@ td.editing .cell-edit{display:block}
         <div id="custom-alert-list" style="font-size:12px"></div>
       </div>
 
+      <!-- Invalid Slots (T1 Rule) -->
+      <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
+        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:16px">🚨</span> Invalid Slots (T1 Rule)
+          <span id="badslot-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#e8f5e9;color:#2e7d32;border-radius:8px;padding:2px 8px">All OK</span>
+        </h3>
+        <div id="badslot-alert-list" style="font-size:12px"></div>
+      </div>
+
       <!-- SOC Rule Violations -->
       <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
         <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
@@ -1972,6 +1981,23 @@ function fmtDateStr(s){
   // Normalize any stored date string → yyyy/mm/dd display
   if(!s) return '';
   const d=parseDate(s); return d?formatDate(d):s;
+}
+// T1 Rule: slot cannot be on same day or before ETA at Hub.
+// Returns next working day after etaDate, formatted as "YYYY/MM/DD 14:00"
+function calcEarliestSlot(etaDateStr){
+  const d=parseDate(etaDateStr); if(!d) return null;
+  d.setDate(d.getDate()+1); // move off arrival day
+  while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1); // skip weekend
+  return formatDate(d)+' 14:00';
+}
+// Returns true if slotStr violates T1 rule (slot date ≤ ETA date)
+function slotViolatesT1Rule(slotStr, etaStr){
+  const s=parseDate(slotStr), e=parseDate(etaStr);
+  if(!s||!e) return false;
+  // Compare dates only (strip time)
+  const sd=new Date(s.getFullYear(),s.getMonth(),s.getDate());
+  const ed=new Date(e.getFullYear(),e.getMonth(),e.getDate());
+  return sd<=ed;
 }
 // ── Date picker helpers ────────────────────────────────────────────
 function toInputDate(v){
@@ -2853,6 +2879,28 @@ function renderDashboard(){
     custEl.innerHTML=customRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span>${r['Booking / BC No.']?`<span style="color:#c62828;font-size:10px;font-weight:600;background:#fdecea;padding:1px 7px;border-radius:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r['Booking / BC No.']}">${r['Booking / BC No.']}</span>`:''}  <span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
+  // ── Invalid Slots (T1 Rule) ───────────────────────────────────
+  const badSlotEl=document.getElementById('badslot-alert-list');
+  const badSlotBadge=document.getElementById('badslot-alert-badge');
+  if(badSlotEl&&badSlotBadge){
+    const badSlots=CT.filter(r=>r['Scheduled Slot']&&r['ETA at Hub']&&r['Tracking']!=='Arrived'&&slotViolatesT1Rule(r['Scheduled Slot'],r['ETA at Hub']));
+    if(!badSlots.length){
+      badSlotBadge.textContent='All OK'; badSlotBadge.style.background='#e8f5e9'; badSlotBadge.style.color='#2e7d32';
+      badSlotEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No slot violations — all slots are after ETA</div>';
+    } else {
+      badSlotBadge.textContent=badSlots.length+' violation'+(badSlots.length>1?'s':'');
+      badSlotBadge.style.background='#fdecea'; badSlotBadge.style.color='#c62828';
+      badSlotEl.innerHTML=badSlots.map(r=>{
+        const fixed=calcEarliestSlot(r['ETA at Hub'])||'?';
+        return `<div class="vt-alert-row"><span style="font-size:15px">🔴</span>
+          <span style="flex:1;font-weight:600;color:#991B1B">${r['Container No.']||'—'}</span>
+          <span style="font-size:10px;color:#92400E;background:#FEF3C7;padding:1px 6px;border-radius:5px">Slot: ${r['Scheduled Slot']}</span>
+          <button onclick="applyCorrectSlot(${r._id})" style="margin-left:6px;font-size:10px;font-weight:700;background:#dc2626;color:#fff;border:none;border-radius:5px;padding:2px 7px;cursor:pointer">Fix→${fixed}</button>
+        </div>`;
+      }).join('');
+    }
+  }
+
   // ── SOC Rule Violations ───────────────────────────────────────
   const socAlertEl=document.getElementById('soc-alert-list');
   const socAlertBadge=document.getElementById('soc-alert-badge');
@@ -3647,13 +3695,19 @@ function renderCT(){
     </td>`;
     const slotV=r['Scheduled Slot']||'';
     const slotIsAuto = !!r._slotAuto;
+    const _slotBad = slotV && r['ETA at Hub'] && slotViolatesT1Rule(slotV, r['ETA at Hub']);
+    const _earliestSugg = _slotBad ? calcEarliestSlot(r['ETA at Hub']) : null;
     const slotDisplay = slotV
-      ? (slotIsAuto
-          ? `<span class="slot-auto"><span class="slot-auto-icon">⚡</span>${slotV}</span>`
-          : `<span class="slot-manual">${slotV}</span>`)
+      ? (_slotBad
+          ? `<span style="color:#dc2626;font-weight:700;background:#FEE2E2;border:1px solid #FECACA;border-radius:5px;padding:2px 6px;display:inline-flex;align-items:center;gap:4px" title="⚠ Slot is on same day as or before ETA at Hub — T1 cannot be issued yet! Earliest: ${_earliestSugg}">⚠ ${slotV}</span>`
+          : slotIsAuto
+            ? `<span class="slot-auto"><span class="slot-auto-icon">⚡</span>${slotV}</span>`
+            : `<span class="slot-manual">${slotV}</span>`)
       : '<span style="color:#ccc">—</span>';
-    const slotC=`<td data-id="${r._id}" data-col="Scheduled Slot" style="${slotIsAuto?'background:#FFFBEB':''}" >
-      <div class="cell-view" onclick="startEdit(this)">${slotDisplay}</div>
+    const _slotBg = _slotBad?'background:#FEF2F2;':slotIsAuto?'background:#FFFBEB;':'';
+    const slotC=`<td data-id="${r._id}" data-col="Scheduled Slot" style="${_slotBg}">
+      <div class="cell-view" onclick="startEdit(this)">${slotDisplay}${_slotBad?`<span onclick="event.stopPropagation();applyCorrectSlot(${r._id})" title="Auto-fix to ${_earliestSugg}" style="margin-left:4px;cursor:pointer;font-size:10px;color:#dc2626;background:#FECACA;border-radius:4px;padding:1px 5px;font-weight:700">Fix→${_earliestSugg}</span>`:''}
+      </div>
       <div class="cell-edit"><input type="text" data-fptype="datetime" value="${slotV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD HH:MM" style="width:150px"/></div>
     </td>`;
     const arrV=r['Actual Arrival']||'';
@@ -4002,6 +4056,15 @@ function startEdit(viewEl){
     if(!ft && inp.tagName==='INPUT') inp.select();
   }
 }
+// One-click fix for a violating slot
+function applyCorrectSlot(id){
+  const i=CT.findIndex(r=>r._id===id); if(i<0) return;
+  const fixed=calcEarliestSlot(CT[i]['ETA at Hub']); if(!fixed) return;
+  CT[i]['Scheduled Slot']=fixed;
+  CT[i]._slotAuto=true;
+  saveData(); renderCT();
+  showToast('✅ Slot corrected → '+fixed);
+}
 function commitEdit(inp, col, id){
   const td=inp.closest('td'); td.classList.remove('editing');
   const val=inp.value.trim();
@@ -4010,6 +4073,14 @@ function commitEdit(inp, col, id){
   if(col==='ETA at Hub' && CT[i]._slotAuto){
     delete CT[i]._slotAuto;
     CT[i]['Scheduled Slot'] = '';
+  }
+  // T1 Rule: reject slot on same day or before ETA at Hub
+  if(col==='Scheduled Slot' && val && CT[i]['ETA at Hub'] && slotViolatesT1Rule(val, CT[i]['ETA at Hub'])){
+    const fixed=calcEarliestSlot(CT[i]['ETA at Hub']);
+    showToast('⚠ Slot too early — ATB/T1 cannot be issued same day as arrival! Auto-corrected to '+fixed);
+    CT[i]['Scheduled Slot']=fixed;
+    CT[i]._slotAuto=true;
+    saveData(); renderCT(); return;
   }
   CT[i][col]=val;
   // If user manually sets Scheduled Slot, clear auto flag
@@ -5150,7 +5221,14 @@ function saveRow(){
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
-  if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0){ CT[i]={...CT[i],...u}; if(u['Scheduled Slot']) delete CT[i]._slotAuto; } }
+  // T1 Rule: auto-correct slot if it falls on or before ETA at Hub
+  if(u['Scheduled Slot'] && u['ETA at Hub'] && slotViolatesT1Rule(u['Scheduled Slot'], u['ETA at Hub'])){
+    const fixed=calcEarliestSlot(u['ETA at Hub']);
+    showToast('⚠ Slot too early — auto-corrected to next working day: '+fixed);
+    u['Scheduled Slot']=fixed;
+    u._slotAuto=true;
+  }
+  if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0){ CT[i]={...CT[i],...u}; if(u['Scheduled Slot']&&!u._slotAuto) delete CT[i]._slotAuto; } }
   else { u._id=nextId++; CT.push(u); }
   saveData(); closeModal(); renderCT();
 }
