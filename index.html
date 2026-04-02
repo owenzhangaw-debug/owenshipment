@@ -5522,6 +5522,18 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 loadData();
+// ── Auto-fix T1 Rule violations on load ──────────────────────────
+// Slot must be AFTER ETA at Hub (ATB/T1 cannot be issued on arrival day)
+(function autoFixT1Violations(){
+  let fixed=0;
+  CT.forEach(r=>{
+    if(r['Scheduled Slot'] && r['ETA at Hub'] && r['Tracking']!=='Arrived' && slotViolatesT1Rule(r['Scheduled Slot'],r['ETA at Hub'])){
+      const corrected=calcEarliestSlot(r['ETA at Hub']);
+      if(corrected){ r['Scheduled Slot']=corrected; r._slotAuto=true; fixed++; }
+    }
+  });
+  if(fixed){ saveData(); console.log('[T1 Rule] Auto-corrected '+fixed+' slot(s) to next working day.'); }
+})();
 // ── Migrate old Payment Status values ────────────────────────────
 (function migratePayStatus(){
   let changed=false;
