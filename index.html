@@ -4735,6 +4735,16 @@ function vtAddContainer(id){
   if(!Array.isArray(VT[i].containers)) VT[i].containers=[];
   if(VT[i].containers.includes(cn)){ inp.value=''; return; }
   VT[i].containers.push(cn);
+  inp.value='';
+  // Auto-remove from SOC inventory if present
+  let socRemoved=false;
+  SOC_YARDS.forEach(yard=>{
+    if(!Array.isArray(yard.containers)) return;
+    const before=yard.containers.length;
+    yard.containers=yard.containers.filter(e=>socCnStr(e).toUpperCase()!==cn);
+    if(yard.containers.length<before) socRemoved=true;
+  });
+  if(socRemoved){ saveSOC(); showToast('📦 '+cn+' removed from SOC inventory (now in Vessel Tracker)'); }
   saveVT(); renderVT(); renderSOC(); renderDashboard();
   // re-focus after re-render
   const newInp=document.getElementById('vt-cn-inp-'+id);
@@ -5623,7 +5633,7 @@ function fixT1RuleViolations(){
   if(fixed) saveData();
   return fixed;
 }
-fixT1RuleViolations();
+const _startupT1Fixed = fixT1RuleViolations();
 
 // Silently restagger qualifying containers that share a duplicate slot time within their consignee+ETA group.
 // Works even if _slotAuto was never persisted (e.g. old JSONBin data).
@@ -5697,7 +5707,11 @@ function silentRestaggerAutoSlots(){
   if(assigned) saveData();
   return assigned;
 }
-silentRestaggerAutoSlots();
+const _startupRestagged = silentRestaggerAutoSlots();
+// If startup fixed any slots, push to cloud immediately so JSONBin doesn't hold stale data
+if(_startupT1Fixed || _startupRestagged){
+  setTimeout(()=>pushToCloud(false), 1000);
+}
 
 // ── Migrate old Payment Status values ────────────────────────────
 (function migratePayStatus(){
@@ -6294,6 +6308,7 @@ async function pushToCloud(manual=false){
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
+    cloudSaveTimer = null; // reset so future auto-pulls work correctly
     setSyncDot('ok','Saved — '+(new Date().toLocaleTimeString()));
     if(manual){
       const ok=document.getElementById('sync-ok');
@@ -6330,8 +6345,10 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
-    fixT1RuleViolations();
-    silentRestaggerAutoSlots();
+    const _t1fixed = fixT1RuleViolations();
+    const _restagged = silentRestaggerAutoSlots();
+    // If slots were corrected, push fixed data back to cloud immediately so JSONBin stays clean
+    if(_t1fixed || _restagged) pushToCloud(false);
     renderCT(); renderVT(); renderDashboard(); renderSOC();
     if(manual){
       const ok=document.getElementById('sync-ok');
