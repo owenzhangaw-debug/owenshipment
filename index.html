@@ -4728,7 +4728,8 @@ function vtToggleExpand(id){
 }
 
 // Remove a CN from all SOC yards. Returns true if anything was removed.
-function socRemoveCN(cn){
+// Remove a CN from ALL SOC yards (used by VT sync). Returns true if anything removed.
+function socRemoveFromAllYards(cn){
   let removed=false;
   SOC_YARDS.forEach(yard=>{
     if(!Array.isArray(yard.containers)) return;
@@ -4743,7 +4744,7 @@ function socRemoveCN(cn){
 // Called at startup and after cloud sync so old VT entries are also cleaned.
 function syncVTtoSOC(){
   const allVtCns=new Set();
-  VT.forEach(v=>{ (v.containers||[]).forEach(c=>allVtCns.add((typeof c==='string'?c:c).toUpperCase())); });
+  VT.forEach(v=>{ (v.containers||[]).forEach(c=>allVtCns.add(String(c).toUpperCase())); });
   let removed=false;
   SOC_YARDS.forEach(yard=>{
     if(!Array.isArray(yard.containers)) return;
@@ -4755,6 +4756,16 @@ function syncVTtoSOC(){
   return removed;
 }
 
+// Bulk delete selected containers from a SOC yard
+function socBulkDelete(yardName){
+  const yard=SOC_YARDS.find(y=>y.yard===yardName); if(!yard) return;
+  const checked=[...document.querySelectorAll(`.soc-sel-cb[data-yard="${CSS.escape(yardName)}"]:checked`)].map(cb=>cb.value);
+  if(!checked.length){ showToast('Select containers to delete first'); return; }
+  yard.containers=yard.containers.filter(e=>!checked.includes(socCnStr(e)));
+  saveSOC(); renderSOC(); renderDashboard();
+  showToast(`🗑 Removed ${checked.length} container(s) from ${yardName}`);
+}
+
 function vtAddContainer(id){
   const inp=document.getElementById('vt-cn-inp-'+id);
   const cn=(inp.value||'').trim().toUpperCase();
@@ -4762,11 +4773,10 @@ function vtAddContainer(id){
   const i=VT.findIndex(r=>r._id===id); if(i<0) return;
   if(!Array.isArray(VT[i].containers)) VT[i].containers=[];
   inp.value='';
-  // Always try SOC removal regardless of duplicate status
-  const socRemoved=socRemoveCN(cn);
+  // Always try SOC removal regardless of whether CN is already in VT
+  const socRemoved=socRemoveFromAllYards(cn);
   if(socRemoved){ saveSOC(); showToast('📦 '+cn+' removed from SOC inventory (now in Vessel Tracker)'); }
   if(VT[i].containers.includes(cn)){
-    // Already in VT — just refresh SOC display and re-focus
     if(socRemoved){ renderSOC(); renderDashboard(); }
     const newInp=document.getElementById('vt-cn-inp-'+id);
     if(newInp) newInp.focus();
@@ -4774,7 +4784,6 @@ function vtAddContainer(id){
   }
   VT[i].containers.push(cn);
   saveVT(); renderVT(); renderSOC(); renderDashboard();
-  // re-focus after re-render
   const newInp=document.getElementById('vt-cn-inp-'+id);
   if(newInp) newInp.focus();
 }
@@ -4882,9 +4891,11 @@ function renderSOC(){
       let cls=isBooked?'soc-cn-booked':isStale?'soc-cn-stale':'soc-cn-free';
       const ageLabel=days!==null?`<span class="soc-cn-age">${days}d</span>`:'';
       const staleWarning=isStale?`<span class="soc-cn-status" title="Over ${SOC_MAX_DAYS} days on site">⚠</span>`:'';
+      const yardEsc=yard.yard.replace(/'/g,"\\'");
       return `<span class="soc-cn-tag ${cls}" title="${days!==null?'On site: '+days+' day(s)':'No date recorded'}">
+        <input type="checkbox" class="soc-sel-cb" data-yard="${yard.yard.replace(/"/g,'&quot;')}" value="${cn}" style="width:12px;height:12px;margin-right:3px;cursor:pointer;accent-color:#004D4C" onclick="event.stopPropagation()"/>
         ${cn}${ageLabel}${isBooked?'<span class="soc-cn-status">⚓</span>':''}${staleWarning}
-        <button class="vt-cn-rm" onclick="socRemoveCN('${yard.yard}','${cn}')" title="Remove">✕</button>
+        <button class="vt-cn-rm" onclick="socRemoveCN('${yardEsc}','${cn}')" title="Remove">✕</button>
       </span>`;
     }).join(''):'';
     const manualHtml=yard.manualAmount>0?`<div class="soc-manual-row">
@@ -4908,6 +4919,8 @@ function renderSOC(){
           </div>
         </div>
         <button class="btn btn-blue" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();openSOCModal('${yard.yard}')">+ Add</button>
+        ${yard.containers.length?`<button onclick="event.stopPropagation();socBulkDelete('${yard.yard.replace(/'/g,"\\'")}');" style="font-size:11px;padding:4px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-weight:600" title="Delete selected containers (tick checkboxes first)">🗑 Delete</button>`:''}
+        ${yard.containers.length>1?`<button onclick="event.stopPropagation();document.querySelectorAll('.soc-sel-cb[data-yard=\\'${yard.yard.replace(/'/g,"\\'")}\\']').forEach(c=>c.checked=!c.checked);" style="font-size:11px;padding:4px 10px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer" title="Toggle select all">☑ All</button>`:''}
       </div>
       <div class="soc-cn-list">${namedHtml}${manualHtml}${!namedHtml&&!manualHtml?'<span style="color:#94a3b8;font-size:11px">No containers recorded</span>':''}</div>
     </div>`;
