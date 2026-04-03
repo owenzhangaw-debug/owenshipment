@@ -4727,24 +4727,52 @@ function vtToggleExpand(id){
   renderVT();
 }
 
-function vtAddContainer(id){
-  const inp=document.getElementById('vt-cn-inp-'+id);
-  const cn=(inp.value||'').trim().toUpperCase();
-  if(!cn) return;
-  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
-  if(!Array.isArray(VT[i].containers)) VT[i].containers=[];
-  if(VT[i].containers.includes(cn)){ inp.value=''; return; }
-  VT[i].containers.push(cn);
-  inp.value='';
-  // Auto-remove from SOC inventory if present
-  let socRemoved=false;
+// Remove a CN from all SOC yards. Returns true if anything was removed.
+function socRemoveCN(cn){
+  let removed=false;
   SOC_YARDS.forEach(yard=>{
     if(!Array.isArray(yard.containers)) return;
     const before=yard.containers.length;
-    yard.containers=yard.containers.filter(e=>socCnStr(e).toUpperCase()!==cn);
-    if(yard.containers.length<before) socRemoved=true;
+    yard.containers=yard.containers.filter(e=>socCnStr(e).toUpperCase()!==cn.toUpperCase());
+    if(yard.containers.length<before) removed=true;
   });
+  return removed;
+}
+
+// Sync: remove from SOC any container that already exists in any VT vessel.
+// Called at startup and after cloud sync so old VT entries are also cleaned.
+function syncVTtoSOC(){
+  const allVtCns=new Set();
+  VT.forEach(v=>{ (v.containers||[]).forEach(c=>allVtCns.add((typeof c==='string'?c:c).toUpperCase())); });
+  let removed=false;
+  SOC_YARDS.forEach(yard=>{
+    if(!Array.isArray(yard.containers)) return;
+    const before=yard.containers.length;
+    yard.containers=yard.containers.filter(e=>!allVtCns.has(socCnStr(e).toUpperCase()));
+    if(yard.containers.length<before) removed=true;
+  });
+  if(removed) saveSOC();
+  return removed;
+}
+
+function vtAddContainer(id){
+  const inp=document.getElementById('vt-cn-inp-'+id);
+  const cn=(inp.value||'').trim().toUpperCase();
+  if(!cn){ return; }
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  if(!Array.isArray(VT[i].containers)) VT[i].containers=[];
+  inp.value='';
+  // Always try SOC removal regardless of duplicate status
+  const socRemoved=socRemoveCN(cn);
   if(socRemoved){ saveSOC(); showToast('📦 '+cn+' removed from SOC inventory (now in Vessel Tracker)'); }
+  if(VT[i].containers.includes(cn)){
+    // Already in VT — just refresh SOC display and re-focus
+    if(socRemoved){ renderSOC(); renderDashboard(); }
+    const newInp=document.getElementById('vt-cn-inp-'+id);
+    if(newInp) newInp.focus();
+    return;
+  }
+  VT[i].containers.push(cn);
   saveVT(); renderVT(); renderSOC(); renderDashboard();
   // re-focus after re-render
   const newInp=document.getElementById('vt-cn-inp-'+id);
@@ -5633,6 +5661,7 @@ function fixT1RuleViolations(){
   if(fixed) saveData();
   return fixed;
 }
+syncVTtoSOC(); // remove from SOC any CNs already in VT (handles data added before this feature)
 const _startupT1Fixed = fixT1RuleViolations();
 
 // Silently restagger qualifying containers that share a duplicate slot time within their consignee+ETA group.
@@ -6345,6 +6374,7 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
+    syncVTtoSOC(); // clean up SOC after cloud pull
     const _t1fixed = fixT1RuleViolations();
     const _restagged = silentRestaggerAutoSlots();
     // If slots were corrected, push fixed data back to cloud immediately so JSONBin stays clean
