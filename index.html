@@ -639,14 +639,19 @@ td.editing .cell-edit{display:block}
 .vt-voyage-info{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px}
 .vt-voyage-info-item{font-size:12px;font-weight:600;color:var(--navy);background:var(--bg);padding:2px 9px;border-radius:6px;border:1px solid var(--border)}
 .vt-voyage-info-item span{color:var(--blue);font-weight:800}
-/* ── CT Batch Progress Bars ── */
-.ct-bp-row{display:flex;flex-wrap:wrap;gap:10px}
-.ct-bp-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;flex:1;min-width:160px;max-width:260px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s}
-.ct-bp-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.1)}
-.ct-bp-name{font-size:11px;font-weight:800;color:var(--navy);white-space:normal;word-break:break-word;margin-bottom:6px;letter-spacing:.2px}
-.ct-bp-track{position:relative;height:22px;background:#e5e7eb;border-radius:30px;overflow:hidden;margin-bottom:5px}
-.ct-bp-fill{position:absolute;left:0;top:0;bottom:0;border-radius:30px;transition:width 1s cubic-bezier(.4,0,.2,1)}
-.ct-bp-fill-anim{background:repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0,rgba(255,255,255,.18) 12px,transparent 12px,transparent 24px);position:absolute;inset:0;border-radius:30px;animation:ct-bp-stripe 1.4s linear infinite}
+/* ── CT Batch Progress Cards (new clean design) ── */
+.ct-bp-row{display:flex;flex-wrap:nowrap;gap:10px;overflow-x:auto;padding-bottom:4px}
+.ct-bp-card{background:#fff;border-radius:12px;border:1.5px solid #e5e7eb;padding:11px 13px;flex:0 0 auto;width:190px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:border-color .15s,box-shadow .15s;user-select:none}
+.ct-bp-card:hover{border-color:#94a3b8;box-shadow:0 3px 10px rgba(0,0,0,.10)}
+.ct-bp-card.bp-active{border:2px solid #2563eb !important;box-shadow:0 3px 14px rgba(37,99,235,.18)}
+.ct-bp-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;gap:4px}
+.ct-bp-name{font-size:12px;font-weight:800;color:#0f172a;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct-bp-sub{font-size:10px;color:#94a3b8;font-weight:500;white-space:nowrap;flex-shrink:0}
+.ct-bp-pctbig{font-size:22px;font-weight:900;line-height:1;margin-bottom:5px}
+.ct-bp-track{height:6px;background:#f1f5f9;border-radius:10px;overflow:hidden;margin-bottom:8px}
+.ct-bp-fill{height:100%;border-radius:10px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.ct-bp-dates{font-size:10.5px;color:#64748b;margin-bottom:3px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.ct-bp-cnt{font-size:10.5px;color:#64748b;font-weight:600;margin-top:2px}
 @keyframes ct-bp-stripe{0%{background-position:0}100%{background-position:48px}}
 .ct-bp-ship{position:absolute;top:50%;transform:translate(-50%,-55%);font-size:13px;z-index:3;transition:left 1s cubic-bezier(.4,0,.2,1);animation:ct-bp-bob 2.2s ease-in-out infinite}
 @keyframes ct-bp-bob{0%,100%{margin-top:0}50%{margin-top:-2px}}
@@ -1995,11 +2000,26 @@ function gotoBatch(batchName){
   document.getElementById('f-search').value='';
   msSetValues('batch',[batchName],batchName);
   showPage('containers');
-  // Scroll to the first matching row after render
   requestAnimationFrame(()=>{
     const first=document.querySelector('#ct-body tr');
     if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
   });
+}
+// Batch card click: filter table to batch (or clear if already active)
+function bpCardClick(batchName){
+  const cur=msGetValues('batch');
+  if(cur.length===1 && cur[0]===batchName){
+    // Already filtering this batch — clear to show all
+    msClear('batch','All Batches');
+    renderCT();
+  } else {
+    msSetValues('batch',[batchName],batchName);
+    renderCT();
+    requestAnimationFrame(()=>{
+      const tbl=document.getElementById('ct-body');
+      if(tbl) tbl.closest('.tbl-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  }
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────
@@ -3512,11 +3532,12 @@ function renderCT(){
     const _bpBatches={};
     CT.forEach(r=>{
       const b=r['Batch / Train']||'(No Batch)';
-      if(!_bpBatches[b]) _bpBatches[b]={total:0,arrived:0,t1:0,none:0,minDL:null};
+      if(!_bpBatches[b]) _bpBatches[b]={total:0,arrived:0,t1:0,none:0,minDL:null,cmr:0};
       _bpBatches[b].total++;
       if(r['Tracking']==='Arrived') _bpBatches[b].arrived++;
       else if(r['Tracking']==='T1') _bpBatches[b].t1++;
       else _bpBatches[b].none++;
+      if(r['CMR']==='✅') _bpBatches[b].cmr++;
       // Track earliest deadline
       const _dl=parseDate(r['Deadline']);
       if(_dl && (!_bpBatches[b].minDL || _dl < _bpBatches[b].minDL)) _bpBatches[b].minDL=_dl;
@@ -3553,123 +3574,48 @@ function renderCT(){
       const _bpDone=_bpKeys.filter(b=>_bpBatches[b].arrived===_bpBatches[b].total);
       const _bpActive=_bpKeys.filter(b=>_bpBatches[b].arrived<_bpBatches[b].total);
 
-      const _bpRenderCard=(b,big)=>{
+      // Which batch is currently active in the filter (for blue border)
+      const _bpActiveSel=(()=>{ const s=msGetValues('batch'); return s.length===1?s[0]:null; })();
+      const _mo3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const _fmtDt=d=>d instanceof Date&&!isNaN(d)?`${d.getDate()} ${_mo3[d.getMonth()]}`:'';
+
+      const _bpRenderCard=(b)=>{
         const m=_bpBatches[b];
         const pct=Math.round(m.arrived/m.total*100);
         const allDone=pct===100;
-        let _dlColor='#6b7280',_dlBg='#f3f4f6',_dlLabel='',_dlDays=null,_urgency=0;
-        if(m.minDL){
-          _dlDays=Math.round((m.minDL-_bpToday)/864e5);
-          const _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          _dlLabel=`📅 ${m.minDL.getDate()} ${_mo[m.minDL.getMonth()]}`;
-          if(allDone){_dlColor='#15803d';_dlBg='#dcfce7';_urgency=0;}
-          else if(_dlDays<0){_dlColor='#b91c1c';_dlBg='#fee2e2';_dlLabel+=' ⚠️';_urgency=4;}
-          else if(_dlDays===0){_dlColor='#b91c1c';_dlBg='#fee2e2';_dlLabel+=' today!';_urgency=4;}
-          else if(_dlDays<=3){_dlColor='#c2410c';_dlBg='#ffedd5';_dlLabel+=` (${_dlDays}d)`;_urgency=3;}
-          else if(_dlDays<=7){_dlColor='#b45309';_dlBg='#fef3c7';_dlLabel+=` (${_dlDays}d)`;_urgency=2;}
-          else{_dlColor='#0369a1';_dlBg='#dbeafe';_dlLabel+=` (${_dlDays}d)`;_urgency=1;}
-        }
-        let fillColor;
-        if(allDone) fillColor='#16a34a';
-        else if(_urgency===4) fillColor='#e53935';
-        else if(_urgency===3) fillColor='#ea580c';
-        else if(_urgency===2) fillColor='#F9A825';
-        else fillColor=pct>=75?'#22c55e':pct>=40?'#F9A825':'#e53935';
-        const shipLeft=Math.max(6,Math.min(92,pct));
-        const shipIcon=allDone?'🏁':'🚛';
         const bEsc=b.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        const trackH=big?'36px':'22px';
-        const shipSz=big?'18px':'13px';
-        const cardStyle=big?'flex:1;min-width:180px;max-width:340px':'';
-        // Train progress bar with manual date overrides + CT data auto-fill
-        const _trainBar=(()=>{
-          const ov=_bpTrainDates[b]||{};
-          const ctEta=_bpCtEta[b]||{};
-          const mx=b.match(/(\d{1,2})\/(\d{1,2})/);
-          // Departure: batch name parse
-          let depart;
-          if(mx){ const mo=parseInt(mx[1]),dy=parseInt(mx[2]),yr=mo>=10?2025:2026; depart=new Date(yr,mo-1,dy); }
-          else return '';
-          // Estimated rail transit days by origin (fallback only)
-          const bl=b.toLowerCase();
-          const transitDays=bl.includes('guangzhou')||bl.includes('gz')?22
-            :bl.includes('chengdu')||bl.includes('cd')?18
-            :bl.includes('xi')||bl.includes('xian')||bl.includes("xi'an")?16
-            :bl.includes('wuhan')?17:20;
-          // Format date for HTML input (YYYY-MM-DD)
-          const fi=d=>d instanceof Date&&!isNaN(d)?d.toISOString().slice(0,10):'';
-          // Mala ETA: manual override → CT median → null
-          const malaDt=ov.etaMala?new Date(ov.etaMala+'T00:00:00'):ctEta.mala||null;
-          // Duisburg ETA: manual override → CT hub median → mala+5d → auto estimate
-          let arriveDate;
-          if(ov.etaDuis) arriveDate=new Date(ov.etaDuis+'T00:00:00');
-          else if(ctEta.hub) arriveDate=ctEta.hub;
-          else if(malaDt){ arriveDate=new Date(malaDt); arriveDate.setDate(arriveDate.getDate()+5); }
-          else { arriveDate=new Date(depart); arriveDate.setDate(arriveDate.getDate()+transitDays); }
-          // Progress calculation
-          const totalMs=arriveDate-depart;
-          const elapsedMs=_bpToday-depart;
-          const trainPct=Math.min(100,Math.max(0,totalMs>0?elapsedMs/totalMs*100:0));
-          const trainArrived=trainPct>=100;
-          const daysLeft=Math.max(0,Math.round((arriveDate-_bpToday)/864e5));
-          const _mo2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          const etaStr=`${arriveDate.getDate()} ${_mo2[arriveDate.getMonth()]}`;
-          const iconLeft=Math.max(6,Math.min(92,trainPct));
-          const trainColor=trainArrived?'#16a34a':trainPct>=66?'#22c55e':trainPct>=33?'#3b82f6':'#6366f1';
-          const etaLabel=trainArrived
-            ?'<span class="ct-bp-train-eta">✅ In Duisburg</span>'
-            :`<span class="ct-bp-train-eta">ETA ${etaStr} · ${daysLeft}d left</span>`;
-          // Mala milestone dot (amber line at proportional position on bar)
-          const malaDot=malaDt&&totalMs>0
-            ?`<div class="ct-bp-mala-dot" style="left:${Math.min(98,Math.max(2,(malaDt-depart)/totalMs*100)).toFixed(1)}%" title="Malaszewicze (Poland border)"></div>`
-            :'';
-          // Picker values: manual override → CT data → empty
-          // Small "auto" indicator when value comes from CT (not manually set)
-          const malaVal=ov.etaMala||fi(ctEta.mala)||'';
-          const duisVal=ov.etaDuis||fi(ctEta.hub)||'';
-          const malaAuto=!ov.etaMala&&ctEta.mala?' title="Auto-filled from container ETA in Mala"':'';
-          const duisAuto=!ov.etaDuis&&ctEta.hub?' title="Auto-filled from container ETA at Hub"':'';
-          return `<div class="ct-bp-train-wrap">
-            <div class="ct-bp-train-label"><span>🚂 Train → Duisburg</span>${etaLabel}</div>
-            <div class="ct-bp-train-track">
-              <div class="ct-bp-train-fill" style="width:${trainPct.toFixed(1)}%;background:${trainColor}">${!trainArrived?'<div class="ct-bp-fill-anim"></div>':''}</div>
-              ${malaDot}
-              <div class="ct-bp-train-icon" style="left:${iconLeft}%">${trainArrived?'🏁':'🚂'}</div>
-            </div>
-            <div class="ct-bp-train-edit" onclick="event.stopPropagation()">
-              <div class="ct-bp-train-field"><label>📍 Mala</label><input type="date" value="${malaVal}" style="${malaVal&&!ov.etaMala?'border-color:#fbbf24;background:#fffbeb':''}" onclick="event.stopPropagation()" onchange="setBpTrainDate('${bEsc}','etaMala',this.value)"${malaAuto}/></div>
-              <div class="ct-bp-train-field"><label>🏗️ Duis</label><input type="date" value="${duisVal}" style="${duisVal&&!ov.etaDuis?'border-color:#fbbf24;background:#fffbeb':''}" onclick="event.stopPropagation()" onchange="setBpTrainDate('${bEsc}','etaDuis',this.value)"${duisAuto}/></div>
-            </div>
-          </div>`;
-        })();
-        return `<div class="ct-bp-card" style="${cardStyle}" onclick="gotoBatch('${bEsc}')" title="Click to filter this batch" onmouseenter="this.classList.remove('vt-pop');void this.offsetWidth;this.classList.add('vt-pop')" onanimationend="this.classList.remove('vt-pop')">
-          <div class="ct-bp-name">📦 ${b}</div>
-          <div class="ct-bp-track" style="height:${trackH}">
-            <div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}">
-              ${pct<100?'<div class="ct-bp-fill-anim"></div>':''}
-            </div>
-            <div class="ct-bp-ship" style="left:${shipLeft}%;font-size:${shipSz}">${shipIcon}</div>
+        const isActive=_bpActiveSel===b;
+
+        // Fill color: green=done, red=0%, yellow=partial
+        const fillColor=allDone?'#16a34a':pct===0?'#e53935':pct>=60?'#22c55e':'#f59e0b';
+
+        // Dates: from CT median
+        const ctEta=_bpCtEta[b]||{};
+        const ov=_bpTrainDates[b]||{};
+        const malaDt=ov.etaMala?new Date(ov.etaMala+'T00:00:00'):ctEta.mala||null;
+        const hubDt=ov.etaDuis?new Date(ov.etaDuis+'T00:00:00'):ctEta.hub||null;
+        const malaStr=malaDt?_fmtDt(malaDt):'';
+        const hubStr=hubDt?_fmtDt(hubDt):'';
+
+        const datesHtml=allDone
+          ?(hubStr?`<span>🏗️ Hub ${hubStr}</span>`:'')+(m.cmr?`<span>✅ CMR: ${m.cmr}</span>`:'')
+          :[(malaStr?`<span>📍 Mala ${malaStr}</span>`:''),(hubStr?`<span>🏗️ Hub ${hubStr}</span>`:'')].filter(Boolean).join('');
+
+        return `<div class="ct-bp-card${isActive?' bp-active':''}" onclick="bpCardClick('${bEsc}')" title="Click to filter · click again to clear">
+          <div class="ct-bp-hdr">
+            <span class="ct-bp-name">${b}</span>
+            <span class="ct-bp-sub">${m.arrived}/${m.total} arrived</span>
           </div>
-          <div class="ct-bp-labels">
-            <span class="ct-bp-pct" style="background:${allDone?'#dcfce7':_urgency>=3?'#ffedd5':_urgency===2?'#fef9c3':'#fef2f2'};color:${fillColor}">${pct}%</span>
-            <span class="ct-bp-counts">${m.arrived} / ${m.total} arrived</span>
-          </div>
-          ${_dlLabel?`<div style="font-size:9px;font-weight:700;color:${_dlColor};margin-top:3px">${_dlLabel}</div>`:''}
-          <div class="ct-bp-pills">
-            ${m.arrived?`<span class="ct-bp-pill" style="background:#dcfce7;color:#15803d">✅ ${m.arrived}</span>`:''}
-            ${m.t1?`<span class="ct-bp-pill" style="background:#dbeafe;color:#1d4ed8">🚂 T1 ${m.t1}</span>`:''}
-            ${m.none?`<span class="ct-bp-pill" style="background:#f3f4f6;color:#6b7280">⏳ ${m.none}</span>`:''}
-          </div>
-          ${_trainBar}
+          <div class="ct-bp-pctbig" style="color:${fillColor}">${pct}%</div>
+          <div class="ct-bp-track"><div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+          ${datesHtml?`<div class="ct-bp-dates">${datesHtml}</div>`:''}
+          <div class="ct-bp-cnt">📦 ${m.total}</div>
         </div>`;
       };
 
-      let html='';
-      // Active batches first — big bars
-      if(_bpActive.length) html+=`<div class="ct-bp-row" style="margin-bottom:8px">${_bpActive.map(b=>_bpRenderCard(b,true)).join('')}</div>`;
-      // Completed batches below — compact
-      if(_bpDone.length) html+=`<div class="ct-bp-row">${_bpDone.map(b=>_bpRenderCard(b,false)).join('')}</div>`;
-      _bpEl.innerHTML=html;
+      // All batches in one scrollable row (active first, then done)
+      const _bpAllOrdered=[..._bpActive,..._bpDone];
+      _bpEl.innerHTML=`<div class="ct-bp-row">${_bpAllOrdered.map(b=>_bpRenderCard(b)).join('')}</div>`;
     }
   }
   const tbody=document.getElementById('ct-body');
@@ -5456,9 +5402,42 @@ function confirmDel(){ if(delId!==null){ CT=CT.filter(x=>x._id!==delId); saveDat
 
 // ── EXPORT ────────────────────────────────────────────────────────
 function exportCSV(){
-  const cols=['Batch / Train','Container No.','Master B/L','Consignee','Trucker',
-    'ETA at Hub','Scheduled Slot','Actual Arrival','Deadline','CMR','Tracking','Pickup Ref','Price','Price T1','Broker'];
-  const csv=[cols.join(','),...CT.map(r=>cols.map(c=>'"'+(String(r[c]??'').replace(/"/g,'""'))+'"').join(','))].join('\n');
+  // Build reverse lookup: container no. → vessel row
+  const _cnToVessel={};
+  VT.forEach(v=>{
+    (v.containers||[]).forEach(cn=>{
+      const key=String(cn).toUpperCase().trim();
+      if(!_cnToVessel[key]) _cnToVessel[key]=v;
+    });
+  });
+
+  // All container columns
+  const ctCols=[
+    'Batch / Train','Container No.','Master B/L','Consignee','Trucker','Broker',
+    'ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Deadline',
+    'Tracking','CMR','Pickup Ref',
+    'Price','Price T1','Surcharge','Surcharge Reason',
+    'Payment Status','T1 Payment Status','Remark'
+  ];
+
+  // Vessel columns to append
+  const vtCols=[
+    'Vessel Name','Booking / BC No.','Port','Carrier','CY',
+    'Container Qty','Status','ETS (Departure)','ETA (Arrival)','ATA (Actual)',
+    'VGM','Custom'
+  ];
+
+  const allCols=[...ctCols, ...vtCols.map(c=>'Vessel: '+c)];
+
+  const rows=CT.map(r=>{
+    const vt=_cnToVessel[(r['Container No.']||'').toUpperCase().trim()]||{};
+    return allCols.map((col,i)=>{
+      const val=i<ctCols.length ? (r[ctCols[i]]??'') : (vt[vtCols[i-ctCols.length]]??'');
+      return '"'+String(val).replace(/"/g,'""')+'"';
+    }).join(',');
+  });
+
+  const csv=[allCols.join(','),...rows].join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
   a.download='Owen Zhang_Containers_'+new Date().toISOString().slice(0,10)+'.csv';
