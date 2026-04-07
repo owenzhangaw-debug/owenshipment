@@ -4119,14 +4119,18 @@ function startEdit(viewEl){
     if(!ft && inp.tagName==='INPUT') inp.select();
   }
 }
-// One-click fix for a violating slot
+// One-click fix for a violating slot — fixes + staggers the WHOLE consignee+ETA group
 function applyCorrectSlot(id){
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
-  const fixed=calcEarliestSlot(CT[i]['ETA at Hub']); if(!fixed) return;
-  CT[i]['Scheduled Slot']=fixed;
+  if(!CT[i]['ETA at Hub']) return;
+  // First force-fix this container so fixT1RuleViolations() sees it in the bad group
+  CT[i]['Scheduled Slot']=calcEarliestSlot(CT[i]['ETA at Hub'])||CT[i]['Scheduled Slot'];
   CT[i]._slotAuto=true;
-  saveData(); renderCT();
-  showToast('✅ Slot corrected → '+fixed);
+  // Now run full group fix + stagger so all containers in same consignee+ETA get proper slots
+  fixT1RuleViolations();
+  silentRestaggerAutoSlots();
+  renderCT(); renderDashboard();
+  showToast('✅ Slots corrected and staggered for group');
 }
 function commitEdit(inp, col, id){
   const td=inp.closest('td'); td.classList.remove('editing');
@@ -4137,13 +4141,14 @@ function commitEdit(inp, col, id){
     delete CT[i]._slotAuto;
     CT[i]['Scheduled Slot'] = '';
   }
-  // T1 Rule: reject slot on same day or before ETA at Hub
+  // T1 Rule: reject slot on same day or before ETA at Hub — stagger whole group
   if(col==='Scheduled Slot' && val && CT[i]['ETA at Hub'] && slotViolatesT1Rule(val, CT[i]['ETA at Hub'])){
-    const fixed=calcEarliestSlot(CT[i]['ETA at Hub']);
-    showToast('⚠ Slot too early — ATB/T1 cannot be issued same day as arrival! Auto-corrected to '+fixed);
-    CT[i]['Scheduled Slot']=fixed;
+    CT[i]['Scheduled Slot']=calcEarliestSlot(CT[i]['ETA at Hub'])||val;
     CT[i]._slotAuto=true;
-    saveData(); renderCT(); return;
+    fixT1RuleViolations();
+    silentRestaggerAutoSlots();
+    showToast('⚠ Slot too early — auto-corrected and staggered for group');
+    renderCT(); return;
   }
   CT[i][col]=val;
   // If user manually sets Scheduled Slot, clear auto flag
@@ -5339,15 +5344,15 @@ function saveRow(){
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
-  // T1 Rule: auto-correct slot if it falls on or before ETA at Hub
-  if(u['Scheduled Slot'] && u['ETA at Hub'] && slotViolatesT1Rule(u['Scheduled Slot'], u['ETA at Hub'])){
-    const fixed=calcEarliestSlot(u['ETA at Hub']);
-    showToast('⚠ Slot too early — auto-corrected to next working day: '+fixed);
-    u['Scheduled Slot']=fixed;
+  // T1 Rule: flag for group stagger after save
+  const _needsStagger = u['Scheduled Slot'] && u['ETA at Hub'] && slotViolatesT1Rule(u['Scheduled Slot'], u['ETA at Hub']);
+  if(_needsStagger){
+    u['Scheduled Slot']=calcEarliestSlot(u['ETA at Hub'])||u['Scheduled Slot'];
     u._slotAuto=true;
   }
   if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0){ CT[i]={...CT[i],...u}; if(u['Scheduled Slot']&&!u._slotAuto) delete CT[i]._slotAuto; } }
   else { u._id=nextId++; CT.push(u); }
+  if(_needsStagger){ fixT1RuleViolations(); silentRestaggerAutoSlots(); showToast('⚠ Slot too early — auto-corrected and staggered for group'); }
   saveData(); closeModal(); renderCT();
 }
 
