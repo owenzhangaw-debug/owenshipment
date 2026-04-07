@@ -5459,33 +5459,47 @@ function exportVesselXLSX(){
   // Vessel sheet rows
   const vtRows=VT.map(v=>vtHeaders.map(h=>_cv(v[h])));
 
-  // Container-per-vessel detail sheet
-  const detailHeaders=[
-    'Booking / BC No.','Vessel Name','Container No.','Batch / Train','Consignee','Trucker','Broker',
-    'ETA in Mala','ETA at Hub','Scheduled Slot','Actual Arrival','Tracking','CMR',
-    'Price','Price T1','Payment Status','T1 Payment Status','Remark'
+  // Combined vessel + container sheet (all vessel fields + all container fields per row)
+  const comboHeaders=[
+    // Vessel info
+    'Booking / BC No.','Vessel Name','Port','Carrier','CY',
+    'ETS (Departure)','ETA (Arrival)','ATA (Actual)','Status','Container Qty',
+    // Container info
+    'Container No.','Batch / Train','Consignee','Trucker','Broker',
+    'ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival',
+    'Tracking','CMR','Pickup Ref',
+    'Price','Price T1','Surcharge','Surcharge Reason',
+    'Payment Status','T1 Payment Status','Remark'
   ];
-  const detailWidths=[18,22,14,16,16,12,12, 12,12,18,14,10,4, 8,8,14,14,22];
+  const comboWidths=[
+    18,22,10,12,8,
+    14,14,14,12,10,
+    14,16,18,12,12,
+    12,12,12,18,14,
+    10,4,12,
+    8,8,10,16,
+    14,14,22
+  ];
 
   // Build CT lookup by container no
   const _ctMap={};
   CT.forEach(r=>{ const k=_cv(r['Container No.']).toUpperCase(); if(k) _ctMap[k]=r; });
 
-  const detailRows=[];
+  const vtFields=['Booking / BC No.','Vessel Name','Port','Carrier','CY','ETS (Departure)','ETA (Arrival)','ATA (Actual)','Status','Container Qty'];
+  const ctFields=['Container No.','Batch / Train','Consignee','Trucker','Broker','ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Tracking','CMR','Pickup Ref','Price','Price T1','Surcharge','Surcharge Reason','Payment Status','T1 Payment Status','Remark'];
+
+  const comboRows=[];
   VT.forEach(v=>{
-    (v.containers||[]).forEach(cn=>{
-      const r=_ctMap[String(cn).toUpperCase().trim()]||{};
-      detailRows.push(detailHeaders.map((h,i)=>{
-        if(i===0) return _cv(v['Booking / BC No.']);
-        if(i===1) return _cv(v['Vessel Name']);
-        if(i===2) return _cv(cn);
-        return _cv(r[h]);
-      }));
-    });
-    // If no containers linked, still show the vessel row with blank container cols
-    if(!(v.containers||[]).length){
-      const blank=detailHeaders.map((_,i)=>i===0?_cv(v['Booking / BC No.']):i===1?_cv(v['Vessel Name']):'');
-      detailRows.push(blank);
+    const vesselPart=vtFields.map(h=>_cv(v[h]));
+    const containers=v.containers||[];
+    if(containers.length){
+      containers.forEach(cn=>{
+        const r=_ctMap[String(cn).toUpperCase().trim()]||{};
+        const ctPart=ctFields.map((h,i)=>i===0?_cv(cn):_cv(r[h]));
+        comboRows.push([...vesselPart,...ctPart]);
+      });
+    } else {
+      comboRows.push([...vesselPart,...ctFields.map(()=>'')]);
     }
   });
 
@@ -5494,9 +5508,9 @@ function exportVesselXLSX(){
   wsVT['!cols']=vtWidths.map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,wsVT,'Vessels');
 
-  const wsDet=XLSX.utils.aoa_to_sheet([detailHeaders,...detailRows]);
-  wsDet['!cols']=detailWidths.map(w=>({wch:w}));
-  XLSX.utils.book_append_sheet(wb,wsDet,'Containers by Vessel');
+  const wsCombo=XLSX.utils.aoa_to_sheet([comboHeaders,...comboRows]);
+  wsCombo['!cols']=comboWidths.map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,wsCombo,'Vessel + Containers');
 
   _xlsxWrite(wb,'Owen_Zhang_Vessels_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
