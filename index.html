@@ -1059,6 +1059,7 @@ td.editing .cell-edit{display:block}
         <button class="dash-cat-tab active" onclick="switchDashCat('time',this)">⏱ Time</button>
         <button class="dash-cat-tab" onclick="switchDashCat('hub-t1',this)">🏗️ Hub → T1</button>
         <button class="dash-cat-tab" onclick="switchDashCat('price',this)">💰 Price</button>
+        <button class="dash-cat-tab" onclick="switchDashCat('vessel-fin',this)">🚢 Vessel $</button>
         <button class="dash-cat-tab" onclick="switchDashCat('qty',this)">📦 Quantity</button>
       </div>
 
@@ -1154,6 +1155,48 @@ td.editing .cell-edit{display:block}
               <span id="unpaid-total-badge" style="font-size:12px;font-weight:700;color:#856404;background:#fff3cd;border-radius:8px;padding:3px 10px"></span>
             </div>
             <div id="unpaid-batch" style="overflow-x:auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VESSEL FINANCIALS ── -->
+      <div id="dash-cat-vessel-fin" class="dash-cat-section">
+        <!-- KPI row -->
+        <div class="kpi-row" id="vf-kpi-row" style="margin-bottom:16px"></div>
+        <!-- Charts row 1: Total Freight Cost by Vessel + Payment Status donut -->
+        <div class="charts-row" style="margin-top:0;grid-template-columns:2fr 1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Total Freight Cost by Vessel (USD)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Price + Surcharge per vessel booking</p>
+            <div class="chart-wrap" style="height:300px"><canvas id="vf-cost-vessel-chart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Freight Payment Status<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Breakdown of vessel freight payment status</p>
+            <div class="chart-wrap" style="height:300px"><canvas id="vf-pay-status-chart"></canvas></div>
+          </div>
+        </div>
+        <!-- Charts row 2: Booking Fees by Vessel + Booking Fee Payment donut -->
+        <div class="charts-row" style="margin-top:0;grid-template-columns:2fr 1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Booking Fee by Vessel (USD)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Rhenus booking fee per vessel booking</p>
+            <div class="chart-wrap" style="height:280px"><canvas id="vf-booking-fee-chart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Booking Fee Payment Status<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Breakdown of booking fee payment status</p>
+            <div class="chart-wrap" style="height:280px"><canvas id="vf-bfp-status-chart"></canvas></div>
+          </div>
+        </div>
+        <!-- Vessel financials table -->
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card" style="padding:16px 18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <h3 style="margin:0">📋 Vessel Financials Detail</h3>
+              <span id="vf-table-total" style="font-size:12px;font-weight:700;color:#0369a1;background:#e0f2fe;border-radius:8px;padding:3px 10px"></span>
+            </div>
+            <div id="vf-detail-table" style="overflow-x:auto"></div>
           </div>
         </div>
       </div>
@@ -3101,6 +3144,182 @@ function renderDashboard(){
 
   renderTruckerReviews();
 
+  // ── Vessel Financials ─────────────────────────────────────────
+  (function(){
+    const VF_PAY_PALETTE = {'Paid':'#10b981','Pending':'#f59e0b','Not Billed':'#94a3b8','':'#e2e8f0'};
+    const VF_PAY_LABELS  = {'Paid':'Paid','Pending':'Pending','Not Billed':'Not Billed','':'Not Set'};
+    // Aggregate per vessel row
+    const vtFin = VT.map(r=>({
+      name: r['Vessel Name']||r['Booking / BC No.']||'(Unknown)',
+      booking: r['Booking / BC No.']||'',
+      price: parseFloat(r['Price'])||0,
+      surcharge: parseFloat(r['Surcharge'])||0,
+      payStatus: r['Payment Status']||'',
+      bookingFee: parseFloat(r['Booking Fee'])||0,
+      bfPayment: r['Booking Fee Payment']||'',
+    }));
+
+    // KPIs
+    const totalFreight = vtFin.reduce((s,r)=>s+r.price+r.surcharge,0);
+    const unpaidFreight = vtFin.filter(r=>r.payStatus!=='Paid').reduce((s,r)=>s+r.price+r.surcharge,0);
+    const totalBF = vtFin.reduce((s,r)=>s+r.bookingFee,0);
+    const unpaidBF = vtFin.filter(r=>r.bfPayment!=='Paid').reduce((s,r)=>s+r.bookingFee,0);
+    const kpiEl=document.getElementById('vf-kpi-row');
+    if(kpiEl) kpiEl.innerHTML=[
+      {icon:'💵',val:'$'+totalFreight.toLocaleString('en-US',{maximumFractionDigits:0}),label:'Total Freight (USD)',desc:'Price + Surcharge',color:'#0369a1',bg:'#e0f2fe'},
+      {icon:'⏳',val:'$'+unpaidFreight.toLocaleString('en-US',{maximumFractionDigits:0}),label:'Unpaid Freight',desc:'Non-Paid status',color:'#b45309',bg:'#fef3c7'},
+      {icon:'🏢',val:'$'+totalBF.toLocaleString('en-US',{maximumFractionDigits:0}),label:'Total Booking Fees',desc:'Rhenus booking fees',color:'#7c3aed',bg:'#f5f3ff'},
+      {icon:'💳',val:'$'+unpaidBF.toLocaleString('en-US',{maximumFractionDigits:0}),label:'Unpaid Booking Fees',desc:'Non-Paid booking fees',color:'#dc2626',bg:'#fef2f2'},
+    ].map(k=>`<div class="kpi" style="border-left:3px solid ${k.color};background:${k.bg}15">
+      <div style="font-size:20px">${k.icon}</div>
+      <div style="margin-top:4px">
+        <div style="font-size:20px;font-weight:800;color:${k.color}">${k.val}</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${k.label}</div>
+        <div style="font-size:10px;color:var(--muted)">${k.desc}</div>
+      </div>
+    </div>`).join('');
+
+    // Chart 1: Total Freight Cost (Price + Surcharge) per Vessel
+    const vfNames = vtFin.map(r=>r.name);
+    const vfTotals = vtFin.map(r=>+(r.price+r.surcharge).toFixed(0));
+    const vfPrices = vtFin.map(r=>+r.price.toFixed(0));
+    const vfSurcharges = vtFin.map(r=>+r.surcharge.toFixed(0));
+    if(window._vfCostChart) window._vfCostChart.destroy();
+    const _vfCostEl=document.getElementById('vf-cost-vessel-chart');
+    if(_vfCostEl){
+      if(!vtFin.length||!vfTotals.some(v=>v>0)){
+        _vfCostEl.style.display='none';
+        let ov=_vfCostEl.parentElement.querySelector('.vf-nodata');
+        if(!ov){ov=document.createElement('div');ov.className='vf-nodata';ov.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:#94a3b8;font-size:12px;gap:6px';ov.innerHTML='<span style="font-size:28px">📊</span><span>No vessel pricing data yet — add Price in Vessel Tracker</span>';_vfCostEl.parentElement.appendChild(ov);}
+        ov.style.display='flex';
+      } else {
+        _vfCostEl.style.display=''; const ov=_vfCostEl.parentElement.querySelector('.vf-nodata'); if(ov) ov.style.display='none';
+        window._vfCostChart = new Chart(_vfCostEl,{
+          type:'bar',
+          data:{ labels:vfNames, datasets:[
+            {label:'Price',data:vfPrices,backgroundColor:'#0369a1',borderRadius:4},
+            {label:'Surcharge',data:vfSurcharges,backgroundColor:'#7dd3fc',borderRadius:4}
+          ]},
+          options:{responsive:true,maintainAspectRatio:false,
+            layout:{padding:{top:24}},
+            plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,boxWidth:12}},
+              datalabels:{display:ctx=>ctx.datasetIndex===1&&(vfTotals[ctx.dataIndex]>0),anchor:'end',align:'top',font:{size:10,weight:'700'},color:'#0369a1',formatter:(v,ctx)=>v>0?'$'+vfTotals[ctx.dataIndex].toLocaleString():'',clamp:true},
+              tooltip:{callbacks:{label:ctx=>' $'+ctx.raw.toLocaleString()}}},
+            scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:35,font:{size:10}}},y:{stacked:true,beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'$'+v.toLocaleString()}}}
+          }
+        });
+      }
+    }
+
+    // Chart 2: Freight Payment Status donut
+    const vfPayCounts={'Paid':0,'Pending':0,'Not Billed':0,'':0};
+    vtFin.forEach(r=>{ if(r.price>0||r.surcharge>0) vfPayCounts[r.payStatus]=(vfPayCounts[r.payStatus]||0)+1; });
+    const vfPayKeys=Object.keys(vfPayCounts).filter(k=>vfPayCounts[k]>0);
+    if(window._vfPayChart) window._vfPayChart.destroy();
+    const _vfPayEl=document.getElementById('vf-pay-status-chart');
+    if(_vfPayEl&&vfPayKeys.length){
+      window._vfPayChart = new Chart(_vfPayEl,{
+        type:'doughnut',
+        data:{ labels:vfPayKeys.map(k=>VF_PAY_LABELS[k]||k), datasets:[{
+          data:vfPayKeys.map(k=>vfPayCounts[k]),
+          backgroundColor:vfPayKeys.map(k=>VF_PAY_PALETTE[k]||'#94a3b8'),
+          borderWidth:2,borderColor:'#fff',hoverOffset:8
+        }]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+          plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8,boxWidth:12}},
+            datalabels:{display:true,formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((v/t)*100).toFixed(0);return p>8?p+'%':'';},font:{size:11,weight:'700'},color:'#fff'},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} vessel${ctx.raw>1?'s':''}`}}
+          }
+        }
+      });
+    }
+
+    // Chart 3: Booking Fee by Vessel
+    const bfVessels=vtFin.filter(r=>r.bookingFee>0);
+    if(window._vfBFChart) window._vfBFChart.destroy();
+    const _vfBFEl=document.getElementById('vf-booking-fee-chart');
+    if(_vfBFEl){
+      if(!bfVessels.length){
+        _vfBFEl.style.display='none';
+        let ov=_vfBFEl.parentElement.querySelector('.vf-bf-nodata');
+        if(!ov){ov=document.createElement('div');ov.className='vf-bf-nodata';ov.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;color:#94a3b8;font-size:12px;gap:6px';ov.innerHTML='<span style="font-size:28px">🏢</span><span>No Rhenus booking fees recorded yet</span>';_vfBFEl.parentElement.appendChild(ov);}
+        ov.style.display='flex';
+      } else {
+        _vfBFEl.style.display=''; const ov=_vfBFEl.parentElement.querySelector('.vf-bf-nodata'); if(ov) ov.style.display='none';
+        const bfLabels=bfVessels.map(r=>r.name);
+        const bfData=bfVessels.map(r=>+r.bookingFee.toFixed(0));
+        window._vfBFChart = new Chart(_vfBFEl,{
+          type:'bar',
+          data:{ labels:bfLabels, datasets:[{label:'Booking Fee (USD)',data:bfData,backgroundColor:'#7c3aed',borderRadius:4}]},
+          options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+            layout:{padding:{right:80}},
+            plugins:{legend:{display:false},
+              datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#7c3aed',formatter:v=>'$'+v.toLocaleString(),clamp:true},
+              tooltip:{callbacks:{label:ctx=>' $'+ctx.raw.toLocaleString()}}},
+            scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'$'+v.toLocaleString()}},y:{grid:{display:false}}}
+          }
+        });
+      }
+    }
+
+    // Chart 4: Booking Fee Payment Status donut
+    const vfBFPCounts={'Paid':0,'Pending':0,'Not Billed':0,'':0};
+    vtFin.forEach(r=>{ if(r.bookingFee>0) vfBFPCounts[r.bfPayment]=(vfBFPCounts[r.bfPayment]||0)+1; });
+    const vfBFPKeys=Object.keys(vfBFPCounts).filter(k=>vfBFPCounts[k]>0);
+    if(window._vfBFPChart) window._vfBFPChart.destroy();
+    const _vfBFPEl=document.getElementById('vf-bfp-status-chart');
+    if(_vfBFPEl&&vfBFPKeys.length){
+      window._vfBFPChart = new Chart(_vfBFPEl,{
+        type:'doughnut',
+        data:{ labels:vfBFPKeys.map(k=>VF_PAY_LABELS[k]||k), datasets:[{
+          data:vfBFPKeys.map(k=>vfBFPCounts[k]),
+          backgroundColor:vfBFPKeys.map(k=>VF_PAY_PALETTE[k]||'#94a3b8'),
+          borderWidth:2,borderColor:'#fff',hoverOffset:8
+        }]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+          plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8,boxWidth:12}},
+            datalabels:{display:true,formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((v/t)*100).toFixed(0);return p>8?p+'%':'';},font:{size:11,weight:'700'},color:'#fff'},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} vessel${ctx.raw>1?'s':''}`}}
+          }
+        }
+      });
+    }
+
+    // Detail Table
+    const vfTableEl=document.getElementById('vf-detail-table');
+    const vfTotalBadge=document.getElementById('vf-table-total');
+    if(vfTotalBadge) vfTotalBadge.textContent=vtFin.length+' vessels · Total: $'+totalFreight.toLocaleString('en-US',{maximumFractionDigits:0})+' freight + $'+totalBF.toLocaleString('en-US',{maximumFractionDigits:0})+' fees';
+    if(vfTableEl){
+      const _payTag=(v)=>{
+        const map={'Paid':'background:#d1fae5;color:#065f46','Pending':'background:#fef3c7;color:#b45309','Not Billed':'background:#f1f5f9;color:#64748b'};
+        const s=map[v]||'background:#f1f5f9;color:#94a3b8';
+        return `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;${s}">${v||'—'}</span>`;
+      };
+      const rows=vtFin.map(r=>`<tr>
+        <td style="font-weight:700;color:var(--navy);white-space:nowrap">${r.name}</td>
+        <td style="font-size:11px;color:var(--muted)">${r.booking}</td>
+        <td style="font-weight:700;color:#0369a1;text-align:right">${r.price>0?'$'+r.price.toLocaleString('en-US',{maximumFractionDigits:0}):'—'}</td>
+        <td style="font-weight:700;color:#0369a1;text-align:right">${r.surcharge>0?'$'+r.surcharge.toLocaleString('en-US',{maximumFractionDigits:0}):'—'}</td>
+        <td style="font-weight:800;color:#0c4a6e;text-align:right">${(r.price+r.surcharge)>0?'$'+(r.price+r.surcharge).toLocaleString('en-US',{maximumFractionDigits:0}):'—'}</td>
+        <td style="text-align:center">${_payTag(r.payStatus)}</td>
+        <td style="font-weight:700;color:#7c3aed;text-align:right">${r.bookingFee>0?'$'+r.bookingFee.toLocaleString('en-US',{maximumFractionDigits:0}):'—'}</td>
+        <td style="text-align:center">${_payTag(r.bfPayment)}</td>
+      </tr>`).join('');
+      vfTableEl.innerHTML=rows.length?`<table class="sur-tbl">
+        <thead><tr>
+          <th>Vessel</th><th>Booking No.</th>
+          <th style="text-align:right">Price</th>
+          <th style="text-align:right">Surcharge</th>
+          <th style="text-align:right">Total Freight</th>
+          <th style="text-align:center">Pay Status</th>
+          <th style="text-align:right">Booking Fee</th>
+          <th style="text-align:center">Fee Status</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`:'<div style="color:var(--muted);font-size:12px;padding:8px 0">No vessel data yet. Add vessels in the Vessel Tracker tab.</div>';
+    }
+  })();
+
   // ── SOC Inventory Chart ──────────────────────────────────────
   if(window.socInventoryChart) window.socInventoryChart.destroy();
   const _socEl=document.getElementById('soc-inventory-chart');
@@ -4215,10 +4434,20 @@ function toggleCMR(id, checked){
 }
 
 // ── VESSEL TABLE ──────────────────────────────────────────────────
+// USD currency formatter for VT financial columns
+const _usd = v => {
+  const n = parseFloat(v);
+  if(!v && v!==0) return '—';
+  if(isNaN(n)) return v||'—';
+  return '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});
+};
+const _VT_USD_COLS = new Set(['Price','Surcharge','Booking Fee']);
+
 function vtCell(r, col, opts){
   const v = r[col]===undefined||r[col]===null||isNaN_safe(r[col]) ? '' : String(r[col]);
   const IS_DATE=['ETS (Departure)','ETA (Arrival)','ATA (Actual)','Port Cut-Off','Barge Date'].includes(col);
-  const disp = IS_DATE ? fmtDateStr(v) : v;
+  const IS_USD = _VT_USD_COLS.has(col);
+  const disp = IS_DATE ? fmtDateStr(v) : IS_USD ? _usd(v) : v;
   const xStyle = (opts&&opts.extraStyle) ? ` style="${opts.extraStyle}"` : '';
   if(opts && opts.select){
     const selOpts = opts.select.map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('');
@@ -4231,6 +4460,12 @@ function vtCell(r, col, opts){
     return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
       <div class="cell-view" onclick="startEdit(this)">${disp||'<span style="color:#ccc">—</span>'}</div>
       <div class="cell-edit"><input type="text" data-fptype="date" value="${disp.replace(/"/g,'&quot;')}" onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
+    </td>`;
+  }
+  if(IS_USD){
+    return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
+      <div class="cell-view" onclick="startEdit(this)">${disp!=='—'?`<strong style="color:#0369a1">${disp}</strong>`:'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input value="${v.replace(/"/g,'&quot;')}" onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="0.00"/></div>
     </td>`;
   }
   return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
