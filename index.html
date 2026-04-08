@@ -2401,9 +2401,9 @@ function smartCardClick(action){
 
 function applySmartSlot(id){
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
-  const eta=parseDate(CT[i]['ETA at Hub']); if(!eta) return;
-  // Book slot on same day as ETA at Hub
-  CT[i]['Scheduled Slot']=formatDate(eta);
+  const earliest=calcEarliestSlot(CT[i]['ETA at Hub']); if(!earliest) return;
+  // T1 rule: earliest slot = next working day after ETA at Hub, 14:00
+  CT[i]['Scheduled Slot']=earliest;
   saveData(); _smartData=null; renderCT();
 }
 
@@ -4124,23 +4124,13 @@ function renderCT(){
       const hubParsed=parseDate(r['ETA at Hub']);
       if(hubParsed){
         slotCell=`<td data-id="${r._id}" data-col="Scheduled Slot">
-          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-slot" onclick="event.stopPropagation();applySmartSlot(${r._id})" title="Book slot on same day as ETA at Hub">📅 ${formatDate(hubParsed)}</span></div>
+          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-slot" onclick="event.stopPropagation();applySmartSlot(${r._id})" title="Apply earliest slot (next working day after ETA, 14:00)">📅 ${(calcEarliestSlot(r['ETA at Hub'])||'').split(' ')[0]}</span></div>
           <div class="cell-edit"><input type="text" data-fptype="datetime" value="" onblur="commitEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD HH:MM" style="width:150px"/></div>
         </td>`;
       }
     }
 
-    // Trucker: show auto-dispatch suggestion when empty and consignee has history
-    let truckCell=truckC;
-    if(!r['Trucker']){
-      const sug=sd.suggestTrucker[r['Consignee']||''];
-      if(sug){
-        truckCell=`<td data-id="${r._id}" data-col="Trucker">
-          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-trucker" onclick="event.stopPropagation();applySmartTrucker(${r._id})" title="Apply suggested trucker for this consignee">🚛 ${sug}</span></div>
-          <div class="cell-edit"><input value="" onblur="commitEdit(this,'Trucker',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
-        </td>`;
-      }
-    }
+    const truckCell=truckC;
     // ─────────────────────────────────────────────────────────────
 
     const rmkV=r['Remark']||'';
