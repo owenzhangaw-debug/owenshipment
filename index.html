@@ -1499,6 +1499,12 @@ td.editing .cell-edit{display:block}
           <th class="no-sort" style="text-align:center">Custom</th>
           <th onclick="vtSort('Status')" data-vtcol="Status">Status ↕</th>
           <th onclick="vtSort('Order No.')" data-vtcol="Order No.">Order No. ↕</th>
+          <th onclick="vtSort('Price')" data-vtcol="Price">Price ↕</th>
+          <th onclick="vtSort('Surcharge')" data-vtcol="Surcharge">Surcharge ↕</th>
+          <th onclick="vtSort('Surcharge Reason')" data-vtcol="Surcharge Reason">Surcharge Reason ↕</th>
+          <th onclick="vtSort('Payment Status')" data-vtcol="Payment Status">Payment Status ↕</th>
+          <th onclick="vtSort('Booking Fee')" data-vtcol="Booking Fee">Booking Fee (Rhenus) ↕</th>
+          <th onclick="vtSort('Booking Fee Payment')" data-vtcol="Booking Fee Payment">Booking Fee Paid ↕</th>
           <th onclick="vtSort('Remark')" data-vtcol="Remark">Remark ↕</th>
           <th onclick="vtSort('_addedAt')" data-vtcol="_addedAt">Date Added ↕</th>
           <th class="no-sort"></th>
@@ -1872,6 +1878,26 @@ td.editing .cell-edit{display:block}
       <div class="form-group"><label>ETA / Arrival (YYYY/MM/DD)</label><input type="text" id="vta-eta" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>Port Cut-Off (YYYY/MM/DD)</label><input type="text" id="vta-cutoff" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>Barge Date (YYYY/MM/DD)</label><input type="text" id="vta-barge" placeholder="YYYY/MM/DD"/></div>
+      <div class="form-group"><label>Price</label><input type="text" id="vta-price" placeholder="e.g. 1200"/></div>
+      <div class="form-group"><label>Surcharge</label><input type="text" id="vta-surcharge" placeholder="e.g. 200"/></div>
+      <div class="form-group"><label>Surcharge Reason</label><input type="text" id="vta-surcharge-reason" placeholder="e.g. Peak season"/></div>
+      <div class="form-group"><label>Payment Status</label>
+        <select id="vta-payment-status">
+          <option value="">—</option>
+          <option value="Paid">Paid</option>
+          <option value="Pending">Pending</option>
+          <option value="Not Billed">Not Billed</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Booking Fee (Rhenus)</label><input type="text" id="vta-booking-fee" placeholder="e.g. 150"/></div>
+      <div class="form-group"><label>Booking Fee Payment</label>
+        <select id="vta-booking-fee-payment">
+          <option value="">—</option>
+          <option value="Paid">Paid</option>
+          <option value="Pending">Pending</option>
+          <option value="Not Billed">Not Billed</option>
+        </select>
+      </div>
       <div class="form-group full"><label>Remark</label><input type="text" id="vta-remark" placeholder="Optional notes"/></div>
     </div>
 
@@ -4227,10 +4253,12 @@ function commitVTSelect(sel, col, id){
 }
 // ── VESSEL ADD MODAL ──────────────────────────────────────────────
 function openAddVesselModal(){
-  ['vta-booking','vta-vessel','vta-port','vta-carrier','vta-qty','vta-ets','vta-eta','vta-cutoff','vta-barge','vta-remark','vta-scan-text'].forEach(id=>{
+  ['vta-booking','vta-vessel','vta-port','vta-carrier','vta-qty','vta-ets','vta-eta','vta-cutoff','vta-barge','vta-price','vta-surcharge','vta-surcharge-reason','vta-booking-fee','vta-remark','vta-scan-text'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   const st=document.getElementById('vta-status'); if(st) st.value='Scheduled';
+  const ps=document.getElementById('vta-payment-status'); if(ps) ps.value='';
+  const bfp=document.getElementById('vta-booking-fee-payment'); if(bfp) bfp.value='';
   const sr=document.getElementById('vta-scan-result'); if(sr){sr.textContent='';sr.style.color='#6b7280';}
   document.getElementById('vt-add-overlay').classList.add('open');
 }
@@ -4431,6 +4459,12 @@ function vtSaveNewVessel(){
     'Barge Date':g('vta-barge'),
     'Days to Cut-Off':'',
     'Status':document.getElementById('vta-status')?.value||'Scheduled',
+    'Price':g('vta-price'),
+    'Surcharge':g('vta-surcharge'),
+    'Surcharge Reason':g('vta-surcharge-reason'),
+    'Payment Status':document.getElementById('vta-payment-status')?.value||'',
+    'Booking Fee':g('vta-booking-fee'),
+    'Booking Fee Payment':document.getElementById('vta-booking-fee-payment')?.value||'',
     'Remark':g('vta-remark'),
     'VGM':false,'Custom':false,
     containers:[],vesselHistory:[],bargeRollHistory:[],
@@ -4453,7 +4487,8 @@ function openDelVessel(id){
 function renderVT(){
   const _vtTotalCt=VT.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0);
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'];
-  const TOTAL_COLS=21; // expand + CY + 15 data cols + date added + del + sel
+  const TOTAL_COLS=27; // expand + CY + data cols + date added + del + sel
+  const PAY_OPTS=['','Paid','Pending','Not Billed'];
 
   // ── Fill dynamic filter menus (Port, Carrier) ─────────────────────
   vtFillMultiSel('cy','CY','All CYs');
@@ -4622,6 +4657,12 @@ function renderVT(){
       <td style="text-align:center;padding:6px"><input type="checkbox" title="Custom" ${r['Custom']?'checked':''} onchange="vtToggleFlag(${r._id},'Custom',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#8B4513"/></td>
       ${vtCell(r,'Status',{select:STATUS_OPTS})}
       ${vtCell(r,'Order No.')}
+      ${vtCell(r,'Price')}
+      ${vtCell(r,'Surcharge')}
+      ${vtCell(r,'Surcharge Reason')}
+      ${vtCell(r,'Payment Status',{select:PAY_OPTS})}
+      ${vtCell(r,'Booking Fee')}
+      ${vtCell(r,'Booking Fee Payment',{select:PAY_OPTS})}
       ${vtCell(r,'Remark')}
       <td style="padding:7px 10px;text-align:center;white-space:nowrap">${r._addedAt?(()=>{const _d=new Date(r._addedAt);return`<span style="font-size:11px;color:#64748b">${String(_d.getMonth()+1).padStart(2,'0')}/${String(_d.getDate()).padStart(2,'0')}/${String(_d.getFullYear()).slice(2)}</span>`;})():'<span style="color:#ccc">—</span>'}</td>
       <td style="padding:4px 6px;text-align:center">
@@ -5519,9 +5560,11 @@ function exportCSV(){
 function exportVesselXLSX(){
   const vtHeaders=[
     'Booking / BC No.','Vessel Name','Port','Carrier','CY','Container Qty',
-    'Status','ETS (Departure)','ETA (Arrival)','ATA (Actual)','VGM','Custom','Remark'
+    'Status','ETS (Departure)','ETA (Arrival)','ATA (Actual)','VGM','Custom',
+    'Price','Surcharge','Surcharge Reason','Payment Status',
+    'Booking Fee','Booking Fee Payment','Remark'
   ];
-  const vtWidths=[18,22,10,12,8,12, 12,14,14,14,5,8,22];
+  const vtWidths=[18,22,10,12,8,12, 12,14,14,14,5,8, 10,10,18,14, 12,16,22];
 
   // Vessel sheet rows
   const vtRows=VT.map(v=>vtHeaders.map(h=>_cv(v[h])));
@@ -5531,6 +5574,8 @@ function exportVesselXLSX(){
     // Vessel info
     'Booking / BC No.','Vessel Name','Port','Carrier','CY',
     'ETS (Departure)','ETA (Arrival)','ATA (Actual)','Status','Container Qty',
+    'Vessel Price','Vessel Surcharge','Vessel Surcharge Reason','Vessel Payment Status',
+    'Booking Fee (Rhenus)','Booking Fee Payment',
     // Container info
     'Container No.','Batch / Train','Consignee','Trucker','Broker',
     'ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival',
@@ -5541,6 +5586,7 @@ function exportVesselXLSX(){
   const comboWidths=[
     18,22,10,12,8,
     14,14,14,12,10,
+    10,10,18,14,12,16,
     14,16,18,12,12,
     12,12,12,18,14,
     10,4,12,
@@ -5552,7 +5598,7 @@ function exportVesselXLSX(){
   const _ctMap={};
   CT.forEach(r=>{ const k=_cv(r['Container No.']).toUpperCase(); if(k) _ctMap[k]=r; });
 
-  const vtFields=['Booking / BC No.','Vessel Name','Port','Carrier','CY','ETS (Departure)','ETA (Arrival)','ATA (Actual)','Status','Container Qty'];
+  const vtFields=['Booking / BC No.','Vessel Name','Port','Carrier','CY','ETS (Departure)','ETA (Arrival)','ATA (Actual)','Status','Container Qty','Price','Surcharge','Surcharge Reason','Payment Status','Booking Fee','Booking Fee Payment'];
   const ctFields=['Container No.','Batch / Train','Consignee','Trucker','Broker','ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Tracking','CMR','Pickup Ref','Price','Price T1','Surcharge','Surcharge Reason','Payment Status','T1 Payment Status','Remark'];
 
   const comboRows=[];
