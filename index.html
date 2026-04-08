@@ -296,6 +296,28 @@ td.editing .cell-edit{display:block}
 .vt-hist-add button{height:28px;padding:0 13px;background:#D97706;color:#fff;
   border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap}
 .vt-hist-add button:hover{opacity:.85}
+/* ── Reminder Widget ── */
+.rem-wrap{background:#fffdf0;border:1.5px solid #fde68a;border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.rem-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:#fffbeb;border-bottom:1.5px solid #fde68a;cursor:pointer;user-select:none}
+.rem-header-title{font-size:14px;font-weight:700;color:#92400e;flex:1}
+.rem-badge{background:#f59e0b;color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;min-width:18px;text-align:center}
+.rem-body{padding:10px 14px 12px}
+.rem-input-row{display:flex;gap:8px;margin-bottom:10px}
+.rem-input{flex:1;padding:7px 11px;border:1.5px solid #fde68a;border-radius:8px;font-size:13px;background:#fff;outline:none;transition:border-color .15s}
+.rem-input:focus{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.15)}
+.rem-add-btn{padding:7px 14px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s}
+.rem-add-btn:hover{background:#d97706}
+.rem-list{display:flex;flex-direction:column;gap:5px}
+.rem-item{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;background:#fff;border:1.5px solid #fef3c7;border-radius:8px;transition:opacity .2s}
+.rem-item.done{opacity:.55;border-color:#e5e7eb;background:#f9fafb}
+.rem-cb{width:16px;height:16px;margin-top:2px;cursor:pointer;accent-color:#f59e0b;flex-shrink:0}
+.rem-text{flex:1;font-size:13px;color:#1f2937;line-height:1.45;word-break:break-word}
+.rem-item.done .rem-text{text-decoration:line-through;color:#9ca3af}
+.rem-meta{font-size:10px;color:#9ca3af;margin-top:2px}
+.rem-del{background:none;border:none;color:#d1d5db;font-size:14px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;margin-top:1px;transition:color .15s}
+.rem-del:hover{color:#ef4444}
+.rem-empty{font-size:12px;color:#d97706;text-align:center;padding:8px 0;opacity:.7}
+
 /* Dashboard alert cards */
 .vt-alert-card{border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:4px}
 .vt-alert-row{display:flex;align-items:center;gap:8px;padding:5px 0;
@@ -960,6 +982,24 @@ td.editing .cell-edit{display:block}
     </div>
     <div id="notice-list"></div>
   </div><!-- end notice-board-body -->
+  </div>
+
+  <!-- ══ Reminders ══ -->
+  <div class="rem-wrap">
+    <div class="rem-header" onclick="remToggle()">
+      <span style="font-size:17px">🗒️</span>
+      <span class="rem-header-title">Reminders</span>
+      <span class="rem-badge" id="rem-badge">0</span>
+      <span id="rem-toggle-ic" style="font-size:12px;opacity:.6;margin-left:4px">▼</span>
+    </div>
+    <div id="rem-body" class="rem-body">
+      <div class="rem-input-row">
+        <input id="rem-input" class="rem-input" type="text" placeholder="Add a reminder… (press Enter)" maxlength="300"
+          onkeydown="if(event.key==='Enter')remAdd()"/>
+        <button class="rem-add-btn" onclick="remAdd()">+ Add</button>
+      </div>
+      <div id="rem-list" class="rem-list"></div>
+    </div>
   </div>
 
   <div class="dash-split">
@@ -7206,6 +7246,63 @@ renderNotices();
 renderPageNotices();
 renderSOC();
 seLoadContacts();
+
+// ── REMINDERS ─────────────────────────────────────────────────────
+const REM_KEY='owenz_reminders_v1';
+let _remOpen=true;
+let REMINDERS=[];
+let _remNextId=1;
+
+function remLoad(){
+  try{ const s=localStorage.getItem(REM_KEY); if(s){ REMINDERS=JSON.parse(s); _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; } }catch(e){}
+}
+function remSave(){ try{ localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); }catch(e){} }
+function remRender(){
+  const el=document.getElementById('rem-list'); if(!el) return;
+  const badge=document.getElementById('rem-badge');
+  const pending=REMINDERS.filter(r=>!r.done).length;
+  if(badge) badge.textContent=pending;
+  if(!REMINDERS.length){
+    el.innerHTML='<div class="rem-empty">No reminders yet. Add one above!</div>'; return;
+  }
+  // show pending first, then done
+  const sorted=[...REMINDERS.filter(r=>!r.done),...REMINDERS.filter(r=>r.done)];
+  el.innerHTML=sorted.map(r=>`
+    <div class="rem-item${r.done?' done':''}" id="rem-item-${r.id}">
+      <input type="checkbox" class="rem-cb" ${r.done?'checked':''} onchange="remToggleDone(${r.id})"/>
+      <div style="flex:1;min-width:0">
+        <div class="rem-text">${r.text.replace(/</g,'&lt;')}</div>
+        <div class="rem-meta">${r.ts}</div>
+      </div>
+      <button class="rem-del" onclick="remDelete(${r.id})" title="Delete">✕</button>
+    </div>`).join('');
+}
+function remAdd(){
+  const inp=document.getElementById('rem-input'); if(!inp) return;
+  const txt=inp.value.trim(); if(!txt) return;
+  const now=new Date();
+  const ts=now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  REMINDERS.unshift({id:_remNextId++, text:txt, done:false, ts});
+  inp.value='';
+  remSave(); remRender();
+}
+function remToggleDone(id){
+  const r=REMINDERS.find(x=>x.id===id); if(!r) return;
+  r.done=!r.done;
+  remSave(); remRender();
+}
+function remDelete(id){
+  REMINDERS=REMINDERS.filter(x=>x.id!==id);
+  remSave(); remRender();
+}
+function remToggle(){
+  _remOpen=!_remOpen;
+  const body=document.getElementById('rem-body');
+  const ic=document.getElementById('rem-toggle-ic');
+  if(body) body.style.display=_remOpen?'':'none';
+  if(ic) ic.textContent=_remOpen?'▼':'▶';
+}
+remLoad(); remRender();
 </script>
 
 <style id="sticky-header-patch">
