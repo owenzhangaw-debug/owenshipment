@@ -2233,11 +2233,79 @@ function fmtDateStr(s){
 }
 // T1 Rule: slot cannot be on same day or before ETA at Hub.
 // Returns next working day after etaDate, formatted as "YYYY/MM/DD 14:00"
+// ── Public Holidays (China Golden Weeks + EU: Belgium/Germany/Poland) ──────
+// Format: 'YYYY/MM/DD'
+const PUBLIC_HOLIDAYS = new Set([
+  // ── 2025 ──
+  '2025/01/01', // New Year
+  // China Spring Festival (Jan 28 – Feb 4)
+  '2025/01/28','2025/01/29','2025/01/30','2025/01/31',
+  '2025/02/01','2025/02/02','2025/02/03','2025/02/04',
+  // EU Easter (April 18–21)
+  '2025/04/18', // Good Friday (DE/PL/BE)
+  '2025/04/21', // Easter Monday
+  // Labour Day
+  '2025/05/01',
+  // China Labour Day Golden Week (May 1–5)
+  '2025/05/02','2025/05/03','2025/05/04','2025/05/05',
+  // EU Ascension Day (May 29)
+  '2025/05/29',
+  // EU Whit Monday (June 9)
+  '2025/06/09',
+  // Belgium National Day
+  '2025/07/21',
+  // German Unity Day
+  '2025/10/03',
+  // All Saints (BE/PL)
+  '2025/11/01',
+  // Armistice Day (BE/FR)
+  '2025/11/11',
+  // Christmas
+  '2025/12/25','2025/12/26',
+
+  // ── 2026 ──
+  '2026/01/01', // New Year
+  // China Spring Festival (Feb 17 – Feb 23 approx)
+  '2026/02/17','2026/02/18','2026/02/19','2026/02/20',
+  '2026/02/21','2026/02/22','2026/02/23',
+  // EU Good Friday (April 3) — Easter 2026 = April 5
+  '2026/04/03',
+  // EU Easter Monday (April 6)
+  '2026/04/06',
+  // Labour Day + China Labour Day Golden Week (May 1–5)
+  '2026/05/01','2026/05/02','2026/05/03','2026/05/04','2026/05/05',
+  // EU Ascension Day (May 14, 2026 = Easter+39)
+  '2026/05/14',
+  // EU Whit Monday (May 25, 2026 = Easter+50)
+  '2026/05/25',
+  // Belgium National Day
+  '2026/07/21',
+  // German Unity Day
+  '2026/10/03',
+  // All Saints
+  '2026/11/01',
+  // Armistice Day
+  '2026/11/11',
+  // Christmas
+  '2026/12/25','2026/12/26',
+]);
+
+function isHoliday(d){
+  const s = d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  return PUBLIC_HOLIDAYS.has(s);
+}
+function isWorkingDay(d){ return d.getDay()!==0 && d.getDay()!==6 && !isHoliday(d); }
+function nextWorkingDay(d){
+  const nd=new Date(d); nd.setDate(nd.getDate()+1);
+  while(!isWorkingDay(nd)) nd.setDate(nd.getDate()+1);
+  return nd;
+}
+
 function calcEarliestSlot(etaDateStr){
   const d=parseDate(etaDateStr); if(!d) return null;
-  d.setDate(d.getDate()+1); // move off arrival day
-  while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1); // skip weekend
-  return formatDate(d)+' 14:00';
+  // T1 rule: slot cannot be on arrival day → advance to next working day (skipping weekends + holidays)
+  const slot=nextWorkingDay(d);
+  return formatDate(slot)+' 14:00';
 }
 // Returns true if slotStr violates T1 rule (slot date ≤ ETA date)
 function slotViolatesT1Rule(slotStr, etaStr){
@@ -6185,7 +6253,7 @@ function fixT1RuleViolations(){
 
   function _pds(s){ const p=s.split('/'); return new Date(+p[0],+p[1]-1,+p[2]); }
   function _fmtD(d){ return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0'); }
-  function _skipWknd(d){ const x=new Date(d); while(x.getDay()===0||x.getDay()===6) x.setDate(x.getDate()+1); return x; }
+  function _skipWknd(d){ const x=new Date(d); while(!isWorkingDay(x)) x.setDate(x.getDate()+1); return x; }
 
   // Group by consignee + ETAHub (same as ⚡ Auto Slots)
   const groups={};
@@ -6226,7 +6294,8 @@ function fixT1RuleViolations(){
           fixed++; slotIdx++; break;
         } else {
           const nd=new Date(curDate); nd.setDate(nd.getDate()+1);
-          curDate=_skipWknd(nd);
+          while(!isWorkingDay(nd)) nd.setDate(nd.getDate()+1);
+          curDate=nd;
           isFirstDay=false; slotIdx=0;
         }
         if(++safety>365) break;
@@ -6245,7 +6314,7 @@ const _startupT1Fixed = fixT1RuleViolations();
 function silentRestaggerAutoSlots(){
   function _pds(s){ const p=s.split('/'); return new Date(+p[0],+p[1]-1,+p[2]); }
   function _fmtD(d){ return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0'); }
-  function _skip(d){ const x=new Date(d); while(x.getDay()===0||x.getDay()===6) x.setDate(x.getDate()+1); return x; }
+  function _skip(d){ const x=new Date(d); while(!isWorkingDay(x)) x.setDate(x.getDate()+1); return x; }
 
   // Pool: qualifying (not arrived, has ETA at Hub) containers that have a slot
   const pool = CT.filter(r =>
@@ -6426,7 +6495,8 @@ function autoGenerateSlots(){
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;background:#F0EFEF;border-radius:8px;padding:9px 13px;line-height:1.7">
         <strong>T1 Timing Rule:</strong> ATB cannot be received on arrival day → T1 issued next working day (afternoon) → earliest slot = <strong>next working day after ETA, 14:00+</strong><br>
-        <span style="font-size:11px">VIA EUROPE 6–22 · Flying 8–16 · Others 8–20 · First-day slots from 14:00</span>
+        <span style="font-size:11px">VIA EUROPE 6–22 · Flying 8–16 · Others 8–20 · First-day slots from 14:00</span><br>
+        <span style="font-size:11px;color:#b45309">🗓️ Public holidays skipped: May 1–5 (Labour Day + CN Golden Week), EU Easter, Ascension, Whit Monday, Christmas, etc.</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:8px 12px">
         <input type="checkbox" id="as-force-override" style="width:15px;height:15px;cursor:pointer;accent-color:#d97706"/>
@@ -6468,23 +6538,17 @@ function applyAutoSlots(){
            String(dt.getMonth()+1).padStart(2,'0') + '/' +
            String(dt.getDate()).padStart(2,'0');
   }
-  function skipWeekend(dt){
-    // Advance past Saturday (6) and Sunday (0) to next working day
-    const d = new Date(dt);
-    while(d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate()+1);
-    return d;
-  }
-  function nextDay(dt){
-    const d = new Date(dt);
-    d.setDate(d.getDate()+1);
-    return d;
-  }
   // T1 Rule: ATB cannot be received on arrival day → T1 issued NEXT WORKING DAY (afternoon)
-  // → Earliest slot = next working day after ETA at Hub, from 14:00 onwards
+  // → Earliest slot = next working day after ETA at Hub, from 14:00 onwards (skipping weekends + public holidays)
   function nextWorkingDayAfterETA(etaDateStr){
     let d = parseDateStr(etaDateStr);
-    d.setDate(d.getDate()+1); // move off arrival day (T1 not possible same day)
-    d = skipWeekend(d);       // skip Saturday/Sunday to land on a working day
+    d.setDate(d.getDate()+1); // move off arrival day
+    while(!isWorkingDay(d)) d.setDate(d.getDate()+1); // skip weekends + holidays
+    return d;
+  }
+  function advanceToNextWorkingDay(dt){
+    const d = new Date(dt); d.setDate(d.getDate()+1);
+    while(!isWorkingDay(d)) d.setDate(d.getDate()+1);
     return d;
   }
 
@@ -6537,8 +6601,8 @@ function applyAutoSlots(){
           slotIdx++;
           break;
         } else {
-          // Move to next calendar day, skip weekends
-          currentDate = skipWeekend(nextDay(currentDate));
+          // Move to next working day (skip weekends + public holidays)
+          currentDate = advanceToNextWorkingDay(currentDate);
           isFirstDay  = false;
           slotIdx     = 0;
         }
