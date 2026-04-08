@@ -1166,7 +1166,7 @@ td.editing .cell-edit{display:block}
         <!-- Charts row 1: Total Freight Cost by Vessel + Payment Status donut -->
         <div class="charts-row" style="margin-top:0;grid-template-columns:2fr 1fr">
           <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Total Freight Cost by Vessel (USD)<span class="ch-toggle">▼</span></h3>
+            <h3 onclick="toggleChart(this)" id="vf-cost-title">Total Freight Cost by Vessel<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">Price + Surcharge per vessel booking</p>
             <div class="chart-wrap" style="height:300px"><canvas id="vf-cost-vessel-chart"></canvas></div>
           </div>
@@ -1179,7 +1179,7 @@ td.editing .cell-edit{display:block}
         <!-- Charts row 2: Booking Fees by Vessel + Booking Fee Payment donut -->
         <div class="charts-row" style="margin-top:0;grid-template-columns:2fr 1fr">
           <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Booking Fee by Vessel (USD)<span class="ch-toggle">▼</span></h3>
+            <h3 onclick="toggleChart(this)" id="vf-bf-title">Booking Fee by Vessel<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">Rhenus booking fee per vessel booking</p>
             <div class="chart-wrap" style="height:280px"><canvas id="vf-booking-fee-chart"></canvas></div>
           </div>
@@ -1503,6 +1503,20 @@ td.editing .cell-edit{display:block}
       </div>
     </div>
     <div class="ml"><button class="btn-reset" onclick="vtResetFilters()">↺ Reset</button></div>
+    <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
+      <span style="font-size:11px;font-weight:600;color:var(--muted)">Currency:</span>
+      <select id="vt-curr-select" onchange="setVTCurrency(this.value)"
+        style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px;border:1.5px solid var(--border);background:#fff;color:var(--text);cursor:pointer">
+        <option value="USD">USD ($)</option>
+        <option value="EUR">EUR (€)</option>
+        <option value="GBP">GBP (£)</option>
+        <option value="CNY">CNY (¥)</option>
+        <option value="HKD">HKD (HK$)</option>
+        <option value="SGD">SGD (S$)</option>
+        <option value="JPY">JPY (¥)</option>
+        <option value="AUD">AUD (A$)</option>
+      </select>
+    </div>
     <button class="btn btn-ghost" onclick="exportVesselXLSX()">↓ Export</button>
   </div>
   <!-- SOC Inventory -->
@@ -3164,12 +3178,16 @@ function renderDashboard(){
     const unpaidFreight = vtFin.filter(r=>r.payStatus!=='Paid').reduce((s,r)=>s+r.price+r.surcharge,0);
     const totalBF = vtFin.reduce((s,r)=>s+r.bookingFee,0);
     const unpaidBF = vtFin.filter(r=>r.bfPayment!=='Paid').reduce((s,r)=>s+r.bookingFee,0);
+    const _cs=_vtCurrSym(), _cl=_vtCurrLocale();
+    const _vfN=n=>_cs+n.toLocaleString(_cl,{maximumFractionDigits:0});
+    const _cht=document.getElementById('vf-cost-title'); if(_cht) _cht.firstChild.textContent='Total Freight Cost by Vessel ('+_VT_CURR+') ';
+    const _bft=document.getElementById('vf-bf-title'); if(_bft) _bft.firstChild.textContent='Booking Fee by Vessel ('+_VT_CURR+') ';
     const kpiEl=document.getElementById('vf-kpi-row');
     if(kpiEl) kpiEl.innerHTML=[
-      {icon:'💵',val:'$'+totalFreight.toLocaleString('en-US',{maximumFractionDigits:0}),label:'Total Freight (USD)',desc:'Price + Surcharge',color:'#0369a1',bg:'#e0f2fe'},
-      {icon:'⏳',val:'$'+unpaidFreight.toLocaleString('en-US',{maximumFractionDigits:0}),label:'Unpaid Freight',desc:'Non-Paid status',color:'#b45309',bg:'#fef3c7'},
-      {icon:'🏢',val:'$'+totalBF.toLocaleString('en-US',{maximumFractionDigits:0}),label:'Total Booking Fees',desc:'Rhenus booking fees',color:'#7c3aed',bg:'#f5f3ff'},
-      {icon:'💳',val:'$'+unpaidBF.toLocaleString('en-US',{maximumFractionDigits:0}),label:'Unpaid Booking Fees',desc:'Non-Paid booking fees',color:'#dc2626',bg:'#fef2f2'},
+      {icon:'💵',val:_vfN(totalFreight),label:'Total Freight ('+_VT_CURR+')',desc:'Price + Surcharge',color:'#0369a1',bg:'#e0f2fe'},
+      {icon:'⏳',val:_vfN(unpaidFreight),label:'Unpaid Freight',desc:'Non-Paid status',color:'#b45309',bg:'#fef3c7'},
+      {icon:'🏢',val:_vfN(totalBF),label:'Total Booking Fees',desc:'Rhenus booking fees',color:'#7c3aed',bg:'#f5f3ff'},
+      {icon:'💳',val:_vfN(unpaidBF),label:'Unpaid Booking Fees',desc:'Non-Paid booking fees',color:'#dc2626',bg:'#fef2f2'},
     ].map(k=>`<div class="kpi" style="border-left:3px solid ${k.color};background:${k.bg}15">
       <div style="font-size:20px">${k.icon}</div>
       <div style="margin-top:4px">
@@ -3203,9 +3221,9 @@ function renderDashboard(){
           options:{responsive:true,maintainAspectRatio:false,
             layout:{padding:{top:24}},
             plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,boxWidth:12}},
-              datalabels:{display:ctx=>ctx.datasetIndex===1&&(vfTotals[ctx.dataIndex]>0),anchor:'end',align:'top',font:{size:10,weight:'700'},color:'#0369a1',formatter:(v,ctx)=>v>0?'$'+vfTotals[ctx.dataIndex].toLocaleString():'',clamp:true},
-              tooltip:{callbacks:{label:ctx=>' $'+ctx.raw.toLocaleString()}}},
-            scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:35,font:{size:10}}},y:{stacked:true,beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'$'+v.toLocaleString()}}}
+              datalabels:{display:ctx=>ctx.datasetIndex===1&&(vfTotals[ctx.dataIndex]>0),anchor:'end',align:'top',font:{size:10,weight:'700'},color:'#0369a1',formatter:(v,ctx)=>v>0?_cs+vfTotals[ctx.dataIndex].toLocaleString(_cl):'',clamp:true},
+              tooltip:{callbacks:{label:ctx=>' '+_cs+ctx.raw.toLocaleString(_cl)}}},
+            scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:35,font:{size:10}}},y:{stacked:true,beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>_cs+v.toLocaleString(_cl)}}}
           }
         });
       }
@@ -3254,9 +3272,9 @@ function renderDashboard(){
           options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
             layout:{padding:{right:80}},
             plugins:{legend:{display:false},
-              datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#7c3aed',formatter:v=>'$'+v.toLocaleString(),clamp:true},
-              tooltip:{callbacks:{label:ctx=>' $'+ctx.raw.toLocaleString()}}},
-            scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'$'+v.toLocaleString()}},y:{grid:{display:false}}}
+              datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#7c3aed',formatter:v=>_cs+v.toLocaleString(_cl),clamp:true},
+              tooltip:{callbacks:{label:ctx=>' '+_cs+ctx.raw.toLocaleString(_cl)}}},
+            scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>_cs+v.toLocaleString(_cl)}},y:{grid:{display:false}}}
           }
         });
       }
@@ -3288,7 +3306,7 @@ function renderDashboard(){
     // Detail Table
     const vfTableEl=document.getElementById('vf-detail-table');
     const vfTotalBadge=document.getElementById('vf-table-total');
-    if(vfTotalBadge) vfTotalBadge.textContent=vtFin.length+' vessels · Total: $'+totalFreight.toLocaleString('en-US',{maximumFractionDigits:0})+' freight + $'+totalBF.toLocaleString('en-US',{maximumFractionDigits:0})+' fees';
+    if(vfTotalBadge) vfTotalBadge.textContent=vtFin.length+' vessels · Total: '+_vfN(totalFreight)+' freight + '+_vfN(totalBF)+' fees';
     if(vfTableEl){
       const _payTag=(v)=>{
         const map={'Paid':'background:#d1fae5;color:#065f46','Pending':'background:#fef3c7;color:#b45309','Not Billed':'background:#f1f5f9;color:#64748b'};
@@ -3298,11 +3316,11 @@ function renderDashboard(){
       const rows=vtFin.map(r=>`<tr>
         <td style="font-weight:700;color:var(--navy);white-space:nowrap">${r.name}</td>
         <td style="font-size:11px;color:var(--muted)">${r.booking}</td>
-        <td style="font-weight:700;color:#0369a1;text-align:right">${r.price>0?'$'+r.price.toLocaleString('en-US',{maximumFractionDigits:0}):'—'}</td>
-        <td style="font-weight:700;color:#0369a1;text-align:right">${r.surcharge>0?'$'+r.surcharge.toLocaleString('en-US',{maximumFractionDigits:0}):'—'}</td>
-        <td style="font-weight:800;color:#0c4a6e;text-align:right">${(r.price+r.surcharge)>0?'$'+(r.price+r.surcharge).toLocaleString('en-US',{maximumFractionDigits:0}):'—'}</td>
+        <td style="font-weight:700;color:#0369a1;text-align:right">${r.price>0?_vfN(r.price):'—'}</td>
+        <td style="font-weight:700;color:#0369a1;text-align:right">${r.surcharge>0?_vfN(r.surcharge):'—'}</td>
+        <td style="font-weight:800;color:#0c4a6e;text-align:right">${(r.price+r.surcharge)>0?_vfN(r.price+r.surcharge):'—'}</td>
         <td style="text-align:center">${_payTag(r.payStatus)}</td>
-        <td style="font-weight:700;color:#7c3aed;text-align:right">${r.bookingFee>0?'$'+r.bookingFee.toLocaleString('en-US',{maximumFractionDigits:0}):'—'}</td>
+        <td style="font-weight:700;color:#7c3aed;text-align:right">${r.bookingFee>0?_vfN(r.bookingFee):'—'}</td>
         <td style="text-align:center">${_payTag(r.bfPayment)}</td>
       </tr>`).join('');
       vfTableEl.innerHTML=rows.length?`<table class="sur-tbl">
@@ -4434,20 +4452,39 @@ function toggleCMR(id, checked){
 }
 
 // ── VESSEL TABLE ──────────────────────────────────────────────────
-// USD currency formatter for VT financial columns
-const _usd = v => {
+// VT currency formatter — symbol and locale driven by user choice
+const _VT_CURR_MAP = {
+  'USD':  {sym:'$',   locale:'en-US'},
+  'EUR':  {sym:'€',   locale:'de-DE'},
+  'GBP':  {sym:'£',   locale:'en-GB'},
+  'CNY':  {sym:'¥',   locale:'zh-CN'},
+  'HKD':  {sym:'HK$', locale:'en-HK'},
+  'SGD':  {sym:'S$',  locale:'en-SG'},
+  'JPY':  {sym:'¥',   locale:'ja-JP'},
+  'AUD':  {sym:'A$',  locale:'en-AU'},
+};
+const LS_VT_CURR='owenz_vt_currency';
+let _VT_CURR = localStorage.getItem(LS_VT_CURR)||'USD';
+function _vtCurrSym(){ return (_VT_CURR_MAP[_VT_CURR]||_VT_CURR_MAP['USD']).sym; }
+function _vtCurrLocale(){ return (_VT_CURR_MAP[_VT_CURR]||_VT_CURR_MAP['USD']).locale; }
+function _vtFmt(v){
   const n = parseFloat(v);
   if(!v && v!==0) return '—';
   if(isNaN(n)) return v||'—';
-  return '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});
-};
+  return _vtCurrSym()+n.toLocaleString(_vtCurrLocale(),{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function setVTCurrency(val){
+  _VT_CURR=val; localStorage.setItem(LS_VT_CURR,val);
+  const lbl=document.getElementById('vt-curr-label'); if(lbl) lbl.textContent=val;
+  renderVT(); renderDashboard();
+}
 const _VT_USD_COLS = new Set(['Price','Surcharge','Booking Fee']);
 
 function vtCell(r, col, opts){
   const v = r[col]===undefined||r[col]===null||isNaN_safe(r[col]) ? '' : String(r[col]);
   const IS_DATE=['ETS (Departure)','ETA (Arrival)','ATA (Actual)','Port Cut-Off','Barge Date'].includes(col);
   const IS_USD = _VT_USD_COLS.has(col);
-  const disp = IS_DATE ? fmtDateStr(v) : IS_USD ? _usd(v) : v;
+  const disp = IS_DATE ? fmtDateStr(v) : IS_USD ? _vtFmt(v) : v;
   const xStyle = (opts&&opts.extraStyle) ? ` style="${opts.extraStyle}"` : '';
   if(opts && opts.select){
     const selOpts = opts.select.map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('');
@@ -6043,6 +6080,8 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 loadData();
+// Restore saved VT currency selector value
+(function(){ const sel=document.getElementById('vt-curr-select'); if(sel&&_VT_CURR) sel.value=_VT_CURR; })();
 // ── T1 Rule fix — called on load AND after every cloud sync pull ──
 // Groups bad-slot containers by consignee+ETA, assigns correct times
 // using each consignee's slot window (same logic as ⚡ Auto Slots)
