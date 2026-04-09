@@ -4037,8 +4037,9 @@ function renderCT(){
         // Dates: from CT median
         const ctEta=_bpCtEta[b]||{};
         const ov=_bpTrainDates[b]||{};
-        const malaDt=ov.etaMala?new Date(ov.etaMala+'T00:00:00'):ctEta.mala||null;
-        const hubDt=ov.etaDuis?new Date(ov.etaDuis+'T00:00:00'):ctEta.hub||null;
+        // CT sheet data takes priority; _bpTrainDates only used as fallback when CT has no ETA
+        const malaDt=ctEta.mala||(ov.etaMala?new Date(ov.etaMala+'T00:00:00'):null);
+        const hubDt=ctEta.hub||(ov.etaDuis?new Date(ov.etaDuis+'T00:00:00'):null);
         const malaStr=malaDt?_fmtDt(malaDt):'';
         const hubStr=hubDt?_fmtDt(hubDt):'';
 
@@ -5910,26 +5911,31 @@ const _TEMU_TRACKING={"BURU6733126":{"ETA in Mala":"2026-03-26","ETA at Hub":"20
 // Slots computed using T1 rule (next working day after Hub ETA, holiday-aware)
 const _EARLY_ARRIVAL_PATCHES={"CICU2570014":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 18:00"},"KSBU0131530":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 14:00"},"NEPU4526530":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 14:00"},"NEPU4546120":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/16 10:00"},"NEPU4597810":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 20:00"},"SEGU5042348":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 16:00"},"SEGU6001831":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 16:00"},"SEKU6246741":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/16 12:00"},"SEKU6508409":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 22:00"},"SEKU6515162":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 14:00"},"SEKU6597920":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/16 08:00"},"LYGU4062127":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 14:00"},"NEPU4525019":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 16:00"},"NEPU4538757":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 14:00"},"NEPU4558326":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 18:00"},"NEPU5000848":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 14:00"},"NEPU6010202":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 16:00"},"SEGU4491004":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 14:00"},"SEGU5002155":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/20 08:00"}};
 function _mergeEarlyArrivals(){
-  // Date-only fields get normalized to YYYY-M-D; Scheduled Slot keeps its time
+  // Only fill EMPTY fields — never overwrite data the user has manually entered
   const dateFields=['ETA in Mala','ETA at Hub'];
   CT.forEach(r=>{
     const cn=String(r['Container No.']||'').toUpperCase().trim();
     const patch=_EARLY_ARRIVAL_PATCHES[cn];
     if(!patch) return;
-    dateFields.forEach(f=>{ if(patch[f]){ const d=parseDate(patch[f]); r[f]=d?formatDate(d):patch[f]; } });
-    if(patch['Scheduled Slot']) r['Scheduled Slot']=patch['Scheduled Slot'];
+    dateFields.forEach(f=>{
+      if(patch[f] && !r[f]){  // skip if user already has a value
+        const d=parseDate(patch[f]); r[f]=d?formatDate(d):patch[f];
+      }
+    });
+    // Never overwrite Scheduled Slot if it has already been set
+    if(patch['Scheduled Slot'] && !r['Scheduled Slot']) r['Scheduled Slot']=patch['Scheduled Slot'];
   });
 }
 
 function _mergeTemuTracking(){
-  // Normalize all stored dates to YYYY-M-D (no leading zeros) on merge
+  // Only fill EMPTY fields — never overwrite data the user has manually entered
   const fields=['ETA in Mala','ETA at Hub','T1 Date','Actual Arrival'];
   CT.forEach(r=>{
     const cn=String(r['Container No.']||'').toUpperCase().trim();
     const upd=_TEMU_TRACKING[cn];
     if(!upd) return;
     fields.forEach(f=>{
-      if(upd[f]){
+      if(upd[f] && !r[f]){  // skip if user already has a value
         const d=parseDate(upd[f]);
         r[f]=d?formatDate(d):upd[f];
       }
