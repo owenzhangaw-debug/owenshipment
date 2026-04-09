@@ -2,8 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Owen Zhang</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Owen Zhang · Logistics</title>
+
+<!-- ── PWA / Add to Home Screen ── -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="OZ Logistics"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="application-name" content="OZ Logistics"/>
+<meta name="theme-color" content="#004D4C"/>
+<meta name="description" content="Owen Zhang Freight & Logistics Dashboard"/>
+<!-- Inline web app manifest -->
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22OZ%20Logistics%22%2C%22short_name%22%3A%22OZ%20Logistics%22%2C%22description%22%3A%22Owen%20Zhang%20Freight%20%26%20Logistics%20Dashboard%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%23004D4C%22%2C%22orientation%22%3A%22portrait-primary%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%270%200%20100%20100%2527%253E%253Crect%2520width%3D%27100%27%2520height%3D%27100%27%2520rx%3D%2720%27%2520fill%3D%27%23004D4C%27%2F%253E%253Ctext%2520y%3D%27.9em%27%2520font-size%3D%2770%27%2520x%3D%2715%27%253E%25F0%259F%259A%25A2%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D"/>
+<!-- Apple touch icon (ship emoji on dark teal) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23004D4C'/><text y='.9em' font-size='70' x='10'>🚢</text></svg>"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
@@ -2208,27 +2221,30 @@ function bpCardClick(batchName){
 // ── HELPERS ───────────────────────────────────────────────────────
 function parseDate(s){
   if(!s||typeof s!=='string') return null;
-  // yyyy/mm/dd (new preferred format)
+  // YYYY-M-D or YYYY-MM-DD (year-first with dashes — primary stored format)
+  const md=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(md) return new Date(+md[1],+md[2]-1,+md[3]);
+  // YYYY/M/D (legacy slash format — still accepted)
   const my=s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if(my) return new Date(+my[1],+my[2]-1,+my[3]);
-  const m1=s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
-  if(m1) return new Date(+m1[3],+m1[2]-1,+m1[1]);
-  // DD-Jan-YYYY or DD-MMM-YYYY
+  // DD-MMM-YYYY (e.g. 24-Jan-2026)
   const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
   const m2=s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
   if(m2){ const mo=months[m2[2].toLowerCase()]; if(mo!==undefined) return new Date(+m2[3],mo,+m2[1]); }
   const m3=s.match(/^(\d{1,2})-([A-Za-z]{3})(?:\s|$)/);
   if(m3){ const mo=months[m3[2].toLowerCase()]; if(mo!==undefined) return new Date(new Date().getFullYear(),mo,+m3[1]); }
+  // DD-MM (short, current year)
   const m4=s.match(/^(\d{1,2})-(\d{1,2})(?:\s|$)/);
   if(m4) return new Date(new Date().getFullYear(),+m4[2]-1,+m4[1]);
   return null;
 }
 function formatDate(d){
+  // Output: YYYY-M-D (dashes, no leading zeros)
   if(!d||isNaN(d)) return '';
-  return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();
+  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
 }
 function fmtDateStr(s){
-  // Normalize any stored date string → yyyy/mm/dd display
+  // Normalize any stored date string → YYYY-M-D display
   if(!s) return '';
   const d=parseDate(s); return d?formatDate(d):s;
 }
@@ -5894,22 +5910,30 @@ const _TEMU_TRACKING={"BURU6733126":{"ETA in Mala":"2026-03-26","ETA at Hub":"20
 // Slots computed using T1 rule (next working day after Hub ETA, holiday-aware)
 const _EARLY_ARRIVAL_PATCHES={"CICU2570014":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 18:00"},"KSBU0131530":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 14:00"},"NEPU4526530":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 14:00"},"NEPU4546120":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/16 10:00"},"NEPU4597810":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 20:00"},"SEGU5042348":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 16:00"},"SEGU6001831":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 16:00"},"SEKU6246741":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/16 12:00"},"SEKU6508409":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 22:00"},"SEKU6515162":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/15 14:00"},"SEKU6597920":{"ETA in Mala":"2026-04-11","ETA at Hub":"2026-04-14","Scheduled Slot":"2026/4/16 08:00"},"LYGU4062127":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 14:00"},"NEPU4525019":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 16:00"},"NEPU4538757":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 14:00"},"NEPU4558326":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 18:00"},"NEPU5000848":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 14:00"},"NEPU6010202":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 16:00"},"SEGU4491004":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/17 14:00"},"SEGU5002155":{"ETA in Mala":"2026-04-13","ETA at Hub":"2026-04-16","Scheduled Slot":"2026/4/20 08:00"}};
 function _mergeEarlyArrivals(){
-  const fields=['ETA in Mala','ETA at Hub','Scheduled Slot'];
+  // Date-only fields get normalized to YYYY-M-D; Scheduled Slot keeps its time
+  const dateFields=['ETA in Mala','ETA at Hub'];
   CT.forEach(r=>{
     const cn=String(r['Container No.']||'').toUpperCase().trim();
     const patch=_EARLY_ARRIVAL_PATCHES[cn];
     if(!patch) return;
-    fields.forEach(f=>{ if(patch[f]) r[f]=patch[f]; });
+    dateFields.forEach(f=>{ if(patch[f]){ const d=parseDate(patch[f]); r[f]=d?formatDate(d):patch[f]; } });
+    if(patch['Scheduled Slot']) r['Scheduled Slot']=patch['Scheduled Slot'];
   });
 }
 
 function _mergeTemuTracking(){
+  // Normalize all stored dates to YYYY-M-D (no leading zeros) on merge
   const fields=['ETA in Mala','ETA at Hub','T1 Date','Actual Arrival'];
   CT.forEach(r=>{
     const cn=String(r['Container No.']||'').toUpperCase().trim();
     const upd=_TEMU_TRACKING[cn];
     if(!upd) return;
-    fields.forEach(f=>{ if(upd[f]) r[f]=upd[f]; });
+    fields.forEach(f=>{
+      if(upd[f]){
+        const d=parseDate(upd[f]);
+        r[f]=d?formatDate(d):upd[f];
+      }
+    });
   });
 }
 
@@ -6670,7 +6694,9 @@ function seFormatSlotDate(slotStr){
   const parts = slotStr.trim().split(' ');
   const datePart = parts[0] || '';
   const timePart = parts[1] || '';
-  const dp = datePart.split('/');
+  // Support both YYYY-M-D and YYYY/M/D separators
+  const sep = datePart.includes('-') ? '-' : '/';
+  const dp = datePart.split(sep);
   let monthDay = datePart;
   if(dp.length >= 3){
     const m = parseInt(dp[1], 10);
@@ -7959,5 +7985,60 @@ remLoad(); remRender();
   </div>
 </div>
 
+
+<!-- ── PWA: Safe-area padding for iPhone notch/home-bar ── -->
+<style>
+body { padding-bottom: env(safe-area-inset-bottom); }
+header { padding-top: max(8px, env(safe-area-inset-top)); }
+</style>
+
+<!-- ── PWA: Register inline service worker for offline support ── -->
+<script>
+if('serviceWorker' in navigator){
+  const SW_CODE = `
+const CACHE='oz-logistics-v1';
+const PRECACHE=['/'];
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(PRECACHE)).then(()=>self.skipWaiting()));
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
+});
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET') return;
+  e.respondWith(
+    caches.open(CACHE).then(async cache=>{
+      const cached=await cache.match(e.request);
+      const fetchPromise=fetch(e.request).then(res=>{
+        if(res&&res.status===200) cache.put(e.request,res.clone());
+        return res;
+      }).catch(()=>null);
+      return cached||(await fetchPromise)||new Response('Offline',{status:503});
+    })
+  );
+});
+  `;
+  const blob = new Blob([SW_CODE], {type:'application/javascript'});
+  const url  = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url).then(()=>{
+    console.log('[PWA] Service worker registered');
+  }).catch(e=>console.warn('[PWA] SW registration failed',e));
+}
+// Show "Add to Home Screen" nudge in Safari if not already installed
+window.addEventListener('load',()=>{
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone=window.navigator.standalone===true;
+  const isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if(isIOS&&!isStandalone&&isSafari){
+    const key='oz_pwa_nudge_dismissed';
+    if(!localStorage.getItem(key)){
+      const bar=document.createElement('div');
+      bar.style.cssText='position:fixed;bottom:env(safe-area-inset-bottom,0);left:0;right:0;z-index:9999;background:#004D4C;color:#fff;font-size:13px;display:flex;align-items:center;gap:10px;padding:10px 16px;box-shadow:0 -2px 12px rgba(0,0,0,.3)';
+      bar.innerHTML=`<span style="font-size:20px">🚢</span><span style="flex:1">Install as app: tap <strong>Share</strong> <span style="font-size:16px">⎙</span> then <strong>"Add to Home Screen"</strong></span><button onclick="localStorage.setItem('${key}','1');this.parentNode.remove()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px">✕</button>`;
+      document.body.appendChild(bar);
+    }
+  }
+});
+</script>
 </body>
 </html>
