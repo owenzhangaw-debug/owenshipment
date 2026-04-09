@@ -6440,9 +6440,9 @@ function silentRestaggerAutoSlots(){
   return assigned;
 }
 const _startupRestagged = silentRestaggerAutoSlots();
-// If startup fixed any slots, push to cloud immediately so JSONBin doesn't hold stale data
+// If startup fixed any slots, push to cloud (deferred so JBIN constant is initialized first)
 if(_startupT1Fixed || _startupRestagged){
-  setTimeout(()=>pushToCloud(false), 1000);
+  setTimeout(()=>{ if(typeof pushToCloud==='function') pushToCloud(false); }, 3000);
 }
 
 // ── Migrate old Payment Status values ────────────────────────────
