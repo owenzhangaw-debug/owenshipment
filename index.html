@@ -7004,7 +7004,7 @@ async function connectSync(){
       const res=await fetch(JBIN,{
         method:'POST',
         headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'Owen Zhang'},
-        body:JSON.stringify({CT,VT,NOTICES})
+        body:JSON.stringify({CT,VT,NOTICES,REMINDERS})
       });
       if(!res.ok) throw new Error('Failed to create bin (HTTP '+res.status+'). Check your Master Key.');
       const data=await res.json();
@@ -7035,7 +7035,7 @@ async function pushToCloud(manual=false){
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,_ts:Date.now()})
+      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
@@ -7075,6 +7075,7 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.FB){ FB=rec.FB; localStorage.setItem(FB_KEY,JSON.stringify(FB)); }
     if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
+    if(rec&&Array.isArray(rec.REMINDERS)){ REMINDERS=rec.REMINDERS; _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); if(typeof remRender==='function') remRender(); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
     syncVTtoSOC(); // clean up SOC after cloud pull
     const _t1fixed = fixT1RuleViolations();
@@ -7826,7 +7827,7 @@ const REM_CATS={
 function remLoad(){
   try{ const s=localStorage.getItem(REM_KEY); if(s){ REMINDERS=JSON.parse(s); _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; } }catch(e){}
 }
-function remSave(){ try{ localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); }catch(e){} }
+function remSave(){ try{ localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 
 function remSetFilter(f){
   _remFilter=f;
