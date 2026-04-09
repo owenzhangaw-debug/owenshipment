@@ -5253,7 +5253,7 @@ function vtBulkDeleteContainers(id){
   const before=CT.length;
   CT=CT.filter(r=>!cns.includes(String(r['Container No.']||'').toUpperCase().trim()));
   const deleted=before-CT.length;
-  saveCT(); renderCT(); renderDashboard();
+  saveData(); renderCT(); renderDashboard();
   alert(`Deleted ${deleted} container${deleted!==1?'s':''} from the CT sheet.`);
 }
 
