@@ -5037,6 +5037,7 @@ function renderVT(){
           <input id="vt-cn-inp-${r._id}" type="text" placeholder="Container No. (e.g. MSCU1234567)"
             onkeydown="if(event.key==='Enter'){vtAddContainer(${r._id});event.preventDefault();}"/>
           <button onclick="vtAddContainer(${r._id})">+ Add</button>
+          ${cnCount?`<button onclick="vtBulkDeleteContainers(${r._id})" style="margin-left:8px;padding:4px 12px;font-size:12px;font-weight:600;background:#fff0f0;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer" title="Delete all ${cnCount} linked containers from CT sheet">🗑 Delete All from CT (${cnCount})</button>`:''}
         </div>
         ${(()=>{
           const hist=Array.isArray(r.vesselHistory)?r.vesselHistory:[];
@@ -5241,6 +5242,19 @@ function vtRemoveContainer(id, cn){
   if(!Array.isArray(VT[i].containers)) return;
   VT[i].containers=VT[i].containers.filter(c=>c!==cn);
   saveVT(); renderVT(); renderSOC(); renderDashboard();
+}
+
+function vtBulkDeleteContainers(id){
+  const vt=VT.find(r=>r._id===id); if(!vt) return;
+  const cns=Array.isArray(vt.containers)?vt.containers.map(c=>String(c).toUpperCase().trim()).filter(Boolean):[];
+  if(!cns.length){ alert('No containers linked to this vessel.'); return; }
+  const vessel=vt['Vessel Name']||vt['Vessel']||'this vessel';
+  if(!confirm(`Delete all ${cns.length} containers linked to "${vessel}" from the CT sheet?\n\nThis removes them from the Containers tab entirely. This cannot be undone.`)) return;
+  const before=CT.length;
+  CT=CT.filter(r=>!cns.includes(String(r['Container No.']||'').toUpperCase().trim()));
+  const deleted=before-CT.length;
+  saveCT(); renderCT(); renderDashboard();
+  alert(`Deleted ${deleted} container${deleted!==1?'s':''} from the CT sheet.`);
 }
 
 // ── SOC INVENTORY ────────────────────────────────────────────────
