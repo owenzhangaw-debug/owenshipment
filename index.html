@@ -2239,12 +2239,12 @@ function parseDate(s){
   return null;
 }
 function formatDate(d){
-  // Output: YYYY-M-D (dashes, no leading zeros)
+  // Output: YYYY/M/D (slashes, no leading zeros)
   if(!d||isNaN(d)) return '';
-  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+  return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();
 }
 function fmtDateStr(s){
-  // Normalize any stored date string → YYYY-M-D display
+  // Normalize any stored date string → YYYY/M/D display
   if(!s) return '';
   const d=parseDate(s); return d?formatDate(d):s;
 }
@@ -6694,8 +6694,8 @@ function seFormatSlotDate(slotStr){
   const parts = slotStr.trim().split(' ');
   const datePart = parts[0] || '';
   const timePart = parts[1] || '';
-  // Support both YYYY-M-D and YYYY/M/D separators
-  const sep = datePart.includes('-') ? '-' : '/';
+  // Support both YYYY/M/D and YYYY-M-D separators
+  const sep = datePart.includes('/') ? '/' : '-';
   const dp = datePart.split(sep);
   let monthDay = datePart;
   if(dp.length >= 3){
