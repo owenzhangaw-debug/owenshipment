@@ -1118,6 +1118,7 @@ td.editing .cell-edit{display:block}
         <button class="dash-cat-tab" onclick="switchDashCat('price',this)">💰 Price</button>
         <button class="dash-cat-tab" onclick="switchDashCat('vessel-fin',this)">🚢 Vessel $</button>
         <button class="dash-cat-tab" onclick="switchDashCat('qty',this)">📦 Quantity</button>
+        <button class="dash-cat-tab" onclick="switchDashCat('delays',this)">⚠️ Delays</button>
       </div>
 
       <!-- ── TIME ── -->
@@ -1298,6 +1299,54 @@ td.editing .cell-edit{display:block}
             <h3 onclick="toggleChart(this)">Slot Reschedules by Trucker<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">Number of slot changes caused by trucker or consignee</p>
             <div class="chart-wrap" style="height:260px"><canvas id="slot-change-trucker-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DELAYS ── -->
+      <div id="dash-cat-delays" class="dash-cat-section">
+        <!-- KPI summary row -->
+        <div id="delay-kpi-row" class="kpi-row" style="margin-bottom:16px"></div>
+        <!-- Late Arrivals by Batch -->
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Late Arrivals by Batch<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Containers where Actual Arrival was after Scheduled Slot — grouped by batch</p>
+            <div class="chart-wrap" style="height:320px"><canvas id="late-arrival-batch-chart"></canvas></div>
+          </div>
+        </div>
+        <!-- Deadline Exceeded by Batch -->
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Deadline Exceeded by Batch<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Containers that missed their deadline (arrived late or still pending past deadline)</p>
+            <div class="chart-wrap" style="height:320px"><canvas id="deadline-exceeded-batch-chart"></canvas></div>
+          </div>
+        </div>
+        <!-- Late by Trucker donut + Deadline by Consignee donut -->
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Late Arrivals by Trucker<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Which truckers have the most late deliveries</p>
+            <div class="chart-wrap" style="height:280px"><canvas id="late-arrival-trucker-chart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Deadline Exceeded by Consignee<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Which consignees had the most deadline misses</p>
+            <div class="chart-wrap" style="height:280px"><canvas id="deadline-consignee-chart"></canvas></div>
+          </div>
+        </div>
+        <!-- Detail table -->
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card" style="padding:16px 18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <h3 style="margin:0">📋 Delay Detail</h3>
+              <div style="display:flex;gap:8px">
+                <span id="delay-tbl-mode-late" onclick="delayTblMode='late';renderDelayTable()" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;cursor:pointer;background:#FEE2E2;color:#991B1B">Late Arrivals</span>
+                <span id="delay-tbl-mode-deadline" onclick="delayTblMode='deadline';renderDelayTable()" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;cursor:pointer;background:#f3f4f6;color:#6b7280">Deadline Exceeded</span>
+              </div>
+            </div>
+            <div id="delay-detail-table" style="overflow-x:auto;max-height:400px;overflow-y:auto"></div>
           </div>
         </div>
       </div>
@@ -2061,7 +2110,10 @@ let vtSortCol = 'ETS (Departure)', vtSortDir = -1; // default: latest ETS first
 let editId = null, delId = null;
 let importWB = null, importRows = [];
 let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null,
-    slotEtaTruckerBatchChart = null, slotChangeTruckerChart = null, hubT1BatchChart = null;
+    slotEtaTruckerBatchChart = null, slotChangeTruckerChart = null, hubT1BatchChart = null,
+    lateArrivalBatchChart = null, deadlineExceededBatchChart = null, lateArrivalTruckerChart = null, deadlineConsigneeChart = null;
+let delayTblMode = 'late';
+let _delayData = null;
 
 // ── PERSISTENCE ───────────────────────────────────────────────────
 function loadData(){
@@ -3479,6 +3531,202 @@ function renderDashboard(){
       }
     });
   }
+
+  // ── DELAYS TAB ────────────────────────────────────────────────
+  (()=>{
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Classify every container
+    const lateArr=[], deadlineExc=[];
+    CT.forEach(r=>{
+      const slot   = parseDate(r['Scheduled Slot']);
+      const actual = parseDate(r['Actual Arrival']);
+      const dl     = parseDate(r['Deadline']);
+      const batch  = r['Batch / Train']||'(No Batch)';
+      const trucker= r['Trucker']||'Unknown';
+      const cons   = r['Consignee']||'Unknown';
+      const cn     = r['Container No.']||'';
+
+      // Late arrival: arrived AND actual > slot
+      if(actual && slot && actual > slot){
+        const daysLate = Math.round((actual - slot) / 864e5);
+        lateArr.push({cn, batch, trucker, cons, slot, actual, daysLate});
+      }
+      // Deadline exceeded: (arrived && actual > dl) OR (not arrived && today > dl)
+      if(dl){
+        if(actual && actual > dl){
+          const over = Math.round((actual - dl) / 864e5);
+          deadlineExc.push({cn, batch, trucker, cons, dl, actual, over, pending:false});
+        } else if(!actual && today > dl){
+          const over = Math.round((today - dl) / 864e5);
+          deadlineExc.push({cn, batch, trucker, cons, dl, actual:null, over, pending:true});
+        }
+      }
+    });
+
+    _delayData = {lateArr, deadlineExc};
+
+    // KPI row
+    const kpiEl = document.getElementById('delay-kpi-row');
+    if(kpiEl){
+      const totalLate = lateArr.length;
+      const totalDL   = deadlineExc.length;
+      const pendingDL = deadlineExc.filter(r=>r.pending).length;
+      const avgLate   = totalLate ? (lateArr.reduce((s,r)=>s+r.daysLate,0)/totalLate).toFixed(1) : 0;
+      kpiEl.innerHTML = `
+        <div class="kpi-card"><div class="kpi-val" style="color:#dc2626">${totalLate}</div><div class="kpi-lbl">Late Arrivals</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:#dc2626">${totalDL}</div><div class="kpi-lbl">Deadline Exceeded</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:#f59e0b">${pendingDL}</div><div class="kpi-lbl">Pending Past Deadline</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:#7c3aed">${avgLate}d</div><div class="kpi-lbl">Avg Days Late</div></div>`;
+    }
+
+    // Helper: aggregate by key
+    const agg = (arr, key) => {
+      const m={};
+      arr.forEach(r=>{ m[r[key]]=(m[r[key]]||0)+1; });
+      return m;
+    };
+
+    const _bkSort = n => { const m=String(n).match(/(\d{1,2})\/(\d{1,2})/); if(!m) return '9999/99/99'; const mo=+m[1],dy=+m[2],yr=mo>=10?2025:2026; return `${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`; };
+
+    // Chart 1: Late Arrivals by Batch
+    const lateBatch = agg(lateArr,'batch');
+    const lbKeys = Object.keys(lateBatch).sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
+    if(lateArrivalBatchChart){ lateArrivalBatchChart.destroy(); lateArrivalBatchChart=null; }
+    const lbEl = document.getElementById('late-arrival-batch-chart');
+    if(lbEl){
+      if(!lbKeys.length){
+        const ctx2=lbEl.getContext('2d'); ctx2.clearRect(0,0,lbEl.width,lbEl.height);
+        ctx2.font='13px sans-serif'; ctx2.fillStyle='#94a3b8'; ctx2.textAlign='center';
+        ctx2.fillText('No late arrivals — great job!', lbEl.width/2, lbEl.height/2);
+      } else {
+        lateArrivalBatchChart = new Chart(lbEl,{
+          type:'bar',
+          data:{ labels:lbKeys, datasets:[{
+            label:'Late Arrivals', data:lbKeys.map(k=>lateBatch[k]),
+            backgroundColor:'#ef4444', borderRadius:5
+          }]},
+          options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+            layout:{padding:{right:35}},
+            plugins:{ legend:{display:false},
+              datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#991b1b',formatter:v=>v,clamp:true},
+              tooltip:{callbacks:{label:ctx=>`${ctx.raw} container${ctx.raw!==1?'s':''} arrived late`}}
+            },
+            scales:{ x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.06)'},ticks:{stepSize:1}}, y:{grid:{display:false}} }
+          }
+        });
+      }
+    }
+
+    // Chart 2: Deadline Exceeded by Batch
+    const dlBatch = agg(deadlineExc,'batch');
+    const dbKeys = Object.keys(dlBatch).sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
+    if(deadlineExceededBatchChart){ deadlineExceededBatchChart.destroy(); deadlineExceededBatchChart=null; }
+    const dbEl = document.getElementById('deadline-exceeded-batch-chart');
+    if(dbEl){
+      if(!dbKeys.length){
+        const ctx2=dbEl.getContext('2d'); ctx2.clearRect(0,0,dbEl.width,dbEl.height);
+        ctx2.font='13px sans-serif'; ctx2.fillStyle='#94a3b8'; ctx2.textAlign='center';
+        ctx2.fillText('No deadlines exceeded!', dbEl.width/2, dbEl.height/2);
+      } else {
+        // Split pending vs arrived-late for stacked bar
+        const arrivedLate={}, pendingLate={};
+        deadlineExc.forEach(r=>{
+          if(r.pending) pendingLate[r.batch]=(pendingLate[r.batch]||0)+1;
+          else          arrivedLate[r.batch]=(arrivedLate[r.batch]||0)+1;
+        });
+        deadlineExceededBatchChart = new Chart(dbEl,{
+          type:'bar',
+          data:{ labels:dbKeys, datasets:[
+            { label:'Arrived Late', data:dbKeys.map(k=>arrivedLate[k]||0), backgroundColor:'#dc2626', borderRadius:0 },
+            { label:'Pending (overdue)', data:dbKeys.map(k=>pendingLate[k]||0), backgroundColor:'#f97316', borderRadius:5 }
+          ]},
+          options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+            layout:{padding:{right:35}},
+            plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
+              datalabels:{display:false},
+              tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw}`}}
+            },
+            scales:{ x:{beginAtZero:true,stacked:true,grid:{color:'rgba(0,0,0,.06)'}}, y:{stacked:true,grid:{display:false}} }
+          }
+        });
+      }
+    }
+
+    // Chart 3: Late Arrivals by Trucker (donut)
+    const lateTrucker = agg(lateArr,'trucker');
+    const ltKeys = Object.keys(lateTrucker).sort((a,b)=>lateTrucker[b]-lateTrucker[a]);
+    if(lateArrivalTruckerChart){ lateArrivalTruckerChart.destroy(); lateArrivalTruckerChart=null; }
+    const ltEl = document.getElementById('late-arrival-trucker-chart');
+    if(ltEl && ltKeys.length){
+      const palette=['#ef4444','#f97316','#f59e0b','#84cc16','#22d3ee','#6366f1','#a855f7','#ec4899'];
+      lateArrivalTruckerChart = new Chart(ltEl,{
+        type:'doughnut',
+        data:{ labels:ltKeys, datasets:[{ data:ltKeys.map(k=>lateTrucker[k]),
+          backgroundColor:ltKeys.map((_,i)=>palette[i%palette.length]),
+          borderWidth:2, borderColor:'#fff', hoverOffset:8 }]},
+        options:{ responsive:true, maintainAspectRatio:false, cutout:'55%',
+          plugins:{ legend:{position:'bottom',labels:{font:{size:11},padding:6,boxWidth:12}},
+            datalabels:{display:true,formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((v/t)*100).toFixed(0);return p>8?p+'%':'';},font:{size:11,weight:'700'},color:'#fff'},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} late`}}
+          }
+        }
+      });
+    }
+
+    // Chart 4: Deadline Exceeded by Consignee (donut)
+    const dlCons = agg(deadlineExc,'cons');
+    const dcKeys = Object.keys(dlCons).sort((a,b)=>dlCons[b]-dlCons[a]);
+    if(deadlineConsigneeChart){ deadlineConsigneeChart.destroy(); deadlineConsigneeChart=null; }
+    const dcEl = document.getElementById('deadline-consignee-chart');
+    if(dcEl && dcKeys.length){
+      const palette2=['#dc2626','#ea580c','#d97706','#65a30d','#0891b2','#4f46e5','#9333ea','#db2777'];
+      deadlineConsigneeChart = new Chart(dcEl,{
+        type:'doughnut',
+        data:{ labels:dcKeys, datasets:[{ data:dcKeys.map(k=>dlCons[k]),
+          backgroundColor:dcKeys.map((_,i)=>palette2[i%palette2.length]),
+          borderWidth:2, borderColor:'#fff', hoverOffset:8 }]},
+        options:{ responsive:true, maintainAspectRatio:false, cutout:'55%',
+          plugins:{ legend:{position:'bottom',labels:{font:{size:11},padding:6,boxWidth:12}},
+            datalabels:{display:true,formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((v/t)*100).toFixed(0);return p>8?p+'%':'';},font:{size:11,weight:'700'},color:'#fff'},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} exceeded`}}
+          }
+        }
+      });
+    }
+
+    // Render detail table (default: late arrivals)
+    renderDelayTable();
+  })();
+}
+
+function renderDelayTable(){
+  const el = document.getElementById('delay-detail-table'); if(!el) return;
+  const mode = delayTblMode||'late';
+  // Toggle button highlight
+  const btnLate = document.getElementById('delay-tbl-mode-late');
+  const btnDL   = document.getElementById('delay-tbl-mode-deadline');
+  if(btnLate){ btnLate.style.background=mode==='late'?'#FEE2E2':'#f3f4f6'; btnLate.style.color=mode==='late'?'#991B1B':'#6b7280'; }
+  if(btnDL)  { btnDL.style.background=mode==='deadline'?'#FEE2E2':'#f3f4f6'; btnDL.style.color=mode==='deadline'?'#991B1B':'#6b7280'; }
+  if(!_delayData){ el.innerHTML='<p style="color:#94a3b8;font-size:12px;padding:8px">No data yet.</p>'; return; }
+
+  const fmt = d => d ? `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}` : '—';
+  const rows = mode==='late' ? _delayData.lateArr : _delayData.deadlineExc;
+  if(!rows.length){ el.innerHTML='<p style="color:#16a34a;font-size:13px;padding:12px">✅ None!</p>'; return; }
+
+  const sorted = [...rows].sort((a,b)=>b.daysLate!==undefined?b.daysLate-a.daysLate:b.over-a.over);
+  const th = (t,w='') => `<th style="padding:6px 10px;font-size:11px;white-space:nowrap;${w}">${t}</th>`;
+  const td = (t,s='') => `<td style="padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;${s}">${t}</td>`;
+  const hdrs = mode==='late'
+    ? [th('Container'),th('Batch'),th('Trucker'),th('Slot'),th('Actual'),th('Days Late')]
+    : [th('Container'),th('Batch'),th('Consignee'),th('Deadline'),th('Arrived / Status'),th('Days Over')];
+
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:#f8fafc">${hdrs.join('')}</tr></thead>
+    <tbody>${sorted.map(r=> mode==='late'
+      ? `<tr>${td(r.cn,'font-weight:600')}${td(r.batch)}${td(r.trucker)}${td(fmt(r.slot))}${td(fmt(r.actual))}${td('+'+r.daysLate+'d','color:#dc2626;font-weight:700')}</tr>`
+      : `<tr>${td(r.cn,'font-weight:600')}${td(r.batch)}${td(r.cons)}${td(fmt(r.dl))}${td(r.pending?'<span style="color:#f97316;font-weight:600">Pending</span>':fmt(r.actual))}${td('+'+r.over+'d','color:#dc2626;font-weight:700')}</tr>`
+    ).join('')}</tbody></table>`;
 }
 
 function applyMalaHubById(id){ applyMalaHub(id); renderDashboard(); }
@@ -5037,7 +5285,7 @@ function renderVT(){
           <input id="vt-cn-inp-${r._id}" type="text" placeholder="Container No. (e.g. MSCU1234567)"
             onkeydown="if(event.key==='Enter'){vtAddContainer(${r._id});event.preventDefault();}"/>
           <button onclick="vtAddContainer(${r._id})">+ Add</button>
-          ${cnCount?`<button onclick="vtBulkDeleteContainers(${r._id})" style="margin-left:8px;padding:4px 12px;font-size:12px;font-weight:600;background:#fff0f0;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer" title="Delete all ${cnCount} linked containers from CT sheet">🗑 Delete All from CT (${cnCount})</button>`:''}
+          ${cnCount?`<button onclick="vtBulkDeleteContainers(${r._id})" style="margin-left:8px;padding:4px 12px;font-size:12px;font-weight:600;background:#fff0f0;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer" title="Unlink all ${cnCount} containers from this vessel (does NOT delete from CT sheet)">🗑 Unlink All from Vessel (${cnCount})</button>`:''}
         </div>
         ${(()=>{
           const hist=Array.isArray(r.vesselHistory)?r.vesselHistory:[];
@@ -5245,16 +5493,15 @@ function vtRemoveContainer(id, cn){
 }
 
 function vtBulkDeleteContainers(id){
-  const vt=VT.find(r=>r._id===id); if(!vt) return;
+  const i=VT.findIndex(r=>r._id===id); if(i<0) return;
+  const vt=VT[i];
   const cns=Array.isArray(vt.containers)?vt.containers.map(c=>String(c).toUpperCase().trim()).filter(Boolean):[];
   if(!cns.length){ alert('No containers linked to this vessel.'); return; }
   const vessel=vt['Vessel Name']||vt['Vessel']||'this vessel';
-  if(!confirm(`Delete all ${cns.length} containers linked to "${vessel}" from the CT sheet?\n\nThis removes them from the Containers tab entirely. This cannot be undone.`)) return;
-  const before=CT.length;
-  CT=CT.filter(r=>!cns.includes(String(r['Container No.']||'').toUpperCase().trim()));
-  const deleted=before-CT.length;
-  saveData(); renderCT(); renderDashboard();
-  alert(`Deleted ${deleted} container${deleted!==1?'s':''} from the CT sheet.`);
+  if(!confirm(`Remove all ${cns.length} containers from the vessel "${vessel}"?\n\nThis only unlinks them from this vessel — the containers remain in the CT sheet.`)) return;
+  VT[i].containers=[];
+  saveVT(); renderVT(); renderSOC();
+  alert(`Removed ${cns.length} container${cns.length!==1?'s':''} from the vessel list.`);
 }
 
 // ── SOC INVENTORY ────────────────────────────────────────────────
@@ -6052,15 +6299,18 @@ const COL_MAP={
   'batch':'Batch / Train','batch / train':'Batch / Train','batch/train':'Batch / Train',
   'container no':'Container No.','container no.':'Container No.','container number':'Container No.','container':'Container No.',
   'master b/l':'Master B/L','mbl':'Master B/L','b/l':'Master B/L','master bl':'Master B/L',
-  'consignee':'Consignee','trucker':'Trucker','carrier':'Trucker',
-  'eta at hub':'ETA at Hub','eta':'ETA at Hub',
+  'consignee':'Consignee','trucker':'Trucker','carrier':'Trucker','broker':'Broker',
+  'eta in mala':'ETA in Mala','eta mala':'ETA in Mala',
+  'eta at hub':'ETA at Hub','eta hub':'ETA at Hub','eta':'ETA at Hub',
+  't1 date':'T1 Date','t1':'T1 Date',
   'scheduled slot':'Scheduled Slot','slot':'Scheduled Slot',
   'actual arrival':'Actual Arrival','arrival':'Actual Arrival',
   'deadline':'Deadline','cmr':'CMR','tracking':'Tracking',
   'pickup ref':'Pickup Ref','ref':'Pickup Ref',
+  'surcharge':'Surcharge','price':'Price','remark':'Remark',
 };
-const IMP_FIELDS=['Batch / Train','Container No.','Master B/L','Consignee','Trucker',
-  'ETA at Hub','Scheduled Slot','Actual Arrival','Deadline','CMR','Tracking','Pickup Ref'];
+const IMP_FIELDS=['Batch / Train','Container No.','Master B/L','Consignee','Trucker','Broker',
+  'ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Deadline','CMR','Tracking','Pickup Ref','Surcharge','Price','Remark'];
 
 function openImport(){ importWB=null; importRows=[];
   ['imp-sheet','imp-mapinfo','imp-preview-wrap','imp-opts','imp-ok','imp-err'].forEach(id=>document.getElementById(id).style.display='none');
