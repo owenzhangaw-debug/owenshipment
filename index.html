@@ -3268,7 +3268,7 @@ function renderDashboard(){
   const badSlotBadge=document.getElementById('badslot-alert-badge');
   const badSlotCard=document.getElementById('badslot-alert-card');
   if(badSlotEl&&badSlotBadge){
-    const badSlots=CT.filter(r=>r['Scheduled Slot']&&r['ETA at Hub']&&r['Tracking']!=='Arrived'&&slotViolatesT1Rule(r['Scheduled Slot'],r['ETA at Hub']));
+    const badSlots=CT.filter(r=>r['Scheduled Slot']&&r['ETA at Hub']&&!r['Actual Arrival']&&r['Tracking']!=='Arrived'&&slotViolatesT1Rule(r['Scheduled Slot'],r['ETA at Hub']));
     if(!badSlots.length){
       if(badSlotCard) badSlotCard.style.display='none'; // hide when all OK
     } else {
@@ -4388,7 +4388,7 @@ function renderCT(){
     </td>`;
     const slotV=r['Scheduled Slot']||'';
     const slotIsAuto = !!r._slotAuto;
-    const _slotBad = slotV && r['ETA at Hub'] && slotViolatesT1Rule(slotV, r['ETA at Hub']);
+    const _slotBad = slotV && r['ETA at Hub'] && !r['Actual Arrival'] && slotViolatesT1Rule(slotV, r['ETA at Hub']);
     const _earliestSugg = _slotBad ? calcEarliestSlot(r['ETA at Hub']) : null;
     const slotDisplay = slotV
       ? (_slotBad
@@ -4772,8 +4772,8 @@ function commitEdit(inp, col, id){
     delete CT[i]._slotAuto;
     CT[i]['Scheduled Slot'] = '';
   }
-  // T1 Rule: warn only — do NOT override manually entered slot
-  if(col==='Scheduled Slot' && val && CT[i]['ETA at Hub'] && slotViolatesT1Rule(val, CT[i]['ETA at Hub'])){
+  // T1 Rule: warn only — do NOT override manually entered slot; skip if already arrived
+  if(col==='Scheduled Slot' && val && CT[i]['ETA at Hub'] && !CT[i]['Actual Arrival'] && slotViolatesT1Rule(val, CT[i]['ETA at Hub'])){
     showToast('⚠ Slot may be too early relative to ETA at Hub');
   }
   CT[i][col]=val;
@@ -6034,8 +6034,8 @@ function saveRow(){
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
-  // T1 Rule: warn only — do NOT override manually entered slot
-  const _slotWarn = u['Scheduled Slot'] && u['ETA at Hub'] && slotViolatesT1Rule(u['Scheduled Slot'], u['ETA at Hub']);
+  // T1 Rule: warn only — do NOT override manually entered slot; skip if already arrived
+  const _slotWarn = u['Scheduled Slot'] && u['ETA at Hub'] && !u['Actual Arrival'] && slotViolatesT1Rule(u['Scheduled Slot'], u['ETA at Hub']);
   if(editId){ const i=CT.findIndex(x=>x._id===editId); if(i>=0){ CT[i]={...CT[i],...u}; if(u['Scheduled Slot']) delete CT[i]._slotAuto; } }
   else { u._id=nextId++; CT.push(u); }
   if(_slotWarn){ showToast('⚠ Slot may be too early relative to ETA at Hub'); }
