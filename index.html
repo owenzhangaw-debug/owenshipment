@@ -1315,25 +1315,20 @@ td.editing .cell-edit{display:block}
             <div class="chart-wrap" style="height:320px"><canvas id="late-arrival-batch-chart"></canvas></div>
           </div>
         </div>
-        <!-- Deadline Exceeded by Batch -->
+        <!-- Deadline Exceeded by Batch (custom HTML with reason inputs) -->
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Deadline Exceeded by Batch<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Containers that missed their deadline (arrived late or still pending past deadline)</p>
-            <div class="chart-wrap" style="height:320px"><canvas id="deadline-exceeded-batch-chart"></canvas></div>
+          <div class="chart-card" style="padding:16px 18px">
+            <h3 style="margin:0 0 4px">Deadline Exceeded by Batch</h3>
+            <p class="chart-subtitle" style="margin:0 0 14px">Containers that missed their deadline — add a reason for each batch</p>
+            <div id="deadline-exceeded-batch-chart"></div>
           </div>
         </div>
-        <!-- Late by Trucker donut + Deadline by Consignee donut -->
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
+        <!-- Late by Trucker donut -->
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Late Arrivals by Trucker<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Which truckers have the most late deliveries</p>
+            <p class="chart-subtitle">Click a slice to jump to those containers in the tracker</p>
             <div class="chart-wrap" style="height:280px"><canvas id="late-arrival-trucker-chart"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Deadline Exceeded by Consignee<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Which consignees had the most deadline misses</p>
-            <div class="chart-wrap" style="height:280px"><canvas id="deadline-consignee-chart"></canvas></div>
           </div>
         </div>
         <!-- Detail table -->
@@ -2111,9 +2106,12 @@ let editId = null, delId = null;
 let importWB = null, importRows = [];
 let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null,
     slotEtaTruckerBatchChart = null, slotChangeTruckerChart = null, hubT1BatchChart = null,
-    lateArrivalBatchChart = null, deadlineExceededBatchChart = null, lateArrivalTruckerChart = null, deadlineConsigneeChart = null;
+    lateArrivalBatchChart = null, lateArrivalTruckerChart = null;
 let delayTblMode = 'late';
 let _delayData = null;
+const _DL_REASON_KEY = 'owenz_dl_reasons_v1';
+let _dlReasons = (()=>{ try{ return JSON.parse(localStorage.getItem(_DL_REASON_KEY)||'{}'); }catch(e){ return {}; } })();
+function _saveDlReason(batch, val){ _dlReasons[batch]=val; localStorage.setItem(_DL_REASON_KEY, JSON.stringify(_dlReasons)); }
 
 // ── PERSISTENCE ───────────────────────────────────────────────────
 function loadData(){
@@ -3618,42 +3616,50 @@ function renderDashboard(){
       }
     }
 
-    // Chart 2: Deadline Exceeded by Batch
+    // Chart 2: Deadline Exceeded by Batch — custom HTML bars with reason inputs
     const dlBatch = agg(deadlineExc,'batch');
     const dbKeys = Object.keys(dlBatch).sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
-    if(deadlineExceededBatchChart){ deadlineExceededBatchChart.destroy(); deadlineExceededBatchChart=null; }
     const dbEl = document.getElementById('deadline-exceeded-batch-chart');
     if(dbEl){
       if(!dbKeys.length){
-        const ctx2=dbEl.getContext('2d'); ctx2.clearRect(0,0,dbEl.width,dbEl.height);
-        ctx2.font='13px sans-serif'; ctx2.fillStyle='#94a3b8'; ctx2.textAlign='center';
-        ctx2.fillText('No deadlines exceeded!', dbEl.width/2, dbEl.height/2);
+        dbEl.innerHTML='<p style="color:#16a34a;font-size:13px;padding:8px 0">✅ No deadlines exceeded!</p>';
       } else {
-        // Split pending vs arrived-late for stacked bar
         const arrivedLate={}, pendingLate={};
         deadlineExc.forEach(r=>{
           if(r.pending) pendingLate[r.batch]=(pendingLate[r.batch]||0)+1;
           else          arrivedLate[r.batch]=(arrivedLate[r.batch]||0)+1;
         });
-        deadlineExceededBatchChart = new Chart(dbEl,{
-          type:'bar',
-          data:{ labels:dbKeys, datasets:[
-            { label:'Arrived Late', data:dbKeys.map(k=>arrivedLate[k]||0), backgroundColor:'#dc2626', borderRadius:0 },
-            { label:'Pending (overdue)', data:dbKeys.map(k=>pendingLate[k]||0), backgroundColor:'#f97316', borderRadius:5 }
-          ]},
-          options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
-            layout:{padding:{right:35}},
-            plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
-              datalabels:{display:false},
-              tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw}`}}
-            },
-            scales:{ x:{beginAtZero:true,stacked:true,grid:{color:'rgba(0,0,0,.06)'}}, y:{stacked:true,grid:{display:false}} }
-          }
-        });
+        const maxCount = Math.max(...dbKeys.map(k=>dlBatch[k]));
+        dbEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">
+          ${dbKeys.map(k=>{
+            const total=dlBatch[k], al=arrivedLate[k]||0, pl=pendingLate[k]||0;
+            const alPct=Math.round(al/maxCount*100), plPct=Math.round(pl/maxCount*100);
+            const reason=_dlReasons[k]||'';
+            const kEsc=k.replace(/'/g,"\\'");
+            return `<div style="display:grid;grid-template-columns:120px 1fr 200px;gap:10px;align-items:center">
+              <span style="font-size:12px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${k}">${k}</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="flex:1;height:20px;background:#f3f4f6;border-radius:4px;overflow:hidden;display:flex">
+                  ${al?`<div style="width:${alPct}%;background:#dc2626;height:100%;transition:width .3s" title="${al} arrived late"></div>`:''}
+                  ${pl?`<div style="width:${plPct}%;background:#f97316;height:100%;transition:width .3s" title="${pl} pending overdue"></div>`:''}
+                </div>
+                <span style="font-size:11px;font-weight:700;color:#dc2626;min-width:28px">${total}</span>
+              </div>
+              <input type="text" value="${reason.replace(/"/g,'&quot;')}" placeholder="Add reason…"
+                onchange="_saveDlReason('${kEsc}',this.value)"
+                style="font-size:11px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:6px;outline:none;width:100%;box-sizing:border-box;color:#374151"
+                onfocus="this.style.borderColor='#1A7A8A'" onblur="this.style.borderColor='#e5e7eb'"/>
+            </div>`;
+          }).join('')}
+          <div style="display:flex;gap:16px;margin-top:4px;padding-top:8px;border-top:1px solid #f0f0f0">
+            <span style="font-size:11px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px"></span>Arrived late</span>
+            <span style="font-size:11px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;background:#f97316;border-radius:2px"></span>Pending / overdue</span>
+          </div>
+        </div>`;
       }
     }
 
-    // Chart 3: Late Arrivals by Trucker (donut)
+    // Chart 3: Late Arrivals by Trucker (donut) — click to jump to containers
     const lateTrucker = agg(lateArr,'trucker');
     const ltKeys = Object.keys(lateTrucker).sort((a,b)=>lateTrucker[b]-lateTrucker[a]);
     if(lateArrivalTruckerChart){ lateArrivalTruckerChart.destroy(); lateArrivalTruckerChart=null; }
@@ -3666,33 +3672,27 @@ function renderDashboard(){
           backgroundColor:ltKeys.map((_,i)=>palette[i%palette.length]),
           borderWidth:2, borderColor:'#fff', hoverOffset:8 }]},
         options:{ responsive:true, maintainAspectRatio:false, cutout:'55%',
+          onClick:(evt,els)=>{
+            if(!els.length) return;
+            const trucker = ltKeys[els[0].index];
+            // Get all container numbers that are late AND match this trucker
+            const lateCNs = (_delayData&&_delayData.lateArr||[]).filter(r=>r.trucker===trucker).map(r=>r.cn);
+            if(!lateCNs.length) return;
+            resetFilters();
+            msSetValues('trucker',[trucker],trucker);
+            // Use search box to highlight only the late ones via comma-separated list
+            const searchEl = document.getElementById('ct-search');
+            if(searchEl){ searchEl.value = lateCNs.join(','); }
+            showPage('containers');
+            renderCT();
+          },
           plugins:{ legend:{position:'bottom',labels:{font:{size:11},padding:6,boxWidth:12}},
             datalabels:{display:true,formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((v/t)*100).toFixed(0);return p>8?p+'%':'';},font:{size:11,weight:'700'},color:'#fff'},
-            tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} late`}}
+            tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} late — click to view`}}
           }
         }
       });
-    }
-
-    // Chart 4: Deadline Exceeded by Consignee (donut)
-    const dlCons = agg(deadlineExc,'cons');
-    const dcKeys = Object.keys(dlCons).sort((a,b)=>dlCons[b]-dlCons[a]);
-    if(deadlineConsigneeChart){ deadlineConsigneeChart.destroy(); deadlineConsigneeChart=null; }
-    const dcEl = document.getElementById('deadline-consignee-chart');
-    if(dcEl && dcKeys.length){
-      const palette2=['#dc2626','#ea580c','#d97706','#65a30d','#0891b2','#4f46e5','#9333ea','#db2777'];
-      deadlineConsigneeChart = new Chart(dcEl,{
-        type:'doughnut',
-        data:{ labels:dcKeys, datasets:[{ data:dcKeys.map(k=>dlCons[k]),
-          backgroundColor:dcKeys.map((_,i)=>palette2[i%palette2.length]),
-          borderWidth:2, borderColor:'#fff', hoverOffset:8 }]},
-        options:{ responsive:true, maintainAspectRatio:false, cutout:'55%',
-          plugins:{ legend:{position:'bottom',labels:{font:{size:11},padding:6,boxWidth:12}},
-            datalabels:{display:true,formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((v/t)*100).toFixed(0);return p>8?p+'%':'';},font:{size:11,weight:'700'},color:'#fff'},
-            tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} exceeded`}}
-          }
-        }
-      });
+      ltEl.style.cursor='pointer';
     }
 
     // Render detail table (default: late arrivals)
