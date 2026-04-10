@@ -2111,7 +2111,7 @@ let delayTblMode = 'late';
 let _delayData = null;
 const _DL_REASON_KEY = 'owenz_dl_reasons_v1';
 let _dlReasons = (()=>{ try{ return JSON.parse(localStorage.getItem(_DL_REASON_KEY)||'{}'); }catch(e){ return {}; } })();
-function _saveDlReason(batch, val){ _dlReasons[batch]=val; localStorage.setItem(_DL_REASON_KEY, JSON.stringify(_dlReasons)); }
+function _saveDlReason(batch, val){ _dlReasons[batch]=val; localStorage.setItem(_DL_REASON_KEY, JSON.stringify(_dlReasons)); cloudAutoSave(); }
 
 // ── PERSISTENCE ───────────────────────────────────────────────────
 function loadData(){
