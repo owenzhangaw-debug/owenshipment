@@ -1026,6 +1026,46 @@ nav button.active {
 .nav-action:hover { color: rgba(255,255,255,.95); background: rgba(255,255,255,.07); }
 .nav-fx { display: flex; align-items: stretch; position: relative; }
 
+/* Tools dropdown */
+.nav-tools-wrap { position: relative; display: flex; align-items: stretch; }
+.nav-tools-btn { font-size: 12px !important; font-weight: 700 !important; letter-spacing: .1px; }
+.nav-tools-btn.open { color: #fff !important; background: rgba(255,255,255,.12) !important; }
+.nav-tools-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 200px;
+  background: #1a3433;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.45);
+  z-index: 9999;
+  backdrop-filter: blur(8px);
+}
+.nav-tools-panel.open { display: block; }
+.nav-tools-panel > button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.8);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 9px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s, color .12s;
+  gap: 8px;
+}
+.nav-tools-panel > button:hover { background: rgba(255,255,255,.1); color: #fff; }
+.nav-fx-inline { padding: 4px 8px 6px; }
+.nav-fx-inline .fx-input-row { margin-bottom: 8px; }
+.nav-fx-inline .fx-input { background: rgba(255,255,255,.08); }
+
 /* ── Main content ── */
 main { padding: 22px 26px; }
 
@@ -1224,30 +1264,33 @@ select:focus, input:focus {
     <button onclick="showPage('vessels')">Vessels</button>
     <button onclick="showPage('feedback')">⭐ Feedback</button>
     <span class="nav-divider"></span>
-    <button class="nav-action" onclick="openBulk()">⊞ Bulk</button>
-    <button class="nav-action" onclick="openImport()">↑ Import</button>
-    <button class="nav-action" onclick="exportCSV()">↓ Export</button>
-    <button class="nav-action" onclick="autoGenerateSlots()" title="Auto-assign time slots from ETA">⚡ Auto Slots</button>
-    <button class="nav-action" onclick="openSlotEmails()" title="Generate slot booking emails">📧 Slot Emails</button>
-    <button class="nav-action" id="sync-btn" onclick="openSync()" title="Cloud Sync">☁ Sync</button>
-    <div class="fx-wrap nav-fx" id="fx-wrap">
-      <button class="nav-action fx-trigger" onclick="toggleFX()" title="Currency Converter">💱 FX</button>
-      <div class="fx-panel" id="fx-panel">
-        <div class="fx-panel-title">💱 Currency Converter</div>
-        <div class="fx-rates-row" id="fx-rates-row">
-          <span style="font-size:11px;color:rgba(255,255,255,.5)">Loading rates…</span>
+    <!-- Tools dropdown -->
+    <div class="nav-tools-wrap" id="nav-tools-wrap">
+      <button class="nav-action nav-tools-btn" onclick="toggleNavTools()" id="nav-tools-btn">⚙ Tools ▾</button>
+      <div class="nav-tools-panel" id="nav-tools-panel">
+        <button onclick="openBulk();closeNavTools()">⊞ Bulk Add</button>
+        <button onclick="openImport();closeNavTools()">↑ Import Excel</button>
+        <button onclick="exportCSV();closeNavTools()">↓ Export CSV</button>
+        <button onclick="autoGenerateSlots();closeNavTools()">⚡ Auto Slots</button>
+        <button onclick="openSlotEmails();closeNavTools()">📧 Slot Emails</button>
+        <button id="sync-btn" onclick="openSync();closeNavTools()">☁ Sync</button>
+        <div style="height:1px;background:rgba(255,255,255,.1);margin:4px 0"></div>
+        <!-- FX inline in panel -->
+        <div class="nav-fx-inline">
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px">💱 Currency Converter</div>
+          <div class="fx-rates-row" id="fx-rates-row"><span style="font-size:11px;color:rgba(255,255,255,.5)">Loading rates…</span></div>
+          <div class="fx-input-row">
+            <input id="fx-amount" type="number" class="fx-input" placeholder="Enter amount…" oninput="fxConvert()" />
+            <select id="fx-base" class="fx-sel" onchange="fxConvert()">
+              <option value="USD">USD $</option>
+              <option value="EUR">EUR €</option>
+              <option value="CNY">CNY ¥</option>
+            </select>
+          </div>
+          <div class="fx-result" id="fx-result"></div>
+          <div class="fx-totals" id="fx-totals"></div>
+          <div class="fx-updated" id="fx-updated"></div>
         </div>
-        <div class="fx-input-row">
-          <input id="fx-amount" type="number" class="fx-input" placeholder="Enter amount…" oninput="fxConvert()" />
-          <select id="fx-base" class="fx-sel" onchange="fxConvert()">
-            <option value="USD">USD $</option>
-            <option value="EUR">EUR €</option>
-            <option value="CNY">CNY ¥</option>
-          </select>
-        </div>
-        <div class="fx-result" id="fx-result"></div>
-        <div class="fx-totals" id="fx-totals"></div>
-        <div class="fx-updated" id="fx-updated"></div>
       </div>
     </div>
     <input type="file" id="xl-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)"/>
@@ -6818,16 +6861,28 @@ function fxRenderTotals(){
 }
 
 function toggleFX(){
-  const panel=document.getElementById('fx-panel');
+  // FX is now inside the tools panel — just open tools panel
+  toggleNavTools();
+}
+function toggleNavTools(){
+  const panel=document.getElementById('nav-tools-panel');
+  const btn=document.getElementById('nav-tools-btn');
   if(!panel) return;
   const opening=!panel.classList.contains('open');
   panel.classList.toggle('open');
+  if(btn) btn.classList.toggle('open', opening);
   if(opening){ if(!_fxLoaded) fxFetchRates(); else { fxRenderRates(); fxRenderTotals(); } }
 }
-// Close FX panel when clicking outside
+function closeNavTools(){
+  const panel=document.getElementById('nav-tools-panel');
+  const btn=document.getElementById('nav-tools-btn');
+  if(panel) panel.classList.remove('open');
+  if(btn) btn.classList.remove('open');
+}
+// Close tools panel when clicking outside
 document.addEventListener('click',e=>{
-  const wrap=document.getElementById('fx-wrap');
-  if(wrap&&!wrap.contains(e.target)) document.getElementById('fx-panel')?.classList.remove('open');
+  const wrap=document.getElementById('nav-tools-wrap');
+  if(wrap&&!wrap.contains(e.target)) closeNavTools();
 });
 
 loadData();
