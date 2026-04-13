@@ -334,40 +334,46 @@ td.editing .cell-edit{display:block}
   border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap}
 .vt-hist-add button:hover{opacity:.85}
 /* ── Reminder Widget ── */
-.rem-wrap{background:#fffdf0;border:1.5px solid #fde68a;border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.rem-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:#fffbeb;border-bottom:1.5px solid #fde68a;cursor:pointer;user-select:none}
-.rem-header-title{font-size:14px;font-weight:700;color:#92400e;flex:1}
-.rem-badge{background:#f59e0b;color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;min-width:18px;text-align:center}
-.rem-body{padding:10px 14px 12px}
-.rem-input-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.rem-input{flex:1;min-width:180px;padding:7px 11px;border:1.5px solid #fde68a;border-radius:8px;font-size:13px;background:#fff;outline:none;transition:border-color .15s}
-.rem-input:focus{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.15)}
-.rem-cat-sel{padding:7px 10px;border:1.5px solid #fde68a;border-radius:8px;font-size:12px;font-weight:600;background:#fff;color:#374151;cursor:pointer;outline:none}
-.rem-add-btn{padding:7px 14px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s}
-.rem-add-btn:hover{background:#d97706}
-.rem-filter-bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-.rem-ftab{font-size:11px;font-weight:600;padding:3px 11px;border:1.5px solid #e2e8f0;border-radius:20px;background:#fff;color:#64748b;cursor:pointer;transition:all .15s;white-space:nowrap}
-.rem-ftab:hover{border-color:#f59e0b;color:#92400e}
-.rem-ftab.active{background:#f59e0b;color:#fff;border-color:#f59e0b}
-.rem-list{display:flex;flex-direction:column;gap:5px}
-.rem-item{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;background:#fff;border-left:3px solid #fde68a;border-radius:0 8px 8px 0;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:opacity .2s}
-.rem-item.done{opacity:.5;border-left-color:#e5e7eb;background:#f9fafb}
+.rem-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.rem-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#004D4C;cursor:pointer;user-select:none}
+.rem-header-title{font-size:12px;font-weight:700;color:#fff;letter-spacing:.6px;text-transform:uppercase;flex:1}
+.rem-badge{background:#f59e0b;color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;min-width:20px;text-align:center}
+.rem-body{padding:12px 14px 14px}
+.rem-input-row{display:flex;gap:7px;margin-bottom:10px}
+.rem-input{flex:1;min-width:0;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#f8fafc;outline:none;transition:border-color .15s,box-shadow .15s;color:#1e293b}
+.rem-input:focus{border-color:#004D4C;background:#fff;box-shadow:0 0 0 3px rgba(0,77,76,.08)}
+.rem-cat-sel{padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:600;background:#f8fafc;color:#374151;cursor:pointer;outline:none;transition:border-color .15s}
+.rem-cat-sel:focus{border-color:#004D4C}
+.rem-add-btn{padding:8px 16px;background:#004D4C;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s}
+.rem-add-btn:hover{background:#00635f}
+.rem-filter-bar{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.rem-ftab{font-size:11px;font-weight:600;padding:4px 12px;border:1.5px solid #e2e8f0;border-radius:20px;background:#fff;color:#64748b;cursor:pointer;transition:all .15s;white-space:nowrap}
+.rem-ftab:hover:not(.active){background:#f1f5f9;border-color:#cbd5e1}
+.rem-ftab.active{background:#004D4C;color:#fff;border-color:#004D4C}
+.rem-list{display:flex;flex-direction:column;gap:6px}
+.rem-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#fff;border:1px solid #f1f5f9;border-left:3px solid #94a3b8;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s,border-color .15s;position:relative}
+.rem-item:hover{box-shadow:0 3px 10px rgba(0,0,0,.09);border-color:#e2e8f0}
+.rem-item.done{opacity:.45;background:#f8fafc}
 .rem-item[data-cat=container]{border-left-color:#3b82f6}
 .rem-item[data-cat=vessel]{border-left-color:#8b5cf6}
 .rem-item[data-cat=payment]{border-left-color:#10b981}
 .rem-item[data-cat=other]{border-left-color:#f59e0b}
-.rem-cb{width:16px;height:16px;margin-top:2px;cursor:pointer;accent-color:#f59e0b;flex-shrink:0}
-.rem-cat-tag{font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.rem-cb{width:16px;height:16px;margin-top:3px;cursor:pointer;accent-color:#004D4C;flex-shrink:0}
+.rem-cat-tag{font-size:10px;font-weight:700;border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0;margin-top:2px;letter-spacing:.2px}
 .rem-cat-tag.container{background:#eff6ff;color:#2563eb}
 .rem-cat-tag.vessel{background:#f5f3ff;color:#7c3aed}
 .rem-cat-tag.payment{background:#ecfdf5;color:#059669}
 .rem-cat-tag.other{background:#fffbeb;color:#b45309}
-.rem-text{flex:1;font-size:13px;color:#1f2937;line-height:1.45;word-break:break-word}
-.rem-item.done .rem-text{text-decoration:line-through;color:#9ca3af}
-.rem-meta{font-size:10px;color:#9ca3af;margin-top:2px}
-.rem-del{background:none;border:none;color:#d1d5db;font-size:14px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;margin-top:1px;transition:color .15s}
-.rem-del:hover{color:#ef4444}
-.rem-empty{font-size:12px;color:#d97706;text-align:center;padding:8px 0;opacity:.7}
+.rem-text{flex:1;font-size:13px;color:#1e293b;line-height:1.5;word-break:break-word}
+.rem-item.done .rem-text{text-decoration:line-through;color:#94a3b8}
+.rem-meta{font-size:10px;color:#94a3b8;margin-top:3px}
+.rem-actions{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .15s;margin-top:1px}
+.rem-item:hover .rem-actions{opacity:1}
+.rem-edit-btn,.rem-del{background:none;border:none;font-size:13px;cursor:pointer;padding:2px 5px;border-radius:5px;line-height:1;transition:background .12s,color .12s;color:#94a3b8}
+.rem-edit-btn:hover{background:#eff6ff;color:#2563eb}
+.rem-del:hover{background:#fef2f2;color:#ef4444}
+.rem-edit-input{width:100%;border:1.5px solid #3b82f6;border-radius:6px;padding:3px 8px;font-size:13px;outline:none;font-family:inherit;color:#1e293b;background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.rem-empty{font-size:12px;color:#94a3b8;text-align:center;padding:18px 0}
 
 /* Dashboard alert cards */
 .vt-alert-card{border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:4px}
@@ -8118,12 +8124,15 @@ function remRender(){
     const catInfo=REM_CATS[cat]||REM_CATS.other;
     return `<div class="rem-item${r.done?' done':''}" data-cat="${cat}" id="rem-item-${r.id}">
       <input type="checkbox" class="rem-cb" ${r.done?'checked':''} onchange="remToggleDone(${r.id})"/>
-      <div style="flex:1;min-width:0">
-        <div class="rem-text">${r.text.replace(/</g,'&lt;')}</div>
+      <div style="flex:1;min-width:0" id="rem-text-wrap-${r.id}">
+        <div class="rem-text" id="rem-text-${r.id}">${r.text.replace(/</g,'&lt;')}</div>
         <div class="rem-meta">${r.ts}</div>
       </div>
       <span class="rem-cat-tag ${cat}">${catInfo.label}</span>
-      <button class="rem-del" onclick="remDelete(${r.id})" title="Delete">✕</button>
+      <div class="rem-actions">
+        <button class="rem-edit-btn" onclick="remEditStart(${r.id})" title="Edit">✏️</button>
+        <button class="rem-del" onclick="remDelete(${r.id})" title="Delete">✕</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -8147,6 +8156,28 @@ function remToggleDone(id){
 function remDelete(id){
   REMINDERS=REMINDERS.filter(x=>x.id!==id);
   remSave(); remRender();
+}
+function remEditStart(id){
+  const r=REMINDERS.find(x=>x.id===id); if(!r) return;
+  const wrap=document.getElementById('rem-text-wrap-'+id); if(!wrap) return;
+  const escaped=r.text.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  wrap.innerHTML=`<input class="rem-edit-input" id="rem-edit-inp-${id}"
+    value="${escaped}" maxlength="300"
+    onblur="remEditSave(${id})"
+    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}else if(event.key==='Escape'){remRender()}"
+  />`;
+  const inp=document.getElementById('rem-edit-inp-'+id);
+  if(inp){ inp.focus(); inp.select(); }
+  // hide actions while editing
+  const item=document.getElementById('rem-item-'+id);
+  if(item){ const act=item.querySelector('.rem-actions'); if(act) act.style.opacity='0'; }
+}
+function remEditSave(id){
+  const inp=document.getElementById('rem-edit-inp-'+id); if(!inp) return;
+  const val=inp.value.trim();
+  const r=REMINDERS.find(x=>x.id===id);
+  if(r && val){ r.text=val; remSave(); }
+  remRender();
 }
 function remToggle(){
   _remOpen=!_remOpen;
