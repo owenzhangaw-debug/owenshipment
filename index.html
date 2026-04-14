@@ -1309,13 +1309,55 @@ select:focus, input:focus {
 <div id="page-dashboard" class="page active">
   <div id="smart-panel" class="smart-panel"></div>
 
+  <!-- ══ Route Timeline cards ══ -->
+  <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;margin-bottom:18px;margin-top:0" id="route-cards-row">
+  <!-- NL Route -->
+  <div class="bel-route-card" style="margin:0;border-top:3px solid #c2410c">
+    <div class="bel-card-top">
+      <div class="bel-card-top-left">
+        <span style="font-size:20px">🇳🇱</span>
+        <h3 style="font-size:12px">Netherlands Route</h3>
+        <span style="font-size:10px;font-weight:700;background:#fff7ed;color:#c2410c;border-radius:20px;padding:3px 10px">NLAMS · via Duisburg</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇨🇳 China Departure</span><span style="font-weight:700;color:#c2410c">0d</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇰🇿 Kazakhstan Done</span><span style="font-weight:700;color:#c2410c">avg 10d</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇵🇱 Malaszewicze</span><span style="font-weight:700;color:#c2410c">avg 17d</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇩🇪 Duisburg Hub</span><span style="font-weight:700;color:#c2410c">avg 22d</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fff7ed;border:1px solid #fed7aa"><span>🇳🇱 Amsterdam Delivery</span><span style="font-weight:700;color:#c2410c">avg 24–25d</span></div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:2px;padding:0 4px">🚚 Duisburg→AMS ~200km, ~2d faster than Belgium</div>
+    </div>
+    <div style="font-size:10px;color:#64748b;margin-top:8px;padding:6px 8px;background:#fff7ed;border-radius:6px;border:1px solid #fed7aa">📊 Based on 611 Belgium rail records — same China→Duisburg leg</div>
+  </div>
+  <!-- IT Route -->
+  <div class="bel-route-card" style="margin:0;border-top:3px solid #9d174d">
+    <div class="bel-card-top">
+      <div class="bel-card-top-left">
+        <span style="font-size:20px">🇮🇹</span>
+        <h3 style="font-size:12px">Italy Route</h3>
+        <span style="font-size:10px;font-weight:700;background:#fdf2f8;color:#9d174d;border-radius:20px;padding:3px 10px">ITMXP · via Duisburg</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇨🇳 China Departure</span><span style="font-weight:700;color:#9d174d">0d</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇰🇿 Kazakhstan Done</span><span style="font-weight:700;color:#9d174d">avg 10d</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇵🇱 Malaszewicze</span><span style="font-weight:700;color:#9d174d">avg 17d</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇩🇪 Duisburg Hub</span><span style="font-weight:700;color:#9d174d">avg 22d</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fdf2f8;border:1px solid #fbcfe8"><span>🇮🇹 Milan (MXP) Delivery</span><span style="font-weight:700;color:#9d174d">avg 26–28d</span></div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:2px;padding:0 4px">🚛 Duisburg→MXP ~800km, ~4d final leg</div>
+    </div>
+    <div style="font-size:10px;color:#64748b;margin-top:8px;padding:6px 8px;background:#fdf2f8;border-radius:6px;border:1px solid #fbcfe8">📊 Based on 611 Belgium rail records — same China→Duisburg leg</div>
+  </div>
+  </div>
+
   <!-- ══ Belgium Route Timeline (full-width, top of dashboard) ══ -->
   <div class="bel-route-card" style="margin-bottom:18px;margin-top:0">
     <div class="bel-card-top">
       <div class="bel-card-top-left">
         <span style="font-size:22px">🚂</span>
         <h3>Belgium Route — Stage-by-Stage Timing</h3>
-        <span style="font-size:10px;font-weight:700;background:#E8F5E9;color:#2E7D32;border-radius:20px;padding:3px 10px">based on 611 historical deliveries</span>
+        <span style="font-size:10px;font-weight:700;background:#E8F5E9;color:#2E7D32;border-radius:20px;padding:3px 10px">🇧🇪 BELGG · 611 verified deliveries</span>
       </div>
       <div class="bel-card-top-right">Days from China terminal departure</div>
     </div>
@@ -1424,6 +1466,25 @@ select:focus, input:focus {
         </div>
         <div class="kpi" style="border-color:#b45309;cursor:default">
           <div class="kl">Slot Changes</div><div class="kv" id="kv-slot-changes" style="color:#b45309">—</div><div class="ks">reschedules recorded</div>
+        </div>
+      </div>
+
+      <!-- Country breakdown KPIs -->
+      <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px" id="kpi-country-row">
+        <div class="kpi" style="border-top-color:#1d4ed8;background:linear-gradient(160deg,#fff 70%,#eff6ff 100%);cursor:pointer" onclick="filterByDestination('Belgium')">
+          <div class="kl" style="color:#1d4ed8">🇧🇪 Belgium</div>
+          <div class="kv" id="kv-be" style="color:#1e40af">—</div>
+          <div class="ks" id="ks-be">containers</div>
+        </div>
+        <div class="kpi" style="border-top-color:#c2410c;background:linear-gradient(160deg,#fff 70%,#fff7ed 100%);cursor:pointer" onclick="filterByDestination('Netherlands')">
+          <div class="kl" style="color:#c2410c">🇳🇱 Netherlands</div>
+          <div class="kv" id="kv-nl" style="color:#9a3412">—</div>
+          <div class="ks" id="ks-nl">containers</div>
+        </div>
+        <div class="kpi" style="border-top-color:#9d174d;background:linear-gradient(160deg,#fff 70%,#fdf2f8 100%);cursor:pointer" onclick="filterByDestination('Italy')">
+          <div class="kl" style="color:#9d174d">🇮🇹 Italy</div>
+          <div class="kv" id="kv-it" style="color:#831843">—</div>
+          <div class="ks" id="ks-it">containers</div>
         </div>
       </div>
 
@@ -1745,6 +1806,15 @@ select:focus, input:focus {
   <div id="ct-batch-progress" style="margin:0 0 12px"></div>
 
   <div class="toolbar" style="margin:0 0 8px">
+    <div class="ms-wrap" id="wrap-dest">
+      <span class="ms-label">Destination</span>
+      <button class="ms-btn" id="btn-dest" onclick="msOpen('dest')">All Countries</button>
+      <div class="ms-menu" id="menu-dest">
+        <label><input type="checkbox" value="Belgium"     onchange="msChange('dest','All Countries')"> 🇧🇪 Belgium</label>
+        <label><input type="checkbox" value="Netherlands" onchange="msChange('dest','All Countries')"> 🇳🇱 Netherlands</label>
+        <label><input type="checkbox" value="Italy"       onchange="msChange('dest','All Countries')"> 🇮🇹 Italy</label>
+      </div>
+    </div>
     <div class="ms-wrap" id="wrap-batch">
       <span class="ms-label">Batch</span>
       <button class="ms-btn" id="btn-batch" onclick="msOpen('batch')">All Batches</button>
@@ -1830,6 +1900,7 @@ select:focus, input:focus {
           <th class="fc-2" onclick="ctSort('Container No.')">Container No. ↕</th>
           <th class="fc-3" onclick="ctSort('Master B/L')">Master B/L ↕</th>
           <th class="fc-4" onclick="ctSort('Consignee')">Consignee ↕</th>
+          <th onclick="ctSort('Destination')">Dest ↕</th>
           <th onclick="ctSort('Trucker')">Trucker ↕</th>
           <th class="no-sort">Broker</th>
           <th onclick="ctSort('ETA in Mala')" title="ETA at Port of Malaysia">ETA in Mala ↕<span class="cdf-btn" id="cdf-ct-btn-ETA in Mala" onclick="openColDF('ct','ETA in Mala',this,event)" title="Filter by date">▾</span></th>
@@ -2040,6 +2111,8 @@ select:focus, input:focus {
       <div class="form-group"><label>Consignee</label><input type="text" id="f_con" list="dl-con"/><datalist id="dl-con"></datalist></div>
       <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/><datalist id="dl-truck"></datalist></div>
       <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker" placeholder="e.g. Wispex"/><datalist id="dl-broker"><option value="Wispex"/><option value="Self"/></datalist></div>
+      <div class="form-group"><label>Destination</label>
+        <select id="f_dest"><option value="Belgium">🇧🇪 Belgium</option><option value="Netherlands">🇳🇱 Netherlands</option><option value="Italy">🇮🇹 Italy</option></select></div>
       <div class="form-group"><label>Tracking</label>
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
@@ -2081,6 +2154,8 @@ select:focus, input:focus {
       <div class="form-group"><label>Batch / Train *</label><input type="text" id="b_batch" list="dl-batch"/></div>
       <div class="form-group"><label>Consignee</label><input type="text" id="b_con" list="dl-con"/></div>
       <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
+      <div class="form-group"><label>Destination</label>
+        <select id="b_dest"><option value="Belgium">🇧🇪 Belgium</option><option value="Netherlands">🇳🇱 Netherlands</option><option value="Italy">🇮🇹 Italy</option></select></div>
       <div class="form-group"><label>Tracking</label>
         <select id="b_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="b_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
@@ -2511,8 +2586,15 @@ function _contextAdd(){
   if(_currentPage==='vessels') openAddVesselModal();
   else openAdd();
 }
+function filterByDestination(dest){
+  resetFilters();
+  msSetValues('dest',[dest],'All Countries');
+  showPage('containers');
+  renderCT();
+}
 function gotoFilter(col, val){
   // Clear all multi-selects first
+  msClear('dest','All Countries');
   msClear('batch','All Batches');
   msClear('trucker','All Truckers');
   msClear('tracking','All Tracking');
@@ -2891,6 +2973,14 @@ function renderDashboard(){
   document.getElementById('kv-arr').textContent   = CT.filter(r=>r['Tracking']==='Arrived').length;
   document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
   document.getElementById('kv-hi').textContent    = CT.filter(r=>!r['Actual Arrival']).length;
+  // Country breakdown KPIs
+  ['Belgium','Netherlands','Italy'].forEach(dest=>{
+    const key={'Belgium':'be','Netherlands':'nl','Italy':'it'}[dest];
+    const rows=CT.filter(r=>(r['Destination']||'Belgium')===dest);
+    const el=document.getElementById('kv-'+key), sl=document.getElementById('ks-'+key);
+    if(el) el.textContent=rows.length;
+    if(sl){ const pend=rows.filter(r=>!r['Actual Arrival']).length; sl.textContent=pend?`${pend} pending`:'all arrived'; }
+  });
   document.getElementById('kv-vessels').textContent = VT.length;
   const _totalSlotChanges=CT.reduce((acc,r)=>acc+(Array.isArray(r.slotHistory)?r.slotHistory.filter(h=>h.to&&h.to.trim()).length:0),0);
   document.getElementById('kv-slot-changes').textContent = _totalSlotChanges||'0';
@@ -4298,6 +4388,7 @@ function getCTRowsExcept(excludeId){
   const qRaw=(document.getElementById('f-search')?document.getElementById('f-search').value||'':'');
   const q=qRaw; // kept for compat below
   const qTokens=qRaw.split(/[\s,;]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const fds=excludeId==='dest'?[]:msGetValues('dest');
   const fbs=excludeId==='batch'?[]:msGetValues('batch');
   const fts=excludeId==='trucker'?[]:msGetValues('trucker');
   const ftrs=excludeId==='tracking'?[]:msGetValues('tracking');
@@ -4307,6 +4398,7 @@ function getCTRowsExcept(excludeId){
   const fsur=excludeId==='surcharge'?[]:msGetValues('surcharge');
   const fpay=excludeId==='payment'?[]:msGetValues('payment');
   return CT.filter(r=>{
+    if(fds.length&&!fds.includes(r['Destination']||'Belgium')) return false;
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
     if(fcons.length&&!fcons.includes(r['Consignee']||'')) return false;
@@ -4440,6 +4532,7 @@ function ctRemoveSlotChange(id,idx){
 }
 function resetFilters(){
   const s=document.getElementById('f-search'); if(s) s.value='';
+  msClear('dest','All Countries');
   msClear('batch','All Batches');
   msClear('trucker','All Truckers');
   msClear('tracking','All Tracking');
@@ -4681,6 +4774,15 @@ function renderCT(){
       <div class="cell-edit"><input type="text" list="dl-broker" value="${brokerVal.replace(/"/g,'&quot;')}" placeholder="e.g. Wispex" onblur="commitEdit(this,'Broker',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:110px"/></div>
     </td>`;
 
+    // Destination badge cell
+    const destVal=r['Destination']||'Belgium';
+    const destFlag=destVal==='Netherlands'?'🇳🇱':destVal==='Italy'?'🇮🇹':'🇧🇪';
+    const destColor=destVal==='Netherlands'?'#fff3e0;color:#c2410c':destVal==='Italy'?'#fdf2f8;color:#9d174d':'#e0efef;color:#003a3a';
+    const destCell=`<td data-id="${r._id}" data-col="Destination">
+      <div class="cell-view" onclick="startEdit(this)"><span style="background:${destColor};border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">${destFlag} ${destVal}</span></div>
+      <div class="cell-edit"><select onblur="commitEdit(this,'Destination',${r._id})" onchange="this.blur()" style="width:130px"><option value="Belgium" ${destVal==='Belgium'?'selected':''}>🇧🇪 Belgium</option><option value="Netherlands" ${destVal==='Netherlands'?'selected':''}>🇳🇱 Netherlands</option><option value="Italy" ${destVal==='Italy'?'selected':''}>🇮🇹 Italy</option></select></div>
+    </td>`;
+
     // split editCells into groups
     const [blC,conC,truckC]=editCells;
     // ETA in Mala — dedicated flatpickr date cell
@@ -4833,6 +4935,7 @@ function renderCT(){
       <td class="fc-2" style="padding:7px 10px"><strong>${r['Container No.']||''}</strong></td>
       ${blC}
       ${conC}
+      ${destCell}
       ${truckCell}
       ${brokerCell}
       ${etaMalaC}
@@ -6026,8 +6129,9 @@ function vtRemoveBargeRoll(id, idx){
 }
 
 // ── BELGIUM ROUTE TIMELINE (horizontal pipeline) ───────────────────────────
-// Historical baseline from 611 TEMU rail deliveries (Oct 2025 – Apr 2026)
-// Updated: p85 Russia 20→17, KZ p85 14→13, Duisburg avg 22.4→22.1, Belgium avg 27.2→26.7
+// Historical baseline from TEMU 运踪表格 Excel — 611 BELGG deliveries (Oct 2025 – Apr 2026)
+// NL (NLAMS) and IT (ITMXP) use same China→Duisburg leg; final leg adjusted per route
+// Belgium avg 26.9d · NL avg ~24-25d · IT avg ~26-28d
 const _BEL_HIST_STATS = {
   alashankou: { n:611, mean:5.52,  p50:5.00,  p70:6.00,  p85:8.00,  p95:11.0 },
   kz_transit: { n:611, mean:10.02, p50:9.00,  p70:11.00, p85:13.00, p95:17.0 },
@@ -6316,6 +6420,7 @@ function openEdit(id){
   document.getElementById('f_con').value  =r['Consignee']||'';
   document.getElementById('f_truck').value =r['Trucker']||'';
   document.getElementById('f_broker').value=r['Broker']||'';
+  document.getElementById('f_dest').value  =r['Destination']||'Belgium';
   document.getElementById('f_track').value =r['Tracking']||'None';
   document.getElementById('f_eta_mala').value=r['ETA in Mala']||'';
   document.getElementById('f_eta').value  =r['ETA at Hub']||'';
@@ -6343,7 +6448,7 @@ function saveRow(){
   const g=id=>document.getElementById(id).value.trim();
   const u={
     'Container No.':g('f_no'),'Master B/L':g('f_bl'),'Batch / Train':g('f_batch'),
-    'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Tracking':g('f_track'),
+    'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Destination':g('f_dest'),'Tracking':g('f_track'),
     'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'T1 Date':g('f_t1date'),'Scheduled Slot':g('f_slot'),
     'Actual Arrival':g('f_arr'),'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
@@ -6360,6 +6465,7 @@ function saveRow(){
 // ── BULK ADD ──────────────────────────────────────────────────────
 function openBulk(){
   ['b_batch','b_con','b_truck','b_eta_mala','b_eta','b_t1date','b_slot','b_dl','b_nos'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('b_dest').value='Belgium';
   document.getElementById('b_track').value='T1';
   document.getElementById('b_cmr').checked=false;
   document.getElementById('b_ok').style.display='none';
@@ -6422,7 +6528,7 @@ function saveBulk(){
   const batch=document.getElementById('b_batch').value.trim();
   if(!batch){ err.textContent='Batch / Train is required.'; err.style.display='block'; return; }
   const g=id=>document.getElementById(id).value.trim();
-  const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),
+  const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),'Destination':g('b_dest'),
     'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'T1 Date':g('b_t1date'),
     'Scheduled Slot':g('b_slot'),'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
     'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','T1 Payment Status':'','Broker':'','Remark':''};
@@ -6615,8 +6721,9 @@ const COL_MAP={
   'deadline':'Deadline','cmr':'CMR','tracking':'Tracking',
   'pickup ref':'Pickup Ref','ref':'Pickup Ref',
   'surcharge':'Surcharge','price':'Price','remark':'Remark',
+  'destination':'Destination','country':'Destination','dest':'Destination','delivery country':'Destination',
 };
-const IMP_FIELDS=['Batch / Train','Container No.','Master B/L','Consignee','Trucker','Broker',
+const IMP_FIELDS=['Batch / Train','Container No.','Master B/L','Consignee','Trucker','Broker','Destination',
   'ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Deadline','CMR','Tracking','Pickup Ref','Surcharge','Price','Remark'];
 
 function openImport(){ importWB=null; importRows=[];
