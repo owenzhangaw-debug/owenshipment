@@ -1340,228 +1340,6 @@ select:focus, input:focus {
     </div>
   </div>
 
-  <!-- ══ Consignees Panel ══ -->
-  <div class="bel-route-card" style="margin-bottom:18px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;border-bottom:2px solid #e2e8f0;padding-bottom:12px">
-      <span style="font-size:20px">🏢</span>
-      <h3 style="font-size:14px;font-weight:800;color:#1e293b;margin:0">Consignees &amp; Warehouses</h3>
-      <div style="display:flex;gap:0;margin-left:4px">
-        <button id="csg-tab-be" onclick="csgShowTab('be')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-right:none;border-radius:6px 0 0 6px;background:#E8F5E9;color:#2E7D32;cursor:pointer">🇧🇪 Belgium</button>
-        <button id="csg-tab-nl" onclick="csgShowTab('nl')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-right:none;border-radius:0;background:#f8fafc;color:#94a3b8;cursor:pointer">🇳🇱 Netherlands</button>
-        <button id="csg-tab-it" onclick="csgShowTab('it')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-radius:0 6px 6px 0;background:#f8fafc;color:#94a3b8;cursor:pointer">🇮🇹 Italy</button>
-      </div>
-    </div>
-
-    <!-- BE Consignees -->
-    <div id="csg-pane-be">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-
-        <!-- Flying Logistics -->
-        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:18px">🇧🇪</span>
-            <div>
-              <div style="font-size:12px;font-weight:800;color:#1e293b">Flying Logistics SPRL</div>
-              <div style="font-size:10px;color:#2E7D32;font-weight:600">Flying · LGG Warehouse</div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:#475569;line-height:1.7">
-            <div>✉️ <a href="mailto:ops@flyinglogisticssprl.be" style="color:#2E7D32">ops@flyinglogisticssprl.be</a></div>
-            <div>✉️ <a href="mailto:flyingdispatch@flyinglogisticssprl.be" style="color:#2E7D32">flyingdispatch@flyinglogisticssprl.be</a></div>
-            <div>✉️ <a href="mailto:flyingcustoms@flyinglogisticssprl.be" style="color:#2E7D32">flyingcustoms@flyinglogisticssprl.be</a></div>
-            <div>✉️ <a href="mailto:David@flyinglogisticssprl.be" style="color:#2E7D32">David@flyinglogisticssprl.be</a></div>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #dcfce7">
-              <div>✉️ <a href="mailto:team@topglobal.be" style="color:#2E7D32">team@topglobal.be</a></div>
-              <div>✉️ <a href="mailto:ops-uk@ultralinkexpress.co.uk" style="color:#2E7D32">ops-uk@ultralinkexpress.co.uk</a></div>
-              <div>✉️ <a href="mailto:temu@hh-aviation.co.uk" style="color:#2E7D32">temu@hh-aviation.co.uk</a></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- VIA EUROPE Belgium -->
-        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:18px">🇧🇪</span>
-            <div>
-              <div style="font-size:12px;font-weight:800;color:#1e293b">VIA EUROPE</div>
-              <div style="font-size:10px;color:#2E7D32;font-weight:600">VE · LGG DDS Warehouse</div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:#475569;line-height:1.7">
-            <div>✉️ <a href="mailto:inbound@viaeurope.com" style="color:#2E7D32">inbound@viaeurope.com</a></div>
-            <div>✉️ <a href="mailto:account-tm@viaeurope.com" style="color:#2E7D32">account-tm@viaeurope.com</a></div>
-            <div>✉️ <a href="mailto:planningDDS-lgg@viaeurope.com" style="color:#2E7D32">planningDDS-lgg@viaeurope.com</a></div>
-          </div>
-        </div>
-
-        <!-- Skyline -->
-        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:18px">🇧🇪</span>
-            <div>
-              <div style="font-size:12px;font-weight:800;color:#1e293b">Skyline Logistics SRL</div>
-              <div style="font-size:10px;color:#2E7D32;font-weight:600">Skyline · LGG Warehouse</div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:#475569;line-height:1.7">
-            <div>✉️ <a href="mailto:temu@qtradegroup.com" style="color:#2E7D32">temu@qtradegroup.com</a></div>
-            <div>✉️ <a href="mailto:candy.tang@qtlogistics.eu" style="color:#2E7D32">candy.tang@qtlogistics.eu</a></div>
-          </div>
-        </div>
-
-        <!-- HSH World Logistics -->
-        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:18px">🇧🇪</span>
-            <div>
-              <div style="font-size:12px;font-weight:800;color:#1e293b">HSH World Logistics</div>
-              <div style="font-size:10px;color:#2E7D32;font-weight:600">HSH · LGG Warehouse</div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:#475569;line-height:1.7">
-            <div>✉️ <a href="mailto:ops1@hshworld.eu" style="color:#2E7D32">ops1@hshworld.eu</a></div>
-            <div>✉️ <a href="mailto:operation@hshworld.eu" style="color:#2E7D32">operation@hshworld.eu</a></div>
-            <div>✉️ <a href="mailto:ydh1@hshworld.eu" style="color:#2E7D32">ydh1@hshworld.eu</a></div>
-            <div>✉️ <a href="mailto:ydh2@hshworld.eu" style="color:#2E7D32">ydh2@hshworld.eu</a></div>
-            <div>✉️ <a href="mailto:ops6@hshworld.eu" style="color:#2E7D32">ops6@hshworld.eu</a></div>
-            <div>✉️ <a href="mailto:lggops@ydhexpress.com" style="color:#2E7D32">lggops@ydhexpress.com</a></div>
-            <div>✉️ <a href="mailto:customsteam@hshworld.eu" style="color:#2E7D32">customsteam@hshworld.eu</a></div>
-          </div>
-        </div>
-
-        <!-- CACESA -->
-        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:18px">🇧🇪</span>
-            <div>
-              <div style="font-size:12px;font-weight:800;color:#1e293b">CACESA</div>
-              <div style="font-size:10px;color:#2E7D32;font-weight:600">CACESA · LGG Customs Agent</div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:#475569;line-height:1.7">
-            <div>✉️ <a href="mailto:int.coordinators@cacesa.com" style="color:#2E7D32">int.coordinators@cacesa.com</a></div>
-            <div>✉️ <a href="mailto:operations.lgg@cacesa.com" style="color:#2E7D32">operations.lgg@cacesa.com</a></div>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #dcfce7">
-              <div style="font-size:10px;color:#64748b">TEMU contacts:</div>
-              <div>✉️ <a href="mailto:beryl.li@temu.com" style="color:#2E7D32">beryl.li@temu.com</a></div>
-              <div>✉️ <a href="mailto:giulia.zhang@temu.com" style="color:#2E7D32">giulia.zhang@temu.com</a></div>
-              <div>✉️ <a href="mailto:farrah.ouyang@temu.com" style="color:#2E7D32">farrah.ouyang@temu.com</a></div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- NL Consignees -->
-    <div id="csg-pane-nl" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr;gap:12px">
-        <div style="border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;background:#fffbf7">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:18px">🇳🇱</span>
-            <div>
-              <div style="font-size:13px;font-weight:800;color:#1e293b">ViaEurope</div>
-              <div style="font-size:11px;color:#c2410c;font-weight:600">AMS DDS Warehouse · NLAMS</div>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-            <div>
-              <div style="color:#64748b;font-weight:600;margin-bottom:2px">📍 Address</div>
-              <div style="color:#1e293b">Pudongweg 21<br>1437 EM Rozenburg<br>Netherlands</div>
-            </div>
-            <div>
-              <div style="color:#64748b;font-weight:600;margin-bottom:2px">📞 Contact</div>
-              <div style="color:#1e293b">+31 (0) 204057460<br><a href="mailto:planningDDS-ams@viaeurope.com" style="color:#c2410c">planningDDS-ams@viaeurope.com</a><br><a href="mailto:temu@viaeurope.com" style="color:#c2410c">temu@viaeurope.com</a></div>
-            </div>
-            <div>
-              <div style="color:#64748b;font-weight:600;margin-bottom:2px">🛂 T1 / Customs (DDS)</div>
-              <div style="color:#1e293b">EORI: <strong>NL854896272</strong><br>Customs: DOUANEKANTOOR SCHIPHOL<br>NCTS: <strong>NL000432</strong></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- IT Consignees -->
-    <div id="csg-pane-it" style="display:none">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-
-        <!-- Premiere Cargo (Sengi) -->
-        <div style="border:1px solid #fbcfe8;border-radius:10px;padding:14px 16px;background:#fdf9fc">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:18px">🇮🇹</span>
-            <div>
-              <div style="font-size:12px;font-weight:800;color:#1e293b">Premiere Cargo &amp; Logistics S.R.L.</div>
-              <div style="font-size:10px;color:#9d174d;font-weight:600">Sengi · Customs &amp; Delivery</div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:#475569;line-height:1.7">
-            <div>📞 <strong>3313132636</strong></div>
-            <div>✉️ <a href="mailto:Cristina.portalupi@premiereair.it" style="color:#9d174d">Cristina.portalupi@premiereair.it</a></div>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
-              <div>🛂 Customs office: <strong>IT371100</strong></div>
-              <div>EORI: <strong>IT01506620994</strong></div>
-            </div>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
-              <div>📍 VIA G. DI VITTORIO 28</div>
-              <div>20090 PANTIGLIATE (MI)</div>
-              <div style="margin-top:3px;color:#9d174d;font-weight:600">Unloading:</div>
-              <div>Via Lazzaretto 98</div>
-              <div>21010 Cardano al Campo (VA)</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Magazzini Generali (KP / Cacesa) -->
-        <div style="border:1px solid #fbcfe8;border-radius:10px;padding:14px 16px;background:#fdf9fc">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:18px">🇮🇹</span>
-            <div>
-              <div style="font-size:12px;font-weight:800;color:#1e293b">Magazzini Generali della Brianza</div>
-              <div style="font-size:10px;color:#9d174d;font-weight:600">KP / Cacesa Warehouse</div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:#475569;line-height:1.7">
-            <div>📞 <strong>+39 3388363197</strong></div>
-            <div>✉️ <a href="mailto:customercare@magazzinibrianza.it" style="color:#9d174d">customercare@magazzinibrianza.it</a></div>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
-              <div>🛂 Customs office: <strong>IT 371100</strong></div>
-              <div>EORI/VAT: <strong>IT 07248580966</strong></div>
-            </div>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
-              <div>📍 VIA AUTOSOLE 3</div>
-              <div>20070 CERRO AL LAMBRO</div>
-              <div>Italia</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ViaEurope Italy (VE) -->
-        <div style="border:1px solid #fbcfe8;border-radius:10px;padding:14px 16px;background:#fdf9fc">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:18px">🇮🇹</span>
-            <div>
-              <div style="font-size:12px;font-weight:800;color:#1e293b">ViaEurope Customs Italy S.r.L.</div>
-              <div style="font-size:10px;color:#9d174d;font-weight:600">VE Warehouse · ITMXP</div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:#475569;line-height:1.7">
-            <div>✉️ <a href="mailto:temu@viaeurope.com" style="color:#9d174d">temu@viaeurope.com</a></div>
-            <div>✉️ <a href="mailto:inbound@viaeurope.com" style="color:#9d174d">inbound@viaeurope.com</a></div>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
-              <div>🛂 Customs office: <strong>IT279100</strong></div>
-            </div>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
-              <div>📍 VIA DEL GREGGE 100</div>
-              <div>21015 LONATE POZZOLO</div>
-              <div>Italy</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
 
   <!-- ══ Important Notice Board ══ -->
   <div class="notice-board-wrap">
@@ -2118,6 +1896,319 @@ select:focus, input:focus {
     </div>
   </div>
 </div>
+
+  <!-- ══ Consignees Panel ══ -->
+  <div class="bel-route-card" style="margin-bottom:18px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;border-bottom:2px solid #e2e8f0;padding-bottom:12px">
+      <span style="font-size:20px">🏢</span>
+      <h3 style="font-size:14px;font-weight:800;color:#1e293b;margin:0">Consignees &amp; Warehouses</h3>
+      <div style="display:flex;gap:0;margin-left:4px">
+        <button id="csg-tab-be" onclick="csgShowTab('be')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-right:none;border-radius:6px 0 0 6px;background:#E8F5E9;color:#2E7D32;cursor:pointer">🇧🇪 Belgium</button>
+        <button id="csg-tab-nl" onclick="csgShowTab('nl')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-right:none;border-radius:0;background:#f8fafc;color:#94a3b8;cursor:pointer">🇳🇱 Netherlands</button>
+        <button id="csg-tab-it" onclick="csgShowTab('it')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-radius:0 6px 6px 0;background:#f8fafc;color:#94a3b8;cursor:pointer">🇮🇹 Italy</button>
+      </div>
+    </div>
+
+    <!-- BE Consignees -->
+    <div id="csg-pane-be">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+
+        <!-- Skyline Logistics -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">Skyline Logistics SRL</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">Skyline · LGG Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.6">
+            <div style="margin-bottom:5px">
+              <div style="color:#64748b;font-weight:600;font-size:10px">📍 Office Address</div>
+              <div>Rue Sélys Longchamps Jean de 2 boîte 4<br>4460 Grâce-Hollogne, Belgique</div>
+            </div>
+            <div style="margin-bottom:5px;padding-top:5px;border-top:1px solid #dcfce7">
+              <div style="color:#64748b;font-weight:600;font-size:10px">📦 Unloading — CACESA T1</div>
+              <div style="color:#c2410c;font-size:10px;font-weight:600">⚠️ Updated address:</div>
+              <div>Rue Jean de Sélys Longchamps, 5/B6<br>4460 Grâce-Hollogne <span style="color:#64748b">(3 min from office)</span></div>
+            </div>
+            <div style="margin-bottom:5px;padding-top:5px;border-top:1px solid #dcfce7">
+              <div style="color:#64748b;font-weight:600;font-size:10px">🛂 Customs</div>
+              <div>EORI/VAT: <strong>BE0770253145</strong></div>
+              <div>Office: <strong>BE532000</strong></div>
+            </div>
+            <div style="padding-top:5px;border-top:1px solid #dcfce7">
+              <div>📞 +32 471 21 91 16</div>
+              <div>✉️ <a href="mailto:temu@qtradegroup.com" style="color:#2E7D32">temu@qtradegroup.com</a></div>
+              <div>✉️ <a href="mailto:candy.tang@qtlogistics.eu" style="color:#2E7D32">candy.tang@qtlogistics.eu</a></div>
+              <div style="margin-top:4px;font-size:10px;color:#64748b">🕐 09:00–17:00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIA EUROPE Belgium -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">VIA EUROPE</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">VE · LGG DDS Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.6">
+            <div style="margin-bottom:5px">
+              <div style="color:#64748b;font-weight:600;font-size:10px">📍 Address</div>
+              <div>Rue de L'Aéropostale 8<br>4460 Bierset, Belgium</div>
+            </div>
+            <div style="margin-bottom:5px;padding-top:5px;border-top:1px solid #dcfce7">
+              <div style="color:#64748b;font-weight:600;font-size:10px">🛂 Customs</div>
+              <div>EORI: <strong>BE0762834031</strong></div>
+              <div>NCTS: <strong>BE532000</strong></div>
+              <div>Office: BIERSET GRACE HOLLOGNE</div>
+            </div>
+            <div style="padding-top:5px;border-top:1px solid #dcfce7">
+              <div>📞 +3242477778</div>
+              <div>✉️ <a href="mailto:inbound@viaeurope.com" style="color:#2E7D32">inbound@viaeurope.com</a></div>
+              <div>✉️ <a href="mailto:account-tm@viaeurope.com" style="color:#2E7D32">account-tm@viaeurope.com</a></div>
+              <div>✉️ <a href="mailto:planningDDS-lgg@viaeurope.com" style="color:#2E7D32">planningDDS-lgg@viaeurope.com</a></div>
+              <div style="margin-top:4px;font-size:10px;color:#64748b">🕐 Mon–Fri 08:00–22:00 (peak: till 02:00)<br>Sat–Sun: 10:00–20:00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flying Logistics SPRL -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">Flying Logistics SPRL</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">Flying · LGG Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.6">
+            <div style="margin-bottom:5px">
+              <div style="color:#64748b;font-weight:600;font-size:10px">📍 Address</div>
+              <div>Rue aéropostale 1<br>4460 Grâce-Hollogne, Belgium</div>
+            </div>
+            <div style="margin-bottom:5px;padding-top:5px;border-top:1px solid #dcfce7">
+              <div style="color:#64748b;font-weight:600;font-size:10px">🛂 Customs</div>
+              <div>EORI: <strong>BE0719618947</strong></div>
+              <div>Office: <strong>BE532000</strong></div>
+            </div>
+            <div style="padding-top:5px;border-top:1px solid #dcfce7">
+              <div>📞 +3242635304 / +44 20 3994 1706</div>
+              <div>✉️ <a href="mailto:ops@flyinglogisticssprl.be" style="color:#2E7D32">ops@flyinglogisticssprl.be</a></div>
+              <div>✉️ <a href="mailto:flyingdispatch@flyinglogisticssprl.be" style="color:#2E7D32">flyingdispatch@flyinglogisticssprl.be</a></div>
+              <div>✉️ <a href="mailto:flyingcustoms@flyinglogisticssprl.be" style="color:#2E7D32">flyingcustoms@flyinglogisticssprl.be</a></div>
+              <div>✉️ <a href="mailto:David@flyinglogisticssprl.be" style="color:#2E7D32">David@flyinglogisticssprl.be</a></div>
+              <div>✉️ <a href="mailto:team@topglobal.be" style="color:#2E7D32">team@topglobal.be</a></div>
+              <div>✉️ <a href="mailto:ops-uk@ultralinkexpress.co.uk" style="color:#2E7D32">ops-uk@ultralinkexpress.co.uk</a></div>
+              <div>✉️ <a href="mailto:temu@hh-aviation.co.uk" style="color:#2E7D32">temu@hh-aviation.co.uk</a></div>
+              <div style="margin-top:4px;font-size:10px;color:#64748b">🕐 Mon–Fri 08:00–18:00 (cutoff 16:00)<br>Sat 09:00–17:00 (cutoff 15:00) · Sun closed</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HSH World Logistics -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">HSH World Logistics</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">HSH · LGG Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.6">
+            <div style="margin-bottom:5px">
+              <div style="color:#64748b;font-weight:600;font-size:10px">📍 Address</div>
+              <div>Chaussée de Liège 61<br>4460 Grace-Hollogne</div>
+            </div>
+            <div style="margin-bottom:5px;padding-top:5px;border-top:1px solid #dcfce7">
+              <div style="color:#64748b;font-weight:600;font-size:10px">🛂 Customs</div>
+              <div>UN/LOCODE: <strong>BECUGHE000048</strong></div>
+              <div>AL Code: <strong>TOL04901</strong></div>
+              <div>Office: <strong>BE532000</strong></div>
+            </div>
+            <div style="padding-top:5px;border-top:1px solid #dcfce7">
+              <div>✉️ <a href="mailto:ops1@hshworld.eu" style="color:#2E7D32">ops1@hshworld.eu</a></div>
+              <div>✉️ <a href="mailto:operation@hshworld.eu" style="color:#2E7D32">operation@hshworld.eu</a></div>
+              <div>✉️ <a href="mailto:ydh1@hshworld.eu" style="color:#2E7D32">ydh1@hshworld.eu</a></div>
+              <div>✉️ <a href="mailto:ydh2@hshworld.eu" style="color:#2E7D32">ydh2@hshworld.eu</a></div>
+              <div>✉️ <a href="mailto:ops6@hshworld.eu" style="color:#2E7D32">ops6@hshworld.eu</a></div>
+              <div>✉️ <a href="mailto:lggops@ydhexpress.com" style="color:#2E7D32">lggops@ydhexpress.com</a></div>
+              <div>✉️ <a href="mailto:customsteam@hshworld.eu" style="color:#2E7D32">customsteam@hshworld.eu</a></div>
+              <div style="margin-top:4px;font-size:10px;color:#64748b">🕐 Mon–Sun 08:00–22:00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CACESA -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">CACESA</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">CACESA · LGG Customs Agent</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.6">
+            <div style="margin-bottom:5px">
+              <div style="color:#64748b;font-weight:600;font-size:10px">📍 Address</div>
+              <div>Rue de l'Aéropostale 2<br>4460 Grâce-Hollogne</div>
+            </div>
+            <div style="margin-bottom:5px;padding-top:5px;border-top:1px solid #dcfce7">
+              <div style="color:#64748b;font-weight:600;font-size:10px">🛂 Customs</div>
+              <div>EORI: <strong>ESA78427499</strong></div>
+            </div>
+            <div style="margin-bottom:5px;padding-top:5px;border-top:1px solid #dcfce7">
+              <div>📞 +32 472 885 111</div>
+              <div>✉️ <a href="mailto:int.coordinators@cacesa.com" style="color:#2E7D32">int.coordinators@cacesa.com</a></div>
+              <div>✉️ <a href="mailto:operations.lgg@cacesa.com" style="color:#2E7D32">operations.lgg@cacesa.com</a></div>
+            </div>
+            <div style="padding-top:5px;border-top:1px solid #dcfce7">
+              <div style="font-size:10px;color:#64748b;font-weight:600">TEMU contacts:</div>
+              <div>✉️ <a href="mailto:beryl.li@temu.com" style="color:#2E7D32">beryl.li@temu.com</a></div>
+              <div>✉️ <a href="mailto:giulia.zhang@temu.com" style="color:#2E7D32">giulia.zhang@temu.com</a></div>
+              <div>✉️ <a href="mailto:farrah.ouyang@temu.com" style="color:#2E7D32">farrah.ouyang@temu.com</a></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ocarina Shipping -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">Ocarina Shipping</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">LGG · Bierset</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.6">
+            <div style="margin-bottom:5px">
+              <div style="color:#64748b;font-weight:600;font-size:10px">📍 Address</div>
+              <div>Rue Louis Bleriot 5 A<br>4460 Bierset, Belgium</div>
+            </div>
+            <div style="padding-top:5px;border-top:1px solid #dcfce7">
+              <div style="color:#64748b;font-weight:600;font-size:10px">🛂 Customs</div>
+              <div>UN/LOCODE: <strong>BECUGHE000050</strong></div>
+              <div>EORI: <strong>BE0881711192</strong></div>
+              <div>Office: <strong>BE532000</strong></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NL Consignees -->
+    <div id="csg-pane-nl" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr;gap:12px">
+        <div style="border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;background:#fffbf7">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇳🇱</span>
+            <div>
+              <div style="font-size:13px;font-weight:800;color:#1e293b">ViaEurope</div>
+              <div style="font-size:11px;color:#c2410c;font-weight:600">AMS DDS Warehouse · NLAMS</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+            <div>
+              <div style="color:#64748b;font-weight:600;margin-bottom:2px">📍 Address</div>
+              <div style="color:#1e293b">Pudongweg 21<br>1437 EM Rozenburg<br>Netherlands</div>
+            </div>
+            <div>
+              <div style="color:#64748b;font-weight:600;margin-bottom:2px">📞 Contact</div>
+              <div style="color:#1e293b">+31 (0) 204057460<br><a href="mailto:planningDDS-ams@viaeurope.com" style="color:#c2410c">planningDDS-ams@viaeurope.com</a><br><a href="mailto:temu@viaeurope.com" style="color:#c2410c">temu@viaeurope.com</a></div>
+            </div>
+            <div>
+              <div style="color:#64748b;font-weight:600;margin-bottom:2px">🛂 T1 / Customs (DDS)</div>
+              <div style="color:#1e293b">EORI: <strong>NL854896272</strong><br>Customs: DOUANEKANTOOR SCHIPHOL<br>NCTS: <strong>NL000432</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IT Consignees -->
+    <div id="csg-pane-it" style="display:none">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+
+        <!-- Premiere Cargo (Sengi) -->
+        <div style="border:1px solid #fbcfe8;border-radius:10px;padding:14px 16px;background:#fdf9fc">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇮🇹</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">Premiere Cargo &amp; Logistics S.R.L.</div>
+              <div style="font-size:10px;color:#9d174d;font-weight:600">Sengi · Customs &amp; Delivery</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>📞 <strong>3313132636</strong></div>
+            <div>✉️ <a href="mailto:Cristina.portalupi@premiereair.it" style="color:#9d174d">Cristina.portalupi@premiereair.it</a></div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>🛂 Customs office: <strong>IT371100</strong></div>
+              <div>EORI: <strong>IT01506620994</strong></div>
+            </div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>📍 VIA G. DI VITTORIO 28</div>
+              <div>20090 PANTIGLIATE (MI)</div>
+              <div style="margin-top:3px;color:#9d174d;font-weight:600">Unloading:</div>
+              <div>Via Lazzaretto 98</div>
+              <div>21010 Cardano al Campo (VA)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Magazzini Generali (KP / Cacesa) -->
+        <div style="border:1px solid #fbcfe8;border-radius:10px;padding:14px 16px;background:#fdf9fc">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇮🇹</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">Magazzini Generali della Brianza</div>
+              <div style="font-size:10px;color:#9d174d;font-weight:600">KP / Cacesa Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>📞 <strong>+39 3388363197</strong></div>
+            <div>✉️ <a href="mailto:customercare@magazzinibrianza.it" style="color:#9d174d">customercare@magazzinibrianza.it</a></div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>🛂 Customs office: <strong>IT 371100</strong></div>
+              <div>EORI/VAT: <strong>IT 07248580966</strong></div>
+            </div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>📍 VIA AUTOSOLE 3</div>
+              <div>20070 CERRO AL LAMBRO</div>
+              <div>Italia</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ViaEurope Italy (VE) -->
+        <div style="border:1px solid #fbcfe8;border-radius:10px;padding:14px 16px;background:#fdf9fc">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇮🇹</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">ViaEurope Customs Italy S.r.L.</div>
+              <div style="font-size:10px;color:#9d174d;font-weight:600">VE Warehouse · ITMXP</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>✉️ <a href="mailto:temu@viaeurope.com" style="color:#9d174d">temu@viaeurope.com</a></div>
+            <div>✉️ <a href="mailto:inbound@viaeurope.com" style="color:#9d174d">inbound@viaeurope.com</a></div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>🛂 Customs office: <strong>IT279100</strong></div>
+            </div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>📍 VIA DEL GREGGE 100</div>
+              <div>21015 LONATE POZZOLO</div>
+              <div>Italy</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
 <!-- ══ VESSELS ══ -->
 <div id="page-vessels" class="page">
