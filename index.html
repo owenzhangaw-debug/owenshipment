@@ -1351,25 +1351,152 @@ select:focus, input:focus {
   </div>
   </div>
 
-  <!-- ══ Belgium Route Timeline (full-width, top of dashboard) ══ -->
+  <!-- ══ Route Timeline — unified single calculator ══ -->
   <div class="bel-route-card" style="margin-bottom:18px;margin-top:0">
-    <div class="bel-card-top">
+    <div class="bel-card-top" style="margin-bottom:0">
       <div class="bel-card-top-left">
         <span style="font-size:22px">🚂</span>
-        <h3>Belgium Route — Stage-by-Stage Timing</h3>
-        <span style="font-size:10px;font-weight:700;background:#E8F5E9;color:#2E7D32;border-radius:20px;padding:3px 10px">🇧🇪 BELGG · 611 verified deliveries</span>
+        <h3 id="rt-title">Route — Stage-by-Stage Timing</h3>
+        <span id="rt-badge" style="font-size:10px;font-weight:700;background:#E8F5E9;color:#2E7D32;border-radius:20px;padding:3px 10px">🇧🇪 BELGG · 611 verified deliveries</span>
       </div>
-      <div class="bel-card-top-right">Days from China terminal departure</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:#94a3b8">Destination:</span>
+        <select id="rt-dest-sel" onchange="rtSwitchDest(this.value)"
+          style="font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#1e293b">
+          <option value="be">🇧🇪 BELGG — Belgium</option>
+          <option value="nl">🇳🇱 NLAMS — Netherlands</option>
+          <option value="it">🇮🇹 ITMXP — Italy</option>
+        </select>
+        <span style="font-size:10px;color:#94a3b8;margin-left:8px">Days from China terminal departure</span>
+      </div>
     </div>
-    <div class="bel-input-row">
+    <div class="bel-input-row" style="margin-top:12px">
       <label>📅 Enter a date at any stage below to project the full timeline</label>
       <span id="bel-anchor-badge" class="bel-anchor-badge" style="display:none"></span>
-      <button class="bel-clear-btn" onclick="belClearAll()">✕ Clear</button>
+      <button class="bel-clear-btn" onclick="rtClearAll()">✕ Clear</button>
     </div>
     <div id="bel-timeline-body">
-      <div class="bel-placeholder">
-        <div class="bel-ph-icon">🗺️</div>
-        <div>Enter a date at any stage to project the full route timeline</div>
+      <div class="bel-placeholder"><div class="bel-ph-icon">🗺️</div><div>Enter a date at any stage to project the full route timeline</div></div>
+    </div>
+  </div>
+
+  <!-- ══ Consignees Panel ══ -->
+  <div class="bel-route-card" style="margin-bottom:18px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;border-bottom:2px solid #e2e8f0;padding-bottom:12px">
+      <span style="font-size:20px">🏢</span>
+      <h3 style="font-size:14px;font-weight:800;color:#1e293b;margin:0">Consignees &amp; Warehouses</h3>
+      <div style="display:flex;gap:0;margin-left:4px">
+        <button id="csg-tab-nl" onclick="csgShowTab('nl')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-right:none;border-radius:6px 0 0 6px;background:#fff7ed;color:#c2410c;cursor:pointer">🇳🇱 Netherlands</button>
+        <button id="csg-tab-it" onclick="csgShowTab('it')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-radius:0 6px 6px 0;background:#f8fafc;color:#94a3b8;cursor:pointer">🇮🇹 Italy</button>
+      </div>
+    </div>
+
+    <!-- NL Consignees -->
+    <div id="csg-pane-nl">
+      <div style="display:grid;grid-template-columns:1fr;gap:12px">
+        <div style="border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;background:#fffbf7">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇳🇱</span>
+            <div>
+              <div style="font-size:13px;font-weight:800;color:#1e293b">ViaEurope</div>
+              <div style="font-size:11px;color:#c2410c;font-weight:600">AMS DDS Warehouse · NLAMS</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+            <div>
+              <div style="color:#64748b;font-weight:600;margin-bottom:2px">📍 Address</div>
+              <div style="color:#1e293b">Pudongweg 21<br>1437 EM Rozenburg<br>Netherlands</div>
+            </div>
+            <div>
+              <div style="color:#64748b;font-weight:600;margin-bottom:2px">📞 Contact</div>
+              <div style="color:#1e293b">+31 (0) 204057460<br><a href="mailto:planningDDS-ams@viaeurope.com" style="color:#c2410c">planningDDS-ams@viaeurope.com</a><br><a href="mailto:temu@viaeurope.com" style="color:#c2410c">temu@viaeurope.com</a></div>
+            </div>
+            <div>
+              <div style="color:#64748b;font-weight:600;margin-bottom:2px">🛂 T1 / Customs (DDS)</div>
+              <div style="color:#1e293b">EORI: <strong>NL854896272</strong><br>Customs: DOUANEKANTOOR SCHIPHOL<br>NCTS: <strong>NL000432</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IT Consignees -->
+    <div id="csg-pane-it" style="display:none">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+
+        <!-- Premiere Cargo (Sengi) -->
+        <div style="border:1px solid #fbcfe8;border-radius:10px;padding:14px 16px;background:#fdf9fc">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇮🇹</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">Premiere Cargo &amp; Logistics S.R.L.</div>
+              <div style="font-size:10px;color:#9d174d;font-weight:600">Sengi · Customs &amp; Delivery</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>📞 <strong>3313132636</strong></div>
+            <div>✉️ <a href="mailto:Cristina.portalupi@premiereair.it" style="color:#9d174d">Cristina.portalupi@premiereair.it</a></div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>🛂 Customs office: <strong>IT371100</strong></div>
+              <div>EORI: <strong>IT01506620994</strong></div>
+            </div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>📍 VIA G. DI VITTORIO 28</div>
+              <div>20090 PANTIGLIATE (MI)</div>
+              <div style="margin-top:3px;color:#9d174d;font-weight:600">Unloading:</div>
+              <div>Via Lazzaretto 98</div>
+              <div>21010 Cardano al Campo (VA)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Magazzini Generali (KP / Cacesa) -->
+        <div style="border:1px solid #fbcfe8;border-radius:10px;padding:14px 16px;background:#fdf9fc">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇮🇹</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">Magazzini Generali della Brianza</div>
+              <div style="font-size:10px;color:#9d174d;font-weight:600">KP / Cacesa Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>📞 <strong>+39 3388363197</strong></div>
+            <div>✉️ <a href="mailto:customercare@magazzinibrianza.it" style="color:#9d174d">customercare@magazzinibrianza.it</a></div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>🛂 Customs office: <strong>IT 371100</strong></div>
+              <div>EORI/VAT: <strong>IT 07248580966</strong></div>
+            </div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>📍 VIA AUTOSOLE 3</div>
+              <div>20070 CERRO AL LAMBRO</div>
+              <div>Italia</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ViaEurope Italy (VE) -->
+        <div style="border:1px solid #fbcfe8;border-radius:10px;padding:14px 16px;background:#fdf9fc">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇮🇹</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">ViaEurope Customs Italy S.r.L.</div>
+              <div style="font-size:10px;color:#9d174d;font-weight:600">VE Warehouse · ITMXP</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>✉️ <a href="mailto:temu@viaeurope.com" style="color:#9d174d">temu@viaeurope.com</a></div>
+            <div>✉️ <a href="mailto:inbound@viaeurope.com" style="color:#9d174d">inbound@viaeurope.com</a></div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>🛂 Customs office: <strong>IT279100</strong></div>
+            </div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #fce7f3">
+              <div>📍 VIA DEL GREGGE 100</div>
+              <div>21015 LONATE POZZOLO</div>
+              <div>Italy</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -2969,6 +3096,10 @@ function applySmartETA(id){
 function renderDashboard(){
   renderSmartInsights();
   if(typeof renderNotices==='function') renderNotices();
+  // Init NL/IT timeline skeletons on first render
+  // Unified timeline: render skeleton on first dashboard load
+  const rtBody=document.getElementById('bel-timeline-body');
+  if(rtBody&&!rtBody.querySelector('.bel-node')) renderBelgiumTimeline();
   document.getElementById('kv-total').textContent = CT.length;
   document.getElementById('kv-arr').textContent   = CT.filter(r=>r['Tracking']==='Arrived').length;
   document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
@@ -6151,6 +6282,69 @@ const BEL_STAGES = [
   { icon:'📦', label:'Belgium\nCustoms Broker',      avg:26.73, p70:29, p85:31, color:'#004D4C', bg:'#E0EFEF', dColor:'#003A3A' },
 ];
 
+// ── NL STAGES (same China→Duisburg as Belgium, shorter Amsterdam final leg) ──
+const NL_STAGES = [
+  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C' },
+  { icon:'🛂', label:'Alashankou\nBorder',         avg:5.52,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100' },
+  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:10.02, p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A' },
+  { icon:'🚩', label:'Russia\nBorder',             avg:13.85, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828' },
+  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:17.24, p70:18, p85:21, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0' },
+  { icon:'🏗️', label:'Duisburg\nHub',             avg:22.11, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E' },
+  { icon:'🇳🇱', label:'Amsterdam\nDelivery (NLAMS)',avg:24.5,  p70:26, p85:28, color:'#c2410c', bg:'#fff7ed', dColor:'#c2410c' },
+];
+// ── IT STAGES (same China→Duisburg, longer Milan final leg via truck/rail) ──
+const IT_STAGES = [
+  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C' },
+  { icon:'🛂', label:'Alashankou\nBorder',         avg:5.52,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100' },
+  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:10.02, p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A' },
+  { icon:'🚩', label:'Russia\nBorder',             avg:13.85, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828' },
+  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:17.24, p70:18, p85:21, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0' },
+  { icon:'🏗️', label:'Duisburg\nHub',             avg:22.11, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E' },
+  { icon:'🇮🇹', label:'Milan MXP\nDelivery (ITMXP)',avg:27.0, p70:29, p85:31, color:'#9d174d', bg:'#fdf2f8', dColor:'#9d174d' },
+];
+
+// ── UNIFIED ROUTE TIMELINE (single calculator, destination dropdown) ─────────
+let _rtDest='be'; // 'be' | 'nl' | 'it'
+
+function rtSwitchDest(val){
+  _rtDest=val;
+  belDeparture=''; belAnchorIdx=-1;
+  const configs={
+    be:{label:'🇧🇪 BELGG · 611 verified deliveries',bg:'#E8F5E9',color:'#2E7D32',title:'Belgium Route — Stage-by-Stage Timing'},
+    nl:{label:'🇳🇱 NLAMS · Belgium rail baseline',   bg:'#fff7ed',color:'#c2410c',title:'Netherlands Route — Stage-by-Stage Timing'},
+    it:{label:'🇮🇹 ITMXP · Belgium rail baseline',   bg:'#fdf2f8',color:'#9d174d',title:'Italy Route — Stage-by-Stage Timing'},
+  };
+  const cfg=configs[val];
+  const badge=document.getElementById('rt-badge');
+  const title=document.getElementById('rt-title');
+  if(badge){badge.textContent=cfg.label;badge.style.background=cfg.bg;badge.style.color=cfg.color;}
+  if(title) title.textContent=cfg.title;
+  const ab=document.getElementById('bel-anchor-badge');
+  if(ab) ab.style.display='none';
+  renderBelgiumTimeline(); // reuses same body for all destinations
+}
+
+function rtClearAll(){
+  belDeparture=''; belAnchorIdx=-1;
+  document.querySelectorAll('#bel-timeline-body .bel-node-input').forEach(inp=>inp.value='');
+  const ab=document.getElementById('bel-anchor-badge');
+  if(ab) ab.style.display='none';
+  renderBelgiumTimeline();
+}
+
+// ── CONSIGNEE TAB SWITCHING ─────────────────────────────────────────────────
+function csgShowTab(tab){
+  ['nl','it'].forEach(t=>{
+    const pane=document.getElementById('csg-pane-'+t);
+    const btn=document.getElementById('csg-tab-'+t);
+    if(!pane||!btn) return;
+    const active=t===tab;
+    pane.style.display=active?'':'none';
+    btn.style.background=active?(t==='nl'?'#fff7ed':'#fdf2f8'):'#f8fafc';
+    btn.style.color=active?(t==='nl'?'#c2410c':'#9d174d'):'#94a3b8';
+  });
+}
+
 let belDeparture = '';   // computed China departure (YYYY-MM-DD)
 let belAnchorIdx = -1;  // which stage was used as anchor
 
@@ -6224,151 +6418,142 @@ function belFmtInput(d){
 }
 
 function belSetStageDate(idx, dateStr){
-  if(!dateStr){
-    // If user clears the anchor, clear everything
-    if(idx === belAnchorIdx) belClearAll();
-    return;
-  }
-  // Back-calculate China departure from this stage using smart (live-blended) avg
-  const stage = computeSmartBelStages().stages[idx];
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() - Math.round(stage.avg));
-  belDeparture = belFmtInput(d);
-  belAnchorIdx = idx;
+  if(!dateStr){ if(idx===belAnchorIdx) rtClearAll(); return; }
+  let stageAvg;
+  if(_rtDest==='nl'){ stageAvg=NL_STAGES[idx].avg; }
+  else if(_rtDest==='it'){ stageAvg=IT_STAGES[idx].avg; }
+  else { stageAvg=computeSmartBelStages().stages[idx].avg; }
+  const d=new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()-Math.round(stageAvg));
+  belDeparture=belFmtInput(d);
+  belAnchorIdx=idx;
   renderBelgiumTimeline();
 }
 
-function belClearAll(){
-  belDeparture = ''; belAnchorIdx = -1;
-  // Clear all node inputs
-  document.querySelectorAll('.bel-node-input').forEach(inp => inp.value = '');
-  document.getElementById('bel-anchor-badge').style.display = 'none';
-  renderBelgiumTimeline();
-}
+function belClearAll(){ rtClearAll(); }
 
 function renderBelgiumTimeline(){
-  const body = document.getElementById('bel-timeline-body');
-  const badge = document.getElementById('bel-anchor-badge');
+  const body=document.getElementById('bel-timeline-body');
+  const badge=document.getElementById('bel-anchor-badge');
 
-  // Compute smart stages from real CT data blended with historical
-  const smart = computeSmartBelStages();
-  const STAGES = smart.stages;
+  let STAGES, smart=null, themeColor='#004D4C';
+  if(_rtDest==='nl'){ STAGES=NL_STAGES; themeColor='#c2410c'; }
+  else if(_rtDest==='it'){ STAGES=IT_STAGES; themeColor='#9d174d'; }
+  else { smart=computeSmartBelStages(); STAGES=smart.stages; themeColor='#004D4C'; }
+
+  const barColors=['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488',themeColor];
 
   if(!belDeparture){
-    body.innerHTML = `<div class="bel-placeholder"><div class="bel-ph-icon">🗺️</div><div>Enter a date at any stage to project the full route timeline</div></div>`;
-    badge.style.display = 'none';
-    // Still render the pipeline skeleton with blank inputs
-    renderBelPipelineSkeleton(body, STAGES);
+    badge.style.display='none';
+    renderBelPipelineSkeleton(body,STAGES,barColors);
     return;
   }
 
-  // Update anchor badge
-  const anchorName = belAnchorIdx >= 0 ? STAGES[belAnchorIdx].label.replace('\n',' ') : 'China Departure';
-  badge.textContent = `Anchored at: ${anchorName}`;
-  badge.style.display = '';
+  const anchorName=belAnchorIdx>=0?STAGES[belAnchorIdx].label.replace('\n',' '):'China Departure';
+  badge.textContent=`Anchored at: ${anchorName}`;
+  badge.style.display='';
 
-  const barColors = ['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488','#2563EB'];
-
-  let nodesHtml = '';
-  STAGES.forEach((s, idx) => {
-    const stageDate  = belAddDays(belDeparture, s.avg);
-    const inputVal   = belFmtInput(stageDate);
-    const isAnchor   = idx === belAnchorIdx;
-    const nameLines  = s.label.split('\n');
-    const offsetStr  = s.avg === 0 ? 'D+0' : `D+${s.avg}`;
-    const subLine    = s.p70 > 0 ? `p70=D+${s.p70} · p85=D+${s.p85}` : (idx===0 ? 'Book slot email →' : '');
-    // Show live-data indicator for stages with real samples
-    const liveN = idx===4?smart.nMala:idx===5?smart.nHub:idx===6?smart.nArr:0;
-    const liveTag = liveN>0 ? `<span style="font-size:8px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 4px;font-weight:700">📊${liveN}</span>` : '';
-
-    nodesHtml += `<div class="bel-node">
+  let nodesHtml='';
+  STAGES.forEach((s,idx)=>{
+    const stageDate=belAddDays(belDeparture,s.avg);
+    const inputVal=belFmtInput(stageDate);
+    const isAnchor=idx===belAnchorIdx;
+    const nameLines=s.label.split('\n');
+    const offsetStr=s.avg===0?'D+0':`D+${s.avg}`;
+    const subLine=s.p70>0?`p70=D+${s.p70} · p85=D+${s.p85}`:(idx===0?'Book slot email →':'');
+    const liveN=smart?(idx===4?smart.nMala:idx===5?smart.nHub:idx===6?smart.nArr:0):0;
+    const liveTag=liveN>0?`<span style="font-size:8px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 4px;font-weight:700">📊${liveN}</span>`:'';
+    nodesHtml+=`<div class="bel-node">
       <div class="bel-icon-wrap ${isAnchor?'bel-anchor-node':''}" style="background:${s.bg};border-color:${s.color}">${s.icon}</div>
       <div class="bel-node-name">${nameLines.join('<br>')}</div>
       <div class="bel-node-d" style="color:${s.dColor}">${offsetStr}${liveTag}</div>
       <div class="bel-node-date">${belFmtDate(stageDate)}</div>
-      ${subLine ? `<div class="bel-node-sub">${subLine}</div>` : ''}
+      ${subLine?`<div class="bel-node-sub">${subLine}</div>`:''}
       <input type="date" class="bel-node-input${isAnchor?' bel-anchor-input':''}"
-             value="${inputVal}"
-             onchange="belSetStageDate(${idx},this.value)"
+             value="${inputVal}" onchange="belSetStageDate(${idx},this.value)"
              title="Change anchor to: ${nameLines.join(' ')}"/>
     </div>`;
-    if(idx < STAGES.length-1) nodesHtml += `<div class="bel-arrow">→</div>`;
+    if(idx<STAGES.length-1) nodesHtml+=`<div class="bel-arrow">→</div>`;
   });
 
-  let barsHtml = `<div style="display:flex;min-width:700px;margin-top:6px;padding:0">`;
-  STAGES.forEach((s, idx) => {
-    barsHtml += `<div style="flex:1;height:4px;background:${barColors[idx]};border-radius:2px;margin:0 2px"></div>`;
-    if(idx < STAGES.length-1) barsHtml += `<div style="width:18px"></div>`;
+  let barsHtml=`<div style="display:flex;min-width:700px;margin-top:6px;padding:0">`;
+  STAGES.forEach((s,idx)=>{
+    barsHtml+=`<div style="flex:1;height:4px;background:${barColors[idx]};border-radius:2px;margin:0 2px"></div>`;
+    if(idx<STAGES.length-1) barsHtml+=`<div style="width:18px"></div>`;
   });
-  barsHtml += `</div>`;
+  barsHtml+=`</div>`;
 
-  // Compute smart slot booking dates from actual stage timing
-  const bookDate   = belAddDays(belDeparture, 3);
-  const targetDate = belAddDays(belDeparture, Math.round(smart.smartArr + 2));
-  const backupDate = belAddDays(belDeparture, Math.round(smart.smartArr + 4));
-  const slaDate    = belAddDays(belDeparture, Math.round(smart.smartArr + 9));
-  const malaToDuis = +(smart.smartHub - smart.smartMala).toFixed(1);
-  const duisToArr  = +(smart.smartArr  - smart.smartHub ).toFixed(1);
-  const liveLabel  = smart.totalLive>0
-    ? `<span style="font-size:9px;background:#dbeafe;color:#1d4ed8;border-radius:5px;padding:2px 7px;font-weight:700;margin-left:6px">📊 ${smart.totalLive} live data points</span>`
-    : `<span style="font-size:9px;color:#9ca3af;margin-left:6px">historical only</span>`;
+  let infoBar='';
+  if(smart){
+    const bookDate=belAddDays(belDeparture,3);
+    const targetDate=belAddDays(belDeparture,Math.round(smart.smartArr+2));
+    const backupDate=belAddDays(belDeparture,Math.round(smart.smartArr+4));
+    const slaDate=belAddDays(belDeparture,Math.round(smart.smartArr+9));
+    const malaToDuis=+(smart.smartHub-smart.smartMala).toFixed(1);
+    const duisToArr=+(smart.smartArr-smart.smartHub).toFixed(1);
+    const liveLabel=smart.totalLive>0
+      ?`<span style="font-size:9px;background:#dbeafe;color:#1d4ed8;border-radius:5px;padding:2px 7px;font-weight:700;margin-left:6px">📊 ${smart.totalLive} live data points</span>`
+      :`<span style="font-size:9px;color:#9ca3af;margin-left:6px">historical only</span>`;
+    infoBar=`<div class="bel-info-bar">
+      <div class="bel-info-tile"><strong>🚂 Mala → Duisburg${smart.nHub>0?` <span style="font-size:9px;color:#0369a1">(${smart.nHub} real)</span>`:''}</strong>
+        <span>avg ${malaToDuis}d · p70=${Math.round(malaToDuis+1)}d · p85=${Math.round(malaToDuis+2)}d</span></div>
+      <div class="bel-info-tile"><strong>🏗️ Duisburg → Customs${smart.nArr>0?` <span style="font-size:9px;color:#0369a1">(${smart.nArr} real)</span>`:''}</strong>
+        <span>avg ${duisToArr}d · p70=${Math.round(duisToArr+1)}d · p85=${Math.round(duisToArr+3)}d</span></div>
+      <div class="bel-info-tile bel-slot-tile"><strong>📅 Book slot on D+3 → ${belFmtDate(bookDate)}</strong>
+        <span>Target D+${Math.round(smart.smartArr+2)} (${belFmtDate(targetDate)}) · Backup D+${Math.round(smart.smartArr+4)} (${belFmtDate(backupDate)})</span></div>
+      <div class="bel-info-tile" style="background:#F0FDF4;border-color:#86EFAC">
+        <strong style="color:#15803D">✅ SLA Deadline: ${belFmtDate(slaDate)} (D+${Math.round(smart.smartArr+9)})</strong>
+        <span>99.8% compliance · 611 hist.${liveLabel}</span></div>
+    </div>`;
+  } else {
+    const finalStage=STAGES[STAGES.length-1];
+    const bookDate=belAddDays(belDeparture,3);
+    const targetDate=belAddDays(belDeparture,Math.round(finalStage.avg+2));
+    const destDate=belAddDays(belDeparture,finalStage.avg);
+    const duisToFinal=+(finalStage.avg-22.11).toFixed(1);
+    const destLabel=_rtDest==='nl'?'Amsterdam (NLAMS)':'Milan MXP (ITMXP)';
+    infoBar=`<div class="bel-info-bar">
+      <div class="bel-info-tile"><strong>🚂 Mala → Duisburg</strong>
+        <span>avg ${+(STAGES[5].avg-STAGES[4].avg).toFixed(1)}d · p70=5d · p85=7d</span></div>
+      <div class="bel-info-tile"><strong>🚛 Duisburg → ${destLabel}</strong>
+        <span>avg ${duisToFinal}d · p70=D+${finalStage.p70} · p85=D+${finalStage.p85}</span></div>
+      <div class="bel-info-tile bel-slot-tile"><strong>📅 Book slot on D+3 → ${belFmtDate(bookDate)}</strong>
+        <span>Target slot D+${Math.round(finalStage.avg+2)} (${belFmtDate(targetDate)})</span></div>
+      <div class="bel-info-tile" style="background:#F0FDF4;border-color:#86EFAC">
+        <strong style="color:#15803D">✅ Est. Arrival: ${belFmtDate(destDate)} (D+${finalStage.avg})</strong>
+        <span>p70=D+${finalStage.p70} · p85=D+${finalStage.p85} · based on 611 Belgium rail records</span></div>
+    </div>`;
+  }
 
-  const infoBar = `<div class="bel-info-bar">
-    <div class="bel-info-tile">
-      <strong>🚂 Mala → Duisburg${smart.nHub>0?` <span style="font-size:9px;color:#0369a1">(${smart.nHub} real)</span>`:''}
-      </strong>
-      <span>avg ${malaToDuis}d &nbsp;|&nbsp; p70=${BEL_STAGES[4].p70>0?Math.round(BEL_STAGES[5].avg-BEL_STAGES[4].avg+1):6}d · p85=${BEL_STAGES[4].p70>0?Math.round(BEL_STAGES[5].avg-BEL_STAGES[4].avg+2):7}d</span>
-    </div>
-    <div class="bel-info-tile">
-      <strong>🏗️ Duisburg → Customs${smart.nArr>0?` <span style="font-size:9px;color:#0369a1">(${smart.nArr} real)</span>`:''}
-      </strong>
-      <span>avg ${duisToArr}d &nbsp;|&nbsp; p70=${Math.round(duisToArr+1)}d · p85=${Math.round(duisToArr+3)}d</span>
-    </div>
-    <div class="bel-info-tile bel-slot-tile">
-      <strong>📅 Book slot on D+3 → ${belFmtDate(bookDate)}</strong>
-      <span>Target slot D+${Math.round(smart.smartArr+2)} (${belFmtDate(targetDate)}) · Backup D+${Math.round(smart.smartArr+4)} (${belFmtDate(backupDate)})</span>
-    </div>
-    <div class="bel-info-tile" style="background:#F0FDF4;border-color:#86EFAC">
-      <strong style="color:#15803D">✅ SLA Deadline: ${belFmtDate(slaDate)} (D+${Math.round(smart.smartArr+9)})</strong>
-      <span>99.8% compliance · 564 hist.${liveLabel}</span>
-    </div>
-  </div>`;
-
-  body.innerHTML = `
-    <div class="bel-pipeline-wrap">
-      <div class="bel-pipeline">${nodesHtml}</div>
-      ${barsHtml}
-    </div>
-    ${infoBar}`;
+  body.innerHTML=`<div class="bel-pipeline-wrap"><div class="bel-pipeline">${nodesHtml}</div>${barsHtml}</div>${infoBar}`;
 }
 
-function renderBelPipelineSkeleton(body, STAGES){
-  // Show pipeline with empty inputs even before any date is entered
-  if(!STAGES) STAGES = computeSmartBelStages().stages;
-  const barColors = ['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488','#2563EB'];
-  let nodesHtml = '';
-  STAGES.forEach((s, idx) => {
-    const nameLines = s.label.split('\n');
-    const offsetStr = s.avg === 0 ? 'D+0' : `D+${s.avg}`;
-    const subLine   = s.p70 > 0 ? `p70=D+${s.p70} · p85=D+${s.p85}` : (idx===0 ? 'Book slot email →' : '');
-    nodesHtml += `<div class="bel-node">
+function renderBelPipelineSkeleton(body,STAGES,barColors){
+  if(!STAGES) STAGES=computeSmartBelStages().stages;
+  if(!barColors) barColors=['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488','#2563EB'];
+  let nodesHtml='';
+  STAGES.forEach((s,idx)=>{
+    const nameLines=s.label.split('\n');
+    const offsetStr=s.avg===0?'D+0':`D+${s.avg}`;
+    const subLine=s.p70>0?`p70=D+${s.p70} · p85=D+${s.p85}`:(idx===0?'Book slot email →':'');
+    nodesHtml+=`<div class="bel-node">
       <div class="bel-icon-wrap" style="background:${s.bg};border-color:${s.color}">${s.icon}</div>
       <div class="bel-node-name">${nameLines.join('<br>')}</div>
       <div class="bel-node-d" style="color:${s.dColor}">${offsetStr}</div>
       <div class="bel-node-date" style="color:#ccc">—</div>
-      ${subLine ? `<div class="bel-node-sub">${subLine}</div>` : ''}
+      ${subLine?`<div class="bel-node-sub">${subLine}</div>`:''}
       <input type="date" class="bel-node-input" onchange="belSetStageDate(${idx},this.value)"
              title="Enter date for ${nameLines.join(' ')}"/>
     </div>`;
-    if(idx < STAGES.length-1) nodesHtml += `<div class="bel-arrow">→</div>`;
+    if(idx<STAGES.length-1) nodesHtml+=`<div class="bel-arrow">→</div>`;
   });
-  let barsHtml = `<div style="display:flex;min-width:700px;margin-top:6px;padding:0">`;
-  STAGES.forEach((s, idx) => {
-    barsHtml += `<div style="flex:1;height:4px;background:${barColors[idx]};border-radius:2px;margin:0 2px;opacity:.25"></div>`;
-    if(idx < STAGES.length-1) barsHtml += `<div style="width:18px"></div>`;
+  let barsHtml=`<div style="display:flex;min-width:700px;margin-top:6px;padding:0">`;
+  STAGES.forEach((s,idx)=>{
+    barsHtml+=`<div style="flex:1;height:4px;background:${barColors[idx]};border-radius:2px;margin:0 2px;opacity:.25"></div>`;
+    if(idx<STAGES.length-1) barsHtml+=`<div style="width:18px"></div>`;
   });
-  barsHtml += `</div>`;
-  body.innerHTML = `<div class="bel-pipeline-wrap"><div class="bel-pipeline">${nodesHtml}</div>${barsHtml}</div>`;
+  barsHtml+=`</div>`;
+  body.innerHTML=`<div class="bel-pipeline-wrap"><div class="bel-pipeline">${nodesHtml}</div>${barsHtml}</div>`;
 }
 
 function vtSearchContainer(q){ vtCombinedSearch(q); } // legacy alias
