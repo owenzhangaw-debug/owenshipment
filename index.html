@@ -1309,47 +1309,7 @@ select:focus, input:focus {
 <div id="page-dashboard" class="page active">
   <div id="smart-panel" class="smart-panel"></div>
 
-  <!-- ══ Route Timeline cards ══ -->
-  <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;margin-bottom:18px;margin-top:0" id="route-cards-row">
-  <!-- NL Route -->
-  <div class="bel-route-card" style="margin:0;border-top:3px solid #c2410c">
-    <div class="bel-card-top">
-      <div class="bel-card-top-left">
-        <span style="font-size:20px">🇳🇱</span>
-        <h3 style="font-size:12px">Netherlands Route</h3>
-        <span style="font-size:10px;font-weight:700;background:#fff7ed;color:#c2410c;border-radius:20px;padding:3px 10px">NLAMS · via Duisburg</span>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇨🇳 China Departure</span><span style="font-weight:700;color:#c2410c">0d</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇰🇿 Kazakhstan Done</span><span style="font-weight:700;color:#c2410c">avg 10d</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇵🇱 Malaszewicze</span><span style="font-weight:700;color:#c2410c">avg 17d</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇩🇪 Duisburg Hub</span><span style="font-weight:700;color:#c2410c">avg 22d</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fff7ed;border:1px solid #fed7aa"><span>🇳🇱 Amsterdam Delivery</span><span style="font-weight:700;color:#c2410c">avg 24–25d</span></div>
-      <div style="font-size:10px;color:#94a3b8;margin-top:2px;padding:0 4px">🚚 Duisburg→AMS ~200km, ~2d faster than Belgium</div>
-    </div>
-    <div style="font-size:10px;color:#64748b;margin-top:8px;padding:6px 8px;background:#fff7ed;border-radius:6px;border:1px solid #fed7aa">📊 Based on 611 Belgium rail records — same China→Duisburg leg</div>
-  </div>
-  <!-- IT Route -->
-  <div class="bel-route-card" style="margin:0;border-top:3px solid #9d174d">
-    <div class="bel-card-top">
-      <div class="bel-card-top-left">
-        <span style="font-size:20px">🇮🇹</span>
-        <h3 style="font-size:12px">Italy Route</h3>
-        <span style="font-size:10px;font-weight:700;background:#fdf2f8;color:#9d174d;border-radius:20px;padding:3px 10px">ITMXP · via Duisburg</span>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇨🇳 China Departure</span><span style="font-weight:700;color:#9d174d">0d</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇰🇿 Kazakhstan Done</span><span style="font-weight:700;color:#9d174d">avg 10d</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇵🇱 Malaszewicze</span><span style="font-weight:700;color:#9d174d">avg 17d</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fafafa;border:1px solid #f1f5f9"><span>🇩🇪 Duisburg Hub</span><span style="font-weight:700;color:#9d174d">avg 22d</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 10px;border-radius:7px;background:#fdf2f8;border:1px solid #fbcfe8"><span>🇮🇹 Milan (MXP) Delivery</span><span style="font-weight:700;color:#9d174d">avg 26–28d</span></div>
-      <div style="font-size:10px;color:#94a3b8;margin-top:2px;padding:0 4px">🚛 Duisburg→MXP ~800km, ~4d final leg</div>
-    </div>
-    <div style="font-size:10px;color:#64748b;margin-top:8px;padding:6px 8px;background:#fdf2f8;border-radius:6px;border:1px solid #fbcfe8">📊 Based on 611 Belgium rail records — same China→Duisburg leg</div>
-  </div>
-  </div>
+
 
   <!-- ══ Route Timeline — unified single calculator ══ -->
   <div class="bel-route-card" style="margin-bottom:18px;margin-top:0">
@@ -1386,13 +1346,115 @@ select:focus, input:focus {
       <span style="font-size:20px">🏢</span>
       <h3 style="font-size:14px;font-weight:800;color:#1e293b;margin:0">Consignees &amp; Warehouses</h3>
       <div style="display:flex;gap:0;margin-left:4px">
-        <button id="csg-tab-nl" onclick="csgShowTab('nl')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-right:none;border-radius:6px 0 0 6px;background:#fff7ed;color:#c2410c;cursor:pointer">🇳🇱 Netherlands</button>
+        <button id="csg-tab-be" onclick="csgShowTab('be')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-right:none;border-radius:6px 0 0 6px;background:#E8F5E9;color:#2E7D32;cursor:pointer">🇧🇪 Belgium</button>
+        <button id="csg-tab-nl" onclick="csgShowTab('nl')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-right:none;border-radius:0;background:#f8fafc;color:#94a3b8;cursor:pointer">🇳🇱 Netherlands</button>
         <button id="csg-tab-it" onclick="csgShowTab('it')" style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;border-radius:0 6px 6px 0;background:#f8fafc;color:#94a3b8;cursor:pointer">🇮🇹 Italy</button>
       </div>
     </div>
 
+    <!-- BE Consignees -->
+    <div id="csg-pane-be">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+
+        <!-- Flying Logistics -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">Flying Logistics SPRL</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">Flying · LGG Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>✉️ <a href="mailto:ops@flyinglogisticssprl.be" style="color:#2E7D32">ops@flyinglogisticssprl.be</a></div>
+            <div>✉️ <a href="mailto:flyingdispatch@flyinglogisticssprl.be" style="color:#2E7D32">flyingdispatch@flyinglogisticssprl.be</a></div>
+            <div>✉️ <a href="mailto:flyingcustoms@flyinglogisticssprl.be" style="color:#2E7D32">flyingcustoms@flyinglogisticssprl.be</a></div>
+            <div>✉️ <a href="mailto:David@flyinglogisticssprl.be" style="color:#2E7D32">David@flyinglogisticssprl.be</a></div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #dcfce7">
+              <div>✉️ <a href="mailto:team@topglobal.be" style="color:#2E7D32">team@topglobal.be</a></div>
+              <div>✉️ <a href="mailto:ops-uk@ultralinkexpress.co.uk" style="color:#2E7D32">ops-uk@ultralinkexpress.co.uk</a></div>
+              <div>✉️ <a href="mailto:temu@hh-aviation.co.uk" style="color:#2E7D32">temu@hh-aviation.co.uk</a></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIA EUROPE Belgium -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">VIA EUROPE</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">VE · LGG DDS Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>✉️ <a href="mailto:inbound@viaeurope.com" style="color:#2E7D32">inbound@viaeurope.com</a></div>
+            <div>✉️ <a href="mailto:account-tm@viaeurope.com" style="color:#2E7D32">account-tm@viaeurope.com</a></div>
+            <div>✉️ <a href="mailto:planningDDS-lgg@viaeurope.com" style="color:#2E7D32">planningDDS-lgg@viaeurope.com</a></div>
+          </div>
+        </div>
+
+        <!-- Skyline -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">Skyline Logistics SRL</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">Skyline · LGG Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>✉️ <a href="mailto:temu@qtradegroup.com" style="color:#2E7D32">temu@qtradegroup.com</a></div>
+            <div>✉️ <a href="mailto:candy.tang@qtlogistics.eu" style="color:#2E7D32">candy.tang@qtlogistics.eu</a></div>
+          </div>
+        </div>
+
+        <!-- HSH World Logistics -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">HSH World Logistics</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">HSH · LGG Warehouse</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>✉️ <a href="mailto:ops1@hshworld.eu" style="color:#2E7D32">ops1@hshworld.eu</a></div>
+            <div>✉️ <a href="mailto:operation@hshworld.eu" style="color:#2E7D32">operation@hshworld.eu</a></div>
+            <div>✉️ <a href="mailto:ydh1@hshworld.eu" style="color:#2E7D32">ydh1@hshworld.eu</a></div>
+            <div>✉️ <a href="mailto:ydh2@hshworld.eu" style="color:#2E7D32">ydh2@hshworld.eu</a></div>
+            <div>✉️ <a href="mailto:ops6@hshworld.eu" style="color:#2E7D32">ops6@hshworld.eu</a></div>
+            <div>✉️ <a href="mailto:lggops@ydhexpress.com" style="color:#2E7D32">lggops@ydhexpress.com</a></div>
+            <div>✉️ <a href="mailto:customsteam@hshworld.eu" style="color:#2E7D32">customsteam@hshworld.eu</a></div>
+          </div>
+        </div>
+
+        <!-- CACESA -->
+        <div style="border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🇧🇪</span>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#1e293b">CACESA</div>
+              <div style="font-size:10px;color:#2E7D32;font-weight:600">CACESA · LGG Customs Agent</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#475569;line-height:1.7">
+            <div>✉️ <a href="mailto:int.coordinators@cacesa.com" style="color:#2E7D32">int.coordinators@cacesa.com</a></div>
+            <div>✉️ <a href="mailto:operations.lgg@cacesa.com" style="color:#2E7D32">operations.lgg@cacesa.com</a></div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #dcfce7">
+              <div style="font-size:10px;color:#64748b">TEMU contacts:</div>
+              <div>✉️ <a href="mailto:beryl.li@temu.com" style="color:#2E7D32">beryl.li@temu.com</a></div>
+              <div>✉️ <a href="mailto:giulia.zhang@temu.com" style="color:#2E7D32">giulia.zhang@temu.com</a></div>
+              <div>✉️ <a href="mailto:farrah.ouyang@temu.com" style="color:#2E7D32">farrah.ouyang@temu.com</a></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- NL Consignees -->
-    <div id="csg-pane-nl">
+    <div id="csg-pane-nl" style="display:none">
       <div style="display:grid;grid-template-columns:1fr;gap:12px">
         <div style="border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;background:#fffbf7">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -4579,6 +4641,7 @@ function getCTRows(){
   const qRaw=(document.getElementById('f-search').value||'');
   // Split by comma/semicolon/whitespace to support pasting multiple values
   const qTokens=qRaw.split(/[\s,;]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const fds=msGetValues('dest');
   const fbs=msGetValues('batch');
   const fts=msGetValues('trucker');
   const ftrs=msGetValues('tracking');
@@ -4588,6 +4651,7 @@ function getCTRows(){
   const fsur=msGetValues('surcharge');
   const fpay=msGetValues('payment');
   return CT.filter(r=>{
+    if(fds.length&&!fds.includes(r['Destination']||'Belgium')) return false;
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
     if(fcons.length&&!fcons.includes(r['Consignee']||'')) return false;
@@ -6334,14 +6398,16 @@ function rtClearAll(){
 
 // ── CONSIGNEE TAB SWITCHING ─────────────────────────────────────────────────
 function csgShowTab(tab){
-  ['nl','it'].forEach(t=>{
+  ['be','nl','it'].forEach(t=>{
     const pane=document.getElementById('csg-pane-'+t);
     const btn=document.getElementById('csg-tab-'+t);
     if(!pane||!btn) return;
     const active=t===tab;
     pane.style.display=active?'':'none';
-    btn.style.background=active?(t==='nl'?'#fff7ed':'#fdf2f8'):'#f8fafc';
-    btn.style.color=active?(t==='nl'?'#c2410c':'#9d174d'):'#94a3b8';
+    const bgMap={be:'#E8F5E9',nl:'#fff7ed',it:'#fdf2f8'};
+    const clrMap={be:'#2E7D32',nl:'#c2410c',it:'#9d174d'};
+    btn.style.background=active?bgMap[t]:'#f8fafc';
+    btn.style.color=active?clrMap[t]:'#94a3b8';
   });
 }
 
@@ -7617,7 +7683,11 @@ function seLoadContacts(){
       {id:2, label:'VIA EUROPE', emails:'inbound@viaeurope.com, account-tm@viaeurope.com, planningDDS-lgg@viaeurope.com'},
       {id:3, label:'Flying',     emails:'ops@flyinglogisticssprl.be, flyingdispatch@flyinglogisticssprl.be, flyingcustoms@flyinglogisticssprl.be, David@flyinglogisticssprl.be, team@topglobal.be, ops-uk@ultralinkexpress.co.uk, temu@hh-aviation.co.uk'},
       {id:4, label:'HSH',        emails:'ops1@hshworld.eu, operation@hshworld.eu, ydh1@hshworld.eu, ydh2@hshworld.eu, ops6@hshworld.eu, lggops@ydhexpress.com, customsteam@hshworld.eu'},
-      {id:5, label:'CACESA',     emails:'int.coordinators@cacesa.com, operations.lgg@cacesa.com, beryl.li@temu.com, giulia.zhang@temu.com, farrah.ouyang@temu.com'}
+      {id:5, label:'CACESA',     emails:'int.coordinators@cacesa.com, operations.lgg@cacesa.com, beryl.li@temu.com, giulia.zhang@temu.com, farrah.ouyang@temu.com'},
+      {id:6, label:'ViaEurope AMS (NL)',      emails:'planningDDS-ams@viaeurope.com, temu@viaeurope.com'},
+      {id:7, label:'Premiere Cargo IT (Sengi)',emails:'Cristina.portalupi@premiereair.it'},
+      {id:8, label:'Magazzini Brianza (KP)',   emails:'customercare@magazzinibrianza.it'},
+      {id:9, label:'ViaEurope IT (VE)',        emails:'temu@viaeurope.com, inbound@viaeurope.com'}
     ];
     seSaveContacts();
   }
