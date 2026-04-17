@@ -2287,13 +2287,13 @@ select:focus, input:focus {
     <div class="tbl-scroll">
       <table>
         <thead><tr>
-          <th class="no-sort" style="width:32px"></th>
-          <th onclick="vtSort('CY')" data-vtcol="CY">CY ↕</th>
-          <th onclick="vtSort('Port')" data-vtcol="Port">Port ↕</th>
-          <th onclick="vtSort('Carrier')" data-vtcol="Carrier">Carrier ↕</th>
-          <th onclick="vtSort('Booking / BC No.')" data-vtcol="Booking / BC No.">Booking / BC No. ↕</th>
-          <th onclick="vtSort('Container Qty')" data-vtcol="Container Qty">Container Qty ↕</th>
-          <th onclick="vtSort('Vessel Name')" data-vtcol="Vessel Name">Vessel Name ↕</th>
+          <th class="vt-fc-expand no-sort" style="width:32px"></th>
+          <th class="vt-fc" onclick="vtSort('CY')" data-vtcol="CY">CY ↕</th>
+          <th class="vt-fc" onclick="vtSort('Port')" data-vtcol="Port">Port ↕</th>
+          <th class="vt-fc" onclick="vtSort('Carrier')" data-vtcol="Carrier">Carrier ↕</th>
+          <th class="vt-fc" onclick="vtSort('Booking / BC No.')" data-vtcol="Booking / BC No.">Booking / BC No. ↕</th>
+          <th class="vt-fc" onclick="vtSort('Container Qty')" data-vtcol="Container Qty">Container Qty ↕</th>
+          <th class="vt-fc" onclick="vtSort('Vessel Name')" data-vtcol="Vessel Name">Vessel Name ↕</th>
           <th onclick="vtSort('ETS (Departure)')" data-vtcol="ETS (Departure)">ETS (Departure) ↕<span class="cdf-btn" id="cdf-vt-btn-ETS (Departure)" onclick="openColDF('vt','ETS (Departure)',this,event)" title="Filter by date">▾</span></th>
           <th onclick="vtSort('ETA (Arrival)')" data-vtcol="ETA (Arrival)">ETA (Arrival) ↕<span class="cdf-btn" id="cdf-vt-btn-ETA (Arrival)" onclick="openColDF('vt','ETA (Arrival)',this,event)" title="Filter by date">▾</span></th>
           <th onclick="vtSort('ATA (Actual)')" data-vtcol="ATA (Actual)">ATA (Actual) ↕<span class="cdf-btn" id="cdf-vt-btn-ATA (Actual)" onclick="openColDF('vt','ATA (Actual)',this,event)" title="Filter by date">▾</span></th>
@@ -5535,7 +5535,8 @@ function vtCell(r, col, opts){
   const xStyle = (opts&&opts.extraStyle) ? ` style="${opts.extraStyle}"` : '';
   if(opts && opts.select){
     const selOpts = opts.select.map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('');
-    return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
+    const xClass = (opts&&opts.extraClass) ? ` class="${opts.extraClass}"` : '';
+  return `<td${xClass} data-vtid="${r._id}" data-col="${col}"${xStyle}>
       <div class="cell-view" onclick="startEdit(this)">${disp?`<strong>${disp}</strong>`:'<span style="color:#ccc">—</span>'}</div>
       <div class="cell-edit"><select onblur="commitVTSelect(this,'${col}',${r._id})" onchange="commitVTSelect(this,'${col}',${r._id})">${selOpts}</select></div>
     </td>`;
@@ -5807,6 +5808,33 @@ function openDelVessel(id){
   if(!confirm('Delete this vessel booking?')) return;
   VT=VT.filter(r=>r._id!==id); saveVT(); renderVT(); renderDashboard();
 }
+
+function vtApplyFreezeColumns(){
+  const tbl = document.querySelector('#page-vessels table');
+  if(!tbl) return;
+  // Gather all cells in the header row to measure widths
+  const headerCells = tbl.querySelectorAll('thead tr th');
+  let left = 0;
+  headerCells.forEach(th => {
+    if(th.classList.contains('vt-fc') || th.classList.contains('vt-fc-expand')){
+      th.style.left = left + 'px';
+      // Apply same left to all body tds in this column
+      const idx = Array.from(th.parentElement.children).indexOf(th);
+      tbl.querySelectorAll(`tbody tr td:nth-child(${idx+1})`).forEach(td => {
+        td.style.left = left + 'px';
+      });
+      left += th.offsetWidth;
+    }
+  });
+  // Add right border shadow to last frozen column
+  const lastFrozen = [...tbl.querySelectorAll('thead th.vt-fc,thead th.vt-fc-expand')].pop();
+  if(lastFrozen){
+    const lastIdx = Array.from(lastFrozen.parentElement.children).indexOf(lastFrozen);
+    tbl.querySelectorAll(`thead th:nth-child(${lastIdx+1}), tbody td:nth-child(${lastIdx+1})`).forEach(el=>{
+      el.style.boxShadow = '2px 0 6px -2px rgba(0,0,0,0.15)';
+    });
+  }
+}
 function renderVT(){
   const _vtTotalCt=VT.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0);
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'];
@@ -5960,16 +5988,16 @@ function renderVT(){
     const tagsHtml=cnCount?`<div class="vt-cn-tags">${tags}</div>`:`<div class="vt-cn-tags"><span class="vt-cn-empty">No containers linked yet</span></div>`;
 
     return `<tr class="${cls}" id="vrow-${r._id}" style="--vpct:${Math.round(_vpPct*100)}%" onmouseenter="(function(){const c=document.querySelector('.vt-voyage-card[data-vtid=\\'${r._id}\\']');if(c){c.classList.remove('vt-pop');void c.offsetWidth;c.classList.add('vt-pop');}})()">
-      <td style="padding:4px 6px;text-align:center;white-space:nowrap">
+      <td class="vt-fc-expand" style="padding:4px 6px;text-align:center;white-space:nowrap">
         <button class="vt-expand-btn" onclick="vtToggleExpand(${r._id})" title="${isOpen?'Collapse':'Expand'}">${isOpen?'▼':'▶'}</button>
         ${cnCount?`<span style="font-size:10px;color:var(--blue);font-weight:700">${cnCount}</span>`:''}
       </td>
-      ${vtCell(r,'CY')}
-      ${vtCell(r,'Port')}
-      ${vtCell(r,'Carrier')}
-      ${vtCell(r,'Booking / BC No.')}
-      ${vtCell(r,'Container Qty')}
-      ${vtCell(r,'Vessel Name')}
+      ${vtCell(r,'CY',{extraClass:'vt-fc'})}
+      ${vtCell(r,'Port',{extraClass:'vt-fc'})}
+      ${vtCell(r,'Carrier',{extraClass:'vt-fc'})}
+      ${vtCell(r,'Booking / BC No.',{extraClass:'vt-fc'})}
+      ${vtCell(r,'Container Qty',{extraClass:'vt-fc'})}
+      ${vtCell(r,'Vessel Name',{extraClass:'vt-fc'})}
       ${vtCell(r,'ETS (Departure)')}
       ${vtCell(r,'ETA (Arrival)')}
       ${vtCell(r,'ATA (Actual)')}
@@ -6132,6 +6160,7 @@ function renderVT(){
   if(vpEl) vpEl.style.display=vpCards?'flex':'none';
   // Init flatpickr on barge and vessel roll date inputs
   document.querySelectorAll('.vhi-date,.vbi-etd,.vbi-eta').forEach(inp=>fpDate(inp));
+  setTimeout(vtApplyFreezeColumns, 0);
 }
 
 // ── VESSEL EXPAND / CONTAINERS ────────────────────────────────────
@@ -9118,6 +9147,13 @@ header { padding-top: max(8px, env(safe-area-inset-top)); }
   .mobile-nav { display: flex; }
   main { padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important; }
 }
+
+/* ── VT Frozen columns (CY → Vessel Name) ── */
+th.vt-fc,td.vt-fc{position:sticky;z-index:3;background:#fff}
+thead th.vt-fc{z-index:20;top:0;background:#004D4C}
+td.vt-fc-expand{position:sticky;left:0;z-index:3;background:#fff}
+thead th.vt-fc-expand{position:sticky;left:0;z-index:20;top:0;background:#004D4C}
+tbody tr:hover td.vt-fc,tbody tr:hover td.vt-fc-expand{background:#F8FAFC}
 </style>
 
 <!-- ── PWA: Register inline service worker for offline support ── -->
