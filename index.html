@@ -2872,7 +2872,7 @@ function showPage(p){
   }
   if(p==='dashboard') renderDashboard();
   if(p==='containers'){ renderCT(); if(typeof renderPageNotices==='function') renderPageNotices(); }
-  if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); }
+  if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); setTimeout(vtApplyFreezeColumns,50); }
   if(p==='feedback') renderFeedback();
 }
 function _contextAdd(){
@@ -5812,26 +5812,37 @@ function openDelVessel(id){
 function vtApplyFreezeColumns(){
   const tbl = document.querySelector('#page-vessels table');
   if(!tbl) return;
-  // Gather all cells in the header row to measure widths
-  const headerCells = tbl.querySelectorAll('thead tr th');
+  // Must be visible to measure offsetWidth
+  const page = document.getElementById('page-vessels');
+  if(!page || !page.classList.contains('active')){ return; }
+  const headerCells = Array.from(tbl.querySelectorAll('thead tr th'));
   let left = 0;
-  headerCells.forEach(th => {
-    if(th.classList.contains('vt-fc') || th.classList.contains('vt-fc-expand')){
+  const frozenIndices = [];
+  headerCells.forEach((th, i) => {
+    const isFrozen = th.classList.contains('vt-fc') || th.classList.contains('vt-fc-expand');
+    if(isFrozen){
       th.style.left = left + 'px';
-      // Apply same left to all body tds in this column
-      const idx = Array.from(th.parentElement.children).indexOf(th);
-      tbl.querySelectorAll(`tbody tr td:nth-child(${idx+1})`).forEach(td => {
-        td.style.left = left + 'px';
-      });
+      frozenIndices.push({idx: i, left});
       left += th.offsetWidth;
     }
   });
-  // Add right border shadow to last frozen column
-  const lastFrozen = [...tbl.querySelectorAll('thead th.vt-fc,thead th.vt-fc-expand')].pop();
-  if(lastFrozen){
-    const lastIdx = Array.from(lastFrozen.parentElement.children).indexOf(lastFrozen);
+  // Apply left to all body TDs in frozen columns
+  tbl.querySelectorAll('tbody tr').forEach(tr => {
+    const tds = Array.from(tr.children);
+    frozenIndices.forEach(({idx, left: l}) => {
+      if(tds[idx]){
+        tds[idx].style.left = l + 'px';
+        tds[idx].style.position = 'sticky';
+        tds[idx].style.zIndex = '3';
+        tds[idx].style.background = tds[idx].style.background || '#fff';
+      }
+    });
+  });
+  // Shadow on last frozen col
+  if(frozenIndices.length){
+    const lastIdx = frozenIndices[frozenIndices.length-1].idx;
     tbl.querySelectorAll(`thead th:nth-child(${lastIdx+1}), tbody td:nth-child(${lastIdx+1})`).forEach(el=>{
-      el.style.boxShadow = '2px 0 6px -2px rgba(0,0,0,0.15)';
+      el.style.boxShadow = '3px 0 8px -3px rgba(0,0,0,0.18)';
     });
   }
 }
@@ -9203,6 +9214,8 @@ window.addEventListener('load',()=>{
     }
   }
 });
+
+window.addEventListener('resize', ()=>{ if(_currentPage==='vessels') vtApplyFreezeColumns(); });
 </script>
 
 <!-- ── Mobile bottom nav bar ── -->
