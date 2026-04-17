@@ -2310,6 +2310,10 @@ select:focus, input:focus {
           <th onclick="vtSort('Payment Status')" data-vtcol="Payment Status">Payment Status ↕</th>
           <th onclick="vtSort('Booking Fee')" data-vtcol="Booking Fee">Booking Fee (Rhenus) ↕</th>
           <th onclick="vtSort('Booking Fee Payment')" data-vtcol="Booking Fee Payment">Booking Fee Paid ↕</th>
+          <th onclick="vtSort('Custom Clearance Fee')" data-vtcol="Custom Clearance Fee">CC Fee ↕</th>
+          <th class="no-sort" style="text-align:center">CC Paid</th>
+          <th onclick="vtSort('Broker')" data-vtcol="Broker">Broker ↕</th>
+          <th onclick="vtSort('Invoice No.')" data-vtcol="Invoice No.">Invoice No. ↕</th>
           <th onclick="vtSort('Remark')" data-vtcol="Remark">Remark ↕</th>
           <th onclick="vtSort('_addedAt')" data-vtcol="_addedAt">Date Added ↕</th>
           <th class="no-sort"></th>
@@ -2707,6 +2711,17 @@ select:focus, input:focus {
           <option value="Not Billed">Not Billed</option>
         </select>
       </div>
+      <div class="form-group"><label>CC Fee (€)</label><input type="text" id="vta-cc-fee" placeholder="e.g. 250"/></div>
+      <div class="form-group"><label>CC Fee Payment</label>
+        <select id="vta-cc-fee-payment">
+          <option value="">—</option>
+          <option value="Paid">Paid</option>
+          <option value="Pending">Pending</option>
+          <option value="Not Billed">Not Billed</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Broker</label><input type="text" id="vta-broker" placeholder="e.g. CACESA"/></div>
+      <div class="form-group"><label>Invoice No.</label><input type="text" id="vta-invoice-no" placeholder="e.g. INV-2024-001"/></div>
       <div class="form-group full"><label>Remark</label><input type="text" id="vta-remark" placeholder="Optional notes"/></div>
     </div>
 
@@ -5506,7 +5521,7 @@ function toggleCMR(id, checked){
 const _fmtUSD = v => { const n=parseFloat(v); if(!v&&v!==0||isNaN(n)) return '—'; return '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}); };
 const _fmtEUR = v => { const n=parseFloat(v); if(!v&&v!==0||isNaN(n)) return '—'; return '€'+n.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2}); };
 const _VT_USD_COLS = new Set(['Price','Surcharge']);   // always USD
-const _VT_EUR_COLS = new Set(['Booking Fee']);          // always EUR
+const _VT_EUR_COLS = new Set(['Booking Fee','Custom Clearance Fee']); // always EUR
 
 function vtCell(r, col, opts){
   const v = r[col]===undefined||r[col]===null||isNaN_safe(r[col]) ? '' : String(r[col]);
@@ -5769,6 +5784,10 @@ function vtSaveNewVessel(){
     'Payment Status':document.getElementById('vta-payment-status')?.value||'',
     'Booking Fee':g('vta-booking-fee'),
     'Booking Fee Payment':document.getElementById('vta-booking-fee-payment')?.value||'',
+    'Custom Clearance Fee':g('vta-cc-fee'),
+    'CC Fee Payment':document.getElementById('vta-cc-fee-payment')?.value||'',
+    'Broker':g('vta-broker'),
+    'Invoice No.':g('vta-invoice-no'),
     'Remark':g('vta-remark'),
     'VGM':false,'Custom':false,
     containers:[],vesselHistory:[],bargeRollHistory:[],
@@ -5967,6 +5986,10 @@ function renderVT(){
       ${vtCell(r,'Payment Status',{select:PAY_OPTS})}
       ${vtCell(r,'Booking Fee')}
       ${vtCell(r,'Booking Fee Payment',{select:PAY_OPTS})}
+      ${vtCell(r,'Custom Clearance Fee')}
+      ${vtCell(r,'CC Fee Payment',{select:PAY_OPTS})}
+      ${vtCell(r,'Broker')}
+      ${vtCell(r,'Invoice No.')}
       ${vtCell(r,'Remark')}
       <td style="padding:7px 10px;text-align:center;white-space:nowrap">${r._addedAt?(()=>{const _d=new Date(r._addedAt);return`<span style="font-size:11px;color:#64748b">${String(_d.getMonth()+1).padStart(2,'0')}/${String(_d.getDate()).padStart(2,'0')}/${String(_d.getFullYear()).slice(2)}</span>`;})():'<span style="color:#ccc">—</span>'}</td>
       <td style="padding:4px 6px;text-align:center">
