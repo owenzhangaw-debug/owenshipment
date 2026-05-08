@@ -5727,30 +5727,32 @@ function vtFeePanel(r){
     const cur=vtFeeCurrency(cat);
     const rows=arr.map(f=>`
       <div class="vfp-row" id="vfp-row-${vid}-${cat}-${f.id}">
-        <input class="vfp-amt" id="vf-amt-${vid}-${cat}-${f.id}" type="text" value="${f.amount||''}" placeholder="${cur} amount"
+        <input class="vfp-amt" id="vf-amt-${vid}-${cat}-${f.id}" type="text" value="${f.amount||''}" placeholder="${cur}"
           onblur="vtUpdateFeeField(${vid},'${cat}',${f.id},'amount',this.value)"
           onkeydown="if(event.key==='Enter')this.blur()"/>
         <input class="vfp-desc" type="text" value="${(f.desc||'').replace(/"/g,'&quot;')}" placeholder="Description"
           onblur="vtUpdateFeeField(${vid},'${cat}',${f.id},'desc',this.value)"
           onkeydown="if(event.key==='Enter')this.blur()"/>
+        <button class="vfp-del" onclick="vtRemoveFee(${vid},'${cat}',${f.id})" title="Remove">✕</button>
+      </div>
+      <div class="vfp-row-sub">
         <input class="vfp-inv" type="text" value="${(f.invoiceNo||'').replace(/"/g,'&quot;')}" placeholder="Invoice No."
           onblur="vtUpdateFeeField(${vid},'${cat}',${f.id},'invoiceNo',this.value)"
           onkeydown="if(event.key==='Enter')this.blur()"/>
         <select class="vfp-pay" onchange="vtUpdateFeeField(${vid},'${cat}',${f.id},'payStatus',this.value)">
           ${_FEE_PAY_OPTS.map(o=>`<option ${f.payStatus===o?'selected':''}>${o}</option>`).join('')}
         </select>
-        <button class="vfp-del" onclick="vtRemoveFee(${vid},'${cat}',${f.id})" title="Remove">✕</button>
       </div>`).join('');
     const total=arr.reduce((s,f)=>s+(parseFloat(f.amount)||0),0);
     const totalStr=total?(cur==='USD'?_fmtUSD(total):_fmtEUR(total)):'';
     return `<div class="vfp-section" style="border-left:3px solid ${clr}">
       <div class="vfp-header" style="color:${clr}">
-        ${icon} <strong>${label}</strong>
-        ${totalStr?`<span class="vfp-total" style="color:${clr}">${totalStr} total</span>`:''}
-        <button class="vfp-add" onclick="vtAddFee(${vid},'${cat}')" style="border-color:${clr};color:${clr}">+ Add Fee</button>
+        ${icon} <strong style="font-size:11px">${label}</strong>
+        ${totalStr?`<span class="vfp-total" style="color:${clr}">${totalStr}</span>`:''}
+        <button class="vfp-add" onclick="vtAddFee(${vid},'${cat}')" style="border-color:${clr};color:${clr}">+ Add</button>
       </div>
-      <div class="vfp-cols-hdr"><span>Amount (${cur})</span><span>Description</span><span>Invoice No.</span><span>Payment</span><span></span></div>
-      ${rows||'<div class="vfp-empty">No fees recorded — click "+ Add Fee" to add one</div>'}
+      <div class="vfp-cols-hdr"><span>Amt (${cur})</span><span>Desc</span><span></span></div>
+      ${rows||'<div class="vfp-empty">No fees — click + Add</div>'}
     </div>`;
   }
   return `<div class="vfp-wrapper">
@@ -9890,22 +9892,24 @@ tr:hover td.vt-customs-td{background:rgba(168,85,247,.10)!important}
 .vt-fin-total .vfc-val{color:#78350f}
 
 /* ── VT Multi-fee panel ── */
-.vt-fee-panel-wrap{padding:10px 14px 6px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
-.vfp-wrapper{display:flex;flex-direction:column;gap:8px}
-.vfp-section{background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #e2e8f0}
-.vfp-header{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px}
-.vfp-total{margin-left:auto;font-weight:800;font-size:13px}
-.vfp-add{margin-left:8px;padding:2px 10px;font-size:11px;font-weight:700;border:1.5px solid;border-radius:12px;background:#fff;cursor:pointer}
+.vt-fee-panel-wrap{padding:8px 12px 6px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+.vfp-wrapper{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vfp-section{background:#fff;border-radius:8px;padding:8px 10px;border:1px solid #e2e8f0;min-width:0}
+.vfp-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;flex-wrap:wrap}
+.vfp-total{margin-left:auto;font-weight:800;font-size:12px}
+.vfp-add{margin-left:4px;padding:1px 8px;font-size:10px;font-weight:700;border:1.5px solid;border-radius:12px;background:#fff;cursor:pointer;white-space:nowrap}
 .vfp-add:hover{opacity:.75}
-.vfp-cols-hdr{display:grid;grid-template-columns:110px 1fr 130px 110px 28px;gap:6px;font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px;padding:0 2px 3px;border-bottom:1px solid #f1f5f9;margin-bottom:4px}
-.vfp-row{display:grid;grid-template-columns:110px 1fr 130px 110px 28px;gap:6px;align-items:center;padding:3px 2px}
+.vfp-cols-hdr{display:grid;grid-template-columns:70px 1fr 22px;gap:4px;font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.3px;padding:0 2px 3px;border-bottom:1px solid #f1f5f9;margin-bottom:3px}
+.vfp-cols-hdr-full{grid-template-columns:70px 1fr 22px}
+.vfp-row{display:grid;grid-template-columns:70px 1fr 22px;gap:4px;align-items:center;padding:2px 2px}
 .vfp-row+.vfp-row{border-top:1px solid #f8fafc}
-.vfp-amt,.vfp-desc,.vfp-inv{height:26px;padding:0 7px;border:1px solid #e2e8f0;border-radius:5px;font-size:12px;width:100%;box-sizing:border-box}
+.vfp-row-sub{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:1px 2px 3px;margin-top:2px}
+.vfp-amt,.vfp-desc,.vfp-inv{height:22px;padding:0 5px;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;width:100%;box-sizing:border-box}
 .vfp-amt:focus,.vfp-desc:focus,.vfp-inv:focus{outline:none;border-color:#0369a1}
-.vfp-pay{height:26px;padding:0 4px;border:1px solid #e2e8f0;border-radius:5px;font-size:11px;width:100%;background:#fff;cursor:pointer}
-.vfp-del{width:24px;height:24px;border:none;border-radius:4px;background:#fee2e2;color:#dc2626;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.vfp-pay{height:22px;padding:0 3px;border:1px solid #e2e8f0;border-radius:4px;font-size:10px;width:100%;background:#fff;cursor:pointer}
+.vfp-del{width:20px;height:20px;border:none;border-radius:4px;background:#fee2e2;color:#dc2626;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
 .vfp-del:hover{background:#fca5a5}
-.vfp-empty{font-size:11px;color:#94a3b8;padding:4px 2px;font-style:italic}
+.vfp-empty{font-size:10px;color:#94a3b8;padding:3px 2px;font-style:italic}
 </style>
 
 <!-- ── PWA: Register inline service worker for offline support ── -->
