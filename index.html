@@ -5959,30 +5959,30 @@ function renderVT(){
       ccTotal+=cc;       if(!PAID_S.has(r['CC Fee Payment']||'')) ccUnpaid+=cc;
     });
     const totalDue = oceanUnpaid + bfUnpaid + ccUnpaid; // mixed currency approx
-    const $=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
-    const €=v=>'€'+v.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:0});
+    const _fUSD=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    const _fEUR2=v=>'EUR '+v.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
     const kpiEl = document.getElementById('vt-fin-kpi');
     if(!kpiEl) return;
     kpiEl.innerHTML=`<div class="vt-fin-kpi">
       <div class="vt-fin-card vt-fin-ocean">
         <div class="vfc-label">🚢 Ocean Freight</div>
-        <div class="vfc-val">${$(oceanUnpaid)}</div>
-        <div class="vfc-sub">unpaid of ${$(oceanTotal)} total (USD)</div>
+        <div class="vfc-val">${_fUSD(oceanUnpaid)}</div>
+        <div class="vfc-sub">unpaid of ${_fUSD(oceanTotal)} total (USD)</div>
       </div>
       <div class="vt-fin-card vt-fin-booking">
         <div class="vfc-label">📋 Booking Fee</div>
-        <div class="vfc-val">${€(bfUnpaid)}</div>
-        <div class="vfc-sub">unpaid of ${€(bfTotal)} total (EUR)</div>
+        <div class="vfc-val">${_fEUR2(bfUnpaid)}</div>
+        <div class="vfc-sub">unpaid of ${_fEUR2(bfTotal)} total (EUR)</div>
       </div>
       <div class="vt-fin-card vt-fin-customs">
         <div class="vfc-label">🛂 Customs Clearance</div>
-        <div class="vfc-val">${€(ccUnpaid)}</div>
-        <div class="vfc-sub">unpaid of ${€(ccTotal)} total (EUR)</div>
+        <div class="vfc-val">${_fEUR2(ccUnpaid)}</div>
+        <div class="vfc-sub">unpaid of ${_fEUR2(ccTotal)} total (EUR)</div>
       </div>
       <div class="vt-fin-card vt-fin-total">
         <div class="vfc-label">⚠️ Total Outstanding</div>
-        <div class="vfc-val">${$(oceanUnpaid)} + ${€(bfUnpaid+ccUnpaid)}</div>
-        <div class="vfc-sub">${oceanUnpaid||bfUnpaid||ccUnpaid?'Action needed':'All charges settled ✓'}</div>
+        <div class="vfc-val">${_fUSD(oceanUnpaid)} + ${_fEUR2(bfUnpaid+ccUnpaid)}</div>
+        <div class="vfc-sub">${oceanUnpaid||bfUnpaid||ccUnpaid?'Action needed':'All charges settled'}</div>
       </div>
     </div>`;
   })();
