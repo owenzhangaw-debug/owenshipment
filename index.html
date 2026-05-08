@@ -1265,6 +1265,7 @@ select:focus, input:focus {
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('vessels')">Vessels</button>
     <button onclick="showPage('feedback')">⭐ Feedback</button>
+    <button onclick="showPage('reports')">📋 Reports</button>
     <span class="nav-divider"></span>
     <!-- Tools dropdown -->
     <div class="nav-tools-wrap" id="nav-tools-wrap">
@@ -2336,6 +2337,98 @@ select:focus, input:focus {
 
 </div>
 
+<!-- ══ REPORTS ══ -->
+<div id="page-reports" class="page">
+  <div class="rp-wrap">
+
+    <!-- Left: form -->
+    <div class="rp-left">
+      <!-- Header row -->
+      <div class="rp-hdr-bar">
+        <div>
+          <div class="rp-hdr-title">📋 Daily Operations Report</div>
+          <div class="rp-hdr-sub" id="rp-date-label"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="rp-date" onchange="rpUpdateDateLabel()"/>
+          <button class="rp-submit-btn" onclick="rpSubmit()">✓ Save</button>
+          <button class="rp-clear-btn" onclick="rpClearForm()">✕</button>
+        </div>
+      </div>
+      <div id="rp-msg"></div>
+
+      <!-- Section 1: TEMU Last-Mile -->
+      <div class="rp-section">
+        <div class="rp-sec-hdr">
+          <span class="rp-sec-num">一</span>
+          <span class="rp-sec-title">TEMU 比利时 / 荷兰 尾端派送</span>
+          <button class="rp-add-row-btn" onclick="rpAddRow('s1')">+ 添加班列</button>
+        </div>
+        <div class="rp-sec-body" id="rp-s1-rows"></div>
+      </div>
+
+      <!-- Section 2: Empty Container Return -->
+      <div class="rp-section">
+        <div class="rp-sec-hdr">
+          <span class="rp-sec-num">二</span>
+          <span class="rp-sec-title">空箱海运回程操作</span>
+          <button class="rp-add-row-btn" onclick="rpAddRow('s2')">+ 添加订舱</button>
+        </div>
+        <div class="rp-sec-body" id="rp-s2-rows"></div>
+      </div>
+
+      <!-- Section 3: NBS Billing -->
+      <div class="rp-section">
+        <div class="rp-sec-hdr">
+          <span class="rp-sec-num">三</span>
+          <span class="rp-sec-title">NBS 账单对账请款</span>
+          <button class="rp-add-row-btn" onclick="rpAddRow('s3')">+ 添加账单</button>
+        </div>
+        <div class="rp-sec-body" id="rp-s3-rows"></div>
+      </div>
+
+      <!-- Extra notes -->
+      <div class="rp-section">
+        <div class="rp-sec-hdr">
+          <span class="rp-sec-num">其他</span>
+          <span class="rp-sec-title">备注 / Other Notes</span>
+        </div>
+        <textarea id="rp-notes" class="rp-notes-area" placeholder="其他跟进事项…" rows="3"></textarea>
+      </div>
+
+      <!-- Weekly generator -->
+      <div class="rp-section">
+        <div class="rp-sec-hdr">
+          <span class="rp-sec-num">周</span>
+          <span class="rp-sec-title">周报生成 Weekly Report</span>
+          <input type="week" id="rp-week-sel" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"/>
+          <button class="rp-add-row-btn" onclick="rpGenerateWeekly()">⚡ 生成</button>
+          <button onclick="rpExportWeekly()" style="padding:3px 11px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">↓ Export</button>
+        </div>
+        <div id="rp-weekly-out"></div>
+      </div>
+    </div>
+
+    <!-- Right: history -->
+    <div class="rp-right">
+      <div class="rp-card" style="height:100%">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <div class="rp-card-title" style="margin:0">📂 历史报告 History</div>
+          <input type="text" id="rp-search" placeholder="Search…" oninput="rpRenderHistory()"
+            style="margin-left:auto;padding:5px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;width:140px"/>
+          <select id="rp-hist-filter" onchange="rpRenderHistory()" style="padding:5px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:11px">
+            <option value="">All</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+          </select>
+        </div>
+        <div id="rp-history"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ══ FEEDBACK ══ -->
 <div id="page-feedback" class="page">
   <div class="fb-toolbar">
@@ -2872,7 +2965,7 @@ function showPage(p){
   const _mnb=document.getElementById('mnav-'+p);
   if(_mnb) _mnb.classList.add('active');
   document.getElementById('page-'+p).classList.add('active');
-  const pages=['dashboard','containers','vessels','feedback'];
+  const pages=['dashboard','containers','vessels','feedback','reports'];
   const idx=pages.indexOf(p);
   if(idx>=0) document.querySelectorAll('nav button')[idx].classList.add('active');
   // Show/hide + Add button and update label based on active page
@@ -2886,6 +2979,7 @@ function showPage(p){
   if(p==='containers'){ renderCT(); if(typeof renderPageNotices==='function') renderPageNotices(); }
   if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); setTimeout(vtApplyFreezeColumns,50); }
   if(p==='feedback') renderFeedback();
+  if(p==='reports') renderReports();
 }
 function _contextAdd(){
   if(_currentPage==='vessels') openAddVesselModal();
@@ -8762,6 +8856,301 @@ function fbAspectBlock(sid, aspect, label, current, currentNote){
   </div>`;
 }
 
+// ══════════════════════════════════════════════════════════════════
+// ── REPORTS PAGE ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// ── REPORTS PAGE ─────────────────────────────────────────────────
+const LS_REPORTS = 'owenz_reports_v1';
+let REPORTS = [];
+// Section row counters
+let _rpRowId = Date.now();
+function _rpId(){ return ++_rpRowId; }
+
+function rpLoad(){
+  try{ REPORTS=JSON.parse(localStorage.getItem(LS_REPORTS)||'[]'); } catch(e){ REPORTS=[]; }
+}
+function rpSave(){ localStorage.setItem(LS_REPORTS,JSON.stringify(REPORTS)); }
+
+function rpTodayISO(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function rpFmtDate(iso){ return iso.replace(/-/g,'/'); }
+function rpDayName(iso){
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  return days[new Date(iso).getDay()];
+}
+function rpWeekKey(iso){
+  const d=new Date(iso);
+  const jan1=new Date(d.getFullYear(),0,1);
+  const wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+  return d.getFullYear()+'-W'+String(wk).padStart(2,'0');
+}
+function rpUpdateDateLabel(){
+  const v=document.getElementById('rp-date')?.value||'';
+  const el=document.getElementById('rp-date-label');
+  if(el) el.textContent=v?rpDayName(v)+', '+rpFmtDate(v):'';
+}
+
+// ── Section row templates ─────────────────────────────────────────
+function rpAddRow(sec, data){
+  const id=_rpId();
+  const container=document.getElementById('rp-'+sec+'-rows');
+  if(!container) return;
+  const div=document.createElement('div');
+  div.className='rp-row'; div.id='rpr-'+id;
+  if(sec==='s1'){
+    div.innerHTML=`
+      <div class="rp-row-fields">
+        <input class="rp-f-batch" placeholder="班列 e.g. 成都4.18班列" value="${(data?.batch||'').replace(/"/g,'&quot;')}"/>
+        <input class="rp-f-dest" placeholder="目的地 e.g. BELGG" value="${(data?.dest||'').replace(/"/g,'&quot;')}"/>
+        <textarea class="rp-f-task" placeholder="跟进任务 e.g. 与代理及仓库确认派送计划，收到ATB后办理T1" rows="2">${data?.task||''}</textarea>
+      </div>
+      <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
+  } else if(sec==='s2'){
+    div.innerHTML=`
+      <div class="rp-row-fields">
+        <input class="rp-f-bkno" placeholder="订舱号 Booking No." value="${(data?.bookingNo||'').replace(/"/g,'&quot;')}"/>
+        <input class="rp-f-ctn" placeholder="箱量 e.g. 136*40HQ" value="${(data?.containers||'').replace(/"/g,'&quot;')}"/>
+        <input class="rp-f-route" placeholder="航线 e.g. 安特卫普-宁波" value="${(data?.route||'').replace(/"/g,'&quot;')}"/>
+        <textarea class="rp-f-task" placeholder="操作事项 e.g. 提供VGM，SOC data表，B/L Instruction" rows="2">${data?.task||''}</textarea>
+      </div>
+      <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
+  } else if(sec==='s3'){
+    div.innerHTML=`
+      <div class="rp-row-fields">
+        <input class="rp-f-ref" placeholder="工作单号 e.g. XGDB2603203187" value="${(data?.ref||'').replace(/"/g,'&quot;')}"/>
+        <input class="rp-f-bkno2" placeholder="订舱号 Booking No." value="${(data?.bookingNo||'').replace(/"/g,'&quot;')}"/>
+        <input class="rp-f-ctn" placeholder="箱量 e.g. 38*40HQ" value="${(data?.containers||'').replace(/"/g,'&quot;')}"/>
+        <input class="rp-f-route" placeholder="航线 e.g. 鹿特丹-南沙" value="${(data?.route||'').replace(/"/g,'&quot;')}"/>
+        <textarea class="rp-f-task" placeholder="事项 e.g. 船公司账单提交请款" rows="2">${data?.task||''}</textarea>
+      </div>
+      <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
+  }
+  container.appendChild(div);
+  // Focus first input
+  const inp=div.querySelector('input');
+  if(inp&&!data) setTimeout(()=>inp.focus(),30);
+}
+
+// ── Collect form data ─────────────────────────────────────────────
+function rpCollectRows(sec){
+  const container=document.getElementById('rp-'+sec+'-rows');
+  if(!container) return [];
+  const rows=[];
+  container.querySelectorAll('.rp-row').forEach(row=>{
+    if(sec==='s1'){
+      const batch=row.querySelector('.rp-f-batch')?.value.trim()||'';
+      const dest=row.querySelector('.rp-f-dest')?.value.trim()||'';
+      const task=row.querySelector('.rp-f-task')?.value.trim()||'';
+      if(batch||task) rows.push({batch,dest,task});
+    } else if(sec==='s2'){
+      const bookingNo=row.querySelector('.rp-f-bkno')?.value.trim()||'';
+      const containers=row.querySelector('.rp-f-ctn')?.value.trim()||'';
+      const route=row.querySelector('.rp-f-route')?.value.trim()||'';
+      const task=row.querySelector('.rp-f-task')?.value.trim()||'';
+      if(bookingNo||task) rows.push({bookingNo,containers,route,task});
+    } else if(sec==='s3'){
+      const ref=row.querySelector('.rp-f-ref')?.value.trim()||'';
+      const bookingNo=row.querySelector('.rp-f-bkno2')?.value.trim()||'';
+      const containers=row.querySelector('.rp-f-ctn')?.value.trim()||'';
+      const route=row.querySelector('.rp-f-route')?.value.trim()||'';
+      const task=row.querySelector('.rp-f-task')?.value.trim()||'';
+      if(ref||bookingNo||task) rows.push({ref,bookingNo,containers,route,task});
+    }
+  });
+  return rows;
+}
+
+// ── Submit ────────────────────────────────────────────────────────
+function rpSubmit(){
+  const iso=document.getElementById('rp-date')?.value||'';
+  if(!iso){ rpMsg('请选择日期 Please set a date.','#ef4444'); return; }
+  const s1=rpCollectRows('s1'), s2=rpCollectRows('s2'), s3=rpCollectRows('s3');
+  const notes=document.getElementById('rp-notes')?.value.trim()||'';
+  if(!s1.length&&!s2.length&&!s3.length&&!notes){ rpMsg('报告为空 Report is empty.','#b45309'); return; }
+  rpLoad();
+  const existing=REPORTS.findIndex(r=>r.date===iso);
+  const report={ id:existing>=0?REPORTS[existing].id:Date.now(), date:iso, week:rpWeekKey(iso), s1, s2, s3, notes, savedAt:new Date().toISOString() };
+  if(existing>=0) REPORTS[existing]=report; else REPORTS.unshift(report);
+  rpSave();
+  rpMsg((existing>=0?'更新成功 Updated ✓':'已保存 Saved ✓'),'#15803d');
+  rpRenderHistory();
+}
+
+function rpMsg(text,color){
+  const el=document.getElementById('rp-msg');
+  if(!el) return;
+  el.textContent=text; el.style.color=color; el.style.cssText+='display:block;font-size:12px;font-weight:600;padding:4px 0';
+  setTimeout(()=>{ el.style.display='none'; },3000);
+}
+
+function rpClearForm(){
+  ['rp-s1-rows','rp-s2-rows','rp-s3-rows'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
+  const n=document.getElementById('rp-notes'); if(n) n.value='';
+}
+
+// ── Load a saved report into the form ─────────────────────────────
+function rpLoadToForm(id){
+  rpLoad();
+  const r=REPORTS.find(x=>x.id===id); if(!r) return;
+  const dateEl=document.getElementById('rp-date');
+  if(dateEl){ dateEl.value=r.date; rpUpdateDateLabel(); }
+  rpClearForm();
+  (r.s1||[]).forEach(d=>rpAddRow('s1',d));
+  (r.s2||[]).forEach(d=>rpAddRow('s2',d));
+  (r.s3||[]).forEach(d=>rpAddRow('s3',d));
+  const n=document.getElementById('rp-notes'); if(n) n.value=r.notes||'';
+  document.getElementById('page-reports')?.scrollIntoView({behavior:'smooth'});
+}
+
+function rpDeleteReport(id,e){
+  e.stopPropagation();
+  if(!confirm('Delete this report?')) return;
+  rpLoad(); REPORTS=REPORTS.filter(r=>r.id!==id); rpSave(); rpRenderHistory();
+}
+
+// ── Render history ─────────────────────────────────────────────────
+function rpToggleItem(id){
+  const el=document.getElementById('rphi-'+id);
+  if(el) el.classList.toggle('expanded');
+}
+function rpRenderHistory(){
+  rpLoad();
+  const q=(document.getElementById('rp-search')?.value||'').toLowerCase();
+  const flt=document.getElementById('rp-hist-filter')?.value||'';
+  const now=new Date();
+  const items=REPORTS.filter(r=>{
+    if(q&&!JSON.stringify(r).toLowerCase().includes(q)) return false;
+    const d=new Date(r.date);
+    if(flt==='week'){ const sw=new Date(now); sw.setDate(now.getDate()-now.getDay()); if(d<sw) return false; }
+    if(flt==='month'){ if(d.getMonth()!==now.getMonth()||d.getFullYear()!==now.getFullYear()) return false; }
+    return true;
+  });
+  const container=document.getElementById('rp-history');
+  if(!container) return;
+  if(!items.length){ container.innerHTML='<div class="rp-empty">暂无报告<br>No reports yet.</div>'; return; }
+
+  function fmtSection(sec, rows){
+    if(!rows||!rows.length) return '';
+    let html=`<div class="rpd-sec-lbl">${sec}</div>`;
+    rows.forEach(row=>{
+      if(row.batch!==undefined){
+        // s1
+        html+=`<div class="rpd-item"><span class="rpd-tag">${row.batch}${row.dest?' → '+row.dest:''}</span> ${row.task}</div>`;
+      } else if(row.ref!==undefined){
+        // s3
+        html+=`<div class="rpd-item"><span class="rpd-tag">${row.ref||row.bookingNo}</span>${row.bookingNo&&row.ref?' · '+row.bookingNo:''} ${row.containers?'<span class="rpd-ctn">'+row.containers+'</span>':''} ${row.route?'<em>'+row.route+'</em>':''}<br>${row.task}</div>`;
+      } else {
+        // s2
+        html+=`<div class="rpd-item"><span class="rpd-tag">${row.bookingNo||'—'}</span> ${row.containers?'<span class="rpd-ctn">'+row.containers+'</span>':''} ${row.route?'<em>'+row.route+'</em>':''}<br>${row.task}</div>`;
+      }
+    });
+    return html;
+  }
+
+  container.innerHTML=items.map(r=>`
+    <div class="rp-hist-item" id="rphi-${r.id}">
+      <div class="rp-hist-header" onclick="rpToggleItem(${r.id})">
+        <div>
+          <span class="rp-hist-date">${rpFmtDate(r.date)}</span>
+          <span class="rp-hist-day">${rpDayName(r.date)}</span>
+        </div>
+        <div class="rp-hist-tags">
+          ${r.s1?.length?`<span class="rpd-cnt-tag" style="background:#dbeafe;color:#1d4ed8">一 ×${r.s1.length}</span>`:''}
+          ${r.s2?.length?`<span class="rpd-cnt-tag" style="background:#fef9c3;color:#92400e">二 ×${r.s2.length}</span>`:''}
+          ${r.s3?.length?`<span class="rpd-cnt-tag" style="background:#dcfce7;color:#15803d">三 ×${r.s3.length}</span>`:''}
+        </div>
+        <button class="rp-hist-del" onclick="rpDeleteReport(${r.id},event)" title="Delete">✕</button>
+      </div>
+      <div class="rp-hist-body">
+        ${fmtSection('一  TEMU 末端派送', r.s1)}
+        ${fmtSection('二  空箱回程', r.s2)}
+        ${fmtSection('三  NBS账单', r.s3)}
+        ${r.notes?`<div class="rpd-sec-lbl">其他</div><div class="rpd-item">${r.notes.replace(/\n/g,'<br>')}</div>`:''}
+        <button onclick="rpLoadToForm(${r.id})" style="margin-top:8px;padding:4px 12px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">✏ Edit</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── Weekly report ─────────────────────────────────────────────────
+function rpGenerateWeekly(){
+  rpLoad();
+  const wk=document.getElementById('rp-week-sel')?.value||'';
+  if(!wk){ alert('Select a week first.'); return; }
+  const days=REPORTS.filter(r=>r.week===wk).sort((a,b)=>a.date.localeCompare(b.date));
+  const out=document.getElementById('rp-weekly-out');
+  if(!out) return;
+  if(!days.length){ out.innerHTML='<div class="rp-empty">该周暂无报告。No reports for this week.</div>'; return; }
+  const [yr,wprt]=wk.split('-W');
+  const jan1=new Date(parseInt(yr),0,1);
+  const wStart=new Date(jan1.getTime()+(parseInt(wprt)-1)*7*86400000);
+  const wEnd=new Date(wStart.getTime()+6*86400000);
+  const fmtD=d=>['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();
+  const wLabel=`Week ${wprt} · ${fmtD(wStart)}–${fmtD(wEnd)}, ${yr}`;
+  // Aggregate s2 bookings by booking no
+  const s2Map={};
+  days.forEach(r=>(r.s2||[]).forEach(b=>{ if(b.bookingNo) s2Map[b.bookingNo]=(s2Map[b.bookingNo]||[]); s2Map[b.bookingNo].push(b); }));
+
+  function renderDayBlock(r){
+    const parts=[];
+    if(r.s1?.length){
+      parts.push('<div class="rpw-sec-lbl">一  TEMU 末端派送</div>');
+      r.s1.forEach((x,i)=>parts.push(`<div class="rpw-item">${i+1}. <b>${x.batch}${x.dest?' ('+x.dest+')':''}</b>  ${x.task}</div>`));
+    }
+    if(r.s2?.length){
+      parts.push('<div class="rpw-sec-lbl">二  空箱海运回程</div>');
+      r.s2.forEach((x,i)=>parts.push(`<div class="rpw-item">${x.bookingNo||''}${x.containers?' '+x.containers:''} ${x.route?x.route+' ':''}<br>→ ${x.task}</div>`));
+    }
+    if(r.s3?.length){
+      parts.push('<div class="rpw-sec-lbl">三  NBS账单对账</div>');
+      r.s3.forEach((x,i)=>parts.push(`<div class="rpw-item">${x.ref||''}${x.bookingNo?'  '+x.bookingNo:''}${x.containers?' '+x.containers:''} ${x.route||''}<br>→ ${x.task}</div>`));
+    }
+    if(r.notes) parts.push(`<div class="rpw-sec-lbl">其他</div><div class="rpw-item">${r.notes}</div>`);
+    return parts.join('');
+  }
+
+  out.innerHTML=`<div class="rp-weekly">
+    <div class="rp-weekly-hdr">📋 周报 Weekly Report — ${wLabel} · ${days.length} day${days.length>1?'s':''}</div>
+    <div style="padding:14px 16px">
+      ${days.map(r=>`
+        <div class="rpw-day">
+          <div class="rpw-day-hdr">${rpFmtDate(r.date)} &nbsp;<span style="font-weight:400;color:#64748b">${rpDayName(r.date)}</span></div>
+          ${renderDayBlock(r)}
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function rpExportWeekly(){
+  const outEl=document.getElementById('rp-weekly-out');
+  if(!outEl?.innerHTML.trim()){ alert('Generate the report first.'); return; }
+  const wk=(document.getElementById('rp-week-sel')?.value||'week').replace('-','_');
+  const blob=new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Weekly Report ${wk}</title>
+<style>body{font-family:system-ui,sans-serif;padding:24px;max-width:900px;margin:0 auto;color:#1e293b}
+.rp-weekly{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+.rp-weekly-hdr{background:#003534;color:#fff;padding:12px 16px;font-size:15px;font-weight:800}
+.rpw-day{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #f1f5f9}
+.rpw-day-hdr{font-size:13px;font-weight:800;color:#004D4C;margin-bottom:8px}
+.rpw-sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.4px;margin:8px 0 4px}
+.rpw-item{font-size:12px;color:#374151;line-height:1.6;padding:2px 0 2px 10px;border-left:2px solid #e2e8f0;margin-bottom:4px}
+</style></head><body>${outEl.innerHTML}</body></html>`],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='weekly_report_'+wk+'.html';
+  a.click();
+}
+
+function renderReports(){
+  rpLoad();
+  const dateEl=document.getElementById('rp-date');
+  if(dateEl&&!dateEl.value){ dateEl.value=rpTodayISO(); rpUpdateDateLabel(); }
+  const wkEl=document.getElementById('rp-week-sel');
+  if(wkEl&&!wkEl.value){ wkEl.value=rpWeekKey(rpTodayISO()); }
+  rpRenderHistory();
+}
+
 function renderFeedback(){
   const _fbSK2=n=>{const m=String(n).match(/(\d{1,2})\/(\d{1,2})/);if(!m)return'9999/99/99';const mo=+m[1],dy=+m[2],yr=mo>=10?2025:2026;return`${yr}/${String(mo).padStart(2,'0')}/${String(dy).padStart(2,'0')}`;};
   const batches=[...new Set(CT.map(r=>r['Batch / Train']||'').filter(Boolean))].sort((a,b)=>_fbSK2(a).localeCompare(_fbSK2(b)));
@@ -9388,6 +9777,66 @@ header { padding-top: max(8px, env(safe-area-inset-top)); }
   .mobile-nav { display: flex; }
   main { padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important; }
 }
+
+/* ── Reports Page ── */
+.rp-wrap{display:grid;grid-template-columns:520px 1fr;gap:16px;padding:16px;align-items:start}
+@media(max-width:960px){.rp-wrap{grid-template-columns:1fr}}
+.rp-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.rp-card-title{font-size:14px;font-weight:800;color:#1e293b;margin-bottom:12px}
+/* Header bar */
+.rp-hdr-bar{background:linear-gradient(135deg,#003534,#005c5b);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.rp-hdr-title{font-size:15px;font-weight:800;color:#fff}
+.rp-hdr-sub{font-size:12px;color:#5DD8D0;font-weight:600;margin-top:2px}
+.rp-hdr-bar input[type=date]{padding:6px 10px;border:1.5px solid rgba(255,255,255,.25);border-radius:7px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;cursor:pointer}
+.rp-hdr-bar input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1)}
+.rp-submit-btn{padding:7px 18px;background:#5DD8D0;color:#003534;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer}
+.rp-submit-btn:hover{background:#4cc9c1}
+.rp-clear-btn{padding:7px 10px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;font-size:13px;cursor:pointer}
+#rp-msg{padding:4px 0;font-size:12px;font-weight:600}
+/* Sections */
+.rp-section{background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.rp-sec-hdr{display:flex;align-items:center;gap:8px;padding:9px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap}
+.rp-sec-num{width:22px;height:22px;border-radius:50%;background:#003534;color:#5DD8D0;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rp-sec-title{font-size:12px;font-weight:700;color:#1e293b}
+.rp-add-row-btn{margin-left:auto;padding:3px 11px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:12px;cursor:pointer}
+.rp-add-row-btn:hover{background:#dcfce7}
+.rp-sec-body{padding:8px 10px}
+/* Row inputs */
+.rp-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:start;padding:6px 4px;border-bottom:1px solid #f8fafc}
+.rp-row:last-child{border-bottom:none}
+.rp-row-fields{display:flex;flex-direction:column;gap:5px}
+.rp-row-fields input,.rp-row-fields textarea{padding:6px 9px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;width:100%;box-sizing:border-box}
+.rp-row-fields input:focus,.rp-row-fields textarea:focus{outline:none;border-color:#004D4C}
+.rp-f-batch,.rp-f-bkno,.rp-f-bkno2,.rp-f-ref{font-weight:600;color:#004D4C}
+.rp-row-del{background:none;border:none;color:#cbd5e1;font-size:16px;cursor:pointer;padding:4px 6px;border-radius:4px;flex-shrink:0;align-self:flex-start;margin-top:2px}
+.rp-row-del:hover{color:#ef4444;background:#fee2e2}
+.rp-notes-area{width:100%;box-sizing:border-box;padding:8px 12px;border:none;font-size:13px;font-family:inherit;resize:vertical;border-radius:0;background:#fff}
+.rp-notes-area:focus{outline:none}
+/* History */
+.rp-hist-item{border:1px solid #e2e8f0;border-radius:9px;margin-bottom:8px;overflow:hidden}
+.rp-hist-header{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;background:#f8fafc}
+.rp-hist-header:hover{background:#f1f5f9}
+.rp-hist-date{font-size:13px;font-weight:800;color:#1e293b}
+.rp-hist-day{font-size:11px;color:#94a3b8}
+.rp-hist-tags{display:flex;gap:4px;margin-left:auto}
+.rp-hist-del{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:13px;padding:0 4px}
+.rp-hist-del:hover{color:#ef4444}
+.rp-hist-body{display:none;padding:10px 12px;border-top:1px solid #f1f5f9}
+.rp-hist-item.expanded .rp-hist-body{display:block}
+.rpd-cnt-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700}
+.rpd-sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#94a3b8;margin:8px 0 4px;padding-bottom:2px;border-bottom:1px solid #f1f5f9}
+.rpd-item{font-size:12px;color:#374151;line-height:1.6;padding:3px 0;border-left:2px solid #e2e8f0;padding-left:8px;margin-bottom:3px}
+.rpd-tag{font-weight:700;color:#004D4C;background:#e0f2fe;border-radius:4px;padding:1px 6px;font-size:11px;margin-right:4px}
+.rpd-ctn{font-size:11px;background:#fef9c3;color:#92400e;border-radius:4px;padding:1px 5px;margin:0 3px}
+/* Weekly */
+.rp-weekly{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-top:10px;font-size:12px}
+.rp-weekly-hdr{background:linear-gradient(135deg,#003534,#005c5b);color:#fff;padding:10px 14px;font-size:13px;font-weight:800}
+.rpw-day{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #f1f5f9}
+.rpw-day:last-child{border-bottom:none;margin-bottom:0}
+.rpw-day-hdr{font-size:13px;font-weight:800;color:#004D4C;margin-bottom:8px;padding:4px 8px;background:#e0f2fe;border-radius:5px;display:inline-block}
+.rpw-sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.4px;margin:6px 0 3px;border-bottom:1px solid #f1f5f9;padding-bottom:2px}
+.rpw-item{font-size:11px;color:#374151;line-height:1.6;padding:2px 0 2px 8px;border-left:2px solid #e2e8f0;margin-bottom:3px}
+.rp-empty{text-align:center;padding:28px;color:#94a3b8;font-size:13px}
 
 /* ── VT Frozen columns (CY → Vessel Name) ── */
 th.vt-fc,td.vt-fc{position:sticky;z-index:3;background:#fff}
