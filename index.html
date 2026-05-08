@@ -8895,6 +8895,49 @@ function rpUpdateDateLabel(){
   if(el) el.textContent=v?rpDayName(v)+', '+rpFmtDate(v):'';
 }
 
+// ── Helpers: pull options from live tracker data ──────────────────
+function rpGetBatches(){
+  return [...new Set((CT||[]).map(r=>(r['Batch / Train']||'').trim()).filter(Boolean))].sort((a,b)=>{
+    // sort by date embedded in name e.g. "成都4.18班列" → 4.18
+    const nm=s=>{ const m=s.match(/(\d+)[./](\d+)/); return m?+m[1]*100+ +m[2]:9999; };
+    return nm(a)-nm(b);
+  });
+}
+function rpGetVTBookings(){
+  return (VT||[])
+    .filter(r=>(r['Booking / BC No.']||'').trim())
+    .map(r=>({
+      bk: (r['Booking / BC No.']||'').trim(),
+      ctn: (parseFloat(r['Container Qty'])||0) ? (parseFloat(r['Container Qty'])|0)+'*40HQ' : '',
+      route: rpExtractRoute(r),
+      vessel: r['Vessel Name']||'',
+      port: r['Port']||''
+    }));
+}
+function rpExtractRoute(vt){
+  // Try Remark: "KLAIPEDA--NINGBO" or "Rotterdam-Nansha" patterns
+  const rem=(vt['Remark']||'')+(vt['Booking / BC No.']||'');
+  const m=rem.match(/([A-Za-z一-龥]+[-–—]{1,2}[A-Za-z一-龥]+)/);
+  if(m) return m[1].replace(/[-–—]+/g,'-');
+  // Fallback: just use Port
+  return (vt['Port']||'')+'-';
+}
+function rpOnBkSelect(sel, rowId){
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt||!opt.value) return;
+  const row=document.getElementById(rowId);
+  if(!row) return;
+  const ctn=opt.dataset.ctn||'';
+  const route=opt.dataset.route||'';
+  const ctnEl=row.querySelector('.rp-f-ctn');
+  const routeEl=row.querySelector('.rp-f-route');
+  if(ctnEl&&ctn){ ctnEl.value=ctn; ctnEl.classList.add('rp-autofilled'); setTimeout(()=>ctnEl.classList.remove('rp-autofilled'),1200); }
+  if(routeEl&&route){ routeEl.value=route; routeEl.classList.add('rp-autofilled'); setTimeout(()=>routeEl.classList.remove('rp-autofilled'),1200); }
+  // Focus task if both filled
+  const task=row.querySelector('.rp-f-task');
+  if(task) setTimeout(()=>task.focus(),80);
+}
+
 // ── Section row templates ─────────────────────────────────────────
 function rpAddRow(sec, data){
   const id=_rpId();
@@ -8902,38 +8945,84 @@ function rpAddRow(sec, data){
   if(!container) return;
   const div=document.createElement('div');
   div.className='rp-row'; div.id='rpr-'+id;
+
   if(sec==='s1'){
+    const batches=rpGetBatches();
+    const batchOpts=batches.map(b=>`<option value="${b.replace(/"/g,'&quot;')}">${b}</option>`).join('');
+    const savedBatch=(data?.batch||'').replace(/"/g,'&quot;');
+    // if saved batch not in list, add as extra option so it shows
+    const extraBatch=(data?.batch&&!batches.includes(data.batch))?`<option value="${savedBatch}">${savedBatch}</option>`:'';
     div.innerHTML=`
       <div class="rp-row-fields">
-        <input class="rp-f-batch" placeholder="班列 e.g. 成都4.18班列" value="${(data?.batch||'').replace(/"/g,'&quot;')}"/>
-        <input class="rp-f-dest" placeholder="目的地 e.g. BELGG" value="${(data?.dest||'').replace(/"/g,'&quot;')}"/>
+        <div class="rp-field-row">
+          <select class="rp-f-batch">
+            <option value="">— 选择班列 Select batch —</option>
+            ${batchOpts}${extraBatch}
+          </select>
+          <select class="rp-f-dest">
+            <option value="">— 目的地 Destination —</option>
+            <option value="比利时">🇧🇪 比利时 Belgium</option>
+            <option value="荷兰">🇳🇱 荷兰 Netherlands</option>
+            <option value="比利时/荷兰">🇧🇪🇳🇱 比利时/荷兰 BE/NL</option>
+          </select>
+        </div>
         <textarea class="rp-f-task" placeholder="跟进任务 e.g. 与代理及仓库确认派送计划，收到ATB后办理T1" rows="2">${data?.task||''}</textarea>
       </div>
       <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
+    // Restore saved values
+    if(data?.batch){ const s=div.querySelector('.rp-f-batch'); if(s) s.value=data.batch||''; }
+    if(data?.dest){ const s=div.querySelector('.rp-f-dest'); if(s) s.value=data.dest||''; }
+
   } else if(sec==='s2'){
+    const bookings=rpGetVTBookings();
+    const bkOpts=bookings.map(v=>`<option value="${v.bk.replace(/"/g,'&quot;')}" data-ctn="${v.ctn}" data-route="${v.route.replace(/"/g,'&quot;')}">${v.bk}${v.vessel?' · '+v.vessel:''}</option>`).join('');
+    const savedBk=(data?.bookingNo||'').replace(/"/g,'&quot;');
+    const extraBk=(data?.bookingNo&&!bookings.find(v=>v.bk===data.bookingNo))?`<option value="${savedBk}" data-ctn="${(data.containers||'').replace(/"/g,'&quot;')}" data-route="${(data.route||'').replace(/"/g,'&quot;')}">${savedBk}</option>`:'';
     div.innerHTML=`
       <div class="rp-row-fields">
-        <input class="rp-f-bkno" placeholder="订舱号 Booking No." value="${(data?.bookingNo||'').replace(/"/g,'&quot;')}"/>
-        <input class="rp-f-ctn" placeholder="箱量 e.g. 136*40HQ" value="${(data?.containers||'').replace(/"/g,'&quot;')}"/>
-        <input class="rp-f-route" placeholder="航线 e.g. 安特卫普-宁波" value="${(data?.route||'').replace(/"/g,'&quot;')}"/>
+        <select class="rp-f-bkno" onchange="rpOnBkSelect(this,'rpr-${id}')">
+          <option value="">— 选择订舱号 Select booking —</option>
+          ${bkOpts}${extraBk}
+        </select>
+        <div class="rp-field-row">
+          <input class="rp-f-ctn" placeholder="箱量 e.g. 136*40HQ" value="${(data?.containers||'').replace(/"/g,'&quot;')}"/>
+          <input class="rp-f-route" placeholder="航线 e.g. 安特卫普-宁波" value="${(data?.route||'').replace(/"/g,'&quot;')}"/>
+        </div>
         <textarea class="rp-f-task" placeholder="操作事项 e.g. 提供VGM，SOC data表，B/L Instruction" rows="2">${data?.task||''}</textarea>
       </div>
       <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
+    if(data?.bookingNo){ const s=div.querySelector('.rp-f-bkno'); if(s) s.value=data.bookingNo; }
+
   } else if(sec==='s3'){
+    const bookings=rpGetVTBookings();
+    const bkOpts=bookings.map(v=>`<option value="${v.bk.replace(/"/g,'&quot;')}" data-ctn="${v.ctn}" data-route="${v.route.replace(/"/g,'&quot;')}">${v.bk}${v.vessel?' · '+v.vessel:''}</option>`).join('');
+    const savedBk=(data?.bookingNo||'').replace(/"/g,'&quot;');
+    const extraBk=(data?.bookingNo&&!bookings.find(v=>v.bk===data.bookingNo))?`<option value="${savedBk}" data-ctn="${(data.containers||'').replace(/"/g,'&quot;')}" data-route="${(data.route||'').replace(/"/g,'&quot;')}">${savedBk}</option>`:'';
     div.innerHTML=`
       <div class="rp-row-fields">
-        <input class="rp-f-ref" placeholder="工作单号 e.g. XGDB2603203187" value="${(data?.ref||'').replace(/"/g,'&quot;')}"/>
-        <input class="rp-f-bkno2" placeholder="订舱号 Booking No." value="${(data?.bookingNo||'').replace(/"/g,'&quot;')}"/>
-        <input class="rp-f-ctn" placeholder="箱量 e.g. 38*40HQ" value="${(data?.containers||'').replace(/"/g,'&quot;')}"/>
-        <input class="rp-f-route" placeholder="航线 e.g. 鹿特丹-南沙" value="${(data?.route||'').replace(/"/g,'&quot;')}"/>
+        <div class="rp-field-row">
+          <input class="rp-f-ref" placeholder="工作单号 e.g. XGDB2603203187" value="${(data?.ref||'').replace(/"/g,'&quot;')}"/>
+          <select class="rp-f-bkno2" onchange="rpOnBkSelect(this,'rpr-${id}')">
+            <option value="">— 订舱号 Booking —</option>
+            ${bkOpts}${extraBk}
+          </select>
+        </div>
+        <div class="rp-field-row">
+          <input class="rp-f-ctn" placeholder="箱量 e.g. 38*40HQ" value="${(data?.containers||'').replace(/"/g,'&quot;')}"/>
+          <input class="rp-f-route" placeholder="航线 e.g. 鹿特丹-南沙" value="${(data?.route||'').replace(/"/g,'&quot;')}"/>
+        </div>
         <textarea class="rp-f-task" placeholder="事项 e.g. 船公司账单提交请款" rows="2">${data?.task||''}</textarea>
       </div>
       <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
+    if(data?.bookingNo){ const s=div.querySelector('.rp-f-bkno2'); if(s) s.value=data.bookingNo; }
   }
+
   container.appendChild(div);
-  // Focus first input
-  const inp=div.querySelector('input');
-  if(inp&&!data) setTimeout(()=>inp.focus(),30);
+  // Focus first unfilled field
+  if(!data){
+    const first=div.querySelector('select,input');
+    if(first) setTimeout(()=>first.focus(),30);
+  }
 }
 
 // ── Collect form data ─────────────────────────────────────────────
@@ -9805,11 +9894,14 @@ header { padding-top: max(8px, env(safe-area-inset-top)); }
 .rp-sec-body{padding:8px 10px}
 /* Row inputs */
 .rp-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:start;padding:6px 4px;border-bottom:1px solid #f8fafc}
+.rp-field-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .rp-row:last-child{border-bottom:none}
 .rp-row-fields{display:flex;flex-direction:column;gap:5px}
-.rp-row-fields input,.rp-row-fields textarea{padding:6px 9px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;width:100%;box-sizing:border-box}
-.rp-row-fields input:focus,.rp-row-fields textarea:focus{outline:none;border-color:#004D4C}
+.rp-row-fields input,.rp-row-fields textarea,.rp-row-fields select{padding:6px 9px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;width:100%;box-sizing:border-box;background:#fff}
+.rp-row-fields input:focus,.rp-row-fields textarea:focus,.rp-row-fields select:focus{outline:none;border-color:#004D4C}
 .rp-f-batch,.rp-f-bkno,.rp-f-bkno2,.rp-f-ref{font-weight:600;color:#004D4C}
+.rp-f-batch option,.rp-f-bkno option,.rp-f-bkno2 option{font-weight:normal;color:#1e293b}
+.rp-autofilled{background:#f0fdf4!important;border-color:#86efac!important;color:#166534!important}
 .rp-row-del{background:none;border:none;color:#cbd5e1;font-size:16px;cursor:pointer;padding:4px 6px;border-radius:4px;flex-shrink:0;align-self:flex-start;margin-top:2px}
 .rp-row-del:hover{color:#ef4444;background:#fee2e2}
 .rp-notes-area{width:100%;box-sizing:border-box;padding:8px 12px;border:none;font-size:13px;font-family:inherit;resize:vertical;border-radius:0;background:#fff}
