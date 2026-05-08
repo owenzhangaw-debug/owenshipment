@@ -5532,7 +5532,9 @@ function toggleCMR(id, checked){
 // ── VT column currency formatters (fixed per column) ──────────────
 const _fmtUSD = v => { const n=parseFloat(v); if(!v&&v!==0||isNaN(n)) return '—'; return '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}); };
 const _fmtEUR = v => { const n=parseFloat(v); if(!v&&v!==0||isNaN(n)) return '—'; return '€'+n.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2}); };
-const _VT_PAY_COLS = new Set(['Payment Status','Booking Fee Payment','CC Fee Payment']);
+const _VT_USD_COLS   = new Set(['Price','Surcharge']);
+const _VT_EUR_COLS   = new Set(['Booking Fee','Custom Clearance Fee']);
+const _VT_PAY_COLS   = new Set(['Payment Status','Booking Fee Payment','CC Fee Payment']);
 const _VT_OCEAN_COLS  = new Set(['Price','Surcharge','Surcharge Reason','Payment Status']);
 const _VT_BOOKING_COLS= new Set(['Booking Fee','Booking Fee Payment']);
 const _VT_CUSTOMS_COLS= new Set(['Custom Clearance Fee','CC Fee Payment','Broker','Invoice No.']);
