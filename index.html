@@ -2284,9 +2284,20 @@ select:focus, input:focus {
     <div class="tbl-top">
       <h3>Vessel Tracker</h3><span id="vt-count"></span>
     </div>
+    <div id="vt-fin-kpi" style="padding:10px 16px 0"></div>
     <div class="tbl-scroll">
       <table>
-        <thead><tr>
+        <thead>
+          <!-- Group header row -->
+          <tr class="vt-group-hdr">
+            <th colspan="17" style="border:none;background:#003534;padding:0;position:sticky;left:0;z-index:21"></th>
+            <th colspan="4" class="vt-gh-ocean">🚢 Ocean Freight</th>
+            <th colspan="2" class="vt-gh-booking">📋 Booking Fee</th>
+            <th colspan="4" class="vt-gh-customs">🛂 Customs Clearance</th>
+            <th colspan="4" style="border:none;background:#003534;padding:0"></th>
+          </tr>
+          <!-- Column header row -->
+          <tr>
           <th class="vt-fc-expand no-sort" style="width:32px"></th>
           <th class="vt-fc" onclick="vtSort('CY')" data-vtcol="CY">CY ↕</th>
           <th class="vt-fc" onclick="vtSort('Port')" data-vtcol="Port">Port ↕</th>
@@ -2304,16 +2315,16 @@ select:focus, input:focus {
           <th class="no-sort" style="text-align:center">Custom</th>
           <th onclick="vtSort('Status')" data-vtcol="Status">Status ↕</th>
           <th onclick="vtSort('Order No.')" data-vtcol="Order No.">Order No. ↕</th>
-          <th onclick="vtSort('Price')" data-vtcol="Price">Price ↕</th>
-          <th onclick="vtSort('Surcharge')" data-vtcol="Surcharge">Surcharge ↕</th>
-          <th onclick="vtSort('Surcharge Reason')" data-vtcol="Surcharge Reason">Surcharge Reason ↕</th>
-          <th onclick="vtSort('Payment Status')" data-vtcol="Payment Status">Payment Status ↕</th>
-          <th onclick="vtSort('Booking Fee')" data-vtcol="Booking Fee">Booking Fee (Rhenus) ↕</th>
-          <th onclick="vtSort('Booking Fee Payment')" data-vtcol="Booking Fee Payment">Booking Fee Paid ↕</th>
-          <th onclick="vtSort('Custom Clearance Fee')" data-vtcol="Custom Clearance Fee">CC Fee ↕</th>
-          <th class="no-sort" style="text-align:center">CC Paid</th>
-          <th onclick="vtSort('Broker')" data-vtcol="Broker">Broker ↕</th>
-          <th onclick="vtSort('Invoice No.')" data-vtcol="Invoice No.">Invoice No. ↕</th>
+          <th onclick="vtSort('Price')" data-vtcol="Price" class="vt-gh-ocean-col">Ocean Freight ↕</th>
+          <th onclick="vtSort('Surcharge')" data-vtcol="Surcharge" class="vt-gh-ocean-col">Surcharge ↕</th>
+          <th onclick="vtSort('Surcharge Reason')" data-vtcol="Surcharge Reason" class="vt-gh-ocean-col">Surcharge Reason ↕</th>
+          <th onclick="vtSort('Payment Status')" data-vtcol="Payment Status" class="vt-gh-ocean-col">Payment ↕</th>
+          <th onclick="vtSort('Booking Fee')" data-vtcol="Booking Fee" class="vt-gh-booking-col">Booking Fee (Rhenus) ↕</th>
+          <th onclick="vtSort('Booking Fee Payment')" data-vtcol="Booking Fee Payment" class="vt-gh-booking-col">BF Paid ↕</th>
+          <th onclick="vtSort('Custom Clearance Fee')" data-vtcol="Custom Clearance Fee" class="vt-gh-customs-col">CC Fee ↕</th>
+          <th onclick="vtSort('CC Fee Payment')" data-vtcol="CC Fee Payment" class="vt-gh-customs-col">CC Paid ↕</th>
+          <th onclick="vtSort('Broker')" data-vtcol="Broker" class="vt-gh-customs-col">Broker ↕</th>
+          <th onclick="vtSort('Invoice No.')" data-vtcol="Invoice No." class="vt-gh-customs-col">Invoice No. ↕</th>
           <th onclick="vtSort('Remark')" data-vtcol="Remark">Remark ↕</th>
           <th onclick="vtSort('_addedAt')" data-vtcol="_addedAt">Date Added ↕</th>
           <th class="no-sort"></th>
@@ -2359,6 +2370,8 @@ select:focus, input:focus {
       <input type="text" id="se-recipient" placeholder="e.g. Warehouse Team" style="width:190px" oninput="buildSlotEmails()"/>
       <label style="margin-left:8px">Sender</label>
       <input type="text" id="se-sender" placeholder="e.g. Owen" style="width:120px" oninput="buildSlotEmails()"/>
+      <label style="margin-left:8px">Carrier CC</label>
+      <input type="text" id="se-carrier-cc" placeholder="e.g. carrier@rhenus.com" style="width:200px" oninput="buildSlotEmails()"/>
       <button class="se-copy-btn" onclick="seToggleContacts()" id="se-contacts-btn" style="margin-left:8px;background:#f0f9ff;color:#0369a1;border-color:#bae6fd">📋 Contacts</button>
       <button class="se-copy-btn" id="se-copy-all-btn" onclick="copyAllSlotEmails()" style="margin-left:auto">⎘ Copy All</button>
     </div>
@@ -5522,6 +5535,20 @@ const _fmtUSD = v => { const n=parseFloat(v); if(!v&&v!==0||isNaN(n)) return '�
 const _fmtEUR = v => { const n=parseFloat(v); if(!v&&v!==0||isNaN(n)) return '—'; return '€'+n.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2}); };
 const _VT_USD_COLS = new Set(['Price','Surcharge']);   // always USD
 const _VT_EUR_COLS = new Set(['Booking Fee','Custom Clearance Fee']); // always EUR
+const _VT_PAY_COLS = new Set(['Payment Status','Booking Fee Payment','CC Fee Payment']); // payment badge cols
+const _VT_OCEAN_COLS = new Set(['Price','Surcharge','Surcharge Reason','Payment Status']);
+const _VT_BOOKING_COLS = new Set(['Booking Fee','Booking Fee Payment']);
+const _VT_CUSTOMS_COLS = new Set(['Custom Clearance Fee','CC Fee Payment','Broker','Invoice No.']);
+
+function _vtPayBadge(v){
+  if(!v) return '<span class="vt-pay-empty">—</span>';
+  const cls = v==='Paid'?'vt-pay-paid':v==='Pending'?'vt-pay-pending':v==='Not Billed'?'vt-pay-notbilled':'';
+  return `<span class="vt-pay-badge ${cls}">${v}</span>`;
+}
+function _vtTdClass(col, extraClass){
+  const g = _VT_OCEAN_COLS.has(col)?'vt-ocean-td':_VT_BOOKING_COLS.has(col)?'vt-booking-td':_VT_CUSTOMS_COLS.has(col)?'vt-customs-td':'';
+  return [g, extraClass||''].filter(Boolean).join(' ');
+}
 
 function vtCell(r, col, opts){
   const v = r[col]===undefined||r[col]===null||isNaN_safe(r[col]) ? '' : String(r[col]);
@@ -5529,31 +5556,34 @@ function vtCell(r, col, opts){
   const IS_USD = _VT_USD_COLS.has(col);
   const IS_EUR = _VT_EUR_COLS.has(col);
   const IS_CURR = IS_USD || IS_EUR;
+  const IS_PAY = _VT_PAY_COLS.has(col);
   const fmt = IS_USD ? _fmtUSD : IS_EUR ? _fmtEUR : null;
   const disp = IS_DATE ? fmtDateStr(v) : IS_CURR ? fmt(v) : v;
-  const dispColor = IS_USD ? '#0369a1' : IS_EUR ? '#065f46' : null;
+  const dispColor = IS_USD ? '#0c4a6e' : IS_EUR ? '#14532d' : null;
+  const tdClass = _vtTdClass(col, opts&&opts.extraClass);
+  const xClass = tdClass ? ` class="${tdClass}"` : '';
   const xStyle = (opts&&opts.extraStyle) ? ` style="${opts.extraStyle}"` : '';
   if(opts && opts.select){
     const selOpts = opts.select.map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('');
-    const xClass = (opts&&opts.extraClass) ? ` class="${opts.extraClass}"` : '';
+    const cellView = IS_PAY ? _vtPayBadge(v) : (disp?`<strong>${disp}</strong>`:'<span style="color:#ccc">—</span>');
   return `<td${xClass} data-vtid="${r._id}" data-col="${col}"${xStyle}>
-      <div class="cell-view" onclick="startEdit(this)">${disp?`<strong>${disp}</strong>`:'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-view" onclick="startEdit(this)">${cellView}</div>
       <div class="cell-edit"><select onblur="commitVTSelect(this,'${col}',${r._id})" onchange="commitVTSelect(this,'${col}',${r._id})">${selOpts}</select></div>
     </td>`;
   }
   if(IS_DATE){
-    return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
+    return `<td${xClass} data-vtid="${r._id}" data-col="${col}"${xStyle}>
       <div class="cell-view" onclick="startEdit(this)">${disp||'<span style="color:#ccc">—</span>'}</div>
       <div class="cell-edit"><input type="text" data-fptype="date" value="${disp.replace(/"/g,'&quot;')}" onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
     </td>`;
   }
   if(IS_CURR){
-    return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
+    return `<td${xClass} data-vtid="${r._id}" data-col="${col}"${xStyle}>
       <div class="cell-view" onclick="startEdit(this)">${disp!=='—'?`<strong style="color:${dispColor}">${disp}</strong>`:'<span style="color:#ccc">—</span>'}</div>
       <div class="cell-edit"><input value="${v.replace(/"/g,'&quot;')}" onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="0.00"/></div>
     </td>`;
   }
-  return `<td data-vtid="${r._id}" data-col="${col}"${xStyle}>
+  return `<td${xClass} data-vtid="${r._id}" data-col="${col}"${xStyle}>
     <div class="cell-view" onclick="startEdit(this)">${disp||'<span style="color:#ccc">—</span>'}</div>
     <div class="cell-edit"><input value="${v.replace(/"/g,'&quot;')}" onblur="commitVTEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
   </td>`;
@@ -5815,7 +5845,7 @@ function vtApplyFreezeColumns(){
   // Must be visible to measure offsetWidth
   const page = document.getElementById('page-vessels');
   if(!page || !page.classList.contains('active')){ return; }
-  const headerCells = Array.from(tbl.querySelectorAll('thead tr th'));
+  const headerCells = Array.from(tbl.querySelectorAll('thead tr:last-child th'));
   let left = 0;
   const frozenIndices = [];
   headerCells.forEach((th, i) => {
@@ -5841,7 +5871,7 @@ function vtApplyFreezeColumns(){
   // Shadow on last frozen col
   if(frozenIndices.length){
     const lastIdx = frozenIndices[frozenIndices.length-1].idx;
-    tbl.querySelectorAll(`thead th:nth-child(${lastIdx+1}), tbody td:nth-child(${lastIdx+1})`).forEach(el=>{
+    tbl.querySelectorAll(`thead tr:last-child th:nth-child(${lastIdx+1}), tbody td:nth-child(${lastIdx+1})`).forEach(el=>{
       el.style.boxShadow = '3px 0 8px -3px rgba(0,0,0,0.18)';
     });
   }
@@ -5849,7 +5879,7 @@ function vtApplyFreezeColumns(){
 function renderVT(){
   const _vtTotalCt=VT.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0);
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'];
-  const TOTAL_COLS=27; // expand + CY + data cols + date added + del + sel
+  const TOTAL_COLS=31; // expand + CY + data cols + date added + del + sel
   const PAY_OPTS=['','Paid','Pending','Not Billed'];
 
   // ── Fill dynamic filter menus (Port, Carrier) ─────────────────────
@@ -5916,6 +5946,47 @@ function renderVT(){
 
   document.getElementById('vt-count').textContent=vtRows.length+(vtRows.length!==VT.length?` of ${VT.length}`:'')+' vessels · '+vtRows.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0)+' containers';
 
+  // ── Financial KPI cards ───────────────────────────────────────────
+  (function(){
+    const PAID_S = new Set(['Paid']);
+    let oceanTotal=0,oceanUnpaid=0,bfTotal=0,bfUnpaid=0,ccTotal=0,ccUnpaid=0;
+    vtRows.forEach(r=>{
+      const price=(parseFloat(r['Price'])||0)+(parseFloat(r['Surcharge'])||0);
+      const bf=parseFloat(r['Booking Fee'])||0;
+      const cc=parseFloat(r['Custom Clearance Fee'])||0;
+      oceanTotal+=price; if(!PAID_S.has(r['Payment Status']||'')) oceanUnpaid+=price;
+      bfTotal+=bf;       if(!PAID_S.has(r['Booking Fee Payment']||'')) bfUnpaid+=bf;
+      ccTotal+=cc;       if(!PAID_S.has(r['CC Fee Payment']||'')) ccUnpaid+=cc;
+    });
+    const totalDue = oceanUnpaid + bfUnpaid + ccUnpaid; // mixed currency approx
+    const $=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    const €=v=>'€'+v.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:0});
+    const kpiEl = document.getElementById('vt-fin-kpi');
+    if(!kpiEl) return;
+    kpiEl.innerHTML=`<div class="vt-fin-kpi">
+      <div class="vt-fin-card vt-fin-ocean">
+        <div class="vfc-label">🚢 Ocean Freight</div>
+        <div class="vfc-val">${$(oceanUnpaid)}</div>
+        <div class="vfc-sub">unpaid of ${$(oceanTotal)} total (USD)</div>
+      </div>
+      <div class="vt-fin-card vt-fin-booking">
+        <div class="vfc-label">📋 Booking Fee</div>
+        <div class="vfc-val">${€(bfUnpaid)}</div>
+        <div class="vfc-sub">unpaid of ${€(bfTotal)} total (EUR)</div>
+      </div>
+      <div class="vt-fin-card vt-fin-customs">
+        <div class="vfc-label">🛂 Customs Clearance</div>
+        <div class="vfc-val">${€(ccUnpaid)}</div>
+        <div class="vfc-sub">unpaid of ${€(ccTotal)} total (EUR)</div>
+      </div>
+      <div class="vt-fin-card vt-fin-total">
+        <div class="vfc-label">⚠️ Total Outstanding</div>
+        <div class="vfc-val">${$(oceanUnpaid)} + ${€(bfUnpaid+ccUnpaid)}</div>
+        <div class="vfc-sub">${oceanUnpaid||bfUnpaid||ccUnpaid?'Action needed':'All charges settled ✓'}</div>
+      </div>
+    </div>`;
+  })();
+
   // ── No-data message ───────────────────────────────────────────────
   let _vtNoData=document.getElementById('vt-nodata');
   if(!_vtNoData){
@@ -5932,7 +6003,7 @@ function renderVT(){
   document.querySelectorAll('#page-vessels thead th[data-vtcol]').forEach(th=>{
     const col=th.dataset.vtcol;
     const _cdfSpan=th.querySelector('.cdf-btn');
-    const label=col==='_addedAt'?'Date Added':col;
+    const label=col==='_addedAt'?'Date Added':col==='Price'?'Ocean Freight':col;
     th.textContent=label+(col===vtSortCol?(vtSortDir===1?' ↑':' ↓'):' ↕');
     if(_cdfSpan) th.appendChild(_cdfSpan);
   });
@@ -7995,21 +8066,29 @@ function buildSlotEmails(){
       const dateLabel = formatDateList(monthDays);
       const metaDates = monthDays.length > 1 ? monthDays.join(' · ') : monthDays[0]||'';
 
-      const subject = `Pre-alert to ${g.consignee} – ${qty} container${qty>1?'s':''} ETA ${dateLabel}`;
+      const carrierCC = (document.getElementById('se-carrier-cc')?.value||'').trim();
+      const subject = `Slot Booking Request – ${g.consignee} – ${qty} container${qty>1?'s':''} – ${dateLabel}`;
       const emailText =
 `Dear ${recipient},
 
-I am writing to book unloading space for ${qty} container${qty>1?'s':''}.
-We would like to deliver these to your warehouse on ${dateLabel}. Could you please confirm availability and advise on the available time slots?
+I am writing to request unloading slot${qty>1?'s':''} for the following ${qty} container${qty>1?'s':''} arriving on ${dateLabel}.
+Please confirm the delivery window and advise if any changes are needed.
 
 Slots:
 ${slotLines}
 
-Thank you${sender ? ',\n'+sender : ''}`;
+Please reply with confirmation at your earliest convenience.${carrierCC ? '\n\n(Carrier is CC\'d on this email for reference.)' : ''}
+
+Best regards${sender ? ',\n'+sender : ''}`;
 
       const _contact=seGetContactsFor(g.consignee);
+      const _carrierCC2=(document.getElementById('se-carrier-cc')?.value||'').trim();
       // normalise emails: replace semicolons with commas, collapse whitespace
       const _normEmails=e=>(e||'').replace(/;/g,',').replace(/\s*,\s*/g,', ').trim();
+      const _carrierCCHtml=_carrierCC2?`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:#fff7ed;border-bottom:1px solid #fed7aa;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;color:#c2410c;white-space:nowrap;margin-top:1px">CC:</span>
+            <span style="font-size:11px;color:#92400e">${_normEmails(_carrierCC2)}</span>
+          </div>`:'';
       const _toHtml=_contact
         ? (()=>{ const em=_normEmails(_contact.emails); return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:#f0f9ff;border-bottom:1px solid #bae6fd;flex-wrap:wrap">
             <span style="font-size:11px;font-weight:700;color:#0369a1;white-space:nowrap;margin-top:1px">To:</span>
@@ -8025,7 +8104,7 @@ Thank you${sender ? ',\n'+sender : ''}`;
           </div>
           <button class="se-copy-btn" id="se-cbtn-${gi}" onclick="copySlotEmail(${gi})">⎘ Copy</button>
         </div>
-        ${_toHtml}
+        ${_toHtml}${_carrierCCHtml}
         <div class="se-email-body">
           <div class="se-subject">Subject <span>${subject}</span></div>
           <div class="se-pre" id="se-pre-${gi}">${emailText}</div>
@@ -9165,6 +9244,50 @@ thead th.vt-fc{z-index:20;top:0;background:#004D4C}
 td.vt-fc-expand{position:sticky;left:0;z-index:3;background:#fff}
 thead th.vt-fc-expand{position:sticky;left:0;z-index:20;top:0;background:#004D4C}
 tbody tr:hover td.vt-fc,tbody tr:hover td.vt-fc-expand{background:#F8FAFC}
+
+/* ── VT Group headers ── */
+.vt-group-hdr th{font-size:11px;font-weight:700;text-align:center;padding:4px 6px;letter-spacing:.5px;border-bottom:2px solid rgba(255,255,255,.15);position:sticky;top:0;z-index:15;height:26px}
+#page-vessels thead tr:nth-child(2) th{position:sticky;top:26px;z-index:14}
+#page-vessels thead tr:nth-child(2) th.vt-fc,#page-vessels thead tr:nth-child(2) th.vt-fc-expand{z-index:22;top:26px}
+.vt-gh-ocean{background:#0c4a6e!important;color:#bae6fd!important;border-left:2px solid #38bdf8;border-right:2px solid #38bdf8}
+.vt-gh-booking{background:#14532d!important;color:#bbf7d0!important;border-left:2px solid #4ade80;border-right:2px solid #4ade80}
+.vt-gh-customs{background:#581c87!important;color:#e9d5ff!important;border-left:2px solid #c084fc;border-right:2px solid #c084fc}
+/* column tint */
+.vt-gh-ocean-col{border-left:1px solid rgba(56,189,248,.25)!important;border-right:1px solid rgba(56,189,248,.25)!important}
+.vt-gh-booking-col{border-left:1px solid rgba(74,222,128,.25)!important;border-right:1px solid rgba(74,222,128,.25)!important}
+.vt-gh-customs-col{border-left:1px solid rgba(192,132,252,.25)!important;border-right:1px solid rgba(192,132,252,.25)!important}
+td.vt-ocean-td{background:rgba(14,165,233,.05)}
+td.vt-booking-td{background:rgba(34,197,94,.05)}
+td.vt-customs-td{background:rgba(168,85,247,.05)}
+tr:hover td.vt-ocean-td{background:rgba(14,165,233,.10)!important}
+tr:hover td.vt-booking-td{background:rgba(34,197,94,.10)!important}
+tr:hover td.vt-customs-td{background:rgba(168,85,247,.10)!important}
+
+/* ── VT Payment badges ── */
+.vt-pay-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+.vt-pay-paid{background:#dcfce7;color:#15803d;border:1px solid #86efac}
+.vt-pay-pending{background:#fef9c3;color:#a16207;border:1px solid #fde047}
+.vt-pay-notbilled{background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1}
+.vt-pay-empty{color:#ccc}
+
+/* ── VT Financial KPI cards ── */
+.vt-fin-kpi{display:flex;flex-wrap:wrap;gap:10px;padding:4px 0 10px}
+.vt-fin-card{flex:1;min-width:160px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.vt-fin-card .vfc-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;opacity:.7}
+.vt-fin-card .vfc-val{font-size:18px;font-weight:800;line-height:1.1}
+.vt-fin-card .vfc-sub{font-size:10px;opacity:.6;margin-top:2px}
+.vt-fin-ocean{border-top:3px solid #0ea5e9}
+.vt-fin-ocean .vfc-label{color:#0369a1}
+.vt-fin-ocean .vfc-val{color:#0c4a6e}
+.vt-fin-booking{border-top:3px solid #22c55e}
+.vt-fin-booking .vfc-label{color:#15803d}
+.vt-fin-booking .vfc-val{color:#14532d}
+.vt-fin-customs{border-top:3px solid #a855f7}
+.vt-fin-customs .vfc-label{color:#7c3aed}
+.vt-fin-customs .vfc-val{color:#581c87}
+.vt-fin-total{border-top:3px solid #f59e0b}
+.vt-fin-total .vfc-label{color:#b45309}
+.vt-fin-total .vfc-val{color:#78350f}
 </style>
 
 <!-- ── PWA: Register inline service worker for offline support ── -->
