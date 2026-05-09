@@ -2226,6 +2226,22 @@ select:focus, input:focus {
 <div id="page-vessels" class="page">
   <div id="page-notice-vessels"></div>
 
+  <!-- ── Return Container Planning ──────────────────────────────── -->
+  <div id="rcp-wrap" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">📦</span>
+        <span style="font-weight:800;font-size:15px;color:var(--navy)">Return Container Planning</span>
+        <span id="rcp-updated" style="font-size:11px;color:#94a3b8"></span>
+      </div>
+      <label style="margin-left:auto;cursor:pointer">
+        <input type="file" id="rcp-file" accept=".xlsx,.xls" style="display:none" onchange="rcpUpload(this)"/>
+        <span style="padding:5px 14px;font-size:12px;font-weight:700;background:#004D4C;color:#fff;border-radius:8px;cursor:pointer;white-space:nowrap">↑ Upload Daily Excel</span>
+      </label>
+    </div>
+    <div id="rcp-board"></div>
+  </div>
+
   <div id="vt-progress-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 4px 12px"></div>
 
   <!-- VT Filter Row — below progress cards, above table -->
@@ -2995,7 +3011,7 @@ function showPage(p){
   }
   if(p==='dashboard') renderDashboard();
   if(p==='containers'){ renderCT(); if(typeof renderPageNotices==='function') renderPageNotices(); }
-  if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); setTimeout(vtApplyFreezeColumns,50); }
+  if(p==='vessels'){ renderVT(); renderSOC(); rcpRender(); if(typeof renderPageNotices==='function') renderPageNotices(); setTimeout(vtApplyFreezeColumns,50); }
   if(p==='feedback') renderFeedback();
   if(p==='reports') renderReports();
 }
@@ -4930,6 +4946,159 @@ function getCTRows(){
 
 function ctSort(col){ ctSortCol===col?ctSortDir*=-1:(ctSortCol=col,ctSortDir=1); renderCT(); }
 function vtSort(col){ vtSortCol===col?vtSortDir*=-1:(vtSortCol=col,vtSortDir=1); renderVT(); }
+
+// ══ RETURN CONTAINER PLANNING ══════════════════════════════════════
+const LS_RCP = 'owenz_rcp_v1';
+const RCP_AVG_TRANSIT = 26; // avg days China → Duisburg by rail
+const RCP_HUBS = ['杜伊斯堡','鹿特丹','汉堡','华沙','马拉舍维奇'];
+const RCP_HUB_EN = {'杜伊斯堡':'Duisburg','鹿特丹':'Rotterdam','汉堡':'Hamburg','华沙':'Warsaw','马拉舍维奇':'Mala'};
+
+function rcpParseDate(v){
+  if(!v) return null;
+  if(v instanceof Date) return new Date(v.getFullYear(),v.getMonth(),v.getDate());
+  const s=String(v).trim().slice(0,10);
+  const d=new Date(s); return isNaN(d)?null:d;
+}
+function rcpISOWeek(d){
+  const tmp=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  tmp.setUTCDate(tmp.getUTCDate()+4-(tmp.getUTCDay()||7));
+  const yr=tmp.getUTCFullYear();
+  const wk=Math.ceil(((tmp-new Date(Date.UTC(yr,0,1)))/86400000+1)/7);
+  return `${yr}-W${String(wk).padStart(2,'0')}`;
+}
+function rcpWeekLabel(wk){
+  // wk = "2026-W20" → "W20 (May 11)"
+  const [yr,wp]=wk.split('-W');
+  const jan1=new Date(parseInt(yr),0,1);
+  const mon=new Date(jan1.getTime()+(parseInt(wp)-1)*7*86400000);
+  // adjust to Monday
+  const day=mon.getDay(); const diff=(day<=4?1-day:8-day);
+  const monday=new Date(mon.getTime()+diff*86400000);
+  return `W${wp} <span style="font-weight:400;color:#94a3b8">${monday.toLocaleDateString('en',{month:'short',day:'numeric'})}</span>`;
+}
+
+function rcpUpload(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{defval:null,raw:false,dateNF:'yyyy-mm-dd'});
+      rcpProcess(raw, file.name);
+    }catch(err){ alert('Failed to parse Excel: '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+  input.value='';
+}
+
+function rcpProcess(raw, filename){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const byWeek={};
+
+  raw.forEach(row=>{
+    const dest=row['下一城市']||row['Next City']||'';
+    if(!RCP_HUBS.includes(dest)) return;
+
+    const cn=row['Container no.']||row['ContainerNo']||'';
+    const from=row['当前城市']||'';
+    const size=row['SizeType']||'40HQ';
+    const workOrder=row['工作单号']||'';
+
+    let eta=null, status='unknown';
+    const ataRaw=row['ATA']; const atdRaw=row['ATD'];
+    const ata=rcpParseDate(ataRaw), atd=rcpParseDate(atdRaw);
+
+    if(ata){ eta=ata; status='arrived'; }
+    else if(atd){
+      eta=new Date(atd.getTime()+RCP_AVG_TRANSIT*86400000);
+      status=eta<=today?'overdue':'in_transit';
+    }
+    if(!eta) return;
+
+    const wk=rcpISOWeek(eta);
+    if(!byWeek[wk]) byWeek[wk]={};
+    if(!byWeek[wk][dest]) byWeek[wk][dest]={arrived:0,transit:0,containers:[]};
+    if(status==='arrived') byWeek[wk][dest].arrived++;
+    else byWeek[wk][dest].transit++;
+    byWeek[wk][dest].containers.push({cn,from,size,status,eta:eta.toISOString().slice(0,10),workOrder});
+  });
+
+  const data={byWeek,filename,updatedAt:new Date().toISOString(),total:raw.length};
+  localStorage.setItem(LS_RCP,JSON.stringify(data));
+  rcpRender();
+}
+
+function rcpRender(){
+  const board=document.getElementById('rcp-board'); if(!board) return;
+  const raw=localStorage.getItem(LS_RCP);
+  if(!raw){ board.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:12px 0">No data yet — upload your daily Excel to see the arrival timeline.</div>'; return; }
+
+  const {byWeek,filename,updatedAt,total}=JSON.parse(raw);
+  document.getElementById('rcp-updated').textContent=`${total} containers · uploaded ${filename||''} · ${new Date(updatedAt).toLocaleDateString('en',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
+
+  const today=new Date(); today.setHours(0,0,0,0);
+  const curWk=rcpISOWeek(today);
+  const weeks=Object.keys(byWeek).sort();
+
+  // Active hubs across all weeks
+  const activeHubs=RCP_HUBS.filter(h=>weeks.some(w=>byWeek[w][h]));
+
+  let html=`<div style="overflow-x:auto">
+  <table style="border-collapse:collapse;width:100%;font-size:12px;min-width:600px">
+  <thead>
+    <tr style="background:#003534;color:#5DD8D0">
+      <th style="padding:8px 12px;text-align:left;font-weight:700;white-space:nowrap;border-radius:8px 0 0 0">Week</th>
+      ${activeHubs.map(h=>`<th style="padding:8px 10px;text-align:center;font-weight:700">${RCP_HUB_EN[h]}</th>`).join('')}
+      <th style="padding:8px 12px;text-align:center;font-weight:700;border-radius:0 8px 0 0">Total</th>
+    </tr>
+  </thead><tbody>`;
+
+  weeks.forEach((wk,wi)=>{
+    const isCur=wk===curWk;
+    const isPast=wk<curWk;
+    const rowBg=isCur?'#f0fdf4':isPast?'#fafafa':'#fff';
+    const rowBdr=isCur?'2px solid #22c55e':'1px solid #f1f5f9';
+    let total=0;
+    const cells=activeHubs.map(h=>{
+      const d=byWeek[wk][h]||{arrived:0,transit:0};
+      const cnt=d.arrived+d.transit; total+=cnt;
+      if(!cnt) return `<td style="padding:7px 10px;text-align:center;color:#e2e8f0;border-bottom:${rowBdr}">—</td>`;
+      const arrBadge=d.arrived?`<span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">✓${d.arrived}</span> `:'';
+      const trnBadge=d.transit?`<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">⟳${d.transit}</span>`:'';
+      return `<td style="padding:7px 10px;text-align:center;border-bottom:${rowBdr}"><div style="display:flex;gap:3px;justify-content:center;align-items:center">${arrBadge}${trnBadge}</div></td>`;
+    });
+
+    html+=`<tr style="background:${rowBg}${isCur?';font-weight:700':''}">
+      <td style="padding:8px 12px;white-space:nowrap;border-bottom:${rowBdr};border-left:${isCur?'3px solid #22c55e':'none'}">
+        ${isCur?'<span style="font-size:10px;background:#22c55e;color:#fff;border-radius:4px;padding:1px 5px;margin-right:4px">NOW</span>':''}
+        ${rcpWeekLabel(wk)}
+      </td>
+      ${cells.join('')}
+      <td style="padding:8px 12px;text-align:center;font-weight:800;color:var(--navy);border-bottom:${rowBdr}">${total}</td>
+    </tr>`;
+  });
+
+  // Summary row
+  const totByHub={}; let grandTotal=0;
+  weeks.forEach(w=>activeHubs.forEach(h=>{ const d=byWeek[w][h]||{arrived:0,transit:0}; totByHub[h]=(totByHub[h]||0)+d.arrived+d.transit; grandTotal+=d.arrived+d.transit; }));
+
+  html+=`<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0">
+    <td style="padding:8px 12px;color:var(--navy)">TOTAL</td>
+    ${activeHubs.map(h=>`<td style="padding:8px 10px;text-align:center;color:var(--navy)">${totByHub[h]||0}</td>`).join('')}
+    <td style="padding:8px 12px;text-align:center;color:var(--navy)">${grandTotal}</td>
+  </tr></tbody></table></div>
+
+  <div style="margin-top:8px;display:flex;gap:12px;font-size:11px;color:#64748b;flex-wrap:wrap">
+    <span><span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700">✓</span> Arrived at yard (ATA confirmed)</span>
+    <span><span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:700">⟳</span> In transit (ETA = ATD + ${RCP_AVG_TRANSIT} days avg)</span>
+  </div>`;
+
+  board.innerHTML=html;
+}
+
+// Init on page load
+document.addEventListener('DOMContentLoaded',()=>{ rcpRender(); });
 
 // ── CT SLOT CHANGE HISTORY ────────────────────────────────────────
 function ctToggleExpand(id){
