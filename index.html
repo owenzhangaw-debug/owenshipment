@@ -4951,7 +4951,17 @@ function vtSort(col){ vtSortCol===col?vtSortDir*=-1:(vtSortCol=col,vtSortDir=1);
 const LS_RCP = 'owenz_rcp_v1';
 const RCP_AVG_TRANSIT = 26; // avg days China → Duisburg by rail
 const RCP_HUBS = ['杜伊斯堡','鹿特丹','汉堡','华沙','马拉舍维奇'];
-const RCP_HUB_EN = {'杜伊斯堡':'Duisburg','鹿特丹':'Rotterdam','汉堡':'Hamburg','华沙':'Warsaw','马拉舍维奇':'Mala'};
+const RCP_HUB_EN = {'杜伊斯堡':'Duisburg','鹿特丹':'Rotterdam','汉堡':'Hamburg','华沙':'Warsaw','马拉舍维奇':'ADAMPOL'};
+// POL → hub. Both Warsaw and ADAMPOL use GDANSK port.
+// Differentiate by CY field on the vessel: CY=ADAMPOL → 马拉舍维奇, else → 华沙
+const RCP_POL_HUB = {
+  'ANTWERP':'杜伊斯堡', 'ANVERS':'杜伊斯堡',
+  'ROTTERDAM':'鹿特丹',
+  'HAMBURG':'汉堡',
+  'GDANSK':'华沙',   // default; overridden to 马拉舍维奇 if CY=ADAMPOL
+  'DANZIG':'华沙',
+  'KLAIPEDA':'马拉舍维奇'
+};
 
 function rcpParseDate(v){
   if(!v) return null;
@@ -4966,6 +4976,46 @@ function rcpISOWeek(d){
   const wk=Math.ceil(((tmp-new Date(Date.UTC(yr,0,1)))/86400000+1)/7);
   return `${yr}-W${String(wk).padStart(2,'0')}`;
 }
+// Parse VT date strings like "15-Jan-2026" or "2026/01/15"
+function rcpParseVTDate(s){
+  if(!s||s==='TBD') return null;
+  const ms=Date.parse(s);
+  if(!isNaN(ms)){ const d=new Date(ms); return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+  return null;
+}
+
+// Build booked return vessels from VT data: {hub: {week: [{bk,qty,vessel,cutoff}]}}
+function rcpGetBookings(){
+  const booked={}; // hub → week → {qty, vessels:[]}
+  (VT||[]).forEach(r=>{
+    const pol=(r['Port']||'').toUpperCase().trim();
+    let hub=RCP_POL_HUB[pol]; if(!hub) return;
+    // GDANSK/DANZIG: differentiate Warsaw vs ADAMPOL by CY field
+    if(pol==='GDANSK'||pol==='DANZIG'){
+      const cy=(r['CY']||'').toUpperCase();
+      if(cy.includes('ADAMPOL')||cy.includes('MALA')||cy.includes('MAŁASZEWICZE')){
+        hub='马拉舍维奇';
+      } else {
+        hub='华沙';
+      }
+    }
+    const qty=parseFloat(r['Container Qty'])||0; if(!qty) return;
+    const cutoff=rcpParseVTDate(r['Port Cut-Off']||r['ETS (Departure)']||'');
+    if(!cutoff) return;
+    const wk=rcpISOWeek(cutoff);
+    if(!booked[hub]) booked[hub]={};
+    if(!booked[hub][wk]) booked[hub][wk]={qty:0,vessels:[]};
+    booked[hub][wk].qty+=qty;
+    booked[hub][wk].vessels.push({
+      bk: r['Booking / BC No.']||'—',
+      vessel: r['Vessel Name']||'',
+      qty, cutoff: r['Port Cut-Off']||'',
+      pod: r['POD']||''
+    });
+  });
+  return booked;
+}
+
 function rcpWeekLabel(wk){
   // wk = "2026-W20" → "W20 (May 11)"
   const [yr,wp]=wk.split('-W');
@@ -5062,16 +5112,23 @@ function rcpRender(){
   const weeks=Object.keys(byWeek).sort();
   const activeHubs=RCP_HUBS.filter(h=>weeks.some(w=>byWeek[w][h]));
 
+  // VT vessel bookings for return
+  const bookings=rcpGetBookings();
+
   // Pre-compute cumulative totals per hub (up to and including each week)
-  const cumByHubWeek={}; // cumByHubWeek[wk][hub] = {arrived, transit, containers[]}
+  // Also cumulative booked (vessels with cut-off ≤ this week)
+  const cumByHubWeek={};
   activeHubs.forEach(h=>{
-    let cumA=0, cumT=0, cumContainers=[];
+    let cumA=0, cumT=0, cumContainers=[], cumBooked=0, cumVessels=[];
     weeks.forEach(wk=>{
       const d=byWeek[wk][h]||{arrived:0,transit:0,containers:[]};
       cumA+=d.arrived; cumT+=d.transit;
       cumContainers=[...cumContainers,...(d.containers||[])];
+      // Add bookings for this week
+      const bk=bookings[h]?.[wk];
+      if(bk){ cumBooked+=bk.qty; cumVessels=[...cumVessels,...bk.vessels]; }
       if(!cumByHubWeek[wk]) cumByHubWeek[wk]={};
-      cumByHubWeek[wk][h]={cumA,cumT,cumTotal:cumA+cumT,containers:[...cumContainers]};
+      cumByHubWeek[wk][h]={cumA,cumT,cumTotal:cumA+cumT,containers:[...cumContainers],cumBooked,cumVessels:[...cumVessels],remaining:Math.max(0,cumA+cumT-cumBooked)};
     });
   });
 
@@ -5094,27 +5151,37 @@ function rcpRender(){
     const cells=activeHubs.map(h=>{
       const d=byWeek[wk][h]||{arrived:0,transit:0,containers:[]};
       const cnt=d.arrived+d.transit; weekTotal+=cnt;
-      const cum=cumByHubWeek[wk]?.[h]||{cumA:0,cumT:0,cumTotal:0,containers:[]};
+      const cum=cumByHubWeek[wk]?.[h]||{cumA:0,cumT:0,cumTotal:0,containers:[],cumBooked:0,cumVessels:[],remaining:0};
+      // This week's new bookings
+      const wkBk=bookings[h]?.[wk];
 
-      // Build tooltip data
+      // Tooltip
       const originCount={};
       (cum.containers||[]).forEach(c=>{ originCount[c.from]=(originCount[c.from]||0)+1; });
       const originRows=Object.entries(originCount).sort((a,b)=>b[1]-a[1])
         .map(([city,n])=>`<div style='display:flex;justify-content:space-between;gap:16px'><span>${city}</span><span style='font-weight:700'>${n}</span></div>`).join('');
+      const vesselRows=(cum.cumVessels||[]).map(v=>
+        `<div style='display:flex;justify-content:space-between;gap:12px;font-size:11px'><span style='color:#fbbf24'>${v.bk}</span><span>${v.vessel}</span><span style='font-weight:700;color:#f87171'>-${v.qty}</span></div>`
+      ).join('');
+      const remainColor=cum.remaining>50?'#f87171':cum.remaining>0?'#fbbf24':'#4ade80';
       const tipHtml=`<div style='font-weight:800;font-size:13px;margin-bottom:6px;color:#5DD8D0'>${RCP_HUB_EN[h]} — cumulative up to ${wk}</div>
-        <div style='display:flex;gap:10px;margin-bottom:8px'>
-          <span style='background:#dcfce7;color:#15803d;border-radius:4px;padding:2px 8px;font-weight:700'>✓ ${cum.cumA} arrived</span>
-          <span style='background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:2px 8px;font-weight:700'>⟳ ${cum.cumT} transit</span>
+        <div style='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px'>
+          <span style='background:#dcfce7;color:#15803d;border-radius:4px;padding:2px 7px;font-weight:700'>✓${cum.cumA}</span>
+          <span style='background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:2px 7px;font-weight:700'>⟳${cum.cumT}</span>
+          ${cum.cumBooked?`<span style='background:#fef3c7;color:#92400e;border-radius:4px;padding:2px 7px;font-weight:700'>🚢-${cum.cumBooked} booked</span>`:''}
         </div>
-        <div style='font-size:13px;font-weight:800;margin-bottom:6px'>Total at yard: ${cum.cumTotal} × 40HQ</div>
-        ${originRows?`<div style='border-top:1px solid #334155;margin-top:6px;padding-top:6px;font-size:11px;color:#94a3b8'>By origin:</div>${originRows}`:''}`;
+        <div style='font-size:14px;font-weight:800;margin-bottom:4px'>Total at yard: ${cum.cumTotal} × 40HQ</div>
+        ${cum.cumBooked?`<div style='font-size:13px;font-weight:800;color:${remainColor}'>Still to book: ${cum.remaining} × 40HQ</div>`:''}
+        ${vesselRows?`<div style='border-top:1px solid #334155;margin:6px 0 4px;padding-top:6px;font-size:10px;color:#94a3b8;font-weight:700'>BOOKED VESSELS (cut-off ≤ ${wk})</div>${vesselRows}`:''}
+        ${originRows?`<div style='border-top:1px solid #334155;margin-top:6px;padding-top:6px;font-size:10px;color:#94a3b8;font-weight:700'>BY ORIGIN</div>${originRows}`:''}`;
       const tipAttr=`data-tip="${tipHtml.replace(/"/g,'&quot;')}"`;
 
-      if(!cnt) return `<td style="padding:7px 10px;text-align:center;color:#e2e8f0;border-bottom:${rowBdr}">—</td>`;
+      if(!cnt && !wkBk) return `<td style="padding:7px 10px;text-align:center;color:#e2e8f0;border-bottom:${rowBdr}">—</td>`;
       const arrBadge=d.arrived?`<span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">✓${d.arrived}</span>`:'';
       const trnBadge=d.transit?`<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">⟳${d.transit}</span>`:'';
-      return `<td class="rcp-cell" ${tipAttr} style="padding:7px 10px;text-align:center;border-bottom:${rowBdr};cursor:default">
-        <div style="display:flex;gap:3px;justify-content:center;align-items:center">${arrBadge}${trnBadge}</div>
+      const bkBadge=wkBk?`<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">🚢-${wkBk.qty}</span>`:'';
+      return `<td class="rcp-cell" ${tipAttr} style="padding:6px 10px;text-align:center;border-bottom:${rowBdr};cursor:default">
+        <div style="display:flex;gap:2px;justify-content:center;align-items:center;flex-wrap:wrap">${arrBadge}${trnBadge}${bkBadge}</div>
       </td>`;
     });
 
@@ -5138,7 +5205,8 @@ function rcpRender(){
   <div style="margin-top:8px;display:flex;gap:12px;font-size:11px;color:#64748b;flex-wrap:wrap">
     <span><span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700">✓</span> Arrived (ATA confirmed)</span>
     <span><span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:700">⟳</span> In transit (ETA = ATD + ${RCP_AVG_TRANSIT} days avg)</span>
-    <span style="color:#94a3b8">Hover any cell → cumulative total at that hub</span>
+    <span><span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:700">🚢-n</span> Booked return vessel (from VT cut-off date)</span>
+    <span style="color:#94a3b8">Hover → cumulative total · booked · still to book</span>
   </div>`;
 
   board.innerHTML=html;
