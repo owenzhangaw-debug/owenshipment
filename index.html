@@ -5029,23 +5029,54 @@ function rcpProcess(raw, filename){
   rcpRender();
 }
 
+// Tooltip element (shared)
+let _rcpTip=null;
+function rcpTipShow(e, html){
+  if(!_rcpTip){ _rcpTip=document.createElement('div'); _rcpTip.id='rcp-tip'; document.body.appendChild(_rcpTip); }
+  _rcpTip.innerHTML=html;
+  _rcpTip.style.cssText='position:fixed;z-index:9999;background:#1e293b;color:#f1f5f9;border-radius:10px;padding:10px 14px;font-size:12px;line-height:1.6;box-shadow:0 8px 32px rgba(0,0,0,.35);pointer-events:none;max-width:280px;display:block';
+  rcpTipMove(e);
+}
+function rcpTipMove(e){
+  if(!_rcpTip||_rcpTip.style.display==='none') return;
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const tw=_rcpTip.offsetWidth||240, th=_rcpTip.offsetHeight||100;
+  let x=e.clientX+14, y=e.clientY-10;
+  if(x+tw>vw-8) x=e.clientX-tw-14;
+  if(y+th>vh-8) y=e.clientY-th-10;
+  _rcpTip.style.left=x+'px'; _rcpTip.style.top=y+'px';
+}
+function rcpTipHide(){ if(_rcpTip) _rcpTip.style.display='none'; }
+document.addEventListener('mousemove',rcpTipMove);
+
 function rcpRender(){
   const board=document.getElementById('rcp-board'); if(!board) return;
   const raw=localStorage.getItem(LS_RCP);
   if(!raw){ board.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:12px 0">No data yet — upload your daily Excel to see the arrival timeline.</div>'; return; }
 
   const {byWeek,filename,updatedAt,total}=JSON.parse(raw);
-  document.getElementById('rcp-updated').textContent=`${total} containers · uploaded ${filename||''} · ${new Date(updatedAt).toLocaleDateString('en',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
+  document.getElementById('rcp-updated').textContent=`${total} containers · ${filename||''} · ${new Date(updatedAt).toLocaleDateString('en',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
 
   const today=new Date(); today.setHours(0,0,0,0);
   const curWk=rcpISOWeek(today);
   const weeks=Object.keys(byWeek).sort();
-
-  // Active hubs across all weeks
   const activeHubs=RCP_HUBS.filter(h=>weeks.some(w=>byWeek[w][h]));
 
-  let html=`<div style="overflow-x:auto">
-  <table style="border-collapse:collapse;width:100%;font-size:12px;min-width:600px">
+  // Pre-compute cumulative totals per hub (up to and including each week)
+  const cumByHubWeek={}; // cumByHubWeek[wk][hub] = {arrived, transit, containers[]}
+  activeHubs.forEach(h=>{
+    let cumA=0, cumT=0, cumContainers=[];
+    weeks.forEach(wk=>{
+      const d=byWeek[wk][h]||{arrived:0,transit:0,containers:[]};
+      cumA+=d.arrived; cumT+=d.transit;
+      cumContainers=[...cumContainers,...(d.containers||[])];
+      if(!cumByHubWeek[wk]) cumByHubWeek[wk]={};
+      cumByHubWeek[wk][h]={cumA,cumT,cumTotal:cumA+cumT,containers:[...cumContainers]};
+    });
+  });
+
+  let html=`<div style="overflow-x:auto;position:relative">
+  <table id="rcp-table" style="border-collapse:collapse;width:100%;font-size:12px;min-width:600px">
   <thead>
     <tr style="background:#003534;color:#5DD8D0">
       <th style="padding:8px 12px;text-align:left;font-weight:700;white-space:nowrap;border-radius:8px 0 0 0">Week</th>
@@ -5054,19 +5085,37 @@ function rcpRender(){
     </tr>
   </thead><tbody>`;
 
-  weeks.forEach((wk,wi)=>{
-    const isCur=wk===curWk;
-    const isPast=wk<curWk;
+  weeks.forEach(wk=>{
+    const isCur=wk===curWk, isPast=wk<curWk;
     const rowBg=isCur?'#f0fdf4':isPast?'#fafafa':'#fff';
     const rowBdr=isCur?'2px solid #22c55e':'1px solid #f1f5f9';
-    let total=0;
+    let weekTotal=0;
+
     const cells=activeHubs.map(h=>{
-      const d=byWeek[wk][h]||{arrived:0,transit:0};
-      const cnt=d.arrived+d.transit; total+=cnt;
+      const d=byWeek[wk][h]||{arrived:0,transit:0,containers:[]};
+      const cnt=d.arrived+d.transit; weekTotal+=cnt;
+      const cum=cumByHubWeek[wk]?.[h]||{cumA:0,cumT:0,cumTotal:0,containers:[]};
+
+      // Build tooltip data
+      const originCount={};
+      (cum.containers||[]).forEach(c=>{ originCount[c.from]=(originCount[c.from]||0)+1; });
+      const originRows=Object.entries(originCount).sort((a,b)=>b[1]-a[1])
+        .map(([city,n])=>`<div style='display:flex;justify-content:space-between;gap:16px'><span>${city}</span><span style='font-weight:700'>${n}</span></div>`).join('');
+      const tipHtml=`<div style='font-weight:800;font-size:13px;margin-bottom:6px;color:#5DD8D0'>${RCP_HUB_EN[h]} — cumulative up to ${wk}</div>
+        <div style='display:flex;gap:10px;margin-bottom:8px'>
+          <span style='background:#dcfce7;color:#15803d;border-radius:4px;padding:2px 8px;font-weight:700'>✓ ${cum.cumA} arrived</span>
+          <span style='background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:2px 8px;font-weight:700'>⟳ ${cum.cumT} transit</span>
+        </div>
+        <div style='font-size:13px;font-weight:800;margin-bottom:6px'>Total at yard: ${cum.cumTotal} × 40HQ</div>
+        ${originRows?`<div style='border-top:1px solid #334155;margin-top:6px;padding-top:6px;font-size:11px;color:#94a3b8'>By origin:</div>${originRows}`:''}`;
+      const tipAttr=`data-tip="${tipHtml.replace(/"/g,'&quot;')}"`;
+
       if(!cnt) return `<td style="padding:7px 10px;text-align:center;color:#e2e8f0;border-bottom:${rowBdr}">—</td>`;
-      const arrBadge=d.arrived?`<span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">✓${d.arrived}</span> `:'';
+      const arrBadge=d.arrived?`<span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">✓${d.arrived}</span>`:'';
       const trnBadge=d.transit?`<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">⟳${d.transit}</span>`:'';
-      return `<td style="padding:7px 10px;text-align:center;border-bottom:${rowBdr}"><div style="display:flex;gap:3px;justify-content:center;align-items:center">${arrBadge}${trnBadge}</div></td>`;
+      return `<td class="rcp-cell" ${tipAttr} style="padding:7px 10px;text-align:center;border-bottom:${rowBdr};cursor:default">
+        <div style="display:flex;gap:3px;justify-content:center;align-items:center">${arrBadge}${trnBadge}</div>
+      </td>`;
     });
 
     html+=`<tr style="background:${rowBg}${isCur?';font-weight:700':''}">
@@ -5075,26 +5124,30 @@ function rcpRender(){
         ${rcpWeekLabel(wk)}
       </td>
       ${cells.join('')}
-      <td style="padding:8px 12px;text-align:center;font-weight:800;color:var(--navy);border-bottom:${rowBdr}">${total}</td>
+      <td style="padding:8px 12px;text-align:center;font-weight:800;color:var(--navy);border-bottom:${rowBdr}">${weekTotal}</td>
     </tr>`;
   });
 
-  // Summary row
   const totByHub={}; let grandTotal=0;
   weeks.forEach(w=>activeHubs.forEach(h=>{ const d=byWeek[w][h]||{arrived:0,transit:0}; totByHub[h]=(totByHub[h]||0)+d.arrived+d.transit; grandTotal+=d.arrived+d.transit; }));
-
   html+=`<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0">
     <td style="padding:8px 12px;color:var(--navy)">TOTAL</td>
     ${activeHubs.map(h=>`<td style="padding:8px 10px;text-align:center;color:var(--navy)">${totByHub[h]||0}</td>`).join('')}
     <td style="padding:8px 12px;text-align:center;color:var(--navy)">${grandTotal}</td>
   </tr></tbody></table></div>
-
   <div style="margin-top:8px;display:flex;gap:12px;font-size:11px;color:#64748b;flex-wrap:wrap">
-    <span><span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700">✓</span> Arrived at yard (ATA confirmed)</span>
+    <span><span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700">✓</span> Arrived (ATA confirmed)</span>
     <span><span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:700">⟳</span> In transit (ETA = ATD + ${RCP_AVG_TRANSIT} days avg)</span>
+    <span style="color:#94a3b8">Hover any cell → cumulative total at that hub</span>
   </div>`;
 
   board.innerHTML=html;
+
+  // Wire up hover events
+  board.querySelectorAll('.rcp-cell').forEach(td=>{
+    td.addEventListener('mouseenter',e=>rcpTipShow(e,td.dataset.tip));
+    td.addEventListener('mouseleave',rcpTipHide);
+  });
 }
 
 // Init on page load
