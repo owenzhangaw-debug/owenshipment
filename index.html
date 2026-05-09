@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Owen Zhang · Logistics</title>
 
@@ -1839,11 +1842,23 @@ select:focus, input:focus {
         <label><input type="checkbox" value=""               onchange="msChange('payment','All')"> Not set</label>
       </div>
     </div>
+    <div class="ms-wrap" id="wrap-t1pay">
+      <span class="ms-label">T1 Payment</span>
+      <button class="ms-btn" id="btn-t1pay" onclick="msOpen('t1pay')">All</button>
+      <div class="ms-menu" id="menu-t1pay">
+        <label><input type="checkbox" value="Pending invoice" onchange="msChange('t1pay','All')"> Pending invoice</label>
+        <label><input type="checkbox" value="Amending"       onchange="msChange('t1pay','All')"> Amending</label>
+        <label><input type="checkbox" value="Verifying"      onchange="msChange('t1pay','All')"> Verifying</label>
+        <label><input type="checkbox" value="Requested"      onchange="msChange('t1pay','All')"> Requested</label>
+        <label><input type="checkbox" value="Paid"           onchange="msChange('t1pay','All')"> Paid</label>
+        <label><input type="checkbox" value=""               onchange="msChange('t1pay','All')"> Not set</label>
+      </div>
+    </div>
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
   <div style="margin:0 0 8px">
-    <input type="text" id="f-search" placeholder="🔍  Search container, B/L… paste multiple with commas" oninput="renderCT()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+    <input type="text" id="f-search" placeholder="🔍  Search container, B/L, remark… paste multiple with commas" oninput="renderCT()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
   </div>
 
   <div class="tbl-card">
@@ -2292,7 +2307,7 @@ select:focus, input:focus {
         <thead>
           <!-- Group header row -->
           <tr class="vt-group-hdr">
-            <th colspan="17" style="border:none;background:#003534;padding:0;position:sticky;left:0;z-index:21"></th>
+            <th colspan="18" style="border:none;background:#003534;padding:0;position:sticky;left:0;z-index:21"></th>
             <th colspan="2" class="vt-gh-ocean">🚢 Ocean Freight</th>
             <th colspan="2" class="vt-gh-booking">📋 Forwarder Fee</th>
             <th colspan="3" class="vt-gh-customs">🛂 Customs Clearance</th>
@@ -2302,7 +2317,8 @@ select:focus, input:focus {
           <tr>
           <th class="vt-fc-expand no-sort" style="width:32px"></th>
           <th class="vt-fc" onclick="vtSort('CY')" data-vtcol="CY">CY ↕</th>
-          <th class="vt-fc" onclick="vtSort('Port')" data-vtcol="Port">Port ↕</th>
+          <th class="vt-fc" onclick="vtSort('Port')" data-vtcol="Port">POL ↕</th>
+          <th class="vt-fc" onclick="vtSort('POD')" data-vtcol="POD">POD ↕</th>
           <th class="vt-fc" onclick="vtSort('Carrier')" data-vtcol="Carrier">Carrier ↕</th>
           <th class="vt-fc" onclick="vtSort('Booking / BC No.')" data-vtcol="Booking / BC No.">Booking / BC No. ↕</th>
           <th class="vt-fc" onclick="vtSort('Container Qty')" data-vtcol="Container Qty">Container Qty ↕</th>
@@ -2726,7 +2742,8 @@ select:focus, input:focus {
     <div class="be-panel" id="be-panel-vt">
       <div class="be-hint">Only filled fields will be updated. Leave blank to keep existing values.</div>
       <div class="form-grid">
-        <div class="form-group"><label>Port</label><input type="text" id="be_port"/></div>
+        <div class="form-group"><label>POL</label><input type="text" id="be_port" placeholder="Port of Loading"/></div>
+        <div class="form-group"><label>POD</label><input type="text" id="be_pod" placeholder="Port of Discharge"/></div>
         <div class="form-group"><label>Carrier</label><input type="text" id="be_carrier"/></div>
         <div class="form-group"><label>Status</label>
           <select id="be_vstatus"><option value="">— no change —</option><option>Scheduled</option><option>Cut-Off Soon</option><option>Cut-Off Passed</option><option>Departed</option><option>Discharged</option><option>TBD</option></select></div>
@@ -2778,7 +2795,8 @@ select:focus, input:focus {
     <div class="form-grid">
       <div class="form-group"><label>Booking / BC No.</label><input type="text" id="vta-booking" placeholder="e.g. COSU1234567"/></div>
       <div class="form-group"><label>Vessel Name</label><input type="text" id="vta-vessel" placeholder="e.g. MSC AURORA"/></div>
-      <div class="form-group"><label>Port (POL)</label><input type="text" id="vta-port" placeholder="e.g. XINGANG"/></div>
+      <div class="form-group"><label>Port of Loading (POL)</label><input type="text" id="vta-port" placeholder="e.g. ANTWERP"/></div>
+      <div class="form-group"><label>Port of Discharge (POD)</label><input type="text" id="vta-pod" placeholder="e.g. NINGBO"/></div>
       <div class="form-group"><label>Carrier</label><input type="text" id="vta-carrier" placeholder="e.g. COSCO"/></div>
       <div class="form-group"><label>Container Qty</label><input type="number" id="vta-qty" min="0" placeholder="0"/></div>
       <div class="form-group"><label>Status</label>
@@ -3002,6 +3020,7 @@ function gotoFilter(col, val){
   msClear('consignee','All Consignees');
   msClear('surcharge','All');
   msClear('payment','All');
+  msClear('t1pay','All');
   // Then set the specific filter
   if(col==='Tracking')          msSetValues('tracking',[val],'All Tracking');
   if(col==='_missing_arrival')  msSetValues('arrival',['missing'],'All Arrivals');
@@ -3039,6 +3058,7 @@ function gotoBatch(batchName){
   msClear('consignee','All Consignees');
   msClear('surcharge','All');
   msClear('payment','All');
+  msClear('t1pay','All');
   document.getElementById('f-search').value='';
   msSetValues('batch',[batchName],batchName);
   showPage('containers');
@@ -4800,6 +4820,7 @@ function getCTRowsExcept(excludeId){
   const fcons=excludeId==='consignee'?[]:msGetValues('consignee');
   const fsur=excludeId==='surcharge'?[]:msGetValues('surcharge');
   const fpay=excludeId==='payment'?[]:msGetValues('payment');
+  const ft1pay=excludeId==='t1pay'?[]:msGetValues('t1pay');
   return CT.filter(r=>{
     if(fds.length&&!fds.includes(r['Destination']||'Belgium')) return false;
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
@@ -4818,6 +4839,7 @@ function getCTRowsExcept(excludeId){
       if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
     }
     if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
+    if(ft1pay.length&&!ft1pay.includes(r['T1 Payment Status']||'')) return false;
     for(const [col,{from,to}] of Object.entries(_ctColDateFilters)){
       if(!from&&!to) continue;
       const d=parseDate(r[col]);
@@ -4827,7 +4849,7 @@ function getCTRowsExcept(excludeId){
     }
     if(qTokens.length){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
-               r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
+               r['Batch / Train'],r['Pickup Ref'],r['Remark']].join(' ').toLowerCase();
       if(!qTokens.some(t=>h.includes(t))) return false;
     }
     return true;
@@ -4878,6 +4900,7 @@ function getCTRows(){
       if(fsur.includes('filled')&&!fsur.includes('missing')&&!hasSur) return false;
     }
     if(fpay.length&&!fpay.includes(r['Payment Status']||'')) return false;
+    if(ft1pay.length&&!ft1pay.includes(r['T1 Payment Status']||'')) return false;
     for(const [col,{from,to}] of Object.entries(_ctColDateFilters)){
       if(!from&&!to) continue;
       const d=parseDate(r[col]);
@@ -4887,7 +4910,7 @@ function getCTRows(){
     }
     if(qTokens.length){
       const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
-               r['Batch / Train'],r['Pickup Ref']].join(' ').toLowerCase();
+               r['Batch / Train'],r['Pickup Ref'],r['Remark']].join(' ').toLowerCase();
       // Match if ANY token found (supports pasting multiple container/BL numbers)
       if(!qTokens.some(t=>h.includes(t))) return false;
     }
@@ -4946,6 +4969,7 @@ function resetFilters(){
   msClear('consignee','All Consignees');
   msClear('surcharge','All');
   msClear('payment','All');
+  msClear('t1pay','All');
   _ctColDateFilters={}; _updateCDFBtns('ct');
   renderCT();
 }
@@ -5023,6 +5047,7 @@ function renderCT(){
   cascadeStaticMenu('arrival',(rows,v)=>v==='missing'?rows.some(r=>!r['Actual Arrival']):rows.some(r=>!!r['Actual Arrival']));
   cascadeStaticMenu('surcharge',(rows,v)=>v==='missing'?rows.some(r=>!(r['Surcharge']&&String(r['Surcharge']).trim())):rows.some(r=>!!(r['Surcharge']&&String(r['Surcharge']).trim())));
   cascadeStaticMenu('payment',(rows,v)=>rows.some(r=>(r['Payment Status']||'')===v));
+  cascadeStaticMenu('t1pay',(rows,v)=>rows.some(r=>(r['T1 Payment Status']||'')===v));
   const rows=getCTRows();
   const lateRows=rows.filter(r=>{
     const arr=parseDate(r['Actual Arrival']), slot=parseDate(r['Scheduled Slot']);
@@ -5847,7 +5872,7 @@ function commitVTSelect(sel, col, id){
 }
 // ── VESSEL ADD MODAL ──────────────────────────────────────────────
 function openAddVesselModal(){
-  ['vta-booking','vta-vessel','vta-port','vta-carrier','vta-qty','vta-ets','vta-eta','vta-cutoff','vta-barge','vta-price','vta-surcharge','vta-surcharge-reason','vta-booking-fee','vta-remark','vta-scan-text'].forEach(id=>{
+  ['vta-booking','vta-vessel','vta-port','vta-pod','vta-carrier','vta-qty','vta-ets','vta-eta','vta-cutoff','vta-barge','vta-price','vta-surcharge','vta-surcharge-reason','vta-booking-fee','vta-remark','vta-scan-text'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   const st=document.getElementById('vta-status'); if(st) st.value='Scheduled';
@@ -6042,6 +6067,7 @@ function vtSaveNewVessel(){
   const g=id=>(document.getElementById(id)?.value||'').trim();
   const v={
     'Port':g('vta-port'),
+    'POD':g('vta-pod'),
     'Carrier':g('vta-carrier'),
     'Booking / BC No.':g('vta-booking'),
     'Container Qty':g('vta-qty'),
@@ -6073,7 +6099,7 @@ function vtSaveNewVessel(){
 }
 
 function openAddVessel(){
-  const v={CY:'',Port:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
+  const v={CY:'',Port:'',POD:'',Carrier:'',"Booking / BC No.":'','Container Qty':'','Vessel Name':'',
     'ETS (Departure)':'','ETA (Arrival)':'','ATA (Actual)':'','Port Cut-Off':'','Barge Date':'','Days to Cut-Off':'',
     Status:'Scheduled','Remark':'','VGM':false,'Custom':false,containers:[],vesselHistory:[],_id:vtNextId++,_addedAt:new Date().toISOString()};
   VT.push(v); saveVT(); renderVT(); renderDashboard();
@@ -6123,7 +6149,7 @@ function vtApplyFreezeColumns(){
 function renderVT(){
   const _vtTotalCt=VT.reduce((s,r)=>s+(parseFloat(r['Container Qty'])||0),0);
   const STATUS_OPTS=['Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'];
-  const TOTAL_COLS=28; // expand + CY + data cols + date added + del + sel
+  const TOTAL_COLS=29; // expand + CY + data cols + date added + del + sel
   const PAY_OPTS=['','Paid','Pending','Not Billed'];
 
   // ── Fill dynamic filter menus (Port, Carrier) ─────────────────────
@@ -6182,7 +6208,7 @@ function renderVT(){
       if(to&&d>to) return false;
     }
     if(_vtTokens.length){
-      const haystack=[r['CY'],r['Port'],r['Carrier'],r['Booking / BC No.'],r['Vessel Name'],r['Order No.'],r['Remark'],...(Array.isArray(r.containers)?r.containers:[])].filter(Boolean).join(' ').toLowerCase();
+      const haystack=[r['CY'],r['Port'],r['POD'],r['Carrier'],r['Booking / BC No.'],r['Vessel Name'],r['Order No.'],r['Remark'],...(Array.isArray(r.containers)?r.containers:[])].filter(Boolean).join(' ').toLowerCase();
       if(!_vtTokens.every(t=>haystack.includes(t))) return false;
     }
     return true;
@@ -6325,6 +6351,7 @@ function renderVT(){
       </td>
       ${vtCell(r,'CY',{extraClass:'vt-fc'})}
       ${vtCell(r,'Port',{extraClass:'vt-fc'})}
+      ${vtCell(r,'POD',{extraClass:'vt-fc'})}
       ${vtCell(r,'Carrier',{extraClass:'vt-fc'})}
       ${vtCell(r,'Booking / BC No.',{extraClass:'vt-fc'})}
       ${vtCell(r,'Container Qty',{extraClass:'vt-fc'})}
@@ -7359,7 +7386,7 @@ function exportCSV(){
 // ── EXPORT VESSELS ────────────────────────────────────────────────
 function exportVesselXLSX(){
   const vtHeaders=[
-    'Booking / BC No.','Vessel Name','Port','Carrier','CY','Container Qty',
+    'Booking / BC No.','Vessel Name','Port','POD','Carrier','CY','Container Qty',
     'Status','ETS (Departure)','ETA (Arrival)','ATA (Actual)','VGM','Custom',
     'Price','Surcharge','Surcharge Reason','Payment Status',
     'Booking Fee','Booking Fee Payment','Remark'
@@ -7372,7 +7399,7 @@ function exportVesselXLSX(){
   // Combined vessel + container sheet (all vessel fields + all container fields per row)
   const comboHeaders=[
     // Vessel info
-    'Booking / BC No.','Vessel Name','Port','Carrier','CY',
+    'Booking / BC No.','Vessel Name','Port','POD','Carrier','CY',
     'ETS (Departure)','ETA (Arrival)','ATA (Actual)','Status','Container Qty',
     'Vessel Price','Vessel Surcharge','Vessel Surcharge Reason','Vessel Payment Status',
     'Booking Fee (Rhenus)','Booking Fee Payment',
@@ -7398,7 +7425,7 @@ function exportVesselXLSX(){
   const _ctMap={};
   CT.forEach(r=>{ const k=_cv(r['Container No.']).toUpperCase(); if(k) _ctMap[k]=r; });
 
-  const vtFields=['Booking / BC No.','Vessel Name','Port','Carrier','CY','ETS (Departure)','ETA (Arrival)','ATA (Actual)','Status','Container Qty','Price','Surcharge','Surcharge Reason','Payment Status','Booking Fee','Booking Fee Payment'];
+  const vtFields=['Booking / BC No.','Vessel Name','Port','POD','Carrier','CY','ETS (Departure)','ETA (Arrival)','ATA (Actual)','Status','Container Qty','Price','Surcharge','Surcharge Reason','Payment Status','Booking Fee','Booking Fee Payment'];
   const ctFields=['Container No.','Batch / Train','Consignee','Trucker','Broker','ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Tracking','CMR','Pickup Ref','Price','Price T1','Surcharge','Surcharge Reason','Payment Status','T1 Payment Status','Remark'];
 
   const comboRows=[];
@@ -8580,7 +8607,7 @@ function openBulkEditDirect(){
 }
 function openBulkEdit(){
   ['be_batch','be_truck','be_con','be_eta_mala','be_eta','be_t1date','be_arr','be_dl','be_ref','be_price','be_price_t1','be_rmk','be_broker',
-   'be_port','be_carrier','be_ets','be_pco','be_notes'].forEach(id=>{
+   'be_port','be_pod','be_carrier','be_ets','be_pco','be_notes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('be_broker').value='';
@@ -8683,7 +8710,7 @@ function applyBulkEdit(){
   // Apply to vessels
   if(vtSel.size){
     const vfields={
-      'Port':g('be_port'),'Carrier':g('be_carrier'),
+      'Port':g('be_port'),'POD':g('be_pod'),'Carrier':g('be_carrier'),
       'ETS (Departure)':g('be_ets'),'Port Cut-Off':g('be_pco'),'Remark':g('be_notes')
     };
     const vstatus=g('be_vstatus');
@@ -8915,6 +8942,8 @@ function rpGetVTBookings(){
     }));
 }
 function rpExtractRoute(vt){
+  // Best case: both POL and POD are set
+  if(vt['Port']&&vt['POD']) return vt['Port']+'-'+vt['POD'];
   // Try Remark: "KLAIPEDA--NINGBO" or "Rotterdam-Nansha" patterns
   const rem=(vt['Remark']||'')+(vt['Booking / BC No.']||'');
   const m=rem.match(/([A-Za-z一-龥]+[-–—]{1,2}[A-Za-z一-龥]+)/);
@@ -9011,6 +9040,49 @@ function rpAddRow(sec, data){
           <input class="rp-f-ctn" placeholder="箱量 e.g. 38*40HQ" value="${(data?.containers||'').replace(/"/g,'&quot;')}"/>
           <input class="rp-f-route" placeholder="航线 e.g. 鹿特丹-南沙" value="${(data?.route||'').replace(/"/g,'&quot;')}"/>
         </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.3px">📦 批次 Batch</label>
+          <select class="rp-f-batch3">
+            <option value="">— 选择批次 Select batch —</option>
+            ${rpGetBatches().map(b=>`<option value="${b.replace(/"/g,'&quot;')}"${data?.batch===b?' selected':''}>${b}</option>`).join('')}
+            ${data?.batch&&!rpGetBatches().includes(data.batch)?`<option value="${(data.batch||'').replace(/"/g,'&quot;')}" selected>${data.batch}</option>`:''}
+          </select>
+        </div>
+        <div class="rp-field-row" style="grid-template-columns:1fr 1fr 1fr">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;font-weight:700;color:#0c4a6e;letter-spacing:.3px">🚢 海运费</label>
+            <select class="rp-f-pay3" style="font-size:11px">
+              <option value="">— Freight —</option>
+              <option value="Pending invoice"${data?.payStatus==='Pending invoice'?' selected':''}>🕐 Pending</option>
+              <option value="Amending"${data?.payStatus==='Amending'?' selected':''}>✏️ Amending</option>
+              <option value="Verifying"${data?.payStatus==='Verifying'?' selected':''}>🔍 Verifying</option>
+              <option value="Requested"${data?.payStatus==='Requested'?' selected':''}>📤 Requested</option>
+              <option value="Paid"${data?.payStatus==='Paid'?' selected':''}>✅ Paid</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;font-weight:700;color:#581c87;letter-spacing:.3px">🛂 T1付款</label>
+            <select class="rp-f-pay3t1" style="font-size:11px">
+              <option value="">— T1 —</option>
+              <option value="Pending invoice"${data?.t1PayStatus==='Pending invoice'?' selected':''}>🕐 Pending</option>
+              <option value="Amending"${data?.t1PayStatus==='Amending'?' selected':''}>✏️ Amending</option>
+              <option value="Verifying"${data?.t1PayStatus==='Verifying'?' selected':''}>🔍 Verifying</option>
+              <option value="Requested"${data?.t1PayStatus==='Requested'?' selected':''}>📤 Requested</option>
+              <option value="Paid"${data?.t1PayStatus==='Paid'?' selected':''}>✅ Paid</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;font-weight:700;color:#854d0e;letter-spacing:.3px">🚛 卡车付款</label>
+            <select class="rp-f-pay3tr" style="font-size:11px">
+              <option value="">— Trucker —</option>
+              <option value="Pending invoice"${data?.truckerPayStatus==='Pending invoice'?' selected':''}>🕐 Pending</option>
+              <option value="Amending"${data?.truckerPayStatus==='Amending'?' selected':''}>✏️ Amending</option>
+              <option value="Verifying"${data?.truckerPayStatus==='Verifying'?' selected':''}>🔍 Verifying</option>
+              <option value="Requested"${data?.truckerPayStatus==='Requested'?' selected':''}>📤 Requested</option>
+              <option value="Paid"${data?.truckerPayStatus==='Paid'?' selected':''}>✅ Paid</option>
+            </select>
+          </div>
+        </div>
         <textarea class="rp-f-task" placeholder="事项 e.g. 船公司账单提交请款" rows="2">${data?.task||''}</textarea>
       </div>
       <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
@@ -9047,8 +9119,12 @@ function rpCollectRows(sec){
       const bookingNo=row.querySelector('.rp-f-bkno2')?.value.trim()||'';
       const containers=row.querySelector('.rp-f-ctn')?.value.trim()||'';
       const route=row.querySelector('.rp-f-route')?.value.trim()||'';
+      const batch=row.querySelector('.rp-f-batch3')?.value||'';
+      const payStatus=row.querySelector('.rp-f-pay3')?.value||'';
+      const t1PayStatus=row.querySelector('.rp-f-pay3t1')?.value||'';
+      const truckerPayStatus=row.querySelector('.rp-f-pay3tr')?.value||'';
       const task=row.querySelector('.rp-f-task')?.value.trim()||'';
-      if(ref||bookingNo||task) rows.push({ref,bookingNo,containers,route,task});
+      if(ref||bookingNo||task) rows.push({ref,bookingNo,containers,route,batch,payStatus,t1PayStatus,truckerPayStatus,task});
     }
   });
   return rows;
@@ -9132,7 +9208,8 @@ function rpRenderHistory(){
         html+=`<div class="rpd-item"><span class="rpd-tag">${row.batch}${row.dest?' → '+row.dest:''}</span> ${row.task}</div>`;
       } else if(row.ref!==undefined){
         // s3
-        html+=`<div class="rpd-item"><span class="rpd-tag">${row.ref||row.bookingNo}</span>${row.bookingNo&&row.ref?' · '+row.bookingNo:''} ${row.containers?'<span class="rpd-ctn">'+row.containers+'</span>':''} ${row.route?'<em>'+row.route+'</em>':''}<br>${row.task}</div>`;
+        const _badge=(v,prefix)=>{ if(!v) return ''; const c=v==='Paid'?'#15803d':v==='Requested'?'#1d4ed8':'#92400e'; const b=v==='Paid'?'#dcfce7':v==='Requested'?'#dbeafe':'#fef3c7'; return `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:${b};color:${c};margin-left:3px">${prefix}${v}</span>`; };
+        html+=`<div class="rpd-item">${row.batch?`<span style="font-size:9px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;padding:1px 6px;font-weight:700;margin-right:4px">📦 ${row.batch}</span>`:''}<span class="rpd-tag">${row.ref||row.bookingNo}</span>${row.bookingNo&&row.ref?' · '+row.bookingNo:''} ${row.containers?'<span class="rpd-ctn">'+row.containers+'</span>':''} ${row.route?'<em>'+row.route+'</em>':''}${_badge(row.payStatus,'🚢')}${_badge(row.t1PayStatus,'🛂')}${_badge(row.truckerPayStatus,'🚛')}<br>${row.task}</div>`;
       } else {
         // s2
         html+=`<div class="rpd-item"><span class="rpd-tag">${row.bookingNo||'—'}</span> ${row.containers?'<span class="rpd-ctn">'+row.containers+'</span>':''} ${row.route?'<em>'+row.route+'</em>':''}<br>${row.task}</div>`;
@@ -9196,7 +9273,7 @@ function rpGenerateWeekly(){
     }
     if(r.s3?.length){
       parts.push('<div class="rpw-sec-lbl">三  NBS账单对账</div>');
-      r.s3.forEach((x,i)=>parts.push(`<div class="rpw-item">${x.ref||''}${x.bookingNo?'  '+x.bookingNo:''}${x.containers?' '+x.containers:''} ${x.route||''}<br>→ ${x.task}</div>`));
+      r.s3.forEach((x,i)=>parts.push(`<div class="rpw-item">${x.batch?'['+x.batch+'] ':''}${x.ref||''}${x.bookingNo?'  '+x.bookingNo:''}${x.containers?' '+x.containers:''} ${x.route||''}${x.payStatus?' 🚢['+x.payStatus+']':''}${x.t1PayStatus?' 🛂['+x.t1PayStatus+']':''}${x.truckerPayStatus?' 🚛['+x.truckerPayStatus+']':''}<br>→ ${x.task}</div>`));
     }
     if(r.notes) parts.push(`<div class="rpw-sec-lbl">其他</div><div class="rpw-item">${r.notes}</div>`);
     return parts.join('');
