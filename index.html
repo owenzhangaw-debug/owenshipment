@@ -4882,6 +4882,7 @@ function getCTRows(){
   const fcons=msGetValues('consignee');
   const fsur=msGetValues('surcharge');
   const fpay=msGetValues('payment');
+  const ft1pay=msGetValues('t1pay');
   return CT.filter(r=>{
     if(fds.length&&!fds.includes(r['Destination']||'Belgium')) return false;
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
