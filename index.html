@@ -4988,6 +4988,9 @@ function rcpParseVTDate(s){
 function rcpGetBookings(){
   const booked={}; // hub → week → {qty, vessels:[]}
   (VT||[]).forEach(r=>{
+    // Skip vessels that have already sailed
+    const status=(r['Status']||'').trim();
+    if(status==='Departed'||status==='Discharged') return;
     const pol=(r['Port']||'').toUpperCase().trim();
     let hub=RCP_POL_HUB[pol]; if(!hub) return;
     // GDANSK/DANZIG: differentiate Warsaw vs ADAMPOL by CY field
