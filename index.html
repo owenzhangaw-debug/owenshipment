@@ -4949,6 +4949,8 @@ function vtSort(col){ vtSortCol===col?vtSortDir*=-1:(vtSortCol=col,vtSortDir=1);
 
 // ══ RETURN CONTAINER PLANNING ══════════════════════════════════════
 const LS_RCP = 'owenz_rcp_v1';
+const LS_RCP_MBK = 'owenz_rcp_mbk_v1';
+let rcpManualBk = {}; try { rcpManualBk = JSON.parse(localStorage.getItem(LS_RCP_MBK)||'{}'); } catch(e){}
 const RCP_AVG_TRANSIT = 26; // avg days China → Duisburg by rail
 const RCP_HUBS = ['杜伊斯堡','鹿特丹','汉堡','华沙','马拉舍维奇'];
 const RCP_HUB_EN = {'杜伊斯堡':'Duisburg','鹿特丹':'Rotterdam','汉堡':'Hamburg','华沙':'Warsaw','马拉舍维奇':'ADAMPOL'};
@@ -5102,6 +5104,49 @@ function rcpTipMove(e){
 function rcpTipHide(){ if(_rcpTip) _rcpTip.style.display='none'; }
 document.addEventListener('mousemove',rcpTipMove);
 
+function rcpSaveMBk(hub, wk, qty){
+  const key=hub+'|'+wk;
+  if(qty===null||qty===''){ delete rcpManualBk[key]; }
+  else { rcpManualBk[key]=Math.max(0,parseInt(qty)||0); }
+  localStorage.setItem(LS_RCP_MBK, JSON.stringify(rcpManualBk));
+  document.querySelectorAll('.rcp-edit-popup').forEach(p=>p.remove());
+  rcpRender();
+}
+
+function rcpOpenEdit(hub, wk, autoQty, cellEl){
+  document.querySelectorAll('.rcp-edit-popup').forEach(p=>p.remove());
+  const manualVal=rcpManualBk[hub+'|'+wk];
+  const curVal=manualVal!==undefined?manualVal:autoQty;
+  const rect=cellEl.getBoundingClientRect();
+  const popup=document.createElement('div');
+  popup.className='rcp-edit-popup';
+  // position: below cell, shift left if near right edge
+  const left=Math.min(rect.left, window.innerWidth-230);
+  const top=rect.bottom+6;
+  popup.style.cssText=`position:fixed;z-index:9999;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,0.45);min-width:210px;left:${left}px;top:${top}px`;
+  const hubName=RCP_HUB_EN[hub]||hub;
+  popup.innerHTML=`
+    <div style="font-size:11px;color:#5DD8D0;font-weight:800;margin-bottom:4px">${hubName} · ${wk}</div>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Auto from VT: <strong style="color:#fbbf24">${autoQty} units</strong>${manualVal!==undefined?` · <span style="color:#fb923c">manual: ${manualVal}</span>`:''}</div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+      <span style="font-size:11px;color:#94a3b8">🚢 Booked:</span>
+      <input id="rcp-edit-inp" type="number" min="0" value="${curVal}"
+        style="width:64px;padding:4px 7px;border-radius:5px;border:1px solid #475569;background:#0f172a;color:#f1f5f9;font-size:14px;font-weight:700"
+        onkeydown="if(event.key==='Enter')rcpSaveMBk('${hub}','${wk}',this.value)">
+      <button onclick="rcpSaveMBk('${hub}','${wk}',document.getElementById('rcp-edit-inp').value)"
+        style="background:#0ea5e9;color:#fff;border:none;border-radius:5px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700">Save</button>
+    </div>
+    <button onclick="rcpSaveMBk('${hub}','${wk}',null)"
+      style="background:#334155;color:#94a3b8;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;font-size:11px;width:100%">↺ Revert to auto (${autoQty})</button>
+  `;
+  document.body.appendChild(popup);
+  const inp=document.getElementById('rcp-edit-inp'); inp.focus(); inp.select();
+  setTimeout(()=>{
+    function outside(e){ if(!popup.contains(e.target)){ popup.remove(); document.removeEventListener('click',outside); } }
+    document.addEventListener('click',outside);
+  },120);
+}
+
 function rcpRender(){
   const board=document.getElementById('rcp-board'); if(!board) return;
   const raw=localStorage.getItem(LS_RCP);
@@ -5118,8 +5163,16 @@ function rcpRender(){
   // VT vessel bookings for return
   const bookings=rcpGetBookings();
 
+  // Effective booking: manual override takes priority over auto
+  function effBk(h, wk){
+    const key=h+'|'+wk;
+    const auto=bookings[h]?.[wk]||{qty:0,vessels:[]};
+    const manual=rcpManualBk[key];
+    if(manual!==undefined) return {qty:manual, vessels:auto.vessels, isManual:true, autoQty:auto.qty};
+    return {qty:auto.qty, vessels:auto.vessels, isManual:false, autoQty:auto.qty};
+  }
+
   // Pre-compute cumulative totals per hub (up to and including each week)
-  // Also cumulative booked (vessels with cut-off ≤ this week)
   const cumByHubWeek={};
   activeHubs.forEach(h=>{
     let cumA=0, cumT=0, cumContainers=[], cumBooked=0, cumVessels=[];
@@ -5127,9 +5180,9 @@ function rcpRender(){
       const d=byWeek[wk][h]||{arrived:0,transit:0,containers:[]};
       cumA+=d.arrived; cumT+=d.transit;
       cumContainers=[...cumContainers,...(d.containers||[])];
-      // Add bookings for this week
-      const bk=bookings[h]?.[wk];
-      if(bk){ cumBooked+=bk.qty; cumVessels=[...cumVessels,...bk.vessels]; }
+      // Add effective bookings for this week
+      const bk=effBk(h,wk);
+      if(bk.qty){ cumBooked+=bk.qty; cumVessels=[...cumVessels,...bk.vessels]; }
       if(!cumByHubWeek[wk]) cumByHubWeek[wk]={};
       cumByHubWeek[wk][h]={cumA,cumT,cumTotal:cumA+cumT,containers:[...cumContainers],cumBooked,cumVessels:[...cumVessels],remaining:Math.max(0,cumA+cumT-cumBooked)};
     });
@@ -5155,8 +5208,9 @@ function rcpRender(){
       const d=byWeek[wk][h]||{arrived:0,transit:0,containers:[]};
       const cnt=d.arrived+d.transit; weekTotal+=cnt;
       const cum=cumByHubWeek[wk]?.[h]||{cumA:0,cumT:0,cumTotal:0,containers:[],cumBooked:0,cumVessels:[],remaining:0};
-      // This week's new bookings
-      const wkBk=bookings[h]?.[wk];
+      // This week's effective booking (manual or auto)
+      const wkBkEff=effBk(h,wk);
+      const wkBk=wkBkEff.qty>0?wkBkEff:null;
 
       // Tooltip
       const originCount={};
@@ -5179,11 +5233,12 @@ function rcpRender(){
         ${originRows?`<div style='border-top:1px solid #334155;margin-top:6px;padding-top:6px;font-size:10px;color:#94a3b8;font-weight:700'>BY ORIGIN</div>${originRows}`:''}`;
       const tipAttr=`data-tip="${tipHtml.replace(/"/g,'&quot;')}"`;
 
-      if(!cnt && !wkBk) return `<td style="padding:7px 10px;text-align:center;color:#e2e8f0;border-bottom:${rowBdr}">—</td>`;
+      const isManual=wkBk&&wkBkEff.isManual;
+      if(!cnt && !wkBk) return `<td class="rcp-cell rcp-cell-empty" data-hub="${h}" data-wk="${wk}" data-autoqty="0" ${tipAttr} style="padding:7px 10px;text-align:center;color:#e2e8f0;border-bottom:${rowBdr};cursor:pointer" title="Click to set manual booking">—</td>`;
       const arrBadge=d.arrived?`<span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">✓${d.arrived}</span>`:'';
       const trnBadge=d.transit?`<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">⟳${d.transit}</span>`:'';
-      const bkBadge=wkBk?`<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">🚢-${wkBk.qty}</span>`:'';
-      return `<td class="rcp-cell" ${tipAttr} style="padding:6px 10px;text-align:center;border-bottom:${rowBdr};cursor:default">
+      const bkBadge=wkBk?`<span style="background:${isManual?'#fed7aa':'#fef3c7'};color:${isManual?'#9a3412':'#92400e'};border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px;${isManual?'outline:1px solid #fb923c':''}">🚢-${wkBk.qty}${isManual?' ✏':''}</span>`:'';
+      return `<td class="rcp-cell" data-hub="${h}" data-wk="${wk}" data-autoqty="${wkBkEff.autoQty}" ${tipAttr} style="padding:6px 10px;text-align:center;border-bottom:${rowBdr};cursor:pointer">
         <div style="display:flex;gap:2px;justify-content:center;align-items:center;flex-wrap:wrap">${arrBadge}${trnBadge}${bkBadge}</div>
       </td>`;
     });
@@ -5214,10 +5269,15 @@ function rcpRender(){
 
   board.innerHTML=html;
 
-  // Wire up hover events
+  // Wire up hover + click events
   board.querySelectorAll('.rcp-cell').forEach(td=>{
     td.addEventListener('mouseenter',e=>rcpTipShow(e,td.dataset.tip));
     td.addEventListener('mouseleave',rcpTipHide);
+    td.addEventListener('click',e=>{
+      rcpTipHide();
+      const hub=td.dataset.hub, wk=td.dataset.wk, autoQty=parseInt(td.dataset.autoqty)||0;
+      if(hub&&wk) rcpOpenEdit(hub,wk,autoQty,td);
+    });
   });
 }
 
