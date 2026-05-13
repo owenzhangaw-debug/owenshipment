@@ -2600,7 +2600,7 @@ select:focus, input:focus {
       <div class="form-group"><label>Tracking</label>
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
-      <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+4d)</span></label><input type="text" id="f_eta" placeholder="YYYY/MM/DD"/></div>
+      <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+3wd)</span></label><input type="text" id="f_eta" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>T1 Date <span style="font-size:10px;color:var(--muted);font-weight:400">T1 customs cleared</span></label><input type="text" id="f_t1date" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: next working day after Hub, afternoon)</span></label><input type="text" id="f_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
       <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr" placeholder="YYYY/MM/DD"/></div>
@@ -3275,29 +3275,14 @@ function nextWorkingDay(d){
   return nd;
 }
 
-// ── Lead times derived from 832-shipment TMS export (工作簿1.xlsx) ──────────
-// Belgium  (BELGG): Duisburg→T1 avg 1.7d + T1→delivery avg 1.9d = 4d median total
-// Netherlands (NLAMS): Duisburg→T1 avg 4.8d + T1→delivery avg 1.0d = 5d median total
-// Slot time: 14:00 afternoon (T1 is typically cleared in the morning)
-const DEST_LEAD_DAYS = {
-  'Belgium':     4,   // median 4d, p75 6d — T1 clears in ~2d, truck next day
-  'Netherlands': 5,   // median 5d, p75 9d — T1 clears in ~4d (slower customs)
-  'Italy':       6,   // no direct data, conservative estimate
-};
-function addWorkingDays(d, n){
-  const nd=new Date(d);
-  let added=0;
-  while(added<n){ nd.setDate(nd.getDate()+1); if(isWorkingDay(nd)) added++; }
-  return nd;
-}
+// ── Slot rule: next working day after ETA at Hub, from 16:00 ─────────────────
+// Examples: ETA Mon May 11 → slots from Tue May 12 16:00
+//           ETA Fri May 8  → slots from Mon May 11 16:00
+//           ETA Sat May 9 or Sun May 10 → slots from Mon May 11 16:00
 function calcEarliestSlot(etaDateStr, dest){
   const d=parseDate(etaDateStr); if(!d) return null;
-  // Look up lead days for this destination (default 4 if unknown)
-  const lead = DEST_LEAD_DAYS[dest] || 4;
-  // Advance from ETA by lead working days, then snap to a working day
-  let slot = addWorkingDays(d, lead);
-  if(!isWorkingDay(slot)) slot = nextWorkingDay(new Date(slot.getTime()-864e5)); // snap fwd if needed
-  return formatDate(slot)+' 14:00';
+  const slot=nextWorkingDay(d); // next working day (skips weekends + holidays)
+  return formatDate(slot)+' 16:00';
 }
 // Returns true if slotStr violates T1 rule (slot date ≤ ETA date)
 function slotViolatesT1Rule(slotStr, etaStr){
@@ -3467,11 +3452,18 @@ function applySmartSlot(id){
   saveData(); _smartData=null; renderCT();
 }
 
+function malaToHub(malaDate){
+  // Mala→Duisburg: median 3 working days (trucks don't run weekends)
+  // e.g. Mala Thu → Hub Tue, Mala Fri → Hub Wed, Mala Sat/Sun → Hub Wed
+  const d = new Date(malaDate);
+  let added=0;
+  while(added<3){ d.setDate(d.getDate()+1); if(d.getDay()!==0&&d.getDay()!==6) added++; }
+  return d;
+}
 function applyMalaHub(id){
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
   const mala=parseDate(CT[i]['ETA in Mala']); if(!mala) return;
-  const hub=new Date(mala.getTime()+4*864e5);
-  CT[i]['ETA at Hub']=formatDate(hub);
+  CT[i]['ETA at Hub']=formatDate(malaToHub(mala));
   saveData(); _smartData=null; renderCT();
 }
 
@@ -4956,7 +4948,7 @@ function renderTruckerReviews(){
 function applyMalaSlotById(id){
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
   const hub=parseDate(CT[i]['ETA at Hub'])||
-    (CT[i]['ETA in Mala']?new Date(parseDate(CT[i]['ETA in Mala']).getTime()+4*864e5):null);
+    (CT[i]['ETA in Mala']?malaToHub(parseDate(CT[i]['ETA in Mala'])):null);
   if(!hub) return;
   CT[i]['Scheduled Slot']=formatDate(hub);
   saveData(); _smartData=null; renderDashboard();
@@ -6077,7 +6069,7 @@ function renderCT(){
       if(malaDate){
         const hubEst=new Date(malaDate.getTime()+4*864e5);
         etaCell=`<td data-id="${r._id}" data-col="ETA at Hub">
-          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-eta" onclick="event.stopPropagation();applyMalaHub(${r._id})" title="Apply: ETA in Mala + 4 days transit">📍 ${formatDate(hubEst)}</span></div>
+          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-eta" onclick="event.stopPropagation();applyMalaHub(${r._id})" title="Apply: ETA in Mala + 3 working days to Duisburg">📍 ${formatDate(hubEst)}</span></div>
           <div class="cell-edit"><input type="text" data-fptype="date" value="" onblur="commitEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
         </td>`;
       } else if(sd.etaFromVessel[cn]){
@@ -6095,7 +6087,7 @@ function renderCT(){
       const hubParsed=parseDate(r['ETA at Hub']);
       if(hubParsed){
         slotCell=`<td data-id="${r._id}" data-col="Scheduled Slot">
-          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-slot" onclick="event.stopPropagation();applySmartSlot(${r._id})" title="Apply suggested slot (+${DEST_LEAD_DAYS[r['Destination']]||4} working days after ETA for ${r['Destination']||'Belgium'})">📅 ${(calcEarliestSlot(r['ETA at Hub'],r['Destination'])||'').split(' ')[0]}</span></div>
+          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-slot" onclick="event.stopPropagation();applySmartSlot(${r._id})" title="Apply slot: next working day after ETA at Hub, from 16:00">📅 ${(calcEarliestSlot(r['ETA at Hub'],r['Destination'])||'').split(' ')[0]}</span></div>
           <div class="cell-edit"><input type="text" data-fptype="datetime" value="" onblur="commitEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD HH:MM" style="width:150px"/></div>
         </td>`;
       }
@@ -7613,44 +7605,48 @@ function vtRemoveBargeRoll(id, idx){
 // Historical baseline from TEMU 运踪表格 Excel — 611 BELGG deliveries (Oct 2025 – Apr 2026)
 // NL (NLAMS) and IT (ITMXP) use same China→Duisburg leg; final leg adjusted per route
 // Belgium avg 26.9d · NL avg ~24-25d · IT avg ~26-28d
+// ── Historical stats updated from 832-shipment TMS export ─────────────────
+// Mala→Hub: working-day median = 3wd (trucks don't run weekends)
+// BE Hub→Delivery: working-day median = 3wd, mode = 2wd
+// NL Hub→Delivery: working-day median = 4wd, mode = 4wd
 const _BEL_HIST_STATS = {
-  alashankou: { n:611, mean:5.52,  p50:5.00,  p70:6.00,  p85:8.00,  p95:11.0 },
-  kz_transit: { n:611, mean:10.02, p50:9.00,  p70:11.00, p85:13.00, p95:17.0 },
-  russia:     { n:449, mean:13.85, p50:13.41, p70:15.00, p85:17.00, p95:23.7 },
-  brest:      { n:589, mean:16.67, p50:16.02, p70:17.00, p85:20.55, p95:25.7 },
-  mala:       { n:611, mean:17.24, p50:16.96, p70:18.00, p85:20.73, p95:25.7 },
-  duisburg:   { n:589, mean:22.11, p50:22.02, p70:24.00, p85:25.06, p95:28.7 },
-  customs:    { n:604, mean:26.73, p50:27.00, p70:29.00, p85:31.00, p95:33.0 },
+  alashankou: { n:832, mean:5.42,  p50:5.00,  p70:6.00,  p85:8.00,  p95:10.0 },
+  kz_transit: { n:832, mean:9.80,  p50:9.00,  p70:11.00, p85:13.00, p95:16.0 },
+  russia:     { n:832, mean:13.59, p50:13.00, p70:15.00, p85:17.00, p95:22.0 },
+  brest:      { n:832, mean:16.50, p50:16.00, p70:17.00, p85:20.00, p95:25.0 },
+  mala:       { n:832, mean:17.03, p50:16.00, p70:18.00, p85:20.00, p95:25.0 },
+  duisburg:   { n:832, mean:21.70, p50:22.00, p70:24.00, p85:25.00, p95:28.0 },
+  customs:    { n:832, mean:26.11, p50:26.00, p70:27.00, p85:29.00, p95:32.0 },
 };
+// Stage avgs = calendar days from China departure. Final delivery stage uses
+// working-day projection (belAddWorkingDays) so weekends are skipped properly.
 const BEL_STAGES = [
-  { icon:'🚉', label:'Depart China\nTerminal',      avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C' },
-  { icon:'🛂', label:'Alashankou\nBorder',           avg:5.52,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100' },
-  { icon:'🏔️', label:'Kazakhstan\nTransit Done',    avg:10.02, p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A' },
-  { icon:'🚩', label:'Russia\nBorder',               avg:13.85, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828' },
-  { icon:'🏭', label:'Malaszewicze\nPoland',         avg:17.24, p70:18, p85:21, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0' },
-  { icon:'🏗️', label:'Duisburg\nHub',               avg:22.11, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E' },
-  { icon:'📦', label:'Belgium\nCustoms Broker',      avg:26.73, p70:29, p85:31, color:'#004D4C', bg:'#E0EFEF', dColor:'#003A3A' },
+  { icon:'🚉', label:'Depart China\nTerminal',      avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
+  { icon:'🛂', label:'Alashankou\nBorder',           avg:5.42,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
+  { icon:'🏔️', label:'Kazakhstan\nTransit Done',    avg:9.80,  p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
+  { icon:'🚩', label:'Russia\nBorder',               avg:13.59, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
+  { icon:'🏭', label:'Malaszewicze\nPoland',         avg:17.03, p70:18, p85:20, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
+  { icon:'🏗️', label:'Duisburg\nHub',               avg:21.70, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
+  { icon:'📦', label:'Belgium\nDelivery',            avg:3,     p70:4,  p85:5,  color:'#004D4C', bg:'#E0EFEF', dColor:'#003A3A', workingDayLeg:true  },
 ];
-
-// ── NL STAGES (same China→Duisburg as Belgium, shorter Amsterdam final leg) ──
+// NL: Hub→Delivery working-day median = 4wd (slower T1, ~4d customs vs 1d for BE)
 const NL_STAGES = [
-  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C' },
-  { icon:'🛂', label:'Alashankou\nBorder',         avg:5.52,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100' },
-  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:10.02, p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A' },
-  { icon:'🚩', label:'Russia\nBorder',             avg:13.85, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828' },
-  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:17.24, p70:18, p85:21, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0' },
-  { icon:'🏗️', label:'Duisburg\nHub',             avg:22.11, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E' },
-  { icon:'🇳🇱', label:'Amsterdam\nDelivery (NLAMS)',avg:24.5,  p70:26, p85:28, color:'#c2410c', bg:'#fff7ed', dColor:'#c2410c' },
+  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
+  { icon:'🛂', label:'Alashankou\nBorder',         avg:5.42,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
+  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:9.80,  p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
+  { icon:'🚩', label:'Russia\nBorder',             avg:13.59, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
+  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:17.03, p70:18, p85:20, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
+  { icon:'🏗️', label:'Duisburg\nHub',             avg:21.70, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
+  { icon:'🇳🇱', label:'Netherlands\nDelivery',     avg:4,     p70:6,  p85:8,  color:'#c2410c', bg:'#fff7ed', dColor:'#c2410c', workingDayLeg:true  },
 ];
-// ── IT STAGES (same China→Duisburg, longer Milan final leg via truck/rail) ──
 const IT_STAGES = [
-  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C' },
-  { icon:'🛂', label:'Alashankou\nBorder',         avg:5.52,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100' },
-  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:10.02, p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A' },
-  { icon:'🚩', label:'Russia\nBorder',             avg:13.85, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828' },
-  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:17.24, p70:18, p85:21, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0' },
-  { icon:'🏗️', label:'Duisburg\nHub',             avg:22.11, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E' },
-  { icon:'🇮🇹', label:'Milan MXP\nDelivery (ITMXP)',avg:27.0, p70:29, p85:31, color:'#9d174d', bg:'#fdf2f8', dColor:'#9d174d' },
+  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
+  { icon:'🛂', label:'Alashankou\nBorder',         avg:5.42,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
+  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:9.80,  p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
+  { icon:'🚩', label:'Russia\nBorder',             avg:13.59, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
+  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:17.03, p70:18, p85:20, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
+  { icon:'🏗️', label:'Duisburg\nHub',             avg:21.70, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
+  { icon:'🇮🇹', label:'Milan MXP\nDelivery',       avg:5,     p70:7,  p85:9,  color:'#9d174d', bg:'#fdf2f8', dColor:'#9d174d', workingDayLeg:true  },
 ];
 
 // ── UNIFIED ROUTE TIMELINE (single calculator, destination dropdown) ─────────
@@ -7760,6 +7756,16 @@ function belAddDays(dateStr, days){
   d.setDate(d.getDate() + Math.round(days));
   return d;
 }
+// Add N working days (Mon–Fri), skipping weekends. Used for final-leg projections.
+function belAddWorkingDays(dateStr, wdays){
+  const d = new Date(dateStr + 'T00:00:00');
+  let added = 0, n = Math.round(wdays);
+  while(added < n){
+    d.setDate(d.getDate()+1);
+    if(d.getDay()!==0 && d.getDay()!==6) added++; // skip Sat(6) and Sun(0)
+  }
+  return d;
+}
 function belFmtDate(d){
   const wds = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const ms  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -7805,14 +7811,37 @@ function renderBelgiumTimeline(){
   badge.textContent=`Anchored at: ${anchorName}`;
   badge.style.display='';
 
+  // Pre-compute stage dates: train/transit stages = calendar days from departure;
+  // final leg stages (workingDayLeg:true) = working days from the previous stage date.
+  const stageDates=[];
+  let prevDate=null;
+  STAGES.forEach((s,idx)=>{
+    let d;
+    if(idx===0){
+      d=belAddDays(belDeparture,0); // departure itself
+    } else if(s.workingDayLeg && prevDate){
+      // Final leg: add working days from previous stage (hub arrival)
+      d=belAddWorkingDays(belFmtInput(prevDate), s.avg);
+    } else {
+      d=belAddDays(belDeparture, s.avg); // cumulative calendar days from departure
+    }
+    stageDates.push(d);
+    prevDate=d;
+  });
+
   let nodesHtml='';
   STAGES.forEach((s,idx)=>{
-    const stageDate=belAddDays(belDeparture,s.avg);
+    const stageDate=stageDates[idx];
     const inputVal=belFmtInput(stageDate);
     const isAnchor=idx===belAnchorIdx;
     const nameLines=s.label.split('\n');
-    const offsetStr=s.avg===0?'D+0':`D+${s.avg}`;
-    const subLine=s.p70>0?`p70=D+${s.p70} · p85=D+${s.p85}`:(idx===0?'Book slot email →':'');
+    // Display label: for working-day leg stages show "+Nwd", else "D+N"
+    const offsetStr = idx===0 ? 'D+0'
+      : s.workingDayLeg ? `+${s.avg}wd`
+      : `D+${s.avg}`;
+    const subLine=s.p70>0
+      ? (s.workingDayLeg ? `p70=+${s.p70}wd · p85=+${s.p85}wd` : `p70=D+${s.p70} · p85=D+${s.p85}`)
+      : (idx===0?'Book slot email →':'');
     const liveN=smart?(idx===4?smart.nMala:idx===5?smart.nHub:idx===6?smart.nArr:0):0;
     const liveTag=liveN>0?`<span style="font-size:8px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 4px;font-weight:700">📊${liveN}</span>`:'';
     nodesHtml+=`<div class="bel-node">
@@ -8786,8 +8815,8 @@ function autoGenerateSlots(){
         <button class="mbtn-cancel" onclick="document.getElementById('as-overlay').remove()">✕</button>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;background:#F0EFEF;border-radius:8px;padding:9px 13px;line-height:1.7">
-        <strong>Lead times (from 832 TMS shipments):</strong> 🇧🇪 Belgium <strong>+4 working days</strong> (T1 ~2d + truck ~2d) · 🇳🇱 Netherlands <strong>+5 working days</strong> (T1 ~4d + truck ~1d)<br>
-        <span style="font-size:11px">VIA EUROPE 6–22 · Flying 8–16 · Others 8–20 · First-day slots from 14:00</span><br>
+        <strong>Slot rule:</strong> next working day after ETA at Hub, first slot from <strong>16:00</strong> · ETA Mon → Tue 16:00 · ETA Fri/Sat/Sun → Mon 16:00<br>
+        <span style="font-size:11px">VIA EUROPE 6–22 · Flying 8–16 · Others 8–20 · First-day slots from 16:00</span><br>
         <span style="font-size:11px;color:#b45309">🗓️ Public holidays skipped: May 1–5 (Labour Day + CN Golden Week), EU Easter, Ascension, Whit Monday, Christmas, etc.</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:8px 12px">
@@ -8830,22 +8859,12 @@ function applyAutoSlots(){
            String(dt.getMonth()+1).padStart(2,'0') + '/' +
            String(dt.getDate()).padStart(2,'0');
   }
-  // Lead time by destination (from 832-shipment TMS data analysis):
-  // Belgium: median 4 working days Duisburg→delivery (T1 ~2d + truck ~2d)
-  // Netherlands: median 5 working days (T1 ~4d + truck ~1d)
-  function leadDaysForDest(dest){
-    const d=(dest||'').toLowerCase();
-    if(d.includes('neth')) return 5;
-    if(d.includes('ital')) return 6;
-    return 4; // Belgium default
-  }
-  // Earliest slot = ETA + destination lead working days (skip weekends + holidays)
+  // Slot rule: next working day after ETA, first slot from 16:00
+  // ETA Mon → Tue 16:00 | ETA Fri → Mon 16:00 | ETA Sat/Sun → Mon 16:00
   function nextWorkingDayAfterETA(etaDateStr, dest){
     let d = parseDateStr(etaDateStr);
-    let lead = leadDaysForDest(dest);
-    let added = 0;
-    while(added < lead){ d.setDate(d.getDate()+1); if(isWorkingDay(d)) added++; }
-    if(!isWorkingDay(d)){ d.setDate(d.getDate()+1); while(!isWorkingDay(d)) d.setDate(d.getDate()+1); }
+    d.setDate(d.getDate()+1); // move past arrival day
+    while(!isWorkingDay(d)) d.setDate(d.getDate()+1); // skip weekends + holidays
     return d;
   }
   function advanceToNextWorkingDay(dt){
@@ -8867,8 +8886,8 @@ function applyAutoSlots(){
   let assigned = 0;
   Object.values(groups).forEach(g => {
     const fullSlots = getConsigneeSlotWindow(g.consignee);
-    // First day: T1 received afternoon → only slots from 14:00+ on first working day after ETA
-    const firstDaySlots = fullSlots.filter(h => h >= 14);
+    // First day: earliest slot is 16:00 on the first working day after ETA
+    const firstDaySlots = fullSlots.filter(h => h >= 16);
     const slotsFirstDay = firstDaySlots.length ? firstDaySlots : fullSlots;
 
     // Sort: soonest deadline first (priority), then batch, then container number
