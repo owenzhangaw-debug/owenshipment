@@ -3206,7 +3206,7 @@ function fmtDateStr(s){
   const d=parseDate(s); return d?formatDate(d):s;
 }
 // T1 Rule: slot cannot be on same day or before ETA at Hub.
-// Returns next working day after etaDate, formatted as "YYYY/MM/DD 14:00"
+// Returns next working day after etaDate, formatted as "YYYY/MM/DD 16:00"
 // ── Public Holidays (China Golden Weeks + EU: Belgium/Germany/Poland) ──────
 // Format: 'YYYY/MM/DD'
 const PUBLIC_HOLIDAYS = new Set([
@@ -3447,7 +3447,7 @@ function smartCardClick(action){
 function applySmartSlot(id){
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
   const earliest=calcEarliestSlot(CT[i]['ETA at Hub'], CT[i]['Destination']); if(!earliest) return;
-  // T1 rule: earliest slot = ETA + destination lead days, 14:00
+  // T1 rule: earliest slot = next working day after ETA at Hub, from 16:00
   CT[i]['Scheduled Slot']=earliest;
   saveData(); _smartData=null; renderCT();
 }
@@ -8589,8 +8589,8 @@ function fixT1RuleViolations(){
   let fixed=0;
   Object.values(groups).forEach(g=>{
     const fullSlots=getConsigneeSlotWindow(g.con);
-    // First day: T1 arrives afternoon → 14:00+
-    const firstDaySlots=fullSlots.filter(h=>h>=14);
+    // First day: slot rule → earliest 16:00 on next working day after ETA
+    const firstDaySlots=fullSlots.filter(h=>h>=16);
     const slotsFirstDay=firstDaySlots.length?firstDaySlots:fullSlots;
 
     // Soonest deadline first → gets earliest slot
@@ -8667,7 +8667,8 @@ function silentRestaggerAutoSlots(){
   let assigned = 0;
   Object.values(groups).filter(needsFix).forEach(g => {
     const fullSlots = getConsigneeSlotWindow(g.con);
-    const firstDaySlots = fullSlots.filter(h => h >= 14);
+    // First day: slot rule → earliest 16:00 on next working day after ETA
+    const firstDaySlots = fullSlots.filter(h => h >= 16);
     const slotsFirstDay = firstDaySlots.length ? firstDaySlots : fullSlots;
 
     // Soonest deadline first → gets earliest slot
@@ -8901,7 +8902,7 @@ function applyAutoSlots(){
       return (a['Container No.']||'').localeCompare(b['Container No.']||'');
     });
 
-    // Start assigning from ETA + destination lead days (Belgium 4d, NL 5d)
+    // Start assigning from next working day after ETA at Hub (slot rule: +1 wd, from 16:00)
     const _dest = (g.rows[0]&&g.rows[0]['Destination'])||'Belgium';
     let currentDate = nextWorkingDayAfterETA(g.etaDate, _dest);
     let isFirstDay  = true;
