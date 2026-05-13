@@ -3696,133 +3696,116 @@ function renderDashboard(){
     });
   }
 
-  // Month key helper: YYYY/MM/DD HH:MM → "2026-02" → display "Feb 26"
-  function _ctMonth(r){
-    // Primary: extract mm/dd from Batch / Train field (e.g. "Chengdu 4/28" → month 4)
-    const batch=(r['Batch / Train']||'').trim();
-    const bm=batch.match(/\b(\d{1,2})\/(\d{1,2})\b/);
-    if(bm){
-      const mo=parseInt(bm[1],10), day=parseInt(bm[2],10);
-      if(mo>=1&&mo<=12&&day>=1&&day<=31){
-        // Infer year: if month <= current month use current year, else previous year
-        const now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1;
-        const yr=mo<=cm?cy:cy-1;
-        return yr+'-'+String(mo).padStart(2,'0');
-      }
-    }
-    // Fallback: Scheduled Slot or ETA date field
-    const raw=r['Scheduled Slot']||r['ETA']||''; if(!raw) return null;
-    const d=new Date(raw.replace(/\//g,'-').replace(' ','T'));
-    if(isNaN(d.getTime())) return null;
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  // ── Batch date helpers ────────────────────────────────────────────
+  // Extract mm/dd from batch name like "Chengdu 4/28" → {sortKey, label:"4/28"}
+  function _batchInfo(batchName){
+    const bm=(batchName||'').match(/\b(\d{1,2})\/(\d{1,2})\b/);
+    if(!bm) return null;
+    const mo=parseInt(bm[1],10), day=parseInt(bm[2],10);
+    if(mo<1||mo>12||day<1||day>31) return null;
+    const now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1;
+    const yr=mo<=cm?cy:cy-1;
+    return { sortKey: yr*10000+mo*100+day, label: mo+'/'+day };
   }
-  const MO_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  function _moLabel(ym){ const [y,m]=ym.split('-'); return MO_NAMES[parseInt(m,10)-1]+' '+y.slice(2); }
-  // Generate all months between minMo and maxMo (both inclusive), as 'YYYY-MM' strings
-  function _monthRange(minMo, maxMo){
-    const result=[];
-    let [y,m]=[parseInt(minMo.split('-')[0]),parseInt(minMo.split('-')[1])];
-    const [ey,em]=[parseInt(maxMo.split('-')[0]),parseInt(maxMo.split('-')[1])];
-    while(y<ey||(y===ey&&m<=em)){
-      result.push(y+'-'+String(m).padStart(2,'0'));
-      m++; if(m>12){m=1;y++;}
-    }
-    return result;
+  // Build sorted unique batch list from a Set of batch names
+  function _sortedBatches(batchSet){
+    return [...batchSet]
+      .map(b=>({ name:b, info:_batchInfo(b) }))
+      .filter(x=>x.info)
+      .sort((a,b)=>a.info.sortKey-b.info.sortKey)
+      .map(x=>x.name);
   }
-  // Current month as 'YYYY-MM'
-  const _nowMo=(()=>{const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');})();
 
-  // ── Price Trend by Trucker per Month ─────────────────────────────
+  // ── Price Trend by Trucker — per Batch ───────────────────────────
   {
-    const truckerMonthMap={};
-    const allMonthsSet=new Set();
+    const truckerBatchMap={};  // trucker → batchName → [prices]
+    const batchSet=new Set();
     CT.forEach(r=>{
       const t=(r['Trucker']||'').trim(); if(!t) return;
-      const mo=_ctMonth(r); if(!mo) return;
+      const b=(r['Batch / Train']||'').trim(); if(!b||!_batchInfo(b)) return;
       const p=parseFloat(r['Price']); if(isNaN(p)||p<=0) return;
-      allMonthsSet.add(mo);
-      if(!truckerMonthMap[t]) truckerMonthMap[t]={};
-      if(!truckerMonthMap[t][mo]) truckerMonthMap[t][mo]=[];
-      truckerMonthMap[t][mo].push(p);
+      batchSet.add(b);
+      if(!truckerBatchMap[t]) truckerBatchMap[t]={};
+      if(!truckerBatchMap[t][b]) truckerBatchMap[t][b]=[];
+      truckerBatchMap[t][b].push(p);
     });
-    const dataMonths=[...allMonthsSet].sort();
-    // Extend from earliest data month to current month
-    const allMonths=dataMonths.length?_monthRange(dataMonths[0],_nowMo):[];
-    const allMonthLabels=allMonths.map(_moLabel);
-    // Rebuild chart with month labels
+    const allBatches=_sortedBatches(batchSet);
+    const allLabels=allBatches.map(b=>_batchInfo(b).label);
     if(window._inflTruckerChart) window._inflTruckerChart.destroy();
     const _itEl=document.getElementById('price-inflation-trucker-chart');
-    const truckers=Object.keys(truckerMonthMap).filter(t=>allMonths.some(m=>truckerMonthMap[t][m]));
+    const truckers=Object.keys(truckerBatchMap).filter(t=>allBatches.some(b=>truckerBatchMap[t][b]));
     const TPALETTE=['#1d4ed8','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#6366f1'];
-    if(_itEl && truckers.length && allMonths.length){
+    if(_itEl && truckers.length && allBatches.length){
       window._inflTruckerChart=new Chart(_itEl,{
         type:'line',
-        data:{ labels:allMonthLabels,
+        data:{ labels:allLabels,
           datasets:truckers.map((t,i)=>({
             label:t,
-            data:allMonths.map(mo=>{ const arr=truckerMonthMap[t][mo]; if(!arr) return null; const {kept}=_filterOutliers(arr); return _priceAvg(kept); }),
+            data:allBatches.map(b=>{ const arr=truckerBatchMap[t][b]; if(!arr) return null; const {kept}=_filterOutliers(arr); return _priceAvg(kept); }),
             borderColor:TPALETTE[i%TPALETTE.length], backgroundColor:TPALETTE[i%TPALETTE.length]+'20',
-            pointRadius:5,pointHoverRadius:7,borderWidth:2.5,spanGaps:false,tension:0.3
+            pointRadius:5,pointHoverRadius:7,borderWidth:2.5,spanGaps:true,tension:0
           }))},
         options:{ responsive:true,maintainAspectRatio:false,
           plugins:{ legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
-            tooltip:{callbacks:{label:ctx=>{
-              if(ctx.raw==null) return ' —';
-              const t=ctx.dataset.label, mo=allMonths[ctx.dataIndex];
-              const arr=truckerMonthMap[t]?.[mo]||[];
-              const {kept,dropped}=_filterOutliers(arr);
-              return [` €${ctx.raw.toLocaleString()}/ctn · ${kept.length} containers`, dropped?` ⚠ ${dropped} outlier(s) excluded`:null].filter(Boolean);
-            }}}},
-          scales:{ x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:10}}},
+            tooltip:{callbacks:{
+              title:ctx=>{ const b=allBatches[ctx[0].dataIndex]; return b+' ('+_batchInfo(b).label+')'; },
+              label:ctx=>{
+                if(ctx.raw==null) return ' —';
+                const t=ctx.dataset.label, b=allBatches[ctx.dataIndex];
+                const arr=truckerBatchMap[t]?.[b]||[];
+                const {kept,dropped}=_filterOutliers(arr);
+                return [` €${ctx.raw.toLocaleString()}/ctn · ${kept.length} containers`, dropped?` ⚠ ${dropped} outlier(s) excluded`:null].filter(Boolean);
+              }}}},
+          scales:{ x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:11},maxRotation:45}},
                    y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:false}}}
       });
-    } else if(_itEl){ _itEl.parentElement.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:24px;text-align:center">No price data with trucker + date info yet</div>'; }
+    } else if(_itEl){ _itEl.parentElement.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:24px;text-align:center">No price data with trucker + batch info yet</div>'; }
   }
 
-  // ── T1 Price Trend by Broker per Month ───────────────────────────
+  // ── T1 Price Trend by Broker — per Batch ─────────────────────────
   {
-    const brokerMonthMap={};
-    const allMonthsSet2=new Set();
+    const brokerBatchMap={};  // broker → batchName → [prices]
+    const batchSet2=new Set();
     CT.forEach(r=>{
       const bk=(r['Broker']||r['broker']||'').trim(); if(!bk) return;
-      const mo=_ctMonth(r); if(!mo) return;
-      const p=parseFloat(r['Price T1']); if(isNaN(p)||p<=0) return; // T1 price for broker
-      allMonthsSet2.add(mo);
-      if(!brokerMonthMap[bk]) brokerMonthMap[bk]={};
-      if(!brokerMonthMap[bk][mo]) brokerMonthMap[bk][mo]=[];
-      brokerMonthMap[bk][mo].push(p);
+      const b=(r['Batch / Train']||'').trim(); if(!b||!_batchInfo(b)) return;
+      const p=parseFloat(r['Price T1']); if(isNaN(p)||p<=0) return;
+      batchSet2.add(b);
+      if(!brokerBatchMap[bk]) brokerBatchMap[bk]={};
+      if(!brokerBatchMap[bk][b]) brokerBatchMap[bk][b]=[];
+      brokerBatchMap[bk][b].push(p);
     });
-    const dataMonths2=[...allMonthsSet2].sort();
-    // Extend from earliest data month to current month
-    const allMonths2=dataMonths2.length?_monthRange(dataMonths2[0],_nowMo):[];
-    const allMonthLabels2=allMonths2.map(_moLabel);
+    const allBatches2=_sortedBatches(batchSet2);
+    const allLabels2=allBatches2.map(b=>_batchInfo(b).label);
     if(window._inflBrokerChart) window._inflBrokerChart.destroy();
     const _ibEl=document.getElementById('price-inflation-broker-chart');
-    const brokers=Object.keys(brokerMonthMap).filter(bk=>allMonths2.some(m=>brokerMonthMap[bk][m]));
+    const brokers=Object.keys(brokerBatchMap).filter(bk=>allBatches2.some(b=>brokerBatchMap[bk][b]));
     const BPALETTE=['#0891b2','#7c3aed','#dc2626','#16a34a','#d97706','#1d4ed8','#db2777','#65a30d'];
-    if(_ibEl && brokers.length && allMonths2.length){
+    if(_ibEl && brokers.length && allBatches2.length){
       window._inflBrokerChart=new Chart(_ibEl,{
         type:'line',
-        data:{ labels:allMonthLabels2,
+        data:{ labels:allLabels2,
           datasets:brokers.map((bk,i)=>({
             label:bk,
-            data:allMonths2.map(mo=>{ const arr=brokerMonthMap[bk][mo]; if(!arr) return null; const {kept}=_filterOutliers(arr); return _priceAvg(kept); }),
+            data:allBatches2.map(b=>{ const arr=brokerBatchMap[bk][b]; if(!arr) return null; const {kept}=_filterOutliers(arr); return _priceAvg(kept); }),
             borderColor:BPALETTE[i%BPALETTE.length], backgroundColor:BPALETTE[i%BPALETTE.length]+'20',
-            pointRadius:5,pointHoverRadius:7,borderWidth:2.5,spanGaps:false,tension:0.3
+            pointRadius:5,pointHoverRadius:7,borderWidth:2.5,spanGaps:true,tension:0
           }))},
         options:{ responsive:true,maintainAspectRatio:false,
           plugins:{ legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
-            tooltip:{callbacks:{label:ctx=>{
-              if(ctx.raw==null) return ' —';
-              const bk=ctx.dataset.label, mo=allMonths2[ctx.dataIndex];
-              const arr=brokerMonthMap[bk]?.[mo]||[];
-              const {kept,dropped}=_filterOutliers(arr);
-              return [` T1: €${ctx.raw.toLocaleString()}/ctn · ${kept.length} containers`, dropped?` ⚠ ${dropped} outlier(s) excluded`:null].filter(Boolean);
-            }}}},
-          scales:{ x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:10}}},
+            tooltip:{callbacks:{
+              title:ctx=>{ const b=allBatches2[ctx[0].dataIndex]; return b+' ('+_batchInfo(b).label+')'; },
+              label:ctx=>{
+                if(ctx.raw==null) return ' —';
+                const bk=ctx.dataset.label, b=allBatches2[ctx.dataIndex];
+                const arr=brokerBatchMap[bk]?.[b]||[];
+                const {kept,dropped}=_filterOutliers(arr);
+                return [` T1: €${ctx.raw.toLocaleString()}/ctn · ${kept.length} containers`, dropped?` ⚠ ${dropped} outlier(s) excluded`:null].filter(Boolean);
+              }}}},
+          scales:{ x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:11},maxRotation:45}},
                    y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:false}}}
       });
-    } else if(_ibEl){ _ibEl.parentElement.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:24px;text-align:center">No T1 price data with broker + date info yet</div>'; }
+    } else if(_ibEl){ _ibEl.parentElement.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:24px;text-align:center">No T1 price data with broker + batch info yet</div>'; }
   }
 
   // Avg T1 Cost by Batch (sorted by batch date)
