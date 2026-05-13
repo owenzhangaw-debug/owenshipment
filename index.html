@@ -3275,10 +3275,28 @@ function nextWorkingDay(d){
   return nd;
 }
 
-function calcEarliestSlot(etaDateStr){
+// ── Lead times derived from 832-shipment TMS export (工作簿1.xlsx) ──────────
+// Belgium  (BELGG): Duisburg→T1 avg 1.7d + T1→delivery avg 1.9d = 4d median total
+// Netherlands (NLAMS): Duisburg→T1 avg 4.8d + T1→delivery avg 1.0d = 5d median total
+// Slot time: 14:00 afternoon (T1 is typically cleared in the morning)
+const DEST_LEAD_DAYS = {
+  'Belgium':     4,   // median 4d, p75 6d — T1 clears in ~2d, truck next day
+  'Netherlands': 5,   // median 5d, p75 9d — T1 clears in ~4d (slower customs)
+  'Italy':       6,   // no direct data, conservative estimate
+};
+function addWorkingDays(d, n){
+  const nd=new Date(d);
+  let added=0;
+  while(added<n){ nd.setDate(nd.getDate()+1); if(isWorkingDay(nd)) added++; }
+  return nd;
+}
+function calcEarliestSlot(etaDateStr, dest){
   const d=parseDate(etaDateStr); if(!d) return null;
-  // T1 rule: slot cannot be on arrival day → advance to next working day (skipping weekends + holidays)
-  const slot=nextWorkingDay(d);
+  // Look up lead days for this destination (default 4 if unknown)
+  const lead = DEST_LEAD_DAYS[dest] || 4;
+  // Advance from ETA by lead working days, then snap to a working day
+  let slot = addWorkingDays(d, lead);
+  if(!isWorkingDay(slot)) slot = nextWorkingDay(new Date(slot.getTime()-864e5)); // snap fwd if needed
   return formatDate(slot)+' 14:00';
 }
 // Returns true if slotStr violates T1 rule (slot date ≤ ETA date)
@@ -3443,8 +3461,8 @@ function smartCardClick(action){
 
 function applySmartSlot(id){
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
-  const earliest=calcEarliestSlot(CT[i]['ETA at Hub']); if(!earliest) return;
-  // T1 rule: earliest slot = next working day after ETA at Hub, 14:00
+  const earliest=calcEarliestSlot(CT[i]['ETA at Hub'], CT[i]['Destination']); if(!earliest) return;
+  // T1 rule: earliest slot = ETA + destination lead days, 14:00
   CT[i]['Scheduled Slot']=earliest;
   saveData(); _smartData=null; renderCT();
 }
@@ -4371,7 +4389,7 @@ function renderDashboard(){
       badSlotBadge.textContent=badSlots.length+' violation'+(badSlots.length>1?'s':'');
       badSlotBadge.style.background='#fdecea'; badSlotBadge.style.color='#c62828';
       badSlotEl.innerHTML=badSlots.map(r=>{
-        const fixed=calcEarliestSlot(r['ETA at Hub'])||'?';
+        const fixed=calcEarliestSlot(r['ETA at Hub'], r['Destination'])||'?';
         return `<div class="vt-alert-row"><span style="font-size:15px">🔴</span>
           <span style="flex:1;font-weight:600;color:#991B1B">${r['Container No.']||'—'}</span>
           <span style="font-size:10px;color:#92400E;background:#FEF3C7;padding:1px 6px;border-radius:5px">Slot: ${r['Scheduled Slot']}</span>
@@ -6007,7 +6025,7 @@ function renderCT(){
     const slotV=r['Scheduled Slot']||'';
     const slotIsAuto = !!r._slotAuto;
     const _slotBad = slotV && r['ETA at Hub'] && !r['Actual Arrival'] && slotViolatesT1Rule(slotV, r['ETA at Hub']);
-    const _earliestSugg = _slotBad ? calcEarliestSlot(r['ETA at Hub']) : null;
+    const _earliestSugg = _slotBad ? calcEarliestSlot(r['ETA at Hub'], r['Destination']) : null;
     const slotDisplay = slotV
       ? (_slotBad
           ? `<span style="color:#dc2626;font-weight:700;background:#FEE2E2;border:1px solid #FECACA;border-radius:5px;padding:2px 6px;display:inline-flex;align-items:center;gap:4px" title="⚠ Slot is on same day as or before ETA at Hub — T1 cannot be issued yet! Earliest: ${_earliestSugg}">⚠ ${slotV}</span>`
@@ -6077,7 +6095,7 @@ function renderCT(){
       const hubParsed=parseDate(r['ETA at Hub']);
       if(hubParsed){
         slotCell=`<td data-id="${r._id}" data-col="Scheduled Slot">
-          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-slot" onclick="event.stopPropagation();applySmartSlot(${r._id})" title="Apply earliest slot (next working day after ETA, 14:00)">📅 ${(calcEarliestSlot(r['ETA at Hub'])||'').split(' ')[0]}</span></div>
+          <div class="cell-view" onclick="startEdit(this)"><span style="color:#ccc">—</span>&nbsp;<span class="cell-hint hint-slot" onclick="event.stopPropagation();applySmartSlot(${r._id})" title="Apply suggested slot (+${DEST_LEAD_DAYS[r['Destination']]||4} working days after ETA for ${r['Destination']||'Belgium'})">📅 ${(calcEarliestSlot(r['ETA at Hub'],r['Destination'])||'').split(' ')[0]}</span></div>
           <div class="cell-edit"><input type="text" data-fptype="datetime" value="" onblur="commitEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD HH:MM" style="width:150px"/></div>
         </td>`;
       }
@@ -6374,7 +6392,7 @@ function applyCorrectSlot(id){
   const i=CT.findIndex(r=>r._id===id); if(i<0) return;
   if(!CT[i]['ETA at Hub']) return;
   // First force-fix this container so fixT1RuleViolations() sees it in the bad group
-  CT[i]['Scheduled Slot']=calcEarliestSlot(CT[i]['ETA at Hub'])||CT[i]['Scheduled Slot'];
+  CT[i]['Scheduled Slot']=calcEarliestSlot(CT[i]['ETA at Hub'], CT[i]['Destination'])||CT[i]['Scheduled Slot'];
   CT[i]._slotAuto=true;
   // Now run full group fix + stagger so all containers in same consignee+ETA get proper slots
   fixT1RuleViolations();
@@ -8768,7 +8786,7 @@ function autoGenerateSlots(){
         <button class="mbtn-cancel" onclick="document.getElementById('as-overlay').remove()">✕</button>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;background:#F0EFEF;border-radius:8px;padding:9px 13px;line-height:1.7">
-        <strong>T1 Timing Rule:</strong> ATB cannot be received on arrival day → T1 issued next working day (afternoon) → earliest slot = <strong>next working day after ETA, 14:00+</strong><br>
+        <strong>Lead times (from 832 TMS shipments):</strong> 🇧🇪 Belgium <strong>+4 working days</strong> (T1 ~2d + truck ~2d) · 🇳🇱 Netherlands <strong>+5 working days</strong> (T1 ~4d + truck ~1d)<br>
         <span style="font-size:11px">VIA EUROPE 6–22 · Flying 8–16 · Others 8–20 · First-day slots from 14:00</span><br>
         <span style="font-size:11px;color:#b45309">🗓️ Public holidays skipped: May 1–5 (Labour Day + CN Golden Week), EU Easter, Ascension, Whit Monday, Christmas, etc.</span>
       </div>
@@ -8812,12 +8830,22 @@ function applyAutoSlots(){
            String(dt.getMonth()+1).padStart(2,'0') + '/' +
            String(dt.getDate()).padStart(2,'0');
   }
-  // T1 Rule: ATB cannot be received on arrival day → T1 issued NEXT WORKING DAY (afternoon)
-  // → Earliest slot = next working day after ETA at Hub, from 14:00 onwards (skipping weekends + public holidays)
-  function nextWorkingDayAfterETA(etaDateStr){
+  // Lead time by destination (from 832-shipment TMS data analysis):
+  // Belgium: median 4 working days Duisburg→delivery (T1 ~2d + truck ~2d)
+  // Netherlands: median 5 working days (T1 ~4d + truck ~1d)
+  function leadDaysForDest(dest){
+    const d=(dest||'').toLowerCase();
+    if(d.includes('neth')) return 5;
+    if(d.includes('ital')) return 6;
+    return 4; // Belgium default
+  }
+  // Earliest slot = ETA + destination lead working days (skip weekends + holidays)
+  function nextWorkingDayAfterETA(etaDateStr, dest){
     let d = parseDateStr(etaDateStr);
-    d.setDate(d.getDate()+1); // move off arrival day
-    while(!isWorkingDay(d)) d.setDate(d.getDate()+1); // skip weekends + holidays
+    let lead = leadDaysForDest(dest);
+    let added = 0;
+    while(added < lead){ d.setDate(d.getDate()+1); if(isWorkingDay(d)) added++; }
+    if(!isWorkingDay(d)){ d.setDate(d.getDate()+1); while(!isWorkingDay(d)) d.setDate(d.getDate()+1); }
     return d;
   }
   function advanceToNextWorkingDay(dt){
@@ -8854,8 +8882,9 @@ function applyAutoSlots(){
       return (a['Container No.']||'').localeCompare(b['Container No.']||'');
     });
 
-    // Start assigning from next working day after ETA (T1 rule)
-    let currentDate = nextWorkingDayAfterETA(g.etaDate);
+    // Start assigning from ETA + destination lead days (Belgium 4d, NL 5d)
+    const _dest = (g.rows[0]&&g.rows[0]['Destination'])||'Belgium';
+    let currentDate = nextWorkingDayAfterETA(g.etaDate, _dest);
     let isFirstDay  = true;
     let slotIdx     = 0;
 
