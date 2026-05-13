@@ -1266,6 +1266,7 @@ select:focus, input:focus {
   <nav>
     <button class="active" onclick="showPage('dashboard')">Dashboard</button>
     <button onclick="showPage('containers')">Containers</button>
+    <button onclick="showPage('scanner')">T1 Scanner</button>
     <button onclick="showPage('vessels')">Vessels</button>
     <button onclick="showPage('planning')">Planning</button>
     <button onclick="showPage('notices')">Notices</button>
@@ -2303,30 +2304,43 @@ select:focus, input:focus {
 
 </div>
 
+<!-- ══ T1 SCANNER PAGE ══ -->
+<div id="page-scanner" class="page">
+  <div style="max-width:900px;margin:0 auto;padding:24px 16px">
+    <!-- Page title -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:20px;font-weight:900;color:#003534;letter-spacing:-.3px">T1 Document Scanner</div>
+      <div style="font-size:13px;color:#64748b;margin-top:4px">Upload one or more T1 PDFs — MRN, packages, weight and container number extracted automatically</div>
+    </div>
+
+    <!-- Drop zone -->
+    <label id="t1s-drop" for="t1s-input" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+      border:2.5px dashed #cbd5e1;border-radius:16px;padding:48px 24px;text-align:center;
+      cursor:pointer;transition:border-color .2s,background .2s;background:#fff;margin-bottom:20px"
+      ondragover="event.preventDefault();this.style.borderColor='#003534';this.style.background='#f0fdfc'"
+      ondragleave="this.style.borderColor='#cbd5e1';this.style.background='#fff'"
+      ondrop="event.preventDefault();this.style.borderColor='#cbd5e1';this.style.background='#fff';t1sProcess(event.dataTransfer.files)">
+      <input type="file" id="t1s-input" multiple accept=".pdf" style="display:none" onchange="t1sProcess(this.files);this.value=''">
+      <div style="width:52px;height:52px;border-radius:14px;background:#003534;display:flex;align-items:center;justify-content:center;font-size:26px">📄</div>
+      <div>
+        <div style="font-weight:800;font-size:15px;color:#003534">Drop T1 PDFs here</div>
+        <div style="font-size:13px;color:#94a3b8;margin-top:4px">or click to browse &nbsp;·&nbsp; multiple files supported</div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:4px">
+        <span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:3px 10px;border-radius:20px">MRN</span>
+        <span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:3px 10px;border-radius:20px">Container</span>
+        <span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:3px 10px;border-radius:20px">Packages</span>
+        <span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:3px 10px;border-radius:20px">Weight</span>
+      </div>
+    </label>
+
+    <!-- Results -->
+    <div id="t1s-results"></div>
+  </div>
+</div>
+
 <!-- ══ REPORTS ══ -->
 <div id="page-reports" class="page">
-
-  <!-- ── T1 Scanner ─────────────────────────────────────────────── -->
-  <div class="t1s-wrap">
-    <div class="t1s-hdr" onclick="t1sToggle()">
-      <span style="font-size:20px">🔍</span>
-      <span class="t1s-hdr-title">T1 Document Scanner</span>
-      <span style="font-size:11px;color:#94a3b8">Extract MRN · Packages · Weight · Container</span>
-      <span id="t1s-toggle-ic" style="font-size:13px;color:#94a3b8;margin-left:8px">▼</span>
-    </div>
-    <div id="t1s-body">
-      <label class="t1s-drop" id="t1s-drop" for="t1s-input"
-        ondragover="event.preventDefault();this.classList.add('drag-over')"
-        ondragleave="this.classList.remove('drag-over')"
-        ondrop="event.preventDefault();this.classList.remove('drag-over');t1sProcess(event.dataTransfer.files)">
-        <input type="file" id="t1s-input" multiple accept=".pdf" onchange="t1sProcess(this.files);this.value=''">
-        <div style="font-size:28px;margin-bottom:8px">📄</div>
-        <div style="font-weight:700;color:#003534;font-size:14px">Drop T1 PDFs here or click to browse</div>
-        <div class="t1s-drop-label">Multiple files supported — MRN, packages, weight and container extracted automatically</div>
-      </label>
-      <div id="t1s-results"></div>
-    </div>
-  </div>
 
   <div class="rp-wrap">
 
@@ -3691,6 +3705,19 @@ function renderDashboard(){
   }
   const MO_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function _moLabel(ym){ const [y,m]=ym.split('-'); return MO_NAMES[parseInt(m,10)-1]+' '+y.slice(2); }
+  // Generate all months between minMo and maxMo (both inclusive), as 'YYYY-MM' strings
+  function _monthRange(minMo, maxMo){
+    const result=[];
+    let [y,m]=[parseInt(minMo.split('-')[0]),parseInt(minMo.split('-')[1])];
+    const [ey,em]=[parseInt(maxMo.split('-')[0]),parseInt(maxMo.split('-')[1])];
+    while(y<ey||(y===ey&&m<=em)){
+      result.push(y+'-'+String(m).padStart(2,'0'));
+      m++; if(m>12){m=1;y++;}
+    }
+    return result;
+  }
+  // Current month as 'YYYY-MM'
+  const _nowMo=(()=>{const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');})();
 
   // ── Price Trend by Trucker per Month ─────────────────────────────
   {
@@ -3705,7 +3732,9 @@ function renderDashboard(){
       if(!truckerMonthMap[t][mo]) truckerMonthMap[t][mo]=[];
       truckerMonthMap[t][mo].push(p);
     });
-    const allMonths=[...allMonthsSet].sort();
+    const dataMonths=[...allMonthsSet].sort();
+    // Extend from earliest data month to current month
+    const allMonths=dataMonths.length?_monthRange(dataMonths[0],_nowMo):[];
     const allMonthLabels=allMonths.map(_moLabel);
     // Rebuild chart with month labels
     if(window._inflTruckerChart) window._inflTruckerChart.destroy();
@@ -3750,7 +3779,9 @@ function renderDashboard(){
       if(!brokerMonthMap[bk][mo]) brokerMonthMap[bk][mo]=[];
       brokerMonthMap[bk][mo].push(p);
     });
-    const allMonths2=[...allMonthsSet2].sort();
+    const dataMonths2=[...allMonthsSet2].sort();
+    // Extend from earliest data month to current month
+    const allMonths2=dataMonths2.length?_monthRange(dataMonths2[0],_nowMo):[];
     const allMonthLabels2=allMonths2.map(_moLabel);
     if(window._inflBrokerChart) window._inflBrokerChart.destroy();
     const _ibEl=document.getElementById('price-inflation-broker-chart');
@@ -10989,6 +11020,9 @@ window.addEventListener('resize', ()=>{ if(_currentPage==='vessels') vtApplyFree
   </button>
   <button onclick="showPage('containers')" id="mnav-containers">
     <span class="mnav-icon">📦</span>Containers
+  </button>
+  <button onclick="showPage('scanner')" id="mnav-scanner">
+    <span class="mnav-icon">🔍</span>T1 Scan
   </button>
   <button onclick="showPage('vessels')" id="mnav-vessels">
     <span class="mnav-icon">🚢</span>Vessels
