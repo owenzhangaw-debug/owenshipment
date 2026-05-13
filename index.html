@@ -5188,31 +5188,74 @@ function rcpRender(){
     });
   });
 
-  let html=`<div style="overflow-x:auto;position:relative">
-  <table id="rcp-table" style="border-collapse:collapse;width:100%;font-size:12px;min-width:600px">
+  // ── Hub summary cards ─────────────────────────────────────────────
+  const hubTotals={};
+  activeHubs.forEach(h=>{
+    let totalArr=0,totalBooked=0;
+    weeks.forEach(wk=>{
+      const d=byWeek[wk][h]||{arrived:0,transit:0};
+      totalArr+=d.arrived+d.transit;
+      totalBooked+=effBk(h,wk).qty;
+    });
+    hubTotals[h]={totalArr,totalBooked,toBook:Math.max(0,totalArr-totalBooked)};
+  });
+
+  let html=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;margin-bottom:18px">`;
+  activeHubs.forEach(h=>{
+    const {totalArr,totalBooked,toBook}=hubTotals[h];
+    const urgent=toBook>0;
+    const pct=totalArr>0?Math.min(100,Math.round(totalBooked/totalArr*100)):0;
+    const barColor=urgent?'#f59e0b':'#22c55e';
+    const borderColor=urgent?'#fca5a5':'#bbf7d0';
+    const statusLine=urgent
+      ?`<div style="font-size:12px;font-weight:800;color:#dc2626;margin-top:4px">⚠ ${toBook} still to book</div>`
+      :(totalArr>0?`<div style="font-size:12px;font-weight:800;color:#16a34a;margin-top:4px">✅ All containers planned</div>`:'');
+    html+=`<div style="background:#fff;border:1.5px solid ${borderColor};border-radius:12px;padding:12px 14px">
+      <div style="font-weight:900;font-size:14px;color:#003534;margin-bottom:8px">${RCP_HUB_EN[h]}</div>
+      <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:2px">
+        <span style="font-size:26px;font-weight:900;color:#1e293b;line-height:1">${totalArr}</span>
+        <span style="font-size:11px;color:#64748b">containers</span>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:8px">arriving over this period</div>
+      <div style="background:#e2e8f0;border-radius:6px;height:7px;margin-bottom:6px">
+        <div style="background:${barColor};width:${pct}%;height:100%;border-radius:6px"></div>
+      </div>
+      <div style="font-size:11px;color:#64748b">${totalBooked} booked for return vessel</div>
+      ${statusLine}
+    </div>`;
+  });
+  html+=`</div>`;
+
+  // ── What this table shows explanation ─────────────────────────────
+  html+=`<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#0369a1;line-height:1.7">
+    <strong>How to read this table:</strong> Each cell shows containers arriving at that hub during the week.
+    Numbers in <strong style="color:#15803d">green</strong> are already confirmed at the yard.
+    Numbers in <strong style="color:#1d4ed8">blue</strong> are still on the train (estimated arrival).
+    The <strong>bottom line</strong> tells you how many return vessel slots you still need to book.
+    <em>Click any cell to manually adjust the booking quantity.</em>
+  </div>`;
+
+  // ── Weekly table ──────────────────────────────────────────────────
+  html+=`<div style="overflow-x:auto"><table style="border-collapse:separate;border-spacing:0;width:100%;font-size:12px;min-width:500px">
   <thead>
     <tr style="background:#003534;color:#5DD8D0">
-      <th style="padding:8px 12px;text-align:left;font-weight:700;white-space:nowrap;border-radius:8px 0 0 0">Week</th>
-      ${activeHubs.map(h=>`<th style="padding:8px 10px;text-align:center;font-weight:700">${RCP_HUB_EN[h]}</th>`).join('')}
-      <th style="padding:8px 12px;text-align:center;font-weight:700;border-radius:0 8px 0 0">Total</th>
+      <th style="padding:10px 14px;text-align:left;font-weight:700;white-space:nowrap;border-radius:8px 0 0 0;min-width:110px">Week</th>
+      ${activeHubs.map((h,i)=>`<th style="padding:10px 12px;text-align:center;font-weight:700${i===activeHubs.length-1?';border-radius:0 8px 0 0':''}">${RCP_HUB_EN[h]}</th>`).join('')}
     </tr>
   </thead><tbody>`;
 
   weeks.forEach(wk=>{
     const isCur=wk===curWk, isPast=wk<curWk;
     const rowBg=isCur?'#f0fdf4':isPast?'#fafafa':'#fff';
-    const rowBdr=isCur?'2px solid #22c55e':'1px solid #f1f5f9';
-    let weekTotal=0;
+    const rowBorderLeft=isCur?'border-left:3px solid #22c55e':'border-left:3px solid transparent';
 
     const cells=activeHubs.map(h=>{
       const d=byWeek[wk][h]||{arrived:0,transit:0,containers:[]};
-      const cnt=d.arrived+d.transit; weekTotal+=cnt;
+      const cnt=d.arrived+d.transit;
       const cum=cumByHubWeek[wk]?.[h]||{cumA:0,cumT:0,cumTotal:0,containers:[],cumBooked:0,cumVessels:[],remaining:0};
-      // This week's effective booking (manual or auto)
       const wkBkEff=effBk(h,wk);
-      const wkBk=wkBkEff.qty>0?wkBkEff:null;
 
-      // Tooltip
+      // Build tooltip (detailed hover)
       const originCount={};
       (cum.containers||[]).forEach(c=>{ originCount[c.from]=(originCount[c.from]||0)+1; });
       const originRows=Object.entries(originCount).sort((a,b)=>b[1]-a[1])
@@ -5221,50 +5264,75 @@ function rcpRender(){
         `<div style='display:flex;justify-content:space-between;gap:12px;font-size:11px'><span style='color:#fbbf24'>${v.bk}</span><span>${v.vessel}</span><span style='font-weight:700;color:#f87171'>-${v.qty}</span></div>`
       ).join('');
       const remainColor=cum.remaining>50?'#f87171':cum.remaining>0?'#fbbf24':'#4ade80';
-      const tipHtml=`<div style='font-weight:800;font-size:13px;margin-bottom:6px;color:#5DD8D0'>${RCP_HUB_EN[h]} — cumulative up to ${wk}</div>
-        <div style='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px'>
-          <span style='background:#dcfce7;color:#15803d;border-radius:4px;padding:2px 7px;font-weight:700'>✓${cum.cumA}</span>
-          <span style='background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:2px 7px;font-weight:700'>⟳${cum.cumT}</span>
-          ${cum.cumBooked?`<span style='background:#fef3c7;color:#92400e;border-radius:4px;padding:2px 7px;font-weight:700'>🚢-${cum.cumBooked} booked</span>`:''}
-        </div>
-        <div style='font-size:14px;font-weight:800;margin-bottom:4px'>Total at yard: ${cum.cumTotal} × 40HQ</div>
-        ${cum.cumBooked?`<div style='font-size:13px;font-weight:800;color:${remainColor}'>Still to book: ${cum.remaining} × 40HQ</div>`:''}
-        ${vesselRows?`<div style='border-top:1px solid #334155;margin:6px 0 4px;padding-top:6px;font-size:10px;color:#94a3b8;font-weight:700'>BOOKED VESSELS (cut-off ≤ ${wk})</div>${vesselRows}`:''}
-        ${originRows?`<div style='border-top:1px solid #334155;margin-top:6px;padding-top:6px;font-size:10px;color:#94a3b8;font-weight:700'>BY ORIGIN</div>${originRows}`:''}`;
+      const tipHtml=`<div style='font-weight:800;font-size:13px;margin-bottom:8px;color:#5DD8D0'>${RCP_HUB_EN[h]} — Running total up to ${wk}</div>
+        <div style='margin-bottom:4px'><span style='color:#4ade80;font-weight:700'>${cum.cumA}</span> confirmed at yard &nbsp;·&nbsp; <span style='color:#60a5fa;font-weight:700'>${cum.cumT}</span> still in transit</div>
+        <div style='font-size:15px;font-weight:900;margin-bottom:4px'>${cum.cumTotal} containers total (running)</div>
+        <div style='font-weight:700;color:${remainColor};margin-bottom:8px'>${cum.cumBooked?`${cum.cumBooked} booked for return · `:''} ${cum.remaining>0?`${cum.remaining} still need booking`:'All covered ✅'}</div>
+        ${vesselRows?`<div style='border-top:1px solid #334155;margin:6px 0 4px;padding-top:6px;font-size:10px;color:#94a3b8;font-weight:700'>RETURN VESSELS BOOKED</div>${vesselRows}`:''}
+        ${originRows?`<div style='border-top:1px solid #334155;margin-top:6px;padding-top:6px;font-size:10px;color:#94a3b8;font-weight:700'>ORIGIN CITIES</div>${originRows}`:''}
+        <div style='border-top:1px solid #334155;margin-top:8px;padding-top:6px;font-size:10px;color:#64748b'>💡 Click cell to manually set booking quantity</div>`;
       const tipAttr=`data-tip="${tipHtml.replace(/"/g,'&quot;')}"`;
 
-      const isManual=wkBk&&wkBkEff.isManual;
-      if(!cnt && !wkBk) return `<td class="rcp-cell rcp-cell-empty" data-hub="${h}" data-wk="${wk}" data-autoqty="0" ${tipAttr} style="padding:7px 10px;text-align:center;color:#e2e8f0;border-bottom:${rowBdr};cursor:pointer" title="Click to set manual booking">—</td>`;
-      const arrBadge=d.arrived?`<span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">✓${d.arrived}</span>`:'';
-      const trnBadge=d.transit?`<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">⟳${d.transit}</span>`:'';
-      const bkBadge=wkBk?`<span style="background:${isManual?'#fed7aa':'#fef3c7'};color:${isManual?'#9a3412':'#92400e'};border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px;${isManual?'outline:1px solid #fb923c':''}">🚢-${wkBk.qty}${isManual?' ✏':''}</span>`:'';
-      return `<td class="rcp-cell" data-hub="${h}" data-wk="${wk}" data-autoqty="${wkBkEff.autoQty}" ${tipAttr} style="padding:6px 10px;text-align:center;border-bottom:${rowBdr};cursor:pointer">
-        <div style="display:flex;gap:2px;justify-content:center;align-items:center;flex-wrap:wrap">${arrBadge}${trnBadge}${bkBadge}</div>
+      // Cell background based on booking urgency (cumulative)
+      let cellBg='transparent';
+      if(cum.cumTotal>0){
+        if(cum.remaining===0) cellBg='rgba(220,252,231,0.5)'; // all good - light green
+        else if(cum.cumBooked>0) cellBg='rgba(254,243,199,0.6)'; // partial - light amber
+        else cellBg='rgba(254,226,226,0.5)'; // nothing booked - light red
+      }
+
+      const isManual=wkBkEff.isManual;
+
+      if(!cnt && !wkBkEff.qty){
+        return `<td class="rcp-cell rcp-cell-empty" data-hub="${h}" data-wk="${wk}" data-autoqty="0" ${tipAttr}
+          style="padding:8px 10px;text-align:center;border-bottom:1px solid #f1f5f9;cursor:pointer;background:${rowBg}">
+          <span style="color:#cbd5e1;font-size:11px">—</span></td>`;
+      }
+
+      // Arriving lines
+      const atYardLine=d.arrived?`<div style="font-size:12px;font-weight:700;color:#15803d">✓ ${d.arrived} at yard</div>`:'';
+      const enRouteLine=d.transit?`<div style="font-size:12px;font-weight:700;color:#1d4ed8">→ ${d.transit} en route</div>`:'';
+
+      // Booking status line (cumulative)
+      let statusLine='';
+      if(cum.remaining>0 && cum.cumTotal>0){
+        statusLine=`<div style="font-size:11px;font-weight:800;color:#dc2626;margin-top:4px">📋 Need ${cum.remaining} more</div>`;
+      } else if(cum.cumBooked>0 && cum.remaining===0){
+        statusLine=`<div style="font-size:11px;font-weight:800;color:#16a34a;margin-top:4px">✅ Fully planned</div>`;
+      }
+
+      // Booked badge (this week's booking entry)
+      let bkLine='';
+      if(wkBkEff.qty>0){
+        bkLine=`<div style="font-size:11px;color:${isManual?'#9a3412':'#92400e'};background:${isManual?'#fed7aa':'#fef3c7'};border-radius:4px;padding:1px 5px;display:inline-block;margin-top:3px;${isManual?'outline:1px solid #fb923c':''}">🚢 ${wkBkEff.qty} booked${isManual?' ✏':''}</div>`;
+      }
+
+      return `<td class="rcp-cell" data-hub="${h}" data-wk="${wk}" data-autoqty="${wkBkEff.autoQty}" ${tipAttr}
+        style="padding:8px 10px;border-bottom:1px solid #f1f5f9;cursor:pointer;background:${cellBg};vertical-align:top">
+        ${atYardLine}${enRouteLine}${bkLine}${statusLine}
       </td>`;
     });
 
-    html+=`<tr style="background:${rowBg}${isCur?';font-weight:700':''}">
-      <td style="padding:8px 12px;white-space:nowrap;border-bottom:${rowBdr};border-left:${isCur?'3px solid #22c55e':'none'}">
-        ${isCur?'<span style="font-size:10px;background:#22c55e;color:#fff;border-radius:4px;padding:1px 5px;margin-right:4px">NOW</span>':''}
-        ${rcpWeekLabel(wk)}
+    html+=`<tr style="background:${rowBg}">
+      <td style="padding:10px 14px;white-space:nowrap;border-bottom:1px solid #f1f5f9;${rowBorderLeft};font-size:12px">
+        ${isCur?'<div style="font-size:10px;background:#22c55e;color:#fff;border-radius:4px;padding:1px 6px;display:inline-block;margin-bottom:3px;font-weight:700">THIS WEEK</div><br>':''}
+        <span style="font-weight:${isCur?'800':'600'}">${rcpWeekLabel(wk)}</span>
       </td>
       ${cells.join('')}
-      <td style="padding:8px 12px;text-align:center;font-weight:800;color:var(--navy);border-bottom:${rowBdr}">${weekTotal}</td>
     </tr>`;
   });
 
-  const totByHub={}; let grandTotal=0;
-  weeks.forEach(w=>activeHubs.forEach(h=>{ const d=byWeek[w][h]||{arrived:0,transit:0}; totByHub[h]=(totByHub[h]||0)+d.arrived+d.transit; grandTotal+=d.arrived+d.transit; }));
-  html+=`<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0">
-    <td style="padding:8px 12px;color:var(--navy)">TOTAL</td>
-    ${activeHubs.map(h=>`<td style="padding:8px 10px;text-align:center;color:var(--navy)">${totByHub[h]||0}</td>`).join('')}
-    <td style="padding:8px 12px;text-align:center;color:var(--navy)">${grandTotal}</td>
-  </tr></tbody></table></div>
-  <div style="margin-top:8px;display:flex;gap:12px;font-size:11px;color:#64748b;flex-wrap:wrap">
-    <span><span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:700">✓</span> Arrived (ATA confirmed)</span>
-    <span><span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:700">⟳</span> In transit (ETA = ATD + ${RCP_AVG_TRANSIT} days avg)</span>
-    <span><span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:700">🚢-n</span> Booked return vessel (from VT cut-off date)</span>
-    <span style="color:#94a3b8">Hover → cumulative total · booked · still to book</span>
+  html+=`</tbody></table></div>`;
+
+  // Legend
+  html+=`<div style="margin-top:12px;display:flex;gap:16px;font-size:11px;color:#64748b;flex-wrap:wrap;align-items:center">
+    <span style="font-weight:700;color:#94a3b8">Legend:</span>
+    <span><strong style="color:#15803d">✓ at yard</strong> = ATA confirmed, container is in Europe</span>
+    <span><strong style="color:#1d4ed8">→ en route</strong> = on the train, ETA = departure + ${RCP_AVG_TRANSIT} days</span>
+    <span><strong style="color:#92400e">🚢 booked</strong> = return vessel slot reserved (from Vessel Tracker)</span>
+    <span style="background:rgba(254,226,226,0.8);padding:1px 7px;border-radius:4px">📋 red = needs booking</span>
+    <span style="background:rgba(254,243,199,0.8);padding:1px 7px;border-radius:4px">amber = partially booked</span>
+    <span style="background:rgba(220,252,231,0.8);padding:1px 7px;border-radius:4px">green = all booked ✅</span>
   </div>`;
 
   board.innerHTML=html;
@@ -8695,17 +8763,17 @@ function buildSlotEmails(){
       const metaDates = monthDays.length > 1 ? monthDays.join(' · ') : monthDays[0]||'';
 
       const carrierCC = (document.getElementById('se-carrier-cc')?.value||'').trim();
-      const subject = `Slot Booking Request – ${g.consignee} – ${qty} container${qty>1?'s':''} – ${dateLabel}`;
+      const subject = `Pre-alert to ${g.consignee} – ${qty} container${qty>1?'s':''} ETA ${dateLabel}`;
       const emailText =
 `Dear ${recipient},
 
-I am writing to request unloading slot${qty>1?'s':''} for the following ${qty} container${qty>1?'s':''} arriving on ${dateLabel}.
-Please confirm the delivery window and advise if any changes are needed.
+Please find below the pre-alert for ${qty} container${qty>1?'s':''} scheduled to arrive on ${dateLabel}.
+Kindly make the necessary arrangements for unloading and confirm the delivery window at your earliest convenience.
 
-Slots:
+Arrival details:
 ${slotLines}
 
-Please reply with confirmation at your earliest convenience.${carrierCC ? '\n\n(Carrier is CC\'d on this email for reference.)' : ''}
+Please advise if any changes are needed.${carrierCC ? '\n\n(Carrier is CC\'d on this email for reference.)' : ''}
 
 Best regards${sender ? ',\n'+sender : ''}`;
 
