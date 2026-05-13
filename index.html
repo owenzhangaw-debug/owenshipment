@@ -3698,6 +3698,19 @@ function renderDashboard(){
 
   // Month key helper: YYYY/MM/DD HH:MM → "2026-02" → display "Feb 26"
   function _ctMonth(r){
+    // Primary: Batch / Train field (mm/dd format e.g. "01/15")
+    const batch=(r['Batch / Train']||'').trim();
+    const bm=batch.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if(bm){
+      const mo=parseInt(bm[1],10);
+      if(mo>=1&&mo<=12){
+        // Infer year: if month <= current month use current year, else previous year
+        const now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1;
+        const yr=mo<=cm?cy:cy-1;
+        return yr+'-'+String(mo).padStart(2,'0');
+      }
+    }
+    // Fallback: Scheduled Slot or ETA date field
     const raw=r['Scheduled Slot']||r['ETA']||''; if(!raw) return null;
     const d=new Date(raw.replace(/\//g,'-').replace(' ','T'));
     if(isNaN(d.getTime())) return null;
