@@ -3698,12 +3698,12 @@ function renderDashboard(){
 
   // Month key helper: YYYY/MM/DD HH:MM → "2026-02" → display "Feb 26"
   function _ctMonth(r){
-    // Primary: Batch / Train field (mm/dd format e.g. "01/15")
+    // Primary: extract mm/dd from Batch / Train field (e.g. "Chengdu 4/28" → month 4)
     const batch=(r['Batch / Train']||'').trim();
-    const bm=batch.match(/^(\d{1,2})\/(\d{1,2})$/);
+    const bm=batch.match(/\b(\d{1,2})\/(\d{1,2})\b/);
     if(bm){
-      const mo=parseInt(bm[1],10);
-      if(mo>=1&&mo<=12){
+      const mo=parseInt(bm[1],10), day=parseInt(bm[2],10);
+      if(mo>=1&&mo<=12&&day>=1&&day<=31){
         // Infer year: if month <= current month use current year, else previous year
         const now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1;
         const yr=mo<=cm?cy:cy-1;
