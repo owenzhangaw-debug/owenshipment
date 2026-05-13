@@ -1267,10 +1267,10 @@ select:focus, input:focus {
     <button class="active" onclick="showPage('dashboard')">Dashboard</button>
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('vessels')">Vessels</button>
-    <button onclick="showPage('planning')">📦 Planning</button>
-    <button onclick="showPage('notices')">🔔 Notices</button>
-    <button onclick="showPage('reports')">📋 Reports</button>
-    <button onclick="showPage('feedback')">⭐ Feedback</button>
+    <button onclick="showPage('planning')">Planning</button>
+    <button onclick="showPage('notices')">Notices</button>
+    <button onclick="showPage('reports')">Reports</button>
+    <button onclick="showPage('feedback')">Feedback</button>
     <span class="nav-divider"></span>
     <!-- Tools dropdown -->
     <div class="nav-tools-wrap" id="nav-tools-wrap">
@@ -1450,14 +1450,14 @@ select:focus, input:focus {
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Price Trend by Trucker — per Batch (€)<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Average price per container charged by each trucker across batches — shows inflation over time</p>
+            <p class="chart-subtitle">Avg base price (€) per container by trucker per batch. Outliers automatically excluded (prices too far from the group are ignored). Hover to see count and any excluded values.</p>
             <div class="chart-wrap" style="height:360px"><canvas id="price-inflation-trucker-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Price Trend by Broker — per Batch (€)<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Average price per container charged by each broker across batches — shows inflation over time</p>
+            <p class="chart-subtitle">Avg base price (€) per container by broker per batch. Outliers automatically excluded. Hover to see count and any excluded values.</p>
             <div class="chart-wrap" style="height:320px"><canvas id="price-inflation-broker-chart"></canvas></div>
           </div>
         </div>
@@ -3595,107 +3595,106 @@ function renderDashboard(){
     });
   }
 
-  // ── Price Inflation by Trucker per Batch (line chart) ───────────
+  // Helper: median of array
+  // Filter outliers from a price array:
+  // Compute median, then keep only values within 0.4x–2.5x of that median
+  function _filterOutliers(arr){
+    if(arr.length<=1) return {kept:arr,dropped:0};
+    const s=[...arr].sort((a,b)=>a-b);
+    const mid=Math.floor(s.length/2);
+    const med=s.length%2?s[mid]:(s[mid-1]+s[mid])/2;
+    const lo=med*0.4, hi=med*2.5;
+    const kept=arr.filter(v=>v>=lo&&v<=hi);
+    return {kept:kept.length?kept:arr, dropped:arr.length-(kept.length?kept.length:arr.length)};
+  }
+  function _priceAvg(arr){ return arr.length?Math.round(arr.reduce((a,v)=>a+v,0)/arr.length):null; }
+
+  // Shared chart builder for trucker/broker price trend
+  function _buildInflationChart(elId, groupMap, allBatches, palette){
+    // For each group+batch, apply outlier filter then avg
+    function getPoint(grp, b){
+      const raw=groupMap[grp]?.[b]; if(!raw||!raw.length) return null;
+      const {kept}=_filterOutliers(raw);
+      return _priceAvg(kept);
+    }
+    function getTip(grp, b){
+      const raw=groupMap[grp]?.[b]||[];
+      const {kept,dropped}=_filterOutliers(raw);
+      const avg=_priceAvg(kept);
+      return [` €${avg!=null?avg.toLocaleString():'—'}/ctn (avg of ${kept.length})`,
+              dropped>0?` ⚠ ${dropped} outlier${dropped>1?'s':''} excluded`:null].filter(Boolean);
+    }
+    const el=document.getElementById(elId); if(!el) return;
+    const groups=Object.keys(groupMap).filter(g=>allBatches.some(b=>groupMap[g][b]));
+    if(!groups.length||!allBatches.length){
+      el.parentElement.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:24px;text-align:center">No price data yet</div>';
+      return null;
+    }
+    return new Chart(el,{
+      type:'line',
+      data:{
+        labels:allBatches,
+        datasets:groups.map((g,i)=>({
+          label:g,
+          data:allBatches.map(b=>getPoint(g,b)),
+          borderColor:palette[i%palette.length],
+          backgroundColor:palette[i%palette.length]+'20',
+          pointRadius:5, pointHoverRadius:7, borderWidth:2.5, spanGaps:false, tension:0.3
+        }))
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
+          tooltip:{callbacks:{label:ctx=>{
+            if(ctx.raw==null) return ' —';
+            return getTip(ctx.dataset.label, allBatches[ctx.dataIndex]);
+          }}}
+        },
+        scales:{
+          x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:10}}},
+          y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:false}
+        }
+      }
+    });
+  }
+
+  // ── Price Trend by Trucker per Batch ────────────────────────────
   {
-    const PALETTE=['#1d4ed8','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#6366f1'];
-    // Build: trucker → batch → avgPrice
     const truckerBatchMap={};
     const allBatchesSet=new Set();
     CT.forEach(r=>{
       const t=(r['Trucker']||'').trim(); if(!t) return;
       const b=(r['Batch / Train']||'').trim(); if(!b) return;
-      const p=parseFloat(r['Price']); if(isNaN(p)||p<=0) return;
+      const p=parseFloat(r['Price']); if(isNaN(p)||p<=0) return; // base price only
       allBatchesSet.add(b);
       if(!truckerBatchMap[t]) truckerBatchMap[t]={};
-      if(!truckerBatchMap[t][b]) truckerBatchMap[t][b]={sum:0,count:0};
-      truckerBatchMap[t][b].sum+=p; truckerBatchMap[t][b].count++;
+      if(!truckerBatchMap[t][b]) truckerBatchMap[t][b]=[];
+      truckerBatchMap[t][b].push(p);
     });
     const allBatches=[...allBatchesSet].sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
-    const truckers=Object.keys(truckerBatchMap).filter(t=>
-      allBatches.some(b=>truckerBatchMap[t][b])
-    );
-    if(window._inflTruckerChart) window._inflTruckerChart.destroy(); window._inflTruckerChart=null;
-    const _itEl=document.getElementById('price-inflation-trucker-chart');
-    if(_itEl && truckers.length>0 && allBatches.length>0){
-      window._inflTruckerChart=new Chart(_itEl,{
-        type:'line',
-        data:{
-          labels:allBatches,
-          datasets:truckers.map((t,i)=>({
-            label:t,
-            data:allBatches.map(b=>{
-              const d=truckerBatchMap[t][b];
-              return d ? +(d.sum/d.count).toFixed(0) : null;
-            }),
-            borderColor:PALETTE[i%PALETTE.length],
-            backgroundColor:PALETTE[i%PALETTE.length]+'22',
-            pointRadius:5, pointHoverRadius:7,
-            borderWidth:2.5, spanGaps:false, tension:0.3
-          }))
-        },
-        options:{
-          responsive:true,maintainAspectRatio:false,
-          plugins:{
-            legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
-            tooltip:{callbacks:{label:ctx=>ctx.raw!=null?` ${ctx.dataset.label}: €${ctx.raw.toLocaleString()}/ctn`:' —'}}
-          },
-          scales:{
-            x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:10}}},
-            y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:false}
-          }
-        }
-      });
-    } else if(_itEl){ _itEl.parentElement.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:24px;text-align:center">No price data with trucker info yet</div>'; }
+    if(window._inflTruckerChart) window._inflTruckerChart.destroy();
+    window._inflTruckerChart=_buildInflationChart('price-inflation-trucker-chart', truckerBatchMap, allBatches,
+      ['#1d4ed8','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#6366f1']);
   }
 
-  // ── Price Inflation by Broker per Batch (line chart) ────────────
+  // ── Price Trend by Broker per Batch ─────────────────────────────
   {
-    const PALETTE=['#0891b2','#7c3aed','#dc2626','#16a34a','#d97706','#1d4ed8','#db2777','#65a30d'];
     const brokerBatchMap={};
     const allBatchesSet2=new Set();
     CT.forEach(r=>{
       const bk=(r['Broker']||r['broker']||'').trim(); if(!bk) return;
       const b=(r['Batch / Train']||'').trim(); if(!b) return;
-      const p=parseFloat(r['Price']); if(isNaN(p)||p<=0) return;
+      const p=parseFloat(r['Price']); if(isNaN(p)||p<=0) return; // base price only
       allBatchesSet2.add(b);
       if(!brokerBatchMap[bk]) brokerBatchMap[bk]={};
-      if(!brokerBatchMap[bk][b]) brokerBatchMap[bk][b]={sum:0,count:0};
-      brokerBatchMap[bk][b].sum+=p; brokerBatchMap[bk][b].count++;
+      if(!brokerBatchMap[bk][b]) brokerBatchMap[bk][b]=[];
+      brokerBatchMap[bk][b].push(p);
     });
     const allBatches2=[...allBatchesSet2].sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
-    const brokers=Object.keys(brokerBatchMap).filter(bk=>allBatches2.some(b=>brokerBatchMap[bk][b]));
-    if(window._inflBrokerChart) window._inflBrokerChart.destroy(); window._inflBrokerChart=null;
-    const _ibEl=document.getElementById('price-inflation-broker-chart');
-    if(_ibEl && brokers.length>0 && allBatches2.length>0){
-      window._inflBrokerChart=new Chart(_ibEl,{
-        type:'line',
-        data:{
-          labels:allBatches2,
-          datasets:brokers.map((bk,i)=>({
-            label:bk,
-            data:allBatches2.map(b=>{
-              const d=brokerBatchMap[bk][b];
-              return d ? +(d.sum/d.count).toFixed(0) : null;
-            }),
-            borderColor:PALETTE[i%PALETTE.length],
-            backgroundColor:PALETTE[i%PALETTE.length]+'22',
-            pointRadius:5, pointHoverRadius:7,
-            borderWidth:2.5, spanGaps:false, tension:0.3
-          }))
-        },
-        options:{
-          responsive:true,maintainAspectRatio:false,
-          plugins:{
-            legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
-            tooltip:{callbacks:{label:ctx=>ctx.raw!=null?` ${ctx.dataset.label}: €${ctx.raw.toLocaleString()}/ctn`:' —'}}
-          },
-          scales:{
-            x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:10}}},
-            y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:false}
-          }
-        }
-      });
-    } else if(_ibEl){ _ibEl.parentElement.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:24px;text-align:center">No price data with broker info yet</div>'; }
+    if(window._inflBrokerChart) window._inflBrokerChart.destroy();
+    window._inflBrokerChart=_buildInflationChart('price-inflation-broker-chart', brokerBatchMap, allBatches2,
+      ['#0891b2','#7c3aed','#dc2626','#16a34a','#d97706','#1d4ed8','#db2777','#65a30d']);
   }
 
   // Avg T1 Cost by Batch (sorted by batch date)
