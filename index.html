@@ -1267,8 +1267,10 @@ select:focus, input:focus {
     <button class="active" onclick="showPage('dashboard')">Dashboard</button>
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('vessels')">Vessels</button>
-    <button onclick="showPage('feedback')">⭐ Feedback</button>
+    <button onclick="showPage('planning')">📦 Planning</button>
+    <button onclick="showPage('notices')">🔔 Notices</button>
     <button onclick="showPage('reports')">📋 Reports</button>
+    <button onclick="showPage('feedback')">⭐ Feedback</button>
     <span class="nav-divider"></span>
     <!-- Tools dropdown -->
     <div class="nav-tools-wrap" id="nav-tools-wrap">
@@ -1344,75 +1346,7 @@ select:focus, input:focus {
   </div>
 
 
-  <!-- ══ Important Notice Board ══ -->
-  <div class="notice-board-wrap">
-    <div class="nb-header" onclick="(()=>{const b=document.getElementById('notice-board-body');const ic=document.getElementById('notice-board-ic');const col=b.style.display==='none';b.style.display=col?'':'none';ic.textContent=col?'▼':'▶';})()" style="cursor:pointer;user-select:none">
-      <span style="font-size:18px">📌</span>
-      <span>Important Notices</span>
-      <span id="notice-board-ic" style="margin-left:6px;font-size:12px;opacity:.7">▼</span>
-      <button class="nb-add-btn" onclick="event.stopPropagation();noticeOpenAdd()">+ Add Notice</button>
-    </div>
-    <div id="notice-board-body">
-    <div id="nb-filter-bar" style="display:flex;gap:6px;padding:9px 14px 4px;border-bottom:1px solid #f0f4f8;background:#fafcff">
-      <button id="nbf-all" class="nb-filter-tab active" onclick="noticeSetFilter('all')">All</button>
-      <button id="nbf-containers" class="nb-filter-tab" onclick="noticeSetFilter('containers')">📦 Containers</button>
-      <button id="nbf-vessels" class="nb-filter-tab" onclick="noticeSetFilter('vessels')">🚢 Vessels</button>
-    </div>
-    <div id="notice-add-form" style="display:none">
-      <div class="nb-form">
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <select id="notice-level" class="nb-select" style="flex:1;margin-bottom:0">
-            <option value="info">ℹ️  Info</option>
-            <option value="warn">⚠️  Warning</option>
-            <option value="urgent">🚨  Urgent</option>
-          </select>
-          <select id="notice-cat" class="nb-select" style="flex:1;margin-bottom:0">
-            <option value="all">📋 All Pages</option>
-            <option value="vessels">🚢 Vessels Only</option>
-            <option value="containers">📦 Containers Only</option>
-          </select>
-        </div>
-        <textarea id="notice-text" class="nb-textarea" placeholder="Type your notice here…" rows="2"></textarea>
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <button class="btn btn-green" style="flex:1;padding:7px;font-size:13px" onclick="noticeSave()">💾 Save</button>
-          <button class="btn btn-ghost" style="padding:7px 16px;font-size:13px" onclick="noticeCloseAdd()">Cancel</button>
-        </div>
-      </div>
-    </div>
-    <div id="notice-list"></div>
-  </div><!-- end notice-board-body -->
-  </div>
-
-  <!-- ══ Reminders ══ -->
-  <div class="rem-wrap">
-    <div class="rem-header" onclick="remToggle()">
-      <span style="font-size:17px">🗒️</span>
-      <span class="rem-header-title">Reminders</span>
-      <span class="rem-badge" id="rem-badge">0</span>
-      <span id="rem-toggle-ic" style="font-size:12px;opacity:.6;margin-left:4px">▼</span>
-    </div>
-    <div id="rem-body" class="rem-body">
-      <div class="rem-input-row">
-        <input id="rem-input" class="rem-input" type="text" placeholder="Add a reminder… (press Enter)" maxlength="300"
-          onkeydown="if(event.key==='Enter')remAdd()"/>
-        <select id="rem-cat-sel" class="rem-cat-sel">
-          <option value="container">📦 Container</option>
-          <option value="vessel">🚢 Vessel</option>
-          <option value="payment">💰 Payment</option>
-          <option value="other">📝 Other</option>
-        </select>
-        <button class="rem-add-btn" onclick="remAdd()">+ Add</button>
-      </div>
-      <div class="rem-filter-bar">
-        <button class="rem-ftab active" id="remf-all"       onclick="remSetFilter('all')">All</button>
-        <button class="rem-ftab"        id="remf-container" onclick="remSetFilter('container')">📦 Container</button>
-        <button class="rem-ftab"        id="remf-vessel"    onclick="remSetFilter('vessel')">🚢 Vessel</button>
-        <button class="rem-ftab"        id="remf-payment"   onclick="remSetFilter('payment')">💰 Payment</button>
-        <button class="rem-ftab"        id="remf-other"     onclick="remSetFilter('other')">📝 Other</button>
-      </div>
-      <div id="rem-list" class="rem-list"></div>
-    </div>
-  </div>
+  <!-- Notices & Reminders moved to dedicated Notices page -->
 
   <div class="dash-split">
 
@@ -1511,6 +1445,20 @@ select:focus, input:focus {
             <h3 onclick="toggleChart(this)">Avg Price by Batch (€)<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">Average freight price per container by batch / train</p>
             <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-avg-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Price Trend by Trucker — per Batch (€)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Average price per container charged by each trucker across batches — shows inflation over time</p>
+            <div class="chart-wrap" style="height:360px"><canvas id="price-inflation-trucker-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Price Trend by Broker — per Batch (€)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Average price per container charged by each broker across batches — shows inflation over time</p>
+            <div class="chart-wrap" style="height:320px"><canvas id="price-inflation-broker-chart"></canvas></div>
           </div>
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
@@ -2226,21 +2174,7 @@ select:focus, input:focus {
 <div id="page-vessels" class="page">
   <div id="page-notice-vessels"></div>
 
-  <!-- ── Return Container Planning ──────────────────────────────── -->
-  <div id="rcp-wrap" style="margin-bottom:16px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:18px">📦</span>
-        <span style="font-weight:800;font-size:15px;color:var(--navy)">Return Container Planning</span>
-        <span id="rcp-updated" style="font-size:11px;color:#94a3b8"></span>
-      </div>
-      <label style="margin-left:auto;cursor:pointer">
-        <input type="file" id="rcp-file" accept=".xlsx,.xls" style="display:none" onchange="rcpUpload(this)"/>
-        <span style="padding:5px 14px;font-size:12px;font-weight:700;background:#004D4C;color:#fff;border-radius:8px;cursor:pointer;white-space:nowrap">↑ Upload Daily Excel</span>
-      </label>
-    </div>
-    <div id="rcp-board"></div>
-  </div>
+  <!-- Return Container Planning moved to Planning page -->
 
   <div id="vt-progress-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 4px 12px"></div>
 
@@ -2458,6 +2392,104 @@ select:focus, input:focus {
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ══ PLANNING ══ -->
+<div id="page-planning" class="page">
+  <div style="padding:0 0 20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:22px">📦</span>
+        <span style="font-weight:900;font-size:18px;color:var(--navy)">Return Container Planning</span>
+        <span id="rcp-updated" style="font-size:11px;color:#94a3b8"></span>
+      </div>
+      <label style="margin-left:auto;cursor:pointer">
+        <input type="file" id="rcp-file" accept=".xlsx,.xls" style="display:none" onchange="rcpUpload(this)"/>
+        <span style="padding:7px 18px;font-size:13px;font-weight:700;background:#004D4C;color:#fff;border-radius:8px;cursor:pointer;white-space:nowrap">↑ Upload Daily Excel</span>
+      </label>
+    </div>
+    <div id="rcp-board"></div>
+  </div>
+</div>
+
+<!-- ══ NOTICES ══ -->
+<div id="page-notices" class="page">
+  <div style="max-width:860px;padding:0 0 20px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
+      <span style="font-size:22px">🔔</span>
+      <span style="font-weight:900;font-size:18px;color:var(--navy)">Notices &amp; Reminders</span>
+    </div>
+
+    <!-- Important Notice Board -->
+    <div class="notice-board-wrap" style="margin-bottom:18px">
+      <div class="nb-header" onclick="(()=>{const b=document.getElementById('notice-board-body');const ic=document.getElementById('notice-board-ic');const col=b.style.display==='none';b.style.display=col?'':'none';ic.textContent=col?'▼':'▶';})()" style="cursor:pointer;user-select:none">
+        <span style="font-size:18px">📌</span>
+        <span>Important Notices</span>
+        <span id="notice-board-ic" style="margin-left:6px;font-size:12px;opacity:.7">▼</span>
+        <button class="nb-add-btn" onclick="event.stopPropagation();noticeOpenAdd()">+ Add Notice</button>
+      </div>
+      <div id="notice-board-body">
+        <div id="nb-filter-bar" style="display:flex;gap:6px;padding:9px 14px 4px;border-bottom:1px solid #f0f4f8;background:#fafcff">
+          <button id="nbf-all" class="nb-filter-tab active" onclick="noticeSetFilter('all')">All</button>
+          <button id="nbf-containers" class="nb-filter-tab" onclick="noticeSetFilter('containers')">📦 Containers</button>
+          <button id="nbf-vessels" class="nb-filter-tab" onclick="noticeSetFilter('vessels')">🚢 Vessels</button>
+        </div>
+        <div id="notice-add-form" style="display:none">
+          <div class="nb-form">
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <select id="notice-level" class="nb-select" style="flex:1;margin-bottom:0">
+                <option value="info">ℹ️  Info</option>
+                <option value="warn">⚠️  Warning</option>
+                <option value="urgent">🚨  Urgent</option>
+              </select>
+              <select id="notice-cat" class="nb-select" style="flex:1;margin-bottom:0">
+                <option value="all">📋 All Pages</option>
+                <option value="vessels">🚢 Vessels Only</option>
+                <option value="containers">📦 Containers Only</option>
+              </select>
+            </div>
+            <textarea id="notice-text" class="nb-textarea" placeholder="Type your notice here…" rows="2"></textarea>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <button class="btn btn-green" style="flex:1;padding:7px;font-size:13px" onclick="noticeSave()">💾 Save</button>
+              <button class="btn btn-ghost" style="padding:7px 16px;font-size:13px" onclick="noticeCloseAdd()">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div id="notice-list"></div>
+      </div>
+    </div>
+
+    <!-- Reminders -->
+    <div class="rem-wrap">
+      <div class="rem-header" onclick="remToggle()">
+        <span style="font-size:17px">🗒️</span>
+        <span class="rem-header-title">Reminders</span>
+        <span class="rem-badge" id="rem-badge">0</span>
+        <span id="rem-toggle-ic" style="font-size:12px;opacity:.6;margin-left:4px">▼</span>
+      </div>
+      <div id="rem-body" class="rem-body">
+        <div class="rem-input-row">
+          <input id="rem-input" class="rem-input" type="text" placeholder="Add a reminder… (press Enter)" maxlength="300"
+            onkeydown="if(event.key==='Enter')remAdd()"/>
+          <select id="rem-cat-sel" class="rem-cat-sel">
+            <option value="container">📦 Container</option>
+            <option value="vessel">🚢 Vessel</option>
+            <option value="payment">💰 Payment</option>
+            <option value="other">📝 Other</option>
+          </select>
+          <button class="rem-add-btn" onclick="remAdd()">+ Add</button>
+        </div>
+        <div class="rem-filter-bar">
+          <button class="rem-ftab active" id="remf-all"       onclick="remSetFilter('all')">All</button>
+          <button class="rem-ftab"        id="remf-container" onclick="remSetFilter('container')">📦 Container</button>
+          <button class="rem-ftab"        id="remf-vessel"    onclick="remSetFilter('vessel')">🚢 Vessel</button>
+          <button class="rem-ftab"        id="remf-payment"   onclick="remSetFilter('payment')">💰 Payment</button>
+          <button class="rem-ftab"        id="remf-other"     onclick="remSetFilter('other')">📝 Other</button>
+        </div>
+        <div id="rem-list" class="rem-list"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2999,9 +3031,13 @@ function showPage(p){
   const _mnb=document.getElementById('mnav-'+p);
   if(_mnb) _mnb.classList.add('active');
   document.getElementById('page-'+p).classList.add('active');
-  const pages=['dashboard','containers','vessels','feedback','reports'];
+  const pages=['dashboard','containers','vessels','planning','notices','reports','feedback'];
   const idx=pages.indexOf(p);
-  if(idx>=0) document.querySelectorAll('nav button')[idx].classList.add('active');
+  // Match active state by data or text scan (robust to button order)
+  document.querySelectorAll('nav > button').forEach(b=>{
+    const fn=b.getAttribute('onclick')||'';
+    if(fn.includes("'"+p+"'")) b.classList.add('active');
+  });
   // Show/hide + Add button and update label based on active page
   const addBtn=document.getElementById('hdr-add-btn');
   if(addBtn){
@@ -3011,7 +3047,9 @@ function showPage(p){
   }
   if(p==='dashboard') renderDashboard();
   if(p==='containers'){ renderCT(); if(typeof renderPageNotices==='function') renderPageNotices(); }
-  if(p==='vessels'){ renderVT(); renderSOC(); rcpRender(); if(typeof renderPageNotices==='function') renderPageNotices(); setTimeout(vtApplyFreezeColumns,50); }
+  if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); setTimeout(vtApplyFreezeColumns,50); }
+  if(p==='planning'){ rcpRender(); }
+  if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='feedback') renderFeedback();
   if(p==='reports') renderReports();
 }
@@ -3555,6 +3593,109 @@ function renderDashboard(){
         }
       }
     });
+  }
+
+  // ── Price Inflation by Trucker per Batch (line chart) ───────────
+  {
+    const PALETTE=['#1d4ed8','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#6366f1'];
+    // Build: trucker → batch → avgPrice
+    const truckerBatchMap={};
+    const allBatchesSet=new Set();
+    CT.forEach(r=>{
+      const t=(r['Trucker']||'').trim(); if(!t) return;
+      const b=(r['Batch / Train']||'').trim(); if(!b) return;
+      const p=parseFloat(r['Price']); if(isNaN(p)||p<=0) return;
+      allBatchesSet.add(b);
+      if(!truckerBatchMap[t]) truckerBatchMap[t]={};
+      if(!truckerBatchMap[t][b]) truckerBatchMap[t][b]={sum:0,count:0};
+      truckerBatchMap[t][b].sum+=p; truckerBatchMap[t][b].count++;
+    });
+    const allBatches=[...allBatchesSet].sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
+    const truckers=Object.keys(truckerBatchMap).filter(t=>
+      allBatches.some(b=>truckerBatchMap[t][b])
+    );
+    if(window._inflTruckerChart) window._inflTruckerChart.destroy(); window._inflTruckerChart=null;
+    const _itEl=document.getElementById('price-inflation-trucker-chart');
+    if(_itEl && truckers.length>0 && allBatches.length>0){
+      window._inflTruckerChart=new Chart(_itEl,{
+        type:'line',
+        data:{
+          labels:allBatches,
+          datasets:truckers.map((t,i)=>({
+            label:t,
+            data:allBatches.map(b=>{
+              const d=truckerBatchMap[t][b];
+              return d ? +(d.sum/d.count).toFixed(0) : null;
+            }),
+            borderColor:PALETTE[i%PALETTE.length],
+            backgroundColor:PALETTE[i%PALETTE.length]+'22',
+            pointRadius:5, pointHoverRadius:7,
+            borderWidth:2.5, spanGaps:false, tension:0.3
+          }))
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          plugins:{
+            legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
+            tooltip:{callbacks:{label:ctx=>ctx.raw!=null?` ${ctx.dataset.label}: €${ctx.raw.toLocaleString()}/ctn`:' —'}}
+          },
+          scales:{
+            x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:10}}},
+            y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:false}
+          }
+        }
+      });
+    } else if(_itEl){ _itEl.parentElement.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:24px;text-align:center">No price data with trucker info yet</div>'; }
+  }
+
+  // ── Price Inflation by Broker per Batch (line chart) ────────────
+  {
+    const PALETTE=['#0891b2','#7c3aed','#dc2626','#16a34a','#d97706','#1d4ed8','#db2777','#65a30d'];
+    const brokerBatchMap={};
+    const allBatchesSet2=new Set();
+    CT.forEach(r=>{
+      const bk=(r['Broker']||r['broker']||'').trim(); if(!bk) return;
+      const b=(r['Batch / Train']||'').trim(); if(!b) return;
+      const p=parseFloat(r['Price']); if(isNaN(p)||p<=0) return;
+      allBatchesSet2.add(b);
+      if(!brokerBatchMap[bk]) brokerBatchMap[bk]={};
+      if(!brokerBatchMap[bk][b]) brokerBatchMap[bk][b]={sum:0,count:0};
+      brokerBatchMap[bk][b].sum+=p; brokerBatchMap[bk][b].count++;
+    });
+    const allBatches2=[...allBatchesSet2].sort((a,b)=>_bkSort(a).localeCompare(_bkSort(b)));
+    const brokers=Object.keys(brokerBatchMap).filter(bk=>allBatches2.some(b=>brokerBatchMap[bk][b]));
+    if(window._inflBrokerChart) window._inflBrokerChart.destroy(); window._inflBrokerChart=null;
+    const _ibEl=document.getElementById('price-inflation-broker-chart');
+    if(_ibEl && brokers.length>0 && allBatches2.length>0){
+      window._inflBrokerChart=new Chart(_ibEl,{
+        type:'line',
+        data:{
+          labels:allBatches2,
+          datasets:brokers.map((bk,i)=>({
+            label:bk,
+            data:allBatches2.map(b=>{
+              const d=brokerBatchMap[bk][b];
+              return d ? +(d.sum/d.count).toFixed(0) : null;
+            }),
+            borderColor:PALETTE[i%PALETTE.length],
+            backgroundColor:PALETTE[i%PALETTE.length]+'22',
+            pointRadius:5, pointHoverRadius:7,
+            borderWidth:2.5, spanGaps:false, tension:0.3
+          }))
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          plugins:{
+            legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
+            tooltip:{callbacks:{label:ctx=>ctx.raw!=null?` ${ctx.dataset.label}: €${ctx.raw.toLocaleString()}/ctn`:' —'}}
+          },
+          scales:{
+            x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:10}}},
+            y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{callback:v=>'€'+v.toLocaleString()},beginAtZero:false}
+          }
+        }
+      });
+    } else if(_ibEl){ _ibEl.parentElement.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:24px;text-align:center">No price data with broker info yet</div>'; }
   }
 
   // Avg T1 Cost by Batch (sorted by batch date)
@@ -5448,7 +5589,7 @@ function rcpRender(){
 }
 
 // Init on page load
-document.addEventListener('DOMContentLoaded',()=>{ rcpRender(); });
+// rcpRender is called by showPage('planning') — no auto-init needed here
 
 // ── CT SLOT CHANGE HISTORY ────────────────────────────────────────
 function ctToggleExpand(id){
