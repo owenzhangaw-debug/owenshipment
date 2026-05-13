@@ -2276,7 +2276,6 @@ select:focus, input:focus {
           <th class="vt-fc" onclick="vtSort('Vessel Name')" data-vtcol="Vessel Name">Vessel Name ↕</th>
           <th onclick="vtSort('ETS (Departure)')" data-vtcol="ETS (Departure)">ETS (Departure) ↕<span class="cdf-btn" id="cdf-vt-btn-ETS (Departure)" onclick="openColDF('vt','ETS (Departure)',this,event)" title="Filter by date">▾</span></th>
           <th onclick="vtSort('ETA (Arrival)')" data-vtcol="ETA (Arrival)">ETA (Arrival) ↕<span class="cdf-btn" id="cdf-vt-btn-ETA (Arrival)" onclick="openColDF('vt','ETA (Arrival)',this,event)" title="Filter by date">▾</span></th>
-          <th onclick="vtSort('ATA (Actual)')" data-vtcol="ATA (Actual)">ATA (Actual) ↕<span class="cdf-btn" id="cdf-vt-btn-ATA (Actual)" onclick="openColDF('vt','ATA (Actual)',this,event)" title="Filter by date">▾</span></th>
           <th onclick="vtSort('Port Cut-Off')" data-vtcol="Port Cut-Off">Port Cut-Off ↕<span class="cdf-btn" id="cdf-vt-btn-Port Cut-Off" onclick="openColDF('vt','Port Cut-Off',this,event)" title="Filter by date">▾</span></th>
           <th onclick="vtSort('Barge Date')" data-vtcol="Barge Date">Barge Date ↕</th>
           <th onclick="vtSort('Days to Cut-Off')" data-vtcol="Days to Cut-Off">Days to Cut-Off ↕</th>
@@ -2904,27 +2903,33 @@ select:focus, input:focus {
       <div class="form-group"><label>Payment Status</label>
         <select id="vta-payment-status">
           <option value="">—</option>
+          <option value="Pending invoice">Pending invoice</option>
+          <option value="Amending">Amending</option>
+          <option value="Verifying">Verifying</option>
+          <option value="Requested">Requested</option>
           <option value="Paid">Paid</option>
-          <option value="Pending">Pending</option>
-          <option value="Not Billed">Not Billed</option>
         </select>
       </div>
       <div class="form-group"><label>Booking Fee (Rhenus)</label><input type="text" id="vta-booking-fee" placeholder="e.g. 150"/></div>
       <div class="form-group"><label>Booking Fee Payment</label>
         <select id="vta-booking-fee-payment">
           <option value="">—</option>
+          <option value="Pending invoice">Pending invoice</option>
+          <option value="Amending">Amending</option>
+          <option value="Verifying">Verifying</option>
+          <option value="Requested">Requested</option>
           <option value="Paid">Paid</option>
-          <option value="Pending">Pending</option>
-          <option value="Not Billed">Not Billed</option>
         </select>
       </div>
       <div class="form-group"><label>CC Fee (€)</label><input type="text" id="vta-cc-fee" placeholder="e.g. 250"/></div>
       <div class="form-group"><label>CC Fee Payment</label>
         <select id="vta-cc-fee-payment">
           <option value="">—</option>
+          <option value="Pending invoice">Pending invoice</option>
+          <option value="Amending">Amending</option>
+          <option value="Verifying">Verifying</option>
+          <option value="Requested">Requested</option>
           <option value="Paid">Paid</option>
-          <option value="Pending">Pending</option>
-          <option value="Not Billed">Not Billed</option>
         </select>
       </div>
       <div class="form-group"><label>Broker</label><input type="text" id="vta-broker" placeholder="e.g. CACESA"/></div>
@@ -4430,8 +4435,8 @@ function renderDashboard(){
 
   // ── Vessel Financials ─────────────────────────────────────────
   (function(){
-    const VF_PAY_PALETTE = {'Paid':'#10b981','Pending':'#f59e0b','Not Billed':'#94a3b8','':'#e2e8f0'};
-    const VF_PAY_LABELS  = {'Paid':'Paid','Pending':'Pending','Not Billed':'Not Billed','':'Not Set'};
+    const VF_PAY_PALETTE = {'Paid':'#10b981','Requested':'#6366f1','Verifying':'#0ea5e9','Amending':'#f97316','Pending invoice':'#f59e0b','':'#e2e8f0'};
+    const VF_PAY_LABELS  = {'Paid':'Paid','Requested':'Requested','Verifying':'Verifying','Amending':'Amending','Pending invoice':'Pending Invoice','':'Not Set'};
     // Aggregate per vessel row
     const vtFin = VT.map(r=>({
       name: r['Vessel Name']||r['Booking / BC No.']||'(Unknown)',
@@ -4498,8 +4503,8 @@ function renderDashboard(){
     }
 
     // Chart 2: Freight Payment Status donut
-    const vfPayCounts={'Paid':0,'Pending':0,'Not Billed':0,'':0};
-    vtFin.forEach(r=>{ if(r.price>0||r.surcharge>0) vfPayCounts[r.payStatus]=(vfPayCounts[r.payStatus]||0)+1; });
+    const vfPayCounts={};
+    vtFin.forEach(r=>{ if(r.price>0||r.surcharge>0){ const k=r.payStatus||''; vfPayCounts[k]=(vfPayCounts[k]||0)+1; } });
     const vfPayKeys=Object.keys(vfPayCounts).filter(k=>vfPayCounts[k]>0);
     if(window._vfPayChart) window._vfPayChart.destroy();
     const _vfPayEl=document.getElementById('vf-pay-status-chart');
@@ -4549,8 +4554,8 @@ function renderDashboard(){
     }
 
     // Chart 4: Booking Fee Payment Status donut
-    const vfBFPCounts={'Paid':0,'Pending':0,'Not Billed':0,'':0};
-    vtFin.forEach(r=>{ if(r.bookingFee>0) vfBFPCounts[r.bfPayment]=(vfBFPCounts[r.bfPayment]||0)+1; });
+    const vfBFPCounts={};
+    vtFin.forEach(r=>{ if(r.bookingFee>0){ const k=r.bfPayment||''; vfBFPCounts[k]=(vfBFPCounts[k]||0)+1; } });
     const vfBFPKeys=Object.keys(vfBFPCounts).filter(k=>vfBFPCounts[k]>0);
     if(window._vfBFPChart) window._vfBFPChart.destroy();
     const _vfBFPEl=document.getElementById('vf-bfp-status-chart');
@@ -4577,9 +4582,8 @@ function renderDashboard(){
     if(vfTotalBadge) vfTotalBadge.textContent=vtFin.length+' vessels · Freight: '+_fUSD(totalFreight)+' · Booking Fees: '+_fEUR(totalBF);
     if(vfTableEl){
       const _payTag=(v)=>{
-        const map={'Paid':'background:#d1fae5;color:#065f46','Pending':'background:#fef3c7;color:#b45309','Not Billed':'background:#f1f5f9;color:#64748b'};
-        const s=map[v]||'background:#f1f5f9;color:#94a3b8';
-        return `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;${s}">${v||'—'}</span>`;
+        if(!v) return '<span style="color:#ccc">—</span>';
+        return _vtPayBadge(v);
       };
       const rows=vtFin.map(r=>`<tr>
         <td style="font-weight:700;color:var(--navy);white-space:nowrap">${r.name}</td>
@@ -6458,11 +6462,13 @@ function vtFeeTotal(arr, currency){
 }
 function vtFeeOverallPay(arr){
   if(!arr||!arr.length) return '';
-  const statuses=(arr||[]).map(f=>f.payStatus||'');
+  const statuses=(arr||[]).map(f=>f.payStatus||'').filter(Boolean);
+  if(!statuses.length) return '';
   if(statuses.every(s=>s==='Paid')) return 'Paid';
-  if(statuses.some(s=>s==='Pending')) return 'Pending';
-  if(statuses.some(s=>s==='Not Billed')) return 'Not Billed';
-  return '';
+  // Show the least-advanced status among all fees
+  const ORDER=['Pending invoice','Amending','Verifying','Requested'];
+  for(const s of ORDER){ if(statuses.some(x=>x===s)) return s; }
+  return statuses[0]||'';
 }
 function vtFeeCurrency(cat){ return cat==='ocean'?'USD':'EUR'; }
 function vtFeeCell(r, cat){
@@ -6524,7 +6530,7 @@ function vtUpdateFeeField(vid, cat, fid, field, val){
 }
 
 // ── Fee panel renderer (used in expanded row) ─────────────────────
-const _FEE_PAY_OPTS=['','Paid','Pending','Not Billed'];
+const _FEE_PAY_OPTS=['','Pending invoice','Amending','Verifying','Requested','Paid'];
 function vtFeePanel(r){
   vtMigrateFees(r);
   const vid=r._id;
@@ -6591,9 +6597,13 @@ function temuSyncCT(){
 }
 
 function _vtPayBadge(v){
-  if(!v) return '<span class="vt-pay-empty">—</span>';
-  const cls = v==='Paid'?'vt-pay-paid':v==='Pending'?'vt-pay-pending':v==='Not Billed'?'vt-pay-notbilled':'';
-  return `<span class="vt-pay-badge ${cls}">${v}</span>`;
+  if(!v||v==='—') return '<span class="vt-pay-empty">—</span>';
+  if(v==='Pending invoice') return '<span class="ps-pending">Pending Invoice</span>';
+  if(v==='Amending')        return '<span class="ps-amending">Amending</span>';
+  if(v==='Verifying')       return '<span class="ps-verifying">Verifying</span>';
+  if(v==='Requested')       return '<span class="ps-requested">Requested</span>';
+  if(v==='Paid')            return '<span class="ps-paid">Paid</span>';
+  return `<span class="vt-pay-badge">${v}</span>`;
 }
 function _vtTdClass(col, extraClass){
   const g = _VT_OCEAN_COLS.has(col)?'vt-ocean-td':_VT_BOOKING_COLS.has(col)?'vt-booking-td':_VT_CUSTOMS_COLS.has(col)?'vt-customs-td':'';
@@ -7139,7 +7149,6 @@ function renderVT(){
       ${vtCell(r,'Vessel Name',{extraClass:'vt-fc'})}
       ${vtCell(r,'ETS (Departure)')}
       ${vtCell(r,'ETA (Arrival)')}
-      ${vtCell(r,'ATA (Actual)')}
       ${vtCell(r,'Port Cut-Off')}
       ${vtCell(r,'Barge Date')}
       <td style="padding:7px 10px;text-align:center;font-weight:700;color:${r['Status']==='Discharged'?'#6b7280':_daysColor};white-space:nowrap">${_daysDisp}</td>
