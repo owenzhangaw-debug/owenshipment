@@ -10120,13 +10120,18 @@ function rpRenderHistory(){
     if(!rows||!rows.length) return '';
     let html=`<div class="rpd-sec-lbl">${sec}</div>`;
     rows.forEach(row=>{
-      if(row.batch!==undefined){
-        // s1
+      if(row.ref!==undefined){
+        // s3 — check ref first because s3 also has a batch field
+        const _badge=(v,prefix)=>{ if(!v) return ''; const c=v==='Paid'?'#15803d':v==='Requested'?'#1d4ed8':v==='Verifying'?'#0369a1':v==='Amending'?'#c2410c':'#92400e'; const b=v==='Paid'?'#dcfce7':v==='Requested'?'#dbeafe':v==='Verifying'?'#e0f2fe':v==='Amending'?'#ffedd5':'#fef3c7'; return `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:${b};color:${c};margin-left:3px">${prefix}${v}</span>`; };
+        const refTag=row.ref?`<span class="rpd-tag">${row.ref}</span>`:'';
+        const bkTag=row.bookingNo?`<span class="rpd-tag" style="background:#ede9fe;color:#5b21b6">${row.bookingNo}</span>`:'';
+        const ctnTag=row.containers?`<span class="rpd-ctn">${row.containers}</span>`:'';
+        const routeTag=row.route?`<em style="color:#0369a1">${row.route}</em>`:'';
+        const batchBadge=row.batch?`<span style="font-size:9px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;padding:1px 6px;font-weight:700;margin-right:4px">📦 ${row.batch}</span>`:'';
+        html+=`<div class="rpd-item">${batchBadge}${refTag}${bkTag}${ctnTag}${routeTag}${_badge(row.payStatus,'🚢')}${_badge(row.t1PayStatus,'🛂')}${_badge(row.truckerPayStatus,'🚛')}${(refTag||bkTag||ctnTag||routeTag)?'<br>':''}${row.task}</div>`;
+      } else if(row.dest!==undefined){
+        // s1 — dest is unique to s1
         html+=`<div class="rpd-item"><span class="rpd-tag">${row.batch}${row.dest?' → '+row.dest:''}</span> ${row.task}</div>`;
-      } else if(row.ref!==undefined){
-        // s3
-        const _badge=(v,prefix)=>{ if(!v) return ''; const c=v==='Paid'?'#15803d':v==='Requested'?'#1d4ed8':'#92400e'; const b=v==='Paid'?'#dcfce7':v==='Requested'?'#dbeafe':'#fef3c7'; return `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:${b};color:${c};margin-left:3px">${prefix}${v}</span>`; };
-        html+=`<div class="rpd-item">${row.batch?`<span style="font-size:9px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;padding:1px 6px;font-weight:700;margin-right:4px">📦 ${row.batch}</span>`:''}<span class="rpd-tag">${row.ref||row.bookingNo}</span>${row.bookingNo&&row.ref?' · '+row.bookingNo:''} ${row.containers?'<span class="rpd-ctn">'+row.containers+'</span>':''} ${row.route?'<em>'+row.route+'</em>':''}${_badge(row.payStatus,'🚢')}${_badge(row.t1PayStatus,'🛂')}${_badge(row.truckerPayStatus,'🚛')}<br>${row.task}</div>`;
       } else {
         // s2
         html+=`<div class="rpd-item"><span class="rpd-tag">${row.bookingNo||'—'}</span> ${row.containers?'<span class="rpd-ctn">'+row.containers+'</span>':''} ${row.route?'<em>'+row.route+'</em>':''}<br>${row.task}</div>`;
