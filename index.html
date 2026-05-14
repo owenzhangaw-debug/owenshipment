@@ -2951,6 +2951,42 @@ select:focus, input:focus {
   </div>
 </div>
 
+<!-- NOTICE EDIT MODAL -->
+<div class="overlay" id="notice-edit-overlay">
+  <div class="modal-inner" style="max-width:480px">
+    <div class="modal-header"><span>✏️ Edit Notice</span></div>
+    <div class="modal-body" style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">Level</label>
+          <select id="ne-level" class="nb-select" style="margin:0">
+            <option value="info">ℹ️  Info</option>
+            <option value="warn">⚠️  Warning</option>
+            <option value="urgent">🚨  Urgent</option>
+          </select>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">Category</label>
+          <select id="ne-cat" class="nb-select" style="margin:0">
+            <option value="all">📋 All Pages</option>
+            <option value="vessels">🚢 Vessels Only</option>
+            <option value="containers">📦 Containers Only</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">Notice Text</label>
+        <textarea id="ne-text" class="nb-textarea" rows="4" placeholder="Notice text…"></textarea>
+      </div>
+    </div>
+    <div class="modal-btns" style="padding:12px 18px;display:flex;gap:8px">
+      <button class="mbtn-save" style="flex:1" onclick="noticeSaveEdit()">💾 Save Changes</button>
+      <button class="mbtn-cancel" onclick="noticeCloseEditModal()">Cancel</button>
+      <button onclick="noticeDeleteFromModal()" style="padding:7px 14px;font-size:12px;font-weight:700;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;cursor:pointer">🗑 Delete</button>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE CONFIRM -->
 <div class="overlay" id="del-overlay">
   <div class="confirm-inner">
@@ -8561,7 +8597,7 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById('imp-btn').style.display='none'; }
 
 // ── INIT ──────────────────────────────────────────────────────────
-['modal-overlay','bulk-overlay','bulk-pickup-overlay','del-overlay','import-overlay','sync-overlay','be-overlay','vt-add-overlay'].forEach(id=>{
+['modal-overlay','bulk-overlay','bulk-pickup-overlay','del-overlay','import-overlay','sync-overlay','be-overlay','vt-add-overlay','notice-edit-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 // ── FX Converter ─────────────────────────────────────────────────
@@ -10613,53 +10649,33 @@ function noticeDelete(id){
   NOTICES=NOTICES.filter(n=>n.id!==id);
   saveNotices(); renderNotices(); renderPageNotices();
 }
+let _noticeEditingId = null;
 function noticeStartEdit(id){
-  // Collapse any other open inline editors first
-  document.querySelectorAll('.ni-edit-form').forEach(f=>f.remove());
-  document.querySelectorAll('.ni-view').forEach(v=>v.style.display='');
   const n=NOTICES.find(x=>x.id===id); if(!n) return;
-  const row=document.getElementById('ni-row-'+id); if(!row) return;
-  // Hide the view layer
-  row.querySelector('.ni-view').style.display='none';
-  // Build inline edit form
-  const form=document.createElement('div');
-  form.className='ni-edit-form';
-  form.innerHTML=`
-    <div style="display:flex;gap:8px;margin-bottom:7px">
-      <select class="nb-select nie-level" style="flex:1;margin:0">
-        <option value="info" ${n.level==='info'?'selected':''}>ℹ️  Info</option>
-        <option value="warn" ${n.level==='warn'?'selected':''}>⚠️  Warning</option>
-        <option value="urgent" ${n.level==='urgent'?'selected':''}>🚨  Urgent</option>
-      </select>
-      <select class="nb-select nie-cat" style="flex:1;margin:0">
-        <option value="all" ${(!n.cat||n.cat==='all')?'selected':''}>📋 All Pages</option>
-        <option value="vessels" ${n.cat==='vessels'?'selected':''}>🚢 Vessels Only</option>
-        <option value="containers" ${n.cat==='containers'?'selected':''}>📦 Containers Only</option>
-      </select>
-    </div>
-    <textarea class="nb-textarea nie-text" rows="3">${n.text.replace(/</g,'&lt;')}</textarea>
-    <div style="display:flex;gap:8px;margin-top:7px">
-      <button class="btn btn-green" style="flex:1;padding:6px;font-size:12px" onclick="noticeSaveEdit(${id})">💾 Save</button>
-      <button class="btn btn-ghost" style="padding:6px 14px;font-size:12px" onclick="noticeCancelEdit(${id})">Cancel</button>
-      <button style="padding:6px 12px;font-size:12px;border:1px solid #fca5a5;background:#fef2f2;color:#dc2626;border-radius:7px;cursor:pointer" onclick="noticeDelete(${id})">🗑 Delete</button>
-    </div>
-  `;
-  row.appendChild(form);
-  form.querySelector('.nie-text').focus();
+  _noticeEditingId = id;
+  document.getElementById('ne-level').value = n.level||'info';
+  document.getElementById('ne-cat').value   = n.cat||'all';
+  document.getElementById('ne-text').value  = n.text||'';
+  document.getElementById('notice-edit-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('ne-text').focus(), 80);
 }
-function noticeCancelEdit(id){
-  const row=document.getElementById('ni-row-'+id); if(!row) return;
-  row.querySelector('.ni-edit-form').remove();
-  row.querySelector('.ni-view').style.display='';
+function noticeCloseEditModal(){
+  _noticeEditingId = null;
+  document.getElementById('notice-edit-overlay').classList.remove('open');
 }
-function noticeSaveEdit(id){
-  const row=document.getElementById('ni-row-'+id); if(!row) return;
-  const text=(row.querySelector('.nie-text').value||'').trim(); if(!text) return;
-  const level=row.querySelector('.nie-level').value||'info';
-  const cat=row.querySelector('.nie-cat').value||'all';
-  const i=NOTICES.findIndex(x=>x.id===id); if(i<0) return;
+function noticeSaveEdit(){
+  if(_noticeEditingId===null) return;
+  const text=(document.getElementById('ne-text').value||'').trim(); if(!text) return;
+  const level=document.getElementById('ne-level').value||'info';
+  const cat=document.getElementById('ne-cat').value||'all';
+  const i=NOTICES.findIndex(x=>x.id===_noticeEditingId); if(i<0) return;
   NOTICES[i]={...NOTICES[i],level,cat,text};
-  saveNotices(); renderNotices(); renderPageNotices();
+  saveNotices(); noticeCloseEditModal(); renderNotices(); renderPageNotices();
+}
+function noticeDeleteFromModal(){
+  if(_noticeEditingId===null) return;
+  NOTICES=NOTICES.filter(n=>n.id!==_noticeEditingId);
+  saveNotices(); noticeCloseEditModal(); renderNotices(); renderPageNotices();
 }
 let _noticeFilter='all'; // 'all' | 'containers' | 'vessels'
 function noticeSetFilter(cat){
