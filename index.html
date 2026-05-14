@@ -4060,27 +4060,42 @@ function renderDashboard(){
 
   // ── Monthly Units per Consignee (stacked bar) ─────────────────────
   (function(){
-    // Build month × consignee matrix using Actual Arrival
+    // Derive a delivery month for every container:
+    //   1. ATA set        → use Actual Arrival month
+    //   2. No ATA         → extract mm/dd from Batch/Train (e.g. "Chengdu 5/8") + 25 days
+    //   3. Neither        → skip
+
+    function _batchDatePlusDays(batchName, days){
+      const m = (batchName||'').match(/\b(\d{1,2})\/(\d{1,2})\b/);
+      if(!m) return null;
+      const mo = parseInt(m[1],10), dy = parseInt(m[2],10);
+      if(mo<1||mo>12||dy<1||dy>31) return null;
+      const now = new Date(), cy = now.getFullYear(), cm = now.getMonth()+1;
+      const yr  = mo <= cm ? cy : cy - 1;
+      const d   = new Date(yr, mo-1, dy);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
     const monthSet = new Set();
     const conSet   = new Set();
     const matrix   = {}; // matrix[monthKey][consignee] = count
 
     CT.forEach(r => {
-      const d = parseDate(r['Actual Arrival']); if(!d) return;
       const con = (r['Consignee']||'').trim(); if(!con) return;
+      let d = parseDate(r['Actual Arrival']);
+      if(!d) d = _batchDatePlusDays(r['Batch / Train'], 25);
+      if(!d) return;
       const mk = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
       monthSet.add(mk); conSet.add(con);
       if(!matrix[mk]) matrix[mk]={};
       matrix[mk][con] = (matrix[mk][con]||0) + 1;
     });
 
-    // Also count containers without Actual Arrival but with ETA at Hub (pending)
-    // — use ETA month for forecasting (lighter shade, shown as pending)
-    // (omitted for simplicity — show only arrived)
-
     const months   = [...monthSet].sort();
     const cons     = [...conSet].sort();
-    const mLabels  = months.map(k=>{ const [y,m]=k.split('-'); return ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m]+' '+String(y).slice(2); });
+    const MN = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const mLabels  = months.map(k=>{ const [y,m]=k.split('-'); return MN[+m]+' '+y; });
 
     // Distinct color palette per consignee
     const PALETTE = ['#1e40af','#15803d','#b45309','#7c3aed','#0369a1','#be185d','#0891b2','#dc2626',
