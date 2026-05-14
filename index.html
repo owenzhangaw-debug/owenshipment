@@ -1592,6 +1592,13 @@ select:focus, input:focus {
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Monthly Units per Consignee<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">How many containers each consignee received each month (by Actual Arrival)</p>
+            <div class="chart-wrap" style="height:380px"><canvas id="consignee-monthly-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
             <h3 onclick="toggleChart(this)">Slot Reschedules by Trucker<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">Number of slot changes caused by trucker or consignee</p>
             <div class="chart-wrap" style="height:260px"><canvas id="slot-change-trucker-chart"></canvas></div>
@@ -2999,7 +3006,7 @@ let editId = null, delId = null;
 let importWB = null, importRows = [];
 let monthChart = null, batchChart = null, priceTruckerAvgChart = null, priceTruckerTotalChart = null, consigneeChart = null,
     slotEtaTruckerBatchChart = null, slotChangeTruckerChart = null, hubT1BatchChart = null,
-    lateArrivalBatchChart = null, lateArrivalTruckerChart = null;
+    lateArrivalBatchChart = null, lateArrivalTruckerChart = null, consigneeMonthlyChart = null;
 let delayTblMode = 'late';
 let _delayData = null;
 const _DL_REASON_KEY = 'owenz_dl_reasons_v1';
@@ -4050,6 +4057,83 @@ function renderDashboard(){
       }
     }
   });
+
+  // ── Monthly Units per Consignee (stacked bar) ─────────────────────
+  (function(){
+    // Build month × consignee matrix using Actual Arrival
+    const monthSet = new Set();
+    const conSet   = new Set();
+    const matrix   = {}; // matrix[monthKey][consignee] = count
+
+    CT.forEach(r => {
+      const d = parseDate(r['Actual Arrival']); if(!d) return;
+      const con = (r['Consignee']||'').trim(); if(!con) return;
+      const mk = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      monthSet.add(mk); conSet.add(con);
+      if(!matrix[mk]) matrix[mk]={};
+      matrix[mk][con] = (matrix[mk][con]||0) + 1;
+    });
+
+    // Also count containers without Actual Arrival but with ETA at Hub (pending)
+    // — use ETA month for forecasting (lighter shade, shown as pending)
+    // (omitted for simplicity — show only arrived)
+
+    const months   = [...monthSet].sort();
+    const cons     = [...conSet].sort();
+    const mLabels  = months.map(k=>{ const [y,m]=k.split('-'); return ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m]+' '+String(y).slice(2); });
+
+    // Distinct color palette per consignee
+    const PALETTE = ['#1e40af','#15803d','#b45309','#7c3aed','#0369a1','#be185d','#0891b2','#dc2626',
+                     '#d97706','#4f46e5','#047857','#9d174d','#1d4ed8','#16a34a','#92400e','#6d28d9'];
+    const datasets = cons.map((con, i) => ({
+      label: con,
+      data: months.map(mk => (matrix[mk]&&matrix[mk][con]) || 0),
+      backgroundColor: PALETTE[i % PALETTE.length],
+      borderRadius: 3,
+      borderSkipped: false,
+    }));
+
+    if(consigneeMonthlyChart) consigneeMonthlyChart.destroy();
+    const _cmEl = document.getElementById('consignee-monthly-chart');
+    if(!_cmEl || !months.length) return;
+
+    consigneeMonthlyChart = new Chart(_cmEl, {
+      type: 'bar',
+      data: { labels: mLabels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 20 } },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { size: 11 }, padding: 10, boxWidth: 12 }
+          },
+          datalabels: {
+            display: ctx => ctx.raw > 0,
+            anchor: 'center', align: 'center',
+            font: { size: 10, weight: '700' },
+            color: '#fff',
+            formatter: v => v
+          },
+          tooltip: {
+            callbacks: {
+              title: items => items[0].label,
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} unit${ctx.raw!==1?'s':''}`,
+              footer: items => {
+                const total = items.reduce((s,i)=>s+i.raw,0);
+                return 'Total: '+total+' units';
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,.06)' },
+               ticks: { stepSize: 5, callback: v => v+'u' } }
+        }
+      }
+    });
+  })();
 
   // ── Container Tracking Status Donut ──────────────────────────────
   const trackCounts = {
