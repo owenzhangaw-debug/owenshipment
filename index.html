@@ -2411,7 +2411,7 @@ select:focus, input:focus {
         <div class="rp-sec-hdr">
           <span class="rp-sec-num">周</span>
           <span class="rp-sec-title">周报生成 Weekly Report</span>
-          <input type="week" id="rp-week-sel" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"/>
+          <select id="rp-week-sel" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;background:#fff;color:#1e293b" onchange="rpPopulateWeekSel()"></select>
           <button class="rp-add-row-btn" onclick="rpGenerateWeekly()">⚡ 生成</button>
           <button onclick="rpExportWeekly()" style="padding:3px 11px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">↓ Export</button>
         </div>
@@ -10322,14 +10322,31 @@ function rpRenderHistory(){
 }
 
 // ── Weekly report ─────────────────────────────────────────────────
+function rpCurrentWeekKey(){
+  // Derive current week from today regardless of input state
+  return rpWeekKey(rpTodayISO());
+}
 function rpGenerateWeekly(){
   rpLoad();
-  const wk=document.getElementById('rp-week-sel')?.value||'';
-  if(!wk){ alert('Select a week first.'); return; }
-  const days=REPORTS.filter(r=>r.week===wk).sort((a,b)=>a.date.localeCompare(b.date));
+  let wk=document.getElementById('rp-week-sel')?.value||'';
+  // Fallback: input[type=week] unsupported in some browsers — derive from today
+  if(!wk) wk=rpCurrentWeekKey();
   const out=document.getElementById('rp-weekly-out');
   if(!out) return;
-  if(!days.length){ out.innerHTML='<div class="rp-empty">该周暂无报告。No reports for this week.</div>'; return; }
+
+  // Show all weeks with data if no specific week selected
+  const allWeeks=[...new Set(REPORTS.map(r=>r.week))].sort();
+  const days=REPORTS.filter(r=>r.week===wk).sort((a,b)=>a.date.localeCompare(b.date));
+
+  if(!REPORTS.length){
+    out.innerHTML='<div class="rp-empty" style="padding:18px 16px;color:#64748b;font-size:13px">📭 暂无保存的报告。请先在左侧填写每日工作内容并点击"Save"。<br><br>No reports saved yet. Fill in the daily work sections above and click Save first.</div>';
+    return;
+  }
+  if(!days.length){
+    const hints=allWeeks.map(w=>`<span onclick="(function(){var el=document.getElementById('rp-week-sel');if(el)el.value='${w}';rpGenerateWeekly();})()" style="cursor:pointer;padding:3px 9px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;color:#15803d;margin:2px">${w.replace('-W',' W')}</span>`).join(' ');
+    out.innerHTML=`<div class="rp-empty" style="padding:14px 16px;color:#64748b;font-size:13px">该周 (${wk}) 暂无报告。<br>有数据的周次：${hints||'无'}</div>`;
+    return;
+  }
   const [yr,wprt]=wk.split('-W');
   const jan1=new Date(parseInt(yr),0,1);
   const wStart=new Date(jan1.getTime()+(parseInt(wprt)-1)*7*86400000);
@@ -10389,12 +10406,31 @@ function rpExportWeekly(){
   a.click();
 }
 
+function rpPopulateWeekSel(){
+  rpLoad();
+  const sel=document.getElementById('rp-week-sel'); if(!sel) return;
+  const cur=sel.value||rpWeekKey(rpTodayISO());
+  // Build list: weeks from reports + surrounding weeks around today
+  const today=rpWeekKey(rpTodayISO());
+  const existing=[...new Set(REPORTS.map(r=>r.week).filter(Boolean))];
+  // Add current + prev 8 + next 4 weeks
+  const extras=[];
+  for(let i=-8;i<=4;i++){
+    const d=new Date(); d.setDate(d.getDate()+i*7);
+    extras.push(rpWeekKey(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')));
+  }
+  const allWks=[...new Set([...existing,...extras])].sort().reverse();
+  sel.innerHTML=allWks.map(w=>{
+    const [yr,wp]=w.split('-W');
+    return `<option value="${w}"${w===cur?' selected':''}>${'Week '+parseInt(wp)+', '+yr}</option>`;
+  }).join('');
+  if(!sel.value && allWks.length) sel.value=allWks.find(w=>w===today)||allWks[0];
+}
 function renderReports(){
   rpLoad();
   const dateEl=document.getElementById('rp-date');
   if(dateEl&&!dateEl.value){ dateEl.value=rpTodayISO(); rpUpdateDateLabel(); }
-  const wkEl=document.getElementById('rp-week-sel');
-  if(wkEl&&!wkEl.value){ wkEl.value=rpWeekKey(rpTodayISO()); }
+  rpPopulateWeekSel();
   rpRenderHistory();
 }
 
