@@ -2411,7 +2411,7 @@ select:focus, input:focus {
         <div class="rp-sec-hdr">
           <span class="rp-sec-num">周</span>
           <span class="rp-sec-title">周报生成 Weekly Report</span>
-          <select id="rp-week-sel" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;background:#fff;color:#1e293b" onchange="rpPopulateWeekSel()"></select>
+          <select id="rp-week-sel" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;background:#fff;color:#1e293b"></select>
           <button class="rp-add-row-btn" onclick="rpGenerateWeekly()">⚡ 生成</button>
           <button onclick="rpExportWeekly()" style="padding:3px 11px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">↓ Export</button>
         </div>
@@ -10327,24 +10327,25 @@ function rpCurrentWeekKey(){
   return rpWeekKey(rpTodayISO());
 }
 function rpGenerateWeekly(){
+  const out=document.getElementById('rp-weekly-out');
+  if(!out) return;
+  try{
   rpLoad();
   let wk=document.getElementById('rp-week-sel')?.value||'';
   // Fallback: input[type=week] unsupported in some browsers — derive from today
   if(!wk) wk=rpCurrentWeekKey();
-  const out=document.getElementById('rp-weekly-out');
-  if(!out) return;
 
   // Show all weeks with data if no specific week selected
   const allWeeks=[...new Set(REPORTS.map(r=>r.week))].sort();
   const days=REPORTS.filter(r=>r.week===wk).sort((a,b)=>a.date.localeCompare(b.date));
 
   if(!REPORTS.length){
-    out.innerHTML='<div class="rp-empty" style="padding:18px 16px;color:#64748b;font-size:13px">📭 暂无保存的报告。请先在左侧填写每日工作内容并点击"Save"。<br><br>No reports saved yet. Fill in the daily work sections above and click Save first.</div>';
+    out.innerHTML='<div style="padding:18px 16px;color:#64748b;font-size:13px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">📭 暂无保存的报告。请先在左侧填写每日工作内容并点击"Save"。<br><br>No reports saved yet. Fill in the daily work sections on the left and click <b>Save</b> first.</div>';
     return;
   }
   if(!days.length){
     const hints=allWeeks.map(w=>`<span onclick="(function(){var el=document.getElementById('rp-week-sel');if(el)el.value='${w}';rpGenerateWeekly();})()" style="cursor:pointer;padding:3px 9px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;color:#15803d;margin:2px">${w.replace('-W',' W')}</span>`).join(' ');
-    out.innerHTML=`<div class="rp-empty" style="padding:14px 16px;color:#64748b;font-size:13px">该周 (${wk}) 暂无报告。<br>有数据的周次：${hints||'无'}</div>`;
+    out.innerHTML=`<div style="padding:14px 16px;color:#64748b;font-size:13px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">该周 (${wk}) 暂无报告。<br>有数据的周次：<br><br>${hints||'无'}</div>`;
     return;
   }
   const [yr,wprt]=wk.split('-W');
@@ -10353,9 +10354,9 @@ function rpGenerateWeekly(){
   const wEnd=new Date(wStart.getTime()+6*86400000);
   const fmtD=d=>['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();
   const wLabel=`Week ${wprt} · ${fmtD(wStart)}–${fmtD(wEnd)}, ${yr}`;
-  // Aggregate s2 bookings by booking no
+  // Aggregate s2 bookings by booking no (fixed: push always inside same condition)
   const s2Map={};
-  days.forEach(r=>(r.s2||[]).forEach(b=>{ if(b.bookingNo) s2Map[b.bookingNo]=(s2Map[b.bookingNo]||[]); s2Map[b.bookingNo].push(b); }));
+  days.forEach(r=>(r.s2||[]).forEach(b=>{ if(b.bookingNo){ (s2Map[b.bookingNo]=s2Map[b.bookingNo]||[]).push(b); } }));
 
   function renderDayBlock(r){
     const parts=[];
@@ -10385,6 +10386,11 @@ function rpGenerateWeekly(){
         </div>`).join('')}
     </div>
   </div>`;
+  out.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){
+    out.innerHTML=`<div style="padding:14px 16px;color:#dc2626;font-size:13px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca">❌ Error generating report: ${e.message}<br><small style="color:#9ca3af">Check browser console (F12) for details.</small></div>`;
+    console.error('rpGenerateWeekly error:',e);
+  }
 }
 
 function rpExportWeekly(){
