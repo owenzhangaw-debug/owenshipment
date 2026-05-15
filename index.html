@@ -2258,6 +2258,7 @@ select:focus, input:focus {
   <div class="tbl-card">
     <div class="tbl-top">
       <h3>Vessel Tracker</h3><span id="vt-count"></span>
+      <button onclick="vtExportCSV()" style="margin-left:auto;padding:6px 14px;background:#0f766e;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" title="Export all vessel data to CSV">⬇ Export CSV</button>
     </div>
     <div id="vt-fin-kpi" style="padding:10px 16px 0"></div>
     <div class="tbl-scroll">
@@ -5346,6 +5347,27 @@ function getCTRows(){
 
 function ctSort(col){ ctSortCol===col?ctSortDir*=-1:(ctSortCol=col,ctSortDir=1); renderCT(); }
 function vtSort(col){ vtSortCol===col?vtSortDir*=-1:(vtSortCol=col,vtSortDir=1); renderVT(); }
+
+function vtExportCSV(){
+  const cols = ['CY','Port','POD','Carrier','Booking / BC No.','Container Qty','Vessel Name',
+    'ETS (Departure)','ETA (Arrival)','Port Cut-Off','Barge Date','Days to Cut-Off',
+    'Delay (days)','Status','Order No.','Remark','_addedAt'];
+  const esc = v => {
+    if(v===null||v===undefined) return '';
+    const s = String(v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? '"'+s.replace(/"/g,'""')+'"' : s;
+  };
+  const rows = [cols.map(esc).join(',')];
+  (VT||[]).forEach(r => rows.push(cols.map(c=>esc(r[c]??'')).join(',')));
+  const blob = new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const now  = new Date();
+  const ds   = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  a.href = url; a.download = `Vessel_Tracker_${ds}.csv`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
 
 // ══ RETURN CONTAINER PLANNING ══════════════════════════════════════
 const LS_RCP = 'owenz_rcp_v1';
