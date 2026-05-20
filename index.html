@@ -10488,31 +10488,37 @@ function dvTruckerStyle(t){
   return `background:${c.bg};border-color:${c.border};color:${c.text}`;
 }
 
-// Parse "DD-MMM HH:MM" → ISO date string "YYYY-MM-DD"
-// Assumes current year or next if month already past
+// Parse slot string → ISO date "YYYY-MM-DD"
+// Handles: "2026/5/22 13:00", "2026-05-22 13:00", "22-May 13:00", "22-May-2026"
 function dvParseSlot(s){
   if(!s) return null;
-  const m=s.match(/^(\d{1,2})-([A-Za-z]{3})/);
-  if(!m) return null;
-  const months={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
-  const mo=months[m[2].charAt(0).toUpperCase()+m[2].slice(1).toLowerCase()];
-  if(!mo) return null;
-  const day=parseInt(m[1]);
-  const now=new Date();
-  // Assign year: if month < current month by more than 6 months, use next year; else current year
-  let yr=now.getFullYear();
-  const diff=mo-now.getMonth()-1; // months from now
-  if(diff < -6) yr++;
-  return `${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  // Format: YYYY/M/D ... or YYYY-MM-DD ...
+  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(m) return `${m[1]}-${String(parseInt(m[2])).padStart(2,'0')}-${String(parseInt(m[3])).padStart(2,'0')}`;
+  // Format: DD-MMM HH:MM or DD-MMM-YYYY
+  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  m=s.match(/^(\d{1,2})-([A-Za-z]{3})(?:-(\d{4}))?/);
+  if(m){
+    const mo=months[m[2].toLowerCase()]; if(!mo) return null;
+    const day=parseInt(m[1]);
+    let yr=m[3]?parseInt(m[3]):new Date().getFullYear();
+    return `${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
+  return null;
 }
 
-// Parse "DD-MMM-YYYY" → ISO
+// Parse arrival date string → ISO "YYYY-MM-DD"
+// Handles: "24-Jan-2026", "2026/1/24", "2026-01-24"
 function dvParseArrival(s){
   if(!s) return null;
-  const months={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
-  const m=s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
-  if(!m) return null;
-  return `${m[3]}-${String(months[m[2]]).padStart(2,'0')}-${String(parseInt(m[1])).padStart(2,'0')}`;
+  // YYYY/M/D or YYYY-MM-DD
+  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(m) return `${m[1]}-${String(parseInt(m[2])).padStart(2,'0')}-${String(parseInt(m[3])).padStart(2,'0')}`;
+  // DD-MMM-YYYY
+  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  m=s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+  if(m){ const mo=months[m[2].toLowerCase()]; return mo?`${m[3]}-${String(mo).padStart(2,'0')}-${String(parseInt(m[1])).padStart(2,'0')}`:null; }
+  return null;
 }
 
 function dvTodayISO(){
