@@ -1272,6 +1272,7 @@ select:focus, input:focus {
     <button onclick="showPage('notices')">Notices</button>
     <button onclick="showPage('reports')">Reports</button>
     <button onclick="showPage('feedback')">Feedback</button>
+    <button onclick="showPage('dispatch')" style="background:linear-gradient(90deg,#0f766e,#0891b2);color:#fff;font-weight:700">📦 Dispatch</button>
     <span class="nav-divider"></span>
     <!-- Tools dropdown -->
     <div class="nav-tools-wrap" id="nav-tools-wrap">
@@ -2555,6 +2556,34 @@ select:focus, input:focus {
   <div id="fb-content" style="padding:16px;max-width:1100px;margin:0 auto"></div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     DISPATCH VIEW PAGE
+══════════════════════════════════════════════════════════ -->
+<div id="page-dispatch" class="page">
+  <div id="dv-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
+    <span style="font-size:20px">📦</span>
+    <h2 style="margin:0;font-size:16px;font-weight:800;color:#003534">Dispatch View</h2>
+    <span id="dv-count-badge" style="font-size:11px;background:#f0fdf4;color:#15803d;border-radius:10px;padding:2px 10px;font-weight:700"></span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
+      <input type="date" id="dv-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderDispatch()">
+      <label style="font-size:12px;color:#64748b;font-weight:600">To</label>
+      <input type="date" id="dv-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderDispatch()">
+      <button onclick="dvSetRange('may23')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">May 23 – Jun 3</button>
+      <button onclick="dvSetRange('thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+      <button onclick="dvSetRange('next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+      <button onclick="dvSetRange('all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All Pending</button>
+      <select id="dv-trucker-filter" onchange="renderDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+        <option value="">All Truckers</option>
+      </select>
+      <select id="dv-consignee-filter" onchange="renderDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+        <option value="">All Consignees</option>
+      </select>
+    </div>
+  </div>
+  <div id="dv-content" style="padding:16px;max-width:1300px;margin:0 auto"></div>
+</div>
+
 </main>
 
 <!-- SLOT EMAIL GENERATOR MODAL -->
@@ -3138,6 +3167,7 @@ function showPage(p){
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='feedback') renderFeedback();
   if(p==='reports') renderReports();
+  if(p==='dispatch') renderDispatch();
 }
 function _contextAdd(){
   if(_currentPage==='vessels') openAddVesselModal();
@@ -10438,6 +10468,237 @@ function renderReports(){
   if(dateEl&&!dateEl.value){ dateEl.value=rpTodayISO(); rpUpdateDateLabel(); }
   rpPopulateWeekSel();
   rpRenderHistory();
+}
+
+// ══════════════════════════════════════════════════════════
+// DISPATCH VIEW
+// ══════════════════════════════════════════════════════════
+
+// Trucker colour palette
+const DV_TRUCKER_COLORS = {
+  'KK':         {bg:'#dbeafe',border:'#93c5fd',text:'#1e40af'},
+  'Avrom':      {bg:'#fef3c7',border:'#fcd34d',text:'#92400e'},
+  'Pinzari':    {bg:'#ede9fe',border:'#c4b5fd',text:'#5b21b6'},
+  'globaltl.pl':{bg:'#d1fae5',border:'#6ee7b7',text:'#065f46'},
+  'JB':         {bg:'#fee2e2',border:'#fca5a5',text:'#991b1b'},
+  'Isar':       {bg:'#fce7f3',border:'#f9a8d4',text:'#9d174d'},
+};
+function dvTruckerStyle(t){
+  const c=DV_TRUCKER_COLORS[t]||{bg:'#f1f5f9',border:'#cbd5e1',text:'#475569'};
+  return `background:${c.bg};border-color:${c.border};color:${c.text}`;
+}
+
+// Parse "DD-MMM HH:MM" → ISO date string "YYYY-MM-DD"
+// Assumes current year or next if month already past
+function dvParseSlot(s){
+  if(!s) return null;
+  const m=s.match(/^(\d{1,2})-([A-Za-z]{3})/);
+  if(!m) return null;
+  const months={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  const mo=months[m[2].charAt(0).toUpperCase()+m[2].slice(1).toLowerCase()];
+  if(!mo) return null;
+  const day=parseInt(m[1]);
+  const now=new Date();
+  // Assign year: if month < current month by more than 6 months, use next year; else current year
+  let yr=now.getFullYear();
+  const diff=mo-now.getMonth()-1; // months from now
+  if(diff < -6) yr++;
+  return `${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+
+// Parse "DD-MMM-YYYY" → ISO
+function dvParseArrival(s){
+  if(!s) return null;
+  const months={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  const m=s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+  if(!m) return null;
+  return `${m[3]}-${String(months[m[2]]).padStart(2,'0')}-${String(parseInt(m[1])).padStart(2,'0')}`;
+}
+
+function dvTodayISO(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dvAddDays(iso,n){
+  const d=new Date(iso); d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dvFmtDate(iso){
+  const d=new Date(iso+'T00:00:00');
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return {full:`${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`, dow:days[d.getDay()], short:`${months[d.getMonth()]} ${d.getDate()}`};
+}
+
+function dvSetRange(key){
+  const today=dvTodayISO();
+  let from='',to='';
+  if(key==='may23'){ from='2026-05-23'; to='2026-06-03'; }
+  else if(key==='thisweek'){
+    const d=new Date(); const dow=d.getDay();
+    const mon=new Date(d); mon.setDate(d.getDate()-(dow===0?6:dow-1));
+    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+    from=mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');
+    to=sun.getFullYear()+'-'+String(sun.getMonth()+1).padStart(2,'0')+'-'+String(sun.getDate()).padStart(2,'0');
+  }
+  else if(key==='next2w'){ from=today; to=dvAddDays(today,13); }
+  else if(key==='all'){ from=''; to=''; }
+  const f=document.getElementById('dv-from'); if(f) f.value=from;
+  const t=document.getElementById('dv-to'); if(t) t.value=to;
+  renderDispatch();
+}
+
+function renderDispatch(){
+  ctLoad(); // ensure CT is loaded
+  const content=document.getElementById('dv-content');
+  if(!content) return;
+
+  // Read filters
+  const fromEl=document.getElementById('dv-from');
+  const toEl=document.getElementById('dv-to');
+  const truckEl=document.getElementById('dv-trucker-filter');
+  const consEl=document.getElementById('dv-consignee-filter');
+  let fromISO=fromEl?.value||'';
+  let toISO=toEl?.value||'';
+  const truckFilter=truckEl?.value||'';
+  const consFilter=consEl?.value||'';
+
+  // Set default date range (May 23 – Jun 3) on first open
+  if(!fromISO && !toISO){
+    if(fromEl){ fromEl.value='2026-05-23'; fromISO='2026-05-23'; }
+    if(toEl){ toEl.value='2026-06-03'; toISO='2026-06-03'; }
+  }
+
+  // Build enriched rows: only UNDELIVERED containers (no Actual Arrival)
+  const rows=CT.map(r=>{
+    const slotISO=dvParseSlot(r['Scheduled Slot']||'');
+    const arrISO=dvParseArrival(r['Actual Arrival']||'');
+    const etaISO=dvParseSlot(r['ETA at Hub']||'');
+    const delivDate=slotISO||etaISO||null;
+    return {...r, _slotISO:slotISO, _arrISO:arrISO, _delivDate:delivDate};
+  }).filter(r=>r._delivDate && !r._arrISO); // only undelivered rows with a scheduled date
+
+  // Populate filter dropdowns
+  const allTruckers=[...new Set(rows.map(r=>r['Trucker']||'').filter(Boolean))].sort();
+  const allConsignees=[...new Set(rows.map(r=>r['Consignee']||'').filter(Boolean))].sort();
+  if(truckEl){
+    const prevT=truckEl.value;
+    truckEl.innerHTML='<option value="">All Truckers</option>'+allTruckers.map(t=>`<option value="${t}"${t===prevT?' selected':''}>${t}</option>`).join('');
+  }
+  if(consEl){
+    const prevC=consEl.value;
+    consEl.innerHTML='<option value="">All Consignees</option>'+allConsignees.map(c=>`<option value="${c}"${c===prevC?' selected':''}>${c}</option>`).join('');
+  }
+
+  // Apply filters
+  let filtered=rows;
+  if(fromISO) filtered=filtered.filter(r=>r._delivDate>=fromISO);
+  if(toISO) filtered=filtered.filter(r=>r._delivDate<=toISO);
+  if(truckFilter) filtered=filtered.filter(r=>r['Trucker']===truckFilter);
+  if(consFilter) filtered=filtered.filter(r=>r['Consignee']===consFilter);
+
+  // Badge
+  const badge=document.getElementById('dv-count-badge');
+  if(badge) badge.textContent=`${filtered.length} container${filtered.length!==1?'s':''}`;
+
+  if(!filtered.length){
+    content.innerHTML=`<div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px">
+      No containers found for the selected range.<br><br>
+      <button onclick="dvSetRange('all')" style="padding:6px 16px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:7px;font-size:13px;cursor:pointer">Show All Pending</button>
+    </div>`;
+    return;
+  }
+
+  // Group by date
+  const byDate={};
+  filtered.forEach(r=>{
+    const d=r._delivDate;
+    if(!byDate[d]) byDate[d]=[];
+    byDate[d].push(r);
+  });
+  const sortedDates=Object.keys(byDate).sort();
+  const today=dvTodayISO();
+
+  const html=sortedDates.map(date=>{
+    const conts=byDate[date];
+    const arrived=conts.filter(r=>r._arrISO).length;
+    const pending=conts.length-arrived;
+    const dateInfo=dvFmtDate(date);
+    const isToday=date===today;
+    const isPast=date<today;
+    const isFuture=date>today;
+
+    // Group by consignee within this date
+    const byConsignee={};
+    conts.forEach(r=>{
+      const c=r['Consignee']||'(unknown)';
+      if(!byConsignee[c]) byConsignee[c]=[];
+      byConsignee[c].push(r);
+    });
+
+    const consCards=Object.entries(byConsignee).map(([cons,items])=>{
+      // Group by trucker within consignee
+      const byTrucker={};
+      items.forEach(r=>{
+        const t=r['Trucker']||'(unknown)';
+        if(!byTrucker[t]) byTrucker[t]=[];
+        byTrucker[t].push(r);
+      });
+
+      const truckerRows=Object.entries(byTrucker).map(([trucker,cboxes])=>{
+        const ts=dvTruckerStyle(trucker);
+        // Group by batch
+        const byBatch={};
+        cboxes.forEach(r=>{ const b=r['Batch / Train']||''; if(!byBatch[b]) byBatch[b]=[]; byBatch[b].push(r); });
+
+        const batchRows=Object.entries(byBatch).map(([batch,bboxes])=>{
+          const nums=bboxes.map(r=>{
+            const slot=r['Scheduled Slot']||'';
+            const eta=r['ETA at Hub']||'';
+            const deadl=r['Deadline']||'';
+            const tip=`Slot: ${slot||'–'} | ETA: ${eta||'–'} | Deadline: ${deadl||'–'}`;
+            return `<span title="${tip}" style="display:inline-block;padding:2px 8px;margin:2px 2px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;font-family:monospace;color:#374151">⏳ ${r['Container No.']||'–'}</span>`;
+          }).join('');
+          return `<div style="margin-bottom:8px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.5px;margin-bottom:3px">🚂 ${batch||'(no batch)'} &nbsp;<span style="font-weight:400;color:#cbd5e1">${bboxes.length} ctr</span></div>
+            <div style="line-height:1.8">${nums}</div>
+          </div>`;
+        }).join('');
+
+        return `<div style="margin-bottom:10px;padding:8px 10px;border-radius:7px;border:1px solid;${ts}">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">🚛 ${trucker} &nbsp;<span style="font-weight:500;font-size:10px">(${cboxes.length} ctr)</span></div>
+          ${batchRows}
+        </div>`;
+      }).join('');
+
+      return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;min-width:260px;flex:1 1 280px;max-width:420px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:800;color:#003534">${cons}</span>
+          <span style="font-size:10px;background:#fef9c3;color:#854d0e;border-radius:6px;padding:1px 8px;font-weight:700">⏳ ${items.length} pending</span>
+        </div>
+        ${truckerRows}
+      </div>`;
+    }).join('');
+
+    const dateBg=isToday?'linear-gradient(90deg,#003534,#0f766e)':isPast?'#f1f5f9':'#fff';
+    const dateTextColor=isToday?'#fff':isPast?'#6b7280':'#1e293b';
+    const pendingBadge=`<span style="font-size:11px;background:${isToday?'rgba(255,255,255,.15)':'#fef9c3'};color:${isToday?'#fff':'#854d0e'};border-radius:8px;padding:2px 10px;font-weight:700">⏳ ${conts.length} pending</span>`;
+    const pastLabel=isPast&&!isToday?'<span style="font-size:10px;background:#fef2f2;color:#dc2626;border-radius:6px;padding:1px 8px;font-weight:700">PAST DUE</span>':'';
+    const todayLabel=isToday?'<span style="font-size:10px;background:#fef9c3;color:#92400e;border-radius:6px;padding:1px 8px;font-weight:800">TODAY</span>':'';
+
+    return `<div style="margin-bottom:20px" id="dv-date-${date}">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px 10px 0 0;background:${dateBg};flex-wrap:wrap">
+        <span style="font-size:16px;font-weight:900;color:${dateTextColor}">${dateInfo.full}</span>
+        ${todayLabel}${pastLabel}
+        ${pendingBadge}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">
+        ${consCards}
+      </div>
+    </div>`;
+  }).join('');
+
+  content.innerHTML=html||'<div style="padding:40px;text-align:center;color:#94a3b8">No data to display.</div>';
 }
 
 function renderFeedback(){
