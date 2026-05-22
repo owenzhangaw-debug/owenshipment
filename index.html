@@ -9913,32 +9913,101 @@ async function t1sExtractText(file){
   for(let i=1;i<=pdf.numPages;i++){
     const pg=await pdf.getPage(i);
     const content=await pg.getTextContent();
-    // Join items preserving spacing; use newline between each item
-    txt+=content.items.map(it=>it.str).join(' ')+'\n';
+    // Preserve item positions: sort by Y then X so reading order is correct
+    const items=[...content.items].sort((a,b)=>{
+      const dy=Math.round(b.transform[5]/4)*4 - Math.round(a.transform[5]/4)*4;
+      return dy!==0?dy:a.transform[4]-b.transform[4];
+    });
+    // Build lines by grouping items with similar Y position
+    let lines=[]; let curY=null; let curLine=[];
+    items.forEach(it=>{
+      const y=Math.round(it.transform[5]/4)*4;
+      if(curY===null||Math.abs(y-curY)>4){ if(curLine.length) lines.push(curLine.join(' ')); curLine=[]; curY=y; }
+      if(it.str.trim()) curLine.push(it.str);
+    });
+    if(curLine.length) lines.push(curLine.join(' '));
+    txt+=lines.join('\n')+'\n';
   }
   return txt;
 }
 
-function t1sParse(txt){
-  // MRN: 2 digits + 2 uppercase letters + 10-13 chars alphanumeric
-  const mrnM=txt.match(/\b(\d{2}[A-Z]{2}\d{10,13}[A-Z0-9]{0,2})\b/);
-  const mrn=mrnM?mrnM[1]:'—';
+function t1sParse(txt, filename){
+  // ── MRN ──────────────────────────────────────────────────────────
+  // EU T1 MRN: 18 chars total = 2 year digits + 2 country letters + 13 alphanumeric + 1 check
+  // Pattern is flexible: ddCC + 13-14 alphanumeric
+  let mrn='—';
+  const mrnPatterns=[
+    /\b(\d{2}[A-Z]{2}[A-Z0-9]{13,14})\b/g,          // standard 18-char
+    /MRN[:\s#]*([A-Z0-9]{15,18})/i,                   // after "MRN" label
+    /mouvement[:\s]*([A-Z0-9]{15,18})/i,               // French
+    /referentie[:\s]*([A-Z0-9]{15,18})/i,              // Dutch
+  ];
+  for(const pat of mrnPatterns){
+    const m=[...txt.matchAll(pat)];
+    if(m.length){ mrn=m[0][1]; break; }
+  }
 
-  // Container number: 4 uppercase letters + 7 digits (standard ISO format)
-  const ctnAll=[...txt.matchAll(/\b([A-Z]{4}\d{7})\b/g)].map(m=>m[1]);
-  // prefer the one in the Beförderungsausrüstung section
-  const bef=txt.match(/Bef.rderungs(?:ausrüstung|ausrustung)[^\n]*([A-Z]{4}\d{7})/);
-  const container=bef?bef[1]:(ctnAll[0]||'—');
+  // ── Container number ─────────────────────────────────────────────
+  // ISO 6346: 3 owner letters + 1 category letter (U/J/Z) + 6 digits + 1 check digit = 11
+  // Displayed with/without space: NEPU4590631 or NEPU 459063-1 etc.
+  let container='—';
+  // Normalize: collapse spaces/hyphens between likely container parts
+  const normTxt=txt.replace(/([A-Z]{3,4})\s+(\d{6,7})/g,'$1$2');
+  const ctnAll=[...normTxt.matchAll(/\b([A-Z]{4}\d{6,7})\b/g)].map(m=>m[1]);
+  // Prefer one near "container" / "conteneur" / "Behälter" keyword
+  const ctxM=normTxt.match(/(?:container|conteneur|beh.lter|Beförderungs|Conteiner)[^\n]{0,60}([A-Z]{4}\d{6,7})/i);
+  container=ctxM?ctxM[1]:(ctnAll[0]||'—');
+  // Fallback: strip filename extension — often IS the container no.
+  if(container==='—'){
+    const fn=(filename||'').replace(/\.pdf$/i,'').toUpperCase().trim();
+    if(/^[A-Z]{4}\d{6,7}$/.test(fn)) container=fn;
+  }
 
-  // Packages: number after "Packstücke insg" or "Packst.cke insg"
-  const pkgM=txt.match(/Packst[üu]cke\s+insg[^\d]*(\d+)/);
-  const packages=pkgM?pkgM[1]:'—';
+  // ── Packages ─────────────────────────────────────────────────────
+  // DE: Packstücke insg / Packst. insg
+  // FR: Nombre total de colis / colis totaux
+  // NL: Totaal aantal colli
+  // EN: Total packages / Number of packages
+  let packages='—';
+  const pkgPatterns=[
+    /Packst[üu]cke?\s*(?:insg[^\d]*)?(\d+)/i,
+    /(?:Nombre\s+(?:total\s+)?de\s+)?[Cc]olis[\s:]*(\d+)/,
+    /(?:Totaal\s+)?aantal\s+colli[\s:]*(\d+)/i,
+    /total\s+(?:number\s+of\s+)?packages?[\s:]*(\d+)/i,
+    /nr\.\s+of\s+packages[\s:]*(\d+)/i,
+    /collo[\s:]*(\d{1,6})/i,
+  ];
+  for(const pat of pkgPatterns){
+    const m=txt.match(pat);
+    if(m){ packages=m[1]; break; }
+  }
+  // fallback: look for field 6 (total packages) context
+  if(packages==='—'){
+    const f6=txt.match(/\b6\b[^\d\n]{0,30}(\d{1,6})\b/);
+    if(f6) packages=f6[1];
+  }
 
-  // Weight: number (may use comma as decimal) after "Gesamtrohmasse"
-  const wgtM=txt.match(/Gesamtrohmasse[^\d]*(\d[\d\s,.]*\d)/);
-  const weight=wgtM?wgtM[1].trim():'—';
+  // ── Weight (kg) ──────────────────────────────────────────────────
+  // DE: Gesamtrohmasse / Rohmasse
+  // FR: Masse brute totale / Masse brute
+  // NL: Totale brutomassa / Brutomassa
+  // EN: Gross mass / Total gross weight
+  let weight='—';
+  const wgtPatterns=[
+    /Gesamtrohmasse[\s:]*(\d[\d\s.,]*)/i,
+    /Rohmasse[\s:]*(\d[\d\s.,]*)/i,
+    /[Mm]asse\s+brute(?:\s+totale)?[\s:]*(\d[\d\s.,]*)/,
+    /(?:Totale\s+)?[Bb]rutomassa[\s:]*(\d[\d\s.,]*)/,
+    /[Gg]ross\s+(?:mass|weight)[\s:]*(\d[\d\s.,]*)/i,
+    /(?:Total\s+)?[Gg]ross\s+[Ww]eight[\s:]*(\d[\d\s.,]*)/i,
+    /poids\s+brut[\s:]*(\d[\d\s.,]*)/i,
+  ];
+  for(const pat of wgtPatterns){
+    const m=txt.match(pat);
+    if(m){ weight=m[1].trim().replace(/\s+/g,''); break; }
+  }
 
-  return {mrn,container,packages,weight};
+  return {mrn,container,packages,weight,_rawTxt:txt};
 }
 
 function t1sCopyVal(val){
@@ -9954,29 +10023,37 @@ function t1sCopyAll(results){
   t1sCopyVal([hdr,...lines].join('\n'));
 }
 
+// Store raw texts for debug view
+let _t1sRawTexts={};
+
 async function t1sProcess(files){
   if(!files||!files.length) return;
+  _t1sRawTexts={};
   const resEl=document.getElementById('t1s-results');
   resEl.innerHTML=`<div style="padding:14px 0;color:#64748b;font-size:13px"><span class="t1s-spinner"></span> Scanning ${files.length} file${files.length>1?'s':''}…</div>`;
   const results=[];
   for(const f of files){
     try{
       const txt=await t1sExtractText(f);
-      const info=t1sParse(txt);
+      const info=t1sParse(txt, f.name);
+      _t1sRawTexts[f.name]=info._rawTxt||txt;
       results.push({filename:f.name,...info});
     }catch(e){
       results.push({filename:f.name,mrn:'Error: '+e.message,container:'—',packages:'—',weight:'—'});
     }
   }
-  // Render table
+  // Check if any fields still missing — offer debug
+  const anyMissing=results.some(r=>r.mrn==='—'||r.container==='—');
+
   const rows=results.map((r,i)=>`
     <tr>
       <td style="color:#64748b;font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.filename}">${r.filename}</td>
-      <td><span class="t1s-val">${r.mrn}</span><button class="t1s-copy" onclick="t1sCopyVal('${r.mrn}')">Copy</button></td>
-      <td><span class="t1s-val">${r.container}</span><button class="t1s-copy" onclick="t1sCopyVal('${r.container}')">Copy</button></td>
-      <td><span class="t1s-val">${r.packages}</span><button class="t1s-copy" onclick="t1sCopyVal('${r.packages}')">Copy</button></td>
-      <td><span class="t1s-val">${r.weight}</span><button class="t1s-copy" onclick="t1sCopyVal('${r.weight}')">Copy</button></td>
+      <td><span class="t1s-val"${r.mrn==='—'?' style="color:#f87171"':''}>${r.mrn}</span>${r.mrn!=='—'?`<button class="t1s-copy" onclick="t1sCopyVal('${r.mrn}')">Copy</button>`:''}</td>
+      <td><span class="t1s-val"${r.container==='—'?' style="color:#f87171"':''}>${r.container}</span>${r.container!=='—'?`<button class="t1s-copy" onclick="t1sCopyVal('${r.container}')">Copy</button>`:''}</td>
+      <td><span class="t1s-val">${r.packages}</span>${r.packages!=='—'?`<button class="t1s-copy" onclick="t1sCopyVal('${r.packages}')">Copy</button>`:''}</td>
+      <td><span class="t1s-val">${r.weight}</span>${r.weight!=='—'?`<button class="t1s-copy" onclick="t1sCopyVal('${r.weight}')">Copy</button>`:''}</td>
     </tr>`).join('');
+
   resEl.innerHTML=`
     <table class="t1s-table">
       <thead><tr>
@@ -9984,10 +10061,25 @@ async function t1sProcess(files){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
       <button class="t1s-copy-all" onclick="t1sCopyAll(${JSON.stringify(results).replace(/"/g,'&quot;')})">📋 Copy all as table (Excel-ready)</button>
-      <button style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:7px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#475569" onclick="document.getElementById('t1s-results').innerHTML='';document.getElementById('t1s-input').value=''">✕ Clear</button>
-    </div>`;
+      <button style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:7px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#475569" onclick="document.getElementById('t1s-results').innerHTML='';document.getElementById('t1s-input').value='';_t1sRawTexts={}">✕ Clear</button>
+      ${anyMissing?`<button style="font-size:11px;padding:4px 12px;border-radius:7px;border:1px solid #fcd34d;background:#fef9c3;cursor:pointer;color:#92400e;font-weight:700" onclick="t1sShowDebug()">🔍 Show extracted text (debug)</button>`:''}
+    </div>
+    <div id="t1s-debug" style="display:none;margin-top:12px"></div>`;
+}
+
+function t1sShowDebug(){
+  const el=document.getElementById('t1s-debug');
+  if(!el) return;
+  if(el.style.display!=='none'){ el.style.display='none'; return; }
+  const html=Object.entries(_t1sRawTexts).map(([name,txt])=>`
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:#003534;margin-bottom:4px">📄 ${name}</div>
+      <pre style="font-size:10px;background:#1e293b;color:#e2e8f0;padding:12px;border-radius:8px;overflow:auto;max-height:300px;white-space:pre-wrap;word-break:break-all">${(txt||'(no text extracted)').replace(/</g,'&lt;').slice(0,6000)}</pre>
+    </div>`).join('');
+  el.innerHTML=`<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px">🔍 Raw extracted text — share this so patterns can be fixed</div>${html}`;
+  el.style.display='block';
 }
 
 // ── REPORTS PAGE ─────────────────────────────────────────────────
