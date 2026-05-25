@@ -24,6 +24,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <style>
@@ -1830,6 +1831,7 @@ select:focus, input:focus {
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
 <button onclick="openBulkEditDirect()" style="padding:4px 11px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer" title="Bulk edit selected containers (or select all visible if none ticked)">✏️ Bulk Edit</button>
         <button onclick="openBulkPickup()" style="padding:4px 11px;font-size:11px;font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer" title="Bulk update Pickup Refs from Excel data">📥 Bulk Pickup Ref</button>
+        <button onclick="openSlotPaste()" style="padding:4px 11px;font-size:11px;font-weight:600;background:#fef9c3;color:#854d0e;border:1px solid #fde68a;border-radius:6px;cursor:pointer" title="Paste warehouse slot confirmations to update Scheduled Slot + Master B/L">📋 Paste Slots</button>
         <button onclick="temuSyncCT()" style="padding:4px 11px;font-size:11px;font-weight:700;background:#0c4a6e;color:#bae6fd;border:1px solid #0369a1;border-radius:6px;cursor:pointer" title="Sync ETA Mala, ETA Hub, Consignee from TEMU tracking sheet (599 containers)">🔄 Sync TEMU</button>
       </div>
     </div>
@@ -2722,6 +2724,29 @@ select:focus, input:focus {
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
       <button class="mbtn-cancel" onclick="closeBulkPickup()">Cancel</button>
       <button class="mbtn-save" onclick="applyBulkPickup()">↑ Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PASTE SLOTS MODAL ─────────────────────────────────────── -->
+<div class="overlay" id="slot-paste-overlay">
+  <div class="modal" style="max-width:640px;width:95%">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:20px">📋</span>
+      <h3 style="margin:0;font-size:15px;font-weight:800;color:#003534">Paste Warehouse Slots</h3>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin:0 0 10px">
+      Paste slot confirmations from warehouse system. Accepted formats:<br>
+      <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:11px">DD/MM/YYYY HH:MM  CONTAINER  BL1 [BL2 ...]</code>
+      &nbsp;or&nbsp;
+      <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:11px">MM/DD/YYYY HH:MM  CONTAINER  BL</code><br>
+      Lines that are just labels (e.g. "AMS", "BRU") are treated as warehouse tags — ignored for matching.
+    </p>
+    <textarea id="slot-paste-text" rows="16" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;resize:vertical" placeholder="08/06/2026 10:00  NEPU4598360  OYTM202604300333&#10;08/06/2026 12:00  SEGU4698096  OYTM202604303975&#10;..."></textarea>
+    <div id="slot-paste-preview" style="margin-top:8px;font-size:12px;min-height:20px;max-height:160px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="mbtn-cancel" onclick="closeSlotPaste()">Cancel</button>
+      <button style="padding:6px 18px;font-size:13px;font-weight:700;background:#003534;color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="applySlotPaste()">↑ Apply Slots</button>
     </div>
   </div>
 </div>
@@ -8508,6 +8533,83 @@ function openBulkPickup(){
   document.getElementById('bulk-pickup-overlay').classList.add('open');
 }
 function closeBulkPickup(){ document.getElementById('bulk-pickup-overlay').classList.remove('open'); }
+
+// ── PASTE SLOTS ────────────────────────────────────────────────────
+function openSlotPaste(){
+  document.getElementById('slot-paste-text').value='';
+  document.getElementById('slot-paste-preview').innerHTML='';
+  document.getElementById('slot-paste-overlay').classList.add('open');
+}
+function closeSlotPaste(){ document.getElementById('slot-paste-overlay').classList.remove('open'); }
+
+function _parseSlotPasteLines(raw){
+  // Parse lines like: "08/06/2026 10:00  NEPU4598360  OYTM202604300333 OYTM..."
+  // Returns array of {slot, container, bls[]}
+  const results=[];
+  const lines=raw.split('\n');
+  for(const line of lines){
+    const s=line.trim(); if(!s) continue;
+    // Skip pure label lines (no digits that look like a date or container)
+    if(!/\d/.test(s)) continue;
+    // Match date+time at start: DD/MM/YYYY HH:MM or MM/DD/YYYY HH:MM
+    const dtM=s.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2})/);
+    if(!dtM) continue;
+    const d=parseInt(dtM[1]), mo=parseInt(dtM[2]), yr=parseInt(dtM[3]), tm=dtM[4];
+    // Determine DD/MM vs MM/DD: if first number >12 it must be day
+    let day,month;
+    if(d>12){ day=d; month=mo; }         // definitely DD/MM
+    else if(mo>12){ day=mo; month=d; }   // definitely MM/DD
+    else{ day=d; month=mo; }             // assume DD/MM (European)
+    const slot=`${yr}/${month}/${day} ${tm}`;
+    // Rest of line after datetime
+    const rest=s.slice(dtM[0].length).trim();
+    const tokens=rest.split(/\s+/).filter(Boolean);
+    // First token that matches container pattern (4 letters + 6-7 digits)
+    const ctnIdx=tokens.findIndex(t=>/^[A-Z]{4}\d{6,7}$/.test(t));
+    if(ctnIdx<0) continue;
+    const container=tokens[ctnIdx];
+    // Remaining tokens that look like BL numbers (OYTM... or similar alphanumeric 10+)
+    const bls=tokens.slice(ctnIdx+1).filter(t=>/^[A-Z0-9]{8,}$/i.test(t));
+    results.push({slot,container,bls});
+  }
+  return results;
+}
+
+function applySlotPaste(){
+  const raw=document.getElementById('slot-paste-text').value;
+  const parsed=_parseSlotPasteLines(raw);
+  if(!parsed.length){
+    document.getElementById('slot-paste-preview').innerHTML='<span style="color:#dc2626">No valid lines found. Check format.</span>';
+    return;
+  }
+  // Build lookup: container no → CT index; also BL → CT index
+  const ctByNo={}, ctByBL={};
+  CT.forEach((r,i)=>{
+    if(r['Container No.']) ctByNo[r['Container No.'].toUpperCase().trim()]=i;
+    const bls=(r['Master B/L']||'').split(/[\s,]+/).filter(Boolean);
+    bls.forEach(b=>{ ctByBL[b.toUpperCase().trim()]=i; });
+  });
+  let updated=0, notFound=[];
+  parsed.forEach(({slot,container,bls})=>{
+    let idx=ctByNo[container.toUpperCase()];
+    // Fallback: try matching by BL
+    if(idx===undefined) bls.forEach(b=>{ if(idx===undefined) idx=ctByBL[b.toUpperCase()]; });
+    if(idx===undefined){ notFound.push(container); return; }
+    CT[idx]['Scheduled Slot']=slot;
+    // Update BL if currently empty or if we have more detail
+    if(bls.length){
+      const existing=(CT[idx]['Master B/L']||'').trim();
+      const newBL=bls.join(' ');
+      if(!existing) CT[idx]['Master B/L']=newBL;
+    }
+    updated++;
+  });
+  saveData(); renderCT();
+  const notFoundHtml=notFound.length?`<br><span style="color:#b45309">⚠ Not found (${notFound.length}): ${notFound.join(', ')}</span>`:'';
+  document.getElementById('slot-paste-preview').innerHTML=
+    `<span style="color:#15803d;font-weight:700">✅ Updated ${updated} container${updated!==1?'s':''}.</span>${notFoundHtml}`;
+  if(!notFound.length) setTimeout(closeSlotPaste, 1200);
+}
 function applyBulkPickup(){
   const textEl=document.getElementById('bulk-pickup-text');
   const batchEl=document.getElementById('bulk-pickup-batch');
@@ -8649,7 +8751,7 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
   document.getElementById('imp-btn').style.display='none'; }
 
 // ── INIT ──────────────────────────────────────────────────────────
-['modal-overlay','bulk-overlay','bulk-pickup-overlay','del-overlay','import-overlay','sync-overlay','be-overlay','vt-add-overlay','notice-edit-overlay'].forEach(id=>{
+['modal-overlay','bulk-overlay','bulk-pickup-overlay','slot-paste-overlay','del-overlay','import-overlay','sync-overlay','be-overlay','vt-add-overlay','notice-edit-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
 // ── FX Converter ─────────────────────────────────────────────────
@@ -9906,45 +10008,76 @@ function fbAspectBlock(sid, aspect, label, current, currentNote){
 let _t1sOpen=true;
 function t1sToggle(){ _t1sOpen=!_t1sOpen; document.getElementById('t1s-body').style.display=_t1sOpen?'':'none'; document.getElementById('t1s-toggle-ic').textContent=_t1sOpen?'▼':'▶'; }
 
-async function t1sExtractText(file){
+// Render one PDF page to canvas, return ImageData URL
+async function t1sRenderPageCanvas(page, scale){
+  const vp=page.getViewport({scale:scale||2.5});
+  const canvas=document.createElement('canvas');
+  canvas.width=vp.width; canvas.height=vp.height;
+  const ctx=canvas.getContext('2d');
+  await page.render({canvasContext:ctx,viewport:vp}).promise;
+  return canvas;
+}
+
+// OCR a canvas using Tesseract.js (German + English)
+let _t1sTesseractWorker=null;
+async function t1sGetWorker(){
+  if(_t1sTesseractWorker) return _t1sTesseractWorker;
+  _t1sTesseractWorker=await Tesseract.createWorker(['deu','eng'],1,{
+    workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+    langPath:'https://tessdata.projectnaptha.com/4.0.0',
+    corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js',
+    logger: ()=>{},
+  });
+  return _t1sTesseractWorker;
+}
+
+async function t1sExtractText(file, onStatus){
   const buf=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+
+  // Step 1: Try native text extraction (fast)
   let txt='';
-  for(let i=1;i<=pdf.numPages;i++){
+  for(let i=1;i<=Math.min(pdf.numPages,2);i++){
     const pg=await pdf.getPage(i);
     const content=await pg.getTextContent();
-    // Preserve item positions: sort by Y then X so reading order is correct
-    const items=[...content.items].sort((a,b)=>{
-      const dy=Math.round(b.transform[5]/4)*4 - Math.round(a.transform[5]/4)*4;
-      return dy!==0?dy:a.transform[4]-b.transform[4];
-    });
-    // Build lines by grouping items with similar Y position
-    let lines=[]; let curY=null; let curLine=[];
-    items.forEach(it=>{
-      const y=Math.round(it.transform[5]/4)*4;
-      if(curY===null||Math.abs(y-curY)>4){ if(curLine.length) lines.push(curLine.join(' ')); curLine=[]; curY=y; }
-      if(it.str.trim()) curLine.push(it.str);
-    });
-    if(curLine.length) lines.push(curLine.join(' '));
-    txt+=lines.join('\n')+'\n';
+    txt+=content.items.map(it=>it.str).join(' ')+'\n';
   }
-  return txt;
+
+  // Step 2: Detect CID-encoded garbage (no ToUnicode table)
+  // A readable page has real words; garbled has very few ASCII letters
+  const asciiLetters=(txt.match(/[A-Za-z]/g)||[]).length;
+  const totalChars=txt.replace(/\s/g,'').length;
+  const isGarbled=totalChars>50 && asciiLetters/totalChars<0.3;
+
+  if(!isGarbled) return txt;
+
+  // Step 3: Fall back to OCR — render page 1 and optionally page 2
+  if(onStatus) onStatus('🔍 OCR mode (font encoding issue) — please wait…');
+  const worker=await t1sGetWorker();
+  let ocrTxt='';
+  const pagesToOCR=Math.min(pdf.numPages,2);
+  for(let i=1;i<=pagesToOCR;i++){
+    const pg=await pdf.getPage(i);
+    const canvas=await t1sRenderPageCanvas(pg,2.5);
+    const {data:{text}}=await worker.recognize(canvas);
+    ocrTxt+=text+'\n';
+  }
+  return ocrTxt;
 }
 
 function t1sParse(txt, filename){
   // ── MRN ──────────────────────────────────────────────────────────
-  // EU T1 MRN: 18 chars total = 2 year digits + 2 country letters + 13 alphanumeric + 1 check
-  // Pattern is flexible: ddCC + 13-14 alphanumeric
+  // EU T1 MRN: 18 chars = 2 year digits + 2 country letters + 13 alphanumeric + 1 check
   let mrn='—';
   const mrnPatterns=[
-    /\b(\d{2}[A-Z]{2}[A-Z0-9]{13,14})\b/g,          // standard 18-char
-    /MRN[:\s#]*([A-Z0-9]{15,18})/i,                   // after "MRN" label
-    /mouvement[:\s]*([A-Z0-9]{15,18})/i,               // French
-    /referentie[:\s]*([A-Z0-9]{15,18})/i,              // Dutch
+    /\b(\d{2}[A-Z]{2}[A-Z0-9]{13,14})\b/,
+    /MRN[:\s#]*([A-Z0-9]{15,18})/i,
+    /mouvement[:\s]*([A-Z0-9]{15,18})/i,
+    /referentie[:\s]*([A-Z0-9]{15,18})/i,
   ];
   for(const pat of mrnPatterns){
-    const m=[...txt.matchAll(pat)];
-    if(m.length){ mrn=m[0][1]; break; }
+    const m=txt.match(pat);
+    if(m){ mrn=m[1]; break; }
   }
 
   // ── Container number ─────────────────────────────────────────────
@@ -9963,48 +10096,46 @@ function t1sParse(txt, filename){
     if(/^[A-Z]{4}\d{6,7}$/.test(fn)) container=fn;
   }
 
-  // ── Packages ─────────────────────────────────────────────────────
-  // DE: Packstücke insg / Packst. insg
-  // FR: Nombre total de colis / colis totaux
-  // NL: Totaal aantal colli
-  // EN: Total packages / Number of packages
-  let packages='—';
-  const pkgPatterns=[
-    /Packst[üu]cke?\s*(?:insg[^\d]*)?(\d+)/i,
-    /(?:Nombre\s+(?:total\s+)?de\s+)?[Cc]olis[\s:]*(\d+)/,
-    /(?:Totaal\s+)?aantal\s+colli[\s:]*(\d+)/i,
-    /total\s+(?:number\s+of\s+)?packages?[\s:]*(\d+)/i,
-    /nr\.\s+of\s+packages[\s:]*(\d+)/i,
-    /collo[\s:]*(\d{1,6})/i,
-  ];
-  for(const pat of pkgPatterns){
-    const m=txt.match(pat);
-    if(m){ packages=m[1]; break; }
-  }
-  // fallback: look for field 6 (total packages) context
-  if(packages==='—'){
-    const f6=txt.match(/\b6\b[^\d\n]{0,30}(\d{1,6})\b/);
-    if(f6) packages=f6[1];
+  // ── Packages & Weight ────────────────────────────────────────────
+  // German T1 OCR quirk: "positions packages weight" numbers appear on the SAME line
+  // as address data because of multi-column PDF layout.
+  // e.g. "RUE DE L'AEROPOSTALE, 1 30 319 6721,49"
+  // Weight is unique: it uses a comma decimal (6721,49). Packages is the integer before it.
+  let packages='—', weight='—';
+
+  // Step 1: Find weight — German decimal uses comma (e.g. 6721,49)
+  const wgtM=txt.match(/\b(\d{2,7},\d{1,3})\b/);
+  if(wgtM){
+    weight=wgtM[1];
+    // Step 2: Packages = integer immediately before weight on same run of text
+    const beforeWgt=txt.slice(0,txt.indexOf(wgtM[1]));
+    const pkgM=beforeWgt.match(/\b(\d{2,5})\s*$/);
+    if(pkgM) packages=pkgM[1];
   }
 
-  // ── Weight (kg) ──────────────────────────────────────────────────
-  // DE: Gesamtrohmasse / Rohmasse
-  // FR: Masse brute totale / Masse brute
-  // NL: Totale brutomassa / Brutomassa
-  // EN: Gross mass / Total gross weight
-  let weight='—';
-  const wgtPatterns=[
-    /Gesamtrohmasse[\s:]*(\d[\d\s.,]*)/i,
-    /Rohmasse[\s:]*(\d[\d\s.,]*)/i,
-    /[Mm]asse\s+brute(?:\s+totale)?[\s:]*(\d[\d\s.,]*)/,
-    /(?:Totale\s+)?[Bb]rutomassa[\s:]*(\d[\d\s.,]*)/,
-    /[Gg]ross\s+(?:mass|weight)[\s:]*(\d[\d\s.,]*)/i,
-    /(?:Total\s+)?[Gg]ross\s+[Ww]eight[\s:]*(\d[\d\s.,]*)/i,
-    /poids\s+brut[\s:]*(\d[\d\s.,]*)/i,
-  ];
-  for(const pat of wgtPatterns){
-    const m=txt.match(pat);
-    if(m){ weight=m[1].trim().replace(/\s+/g,''); break; }
+  // Fallback: explicit label patterns
+  if(packages==='—'){
+    const pkgPatterns=[
+      /Packst[üuiI]{1,2}cke?\s*(?:insg\.?)?[\s:,]*(\d+)/i,
+      /(?:Nombre\s+(?:total\s+)?de\s+)?[Cc]olis[\s:]*(\d+)/,
+      /(?:Totaal\s+)?aantal\s+colli[\s:]*(\d+)/i,
+      /total\s+(?:number\s+of\s+)?packages?[\s:]*(\d+)/i,
+      /collo[\s:]*(\d{1,6})/i,
+    ];
+    for(const pat of pkgPatterns){
+      const m=txt.match(pat); if(m){ packages=m[1]; break; }
+    }
+  }
+  if(weight==='—'){
+    const wgtPatterns=[
+      /Gesamtrohmasse\s*\(kg\)[^\d\n]{0,20}([\d.]+)/i,
+      /Gesamtrohmasse[\s:,]*([\d.]+)/i,
+      /[Mm]asse\s+brute[^\d]*([\d.]+)/,
+      /[Gg]ross\s+(?:mass|weight)[\s:]*([\d.]+)/i,
+    ];
+    for(const pat of wgtPatterns){
+      const m=txt.match(pat); if(m){ weight=m[1].trim(); break; }
+    }
   }
 
   return {mrn,container,packages,weight,_rawTxt:txt};
@@ -10034,7 +10165,8 @@ async function t1sProcess(files){
   const results=[];
   for(const f of files){
     try{
-      const txt=await t1sExtractText(f);
+      const statusFn=(msg)=>{ resEl.innerHTML=`<div style="padding:14px 0;color:#64748b;font-size:13px"><span class="t1s-spinner"></span> ${f.name}: ${msg}</div>`; };
+      const txt=await t1sExtractText(f, statusFn);
       const info=t1sParse(txt, f.name);
       _t1sRawTexts[f.name]=info._rawTxt||txt;
       results.push({filename:f.name,...info});
