@@ -1266,14 +1266,13 @@ select:focus, input:focus {
   <div class="brand">Owen Zhang</div>
   <nav>
     <button class="active" onclick="showPage('dashboard')">Dashboard</button>
-    <button onclick="showPage('containers')">Containers</button>
-    <button onclick="showPage('scanner')">T1 Scanner</button>
-    <button onclick="showPage('vessels')">Vessels</button>
-    <button onclick="showPage('planning')">Planning</button>
     <button onclick="showPage('notices')">Notices</button>
+    <button onclick="showPage('containers')">Containers</button>
+    <button onclick="showPage('dispatch')">Dispatch</button>
+    <button onclick="showPage('vessels')">Vessels</button>
     <button onclick="showPage('reports')">Reports</button>
+    <button onclick="showPage('scanner')">T1 Scanner</button>
     <button onclick="showPage('feedback')">Feedback</button>
-    <button onclick="showPage('dispatch')" style="background:linear-gradient(90deg,#0f766e,#0891b2);color:#fff;font-weight:700">📦 Dispatch</button>
     <span class="nav-divider"></span>
     <!-- Tools dropdown -->
     <div class="nav-tools-wrap" id="nav-tools-wrap">
@@ -1285,23 +1284,6 @@ select:focus, input:focus {
         <button onclick="autoGenerateSlots();closeNavTools()">⚡ Auto Slots</button>
         <button onclick="openSlotEmails();closeNavTools()">📧 Slot Emails</button>
         <button id="sync-btn" onclick="openSync();closeNavTools()">☁ Sync</button>
-        <div style="height:1px;background:rgba(255,255,255,.1);margin:4px 0"></div>
-        <!-- FX inline in panel -->
-        <div class="nav-fx-inline">
-          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px">💱 Currency Converter</div>
-          <div class="fx-rates-row" id="fx-rates-row"><span style="font-size:11px;color:rgba(255,255,255,.5)">Loading rates…</span></div>
-          <div class="fx-input-row">
-            <input id="fx-amount" type="number" class="fx-input" placeholder="Enter amount…" oninput="fxConvert()" />
-            <select id="fx-base" class="fx-sel" onchange="fxConvert()">
-              <option value="USD">USD $</option>
-              <option value="EUR">EUR €</option>
-              <option value="CNY">CNY ¥</option>
-            </select>
-          </div>
-          <div class="fx-result" id="fx-result"></div>
-          <div class="fx-totals" id="fx-totals"></div>
-          <div class="fx-updated" id="fx-updated"></div>
-        </div>
       </div>
     </div>
     <input type="file" id="xl-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)"/>
@@ -1844,6 +1826,7 @@ select:focus, input:focus {
           <th class="fc-4" onclick="ctSort('Consignee')">Consignee ↕</th>
           <th onclick="ctSort('Destination')">Dest ↕</th>
           <th onclick="ctSort('Trucker')">Trucker ↕</th>
+          <th class="no-sort">Trk Confirm</th>
           <th class="no-sort">Broker</th>
           <th onclick="ctSort('ETA in Mala')" title="ETA at Port of Malaysia">ETA in Mala ↕<span class="cdf-btn" id="cdf-ct-btn-ETA in Mala" onclick="openColDF('ct','ETA in Mala',this,event)" title="Filter by date">▾</span></th>
           <th onclick="ctSort('ETA at Hub')">ETA at Hub ↕<span class="cdf-btn" id="cdf-ct-btn-ETA at Hub" onclick="openColDF('ct','ETA at Hub',this,event)" title="Filter by date">▾</span></th>
@@ -2443,22 +2426,6 @@ select:focus, input:focus {
 </div>
 
 <!-- ══ PLANNING ══ -->
-<div id="page-planning" class="page">
-  <div style="padding:0 0 20px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:22px">📦</span>
-        <span style="font-weight:900;font-size:18px;color:var(--navy)">Return Container Planning</span>
-        <span id="rcp-updated" style="font-size:11px;color:#94a3b8"></span>
-      </div>
-      <label style="margin-left:auto;cursor:pointer">
-        <input type="file" id="rcp-file" accept=".xlsx,.xls" style="display:none" onchange="rcpUpload(this)"/>
-        <span style="padding:7px 18px;font-size:13px;font-weight:700;background:#004D4C;color:#fff;border-radius:8px;cursor:pointer;white-space:nowrap">↑ Upload Daily Excel</span>
-      </label>
-    </div>
-    <div id="rcp-board"></div>
-  </div>
-</div>
 
 <!-- ══ NOTICES ══ -->
 <div id="page-notices" class="page">
@@ -6310,6 +6277,21 @@ function renderCT(){
     }
 
     const truckCell=truckC;
+    // Trucker Confirmation status cell
+    const trkConf=r['Trk Confirm']||'';
+    const trkConfBadge=trkConf==='Confirmed'
+      ?`<span style="display:inline-block;background:#dcfce7;color:#166534;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700">✔ Confirmed</span>`
+      :trkConf==='Applied'
+      ?`<span style="display:inline-block;background:#fef9c3;color:#854d0e;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700">↗ Applied</span>`
+      :`<span style="color:#ccc">—</span>`;
+    const trkConfCell=`<td data-id="${r._id}" data-col="Trk Confirm">
+      <div class="cell-view" onclick="startEdit(this)">${trkConfBadge}</div>
+      <div class="cell-edit"><select onblur="blurEditSelect(this)" onchange="commitEditSelect(this,'Trk Confirm',${r._id})">
+        <option value="" ${!trkConf?'selected':''}>—</option>
+        <option value="Applied" ${trkConf==='Applied'?'selected':''}>Applied</option>
+        <option value="Confirmed" ${trkConf==='Confirmed'?'selected':''}>Confirmed</option>
+      </select></div>
+    </td>`;
     // ─────────────────────────────────────────────────────────────
 
     const rmkV=r['Remark']||'';
@@ -6364,6 +6346,7 @@ function renderCT(){
       ${conC}
       ${destCell}
       ${truckCell}
+      ${trkConfCell}
       ${brokerCell}
       ${etaMalaC}
       ${etaCell}
@@ -11275,19 +11258,38 @@ function renderNotices(){
   }
   el.innerHTML=_buildNoticeItems(filtered, true);
 }
+function _buildFoldableNotices(el, notes, storageKey){
+  if(!el) return;
+  if(!notes.length){ el.innerHTML=''; return; }
+  const collapsed=localStorage.getItem(storageKey)==='1';
+  el.innerHTML=`<div style="margin:0 0 10px;border:1px solid #fde68a;border-radius:10px;background:#fffbeb;overflow:hidden">
+    <div onclick="(function(el,key){const b=el.querySelector('.pn-body');const ic=el.querySelector('.pn-ic');const col=b.style.display==='none';b.style.display=col?'':'none';ic.textContent=col?'▾':'▸';try{localStorage.setItem(key,col?'0':'1');}catch(e){};})(this.closest('[data-pnkey]'),this.closest('[data-pnkey]').dataset.pnkey)" data-pnkey="${storageKey}" style="display:flex;align-items:center;gap:6px;padding:7px 12px;cursor:pointer;user-select:none;font-size:12px;font-weight:700;color:#92400e">
+      <span class="pn-ic">${collapsed?'▸':'▾'}</span>
+      <span>🔔 Notices (${notes.length})</span>
+    </div>
+    <div class="pn-body" style="padding:0 10px 8px;display:${collapsed?'none':'block'}">${_buildNoticeItems(notes,false)}</div>
+  </div>`;
+  // fix the onclick closure — re-bind after insertion
+  const wrapper=el.querySelector('[data-pnkey]');
+  if(wrapper){
+    wrapper.querySelector('div').onclick=function(){
+      const body=wrapper.querySelector('.pn-body');
+      const ic=wrapper.querySelector('.pn-ic');
+      const col=body.style.display==='none';
+      body.style.display=col?'block':'none';
+      ic.textContent=col?'▾':'▸';
+      try{localStorage.setItem(storageKey,col?'0':'1');}catch(e){}
+    };
+  }
+}
 function renderPageNotices(){
-  // Show relevant notices on Vessels page
   const vtEl=document.getElementById('page-notice-vessels');
-  if(vtEl){
-    const vtNotes=NOTICES.filter(n=>n.cat==='all'||n.cat==='vessels');
-    vtEl.innerHTML=vtNotes.length?`<div class="page-notice-strip">${_buildNoticeItems(vtNotes,false)}</div>`:'';
-  }
-  // Show relevant notices on Containers page
+  const vtNotes=NOTICES.filter(n=>n.cat==='all'||n.cat==='vessels');
+  _buildFoldableNotices(vtEl, vtNotes, 'pn_vessels_collapsed');
+
   const ctEl=document.getElementById('page-notice-containers');
-  if(ctEl){
-    const ctNotes=NOTICES.filter(n=>n.cat==='all'||n.cat==='containers');
-    ctEl.innerHTML=ctNotes.length?`<div class="page-notice-strip">${_buildNoticeItems(ctNotes,false)}</div>`:'';
-  }
+  const ctNotes=NOTICES.filter(n=>n.cat==='all'||n.cat==='containers');
+  _buildFoldableNotices(ctEl, ctNotes, 'pn_containers_collapsed');
 }
 renderNotices();
 renderPageNotices();
