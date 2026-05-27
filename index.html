@@ -6068,7 +6068,16 @@ function renderCT(){
     else {
       // Split into done (100%) and active (<100%)
       const _bpDone=_bpKeys.filter(b=>_bpBatches[b].arrived===_bpBatches[b].total);
-      const _bpActive=_bpKeys.filter(b=>_bpBatches[b].arrived<_bpBatches[b].total);
+      const _bpActive=_bpKeys.filter(b=>_bpBatches[b].arrived<_bpBatches[b].total)
+        .sort((a,b)=>{
+          // Sort unarrived by ETA at Hub ascending (soonest first); fallback to departure date
+          const ha=(_bpCtEta[a]&&_bpCtEta[a].hub)||null;
+          const hb=(_bpCtEta[b]&&_bpCtEta[b].hub)||null;
+          if(ha&&hb) return ha-hb;
+          if(ha) return -1;
+          if(hb) return 1;
+          return _bpSortKey(a).localeCompare(_bpSortKey(b));
+        });
 
       // Which batch is currently active in the filter (for blue border)
       const _bpActiveSel=(()=>{ const s=msGetValues('batch'); return s.length===1?s[0]:null; })();
