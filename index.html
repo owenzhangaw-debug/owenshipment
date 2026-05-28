@@ -10876,10 +10876,29 @@ function renderDispatch(){
         const batchRows=Object.entries(byBatch).map(([batch,bboxes])=>{
           const nums=bboxes.map(r=>{
             const slot=r['Scheduled Slot']||'';
-            const eta=r['ETA at Hub']||'';
             const deadl=r['Deadline']||'';
-            const tip=`Slot: ${slot||'–'} | ETA: ${eta||'–'} | Deadline: ${deadl||'–'}`;
-            return `<span title="${tip}" style="display:inline-block;padding:2px 8px;margin:2px 2px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;font-family:monospace;color:#374151">⏳ ${r['Container No.']||'–'}</span>`;
+            // Extract just HH:MM from slot (e.g. "2026/6/2 10:00" → "10:00")
+            const slotTime=(slot.match(/(\d{1,2}:\d{2})$/)||[])[1]||'';
+            // Format deadline as "Jun 2" etc.
+            const _dlMo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            let dlFmt='';
+            if(deadl){const dm=deadl.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);if(dm) dlFmt=`${_dlMo[parseInt(dm[2])-1]} ${parseInt(dm[3])}`;}
+            const _today=new Date(); _today.setHours(0,0,0,0);
+            let dlColor='#64748b', dlBg='#f1f5f9';
+            if(dlFmt){
+              const _dlDate=new Date(deadl.replace(/\//g,'-')+'T00:00:00');
+              const _dlDays=Math.round((_dlDate-_today)/864e5);
+              if(_dlDays<=0){dlColor='#dc2626';dlBg='#fee2e2';}
+              else if(_dlDays<=2){dlColor='#c2410c';dlBg='#ffedd5';}
+              else if(_dlDays<=5){dlColor='#854d0e';dlBg='#fef9c3';}
+            }
+            return `<div style="display:inline-flex;flex-direction:column;gap:2px;padding:5px 8px;margin:3px 3px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;min-width:120px;vertical-align:top">
+              <span style="font-family:monospace;font-weight:700;color:#1e293b;font-size:11px">⏳ ${r['Container No.']||'–'}</span>
+              <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+                ${slotTime?`<span style="font-size:10px;background:#e0f2fe;color:#0369a1;border-radius:3px;padding:1px 5px;font-weight:600">🕐 ${slotTime}</span>`:''}
+                ${dlFmt?`<span style="font-size:10px;background:${dlBg};color:${dlColor};border-radius:3px;padding:1px 5px;font-weight:600">DL ${dlFmt}</span>`:''}
+              </div>
+            </div>`;
           }).join('');
           return `<div style="margin-bottom:8px">
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.5px;margin-bottom:3px">🚂 ${batch||'(no batch)'} &nbsp;<span style="font-weight:400;color:#cbd5e1">${bboxes.length} ctr</span></div>
