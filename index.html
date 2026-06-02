@@ -2282,7 +2282,12 @@ select:focus, input:focus {
   <div class="tbl-card">
     <div class="tbl-top">
       <h3>Vessel Tracker</h3><span id="vt-count"></span>
-      <button onclick="vtExportCSV()" style="margin-left:auto;padding:6px 14px;background:#0f766e;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" title="Export all vessel data to CSV">⬇ Export CSV</button>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <label style="padding:6px 14px;background:#1d4ed8;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" title="Import vessels from CSV">
+          ⬆ Import CSV<input type="file" accept=".csv" style="display:none" onchange="vtImportCSV(this)">
+        </label>
+        <button onclick="vtExportCSV()" style="padding:6px 14px;background:#0f766e;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" title="Export all vessel data to CSV">⬇ Export CSV</button>
+      </div>
     </div>
     <div id="vt-fin-kpi" style="padding:10px 16px 0"></div>
     <div class="tbl-scroll">
@@ -5431,6 +5436,67 @@ function getCTRows(){
 
 function ctSort(col){ ctSortCol===col?ctSortDir*=-1:(ctSortCol=col,ctSortDir=1); renderCT(); }
 function vtSort(col){ vtSortCol===col?vtSortDir*=-1:(vtSortCol=col,vtSortDir=1); renderVT(); }
+
+function vtImportCSV(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const lines = e.target.result.split(/\r?\n/).filter(l=>l.trim());
+      if(lines.length < 2){ showToast('CSV is empty.'); return; }
+      // Parse header
+      const parseRow = row => {
+        const cols=[]; let cur='', inQ=false;
+        for(let i=0;i<row.length;i++){
+          const c=row[i];
+          if(c==='"'&&inQ&&row[i+1]==='"'){cur+='"';i++;}
+          else if(c==='"'){inQ=!inQ;}
+          else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+          else cur+=c;
+        }
+        cols.push(cur.trim()); return cols;
+      };
+      const headers = parseRow(lines[0]);
+      // Field aliases — map CSV column names to app field names
+      const alias = {
+        'port':'Port','pod':'POD','cy':'CY','carrier':'Carrier',
+        'booking / bc no.':'Booking / BC No.','booking':'Booking / BC No.',
+        'so number':'Booking / BC No.','so_number':'Booking / BC No.',
+        'container qty':'Container Qty','qty':'Container Qty','ctrs':'Container Qty',
+        'vessel name':'Vessel Name','vessel':'Vessel Name',
+        'ets (departure)':'ETS (Departure)','ets':'ETS (Departure)','departure':'ETS (Departure)',
+        'eta (arrival)':'ETA (Arrival)','eta':'ETA (Arrival)',
+        'port cut-off':'Port Cut-Off','cutoff':'Port Cut-Off','cut-off':'Port Cut-Off',
+        'barge date':'Barge Date',
+        'status':'Status','remark':'Remark','order no.':'Order No.'
+      };
+      const mapped = headers.map(h=>{const k=h.toLowerCase().trim(); return alias[k]||h;});
+      let added=0, skipped=0;
+      const existingBookings = new Set((VT||[]).map(r=>(r['Booking / BC No.']||'').trim().toLowerCase()).filter(Boolean));
+      for(let i=1;i<lines.length;i++){
+        const vals = parseRow(lines[i]);
+        if(!vals.some(v=>v)) continue;
+        const row={};
+        mapped.forEach((col,idx)=>{ row[col]=vals[idx]||''; });
+        // Skip rows that are already in VT (by booking number)
+        const bk=(row['Booking / BC No.']||'').trim().toLowerCase();
+        if(bk && existingBookings.has(bk)){ skipped++; continue; }
+        // Convert qty to number
+        if(row['Container Qty']) row['Container Qty']=parseInt(row['Container Qty'])||'';
+        row._id = vtNextId++;
+        VT.push(row);
+        added++;
+      }
+      input.value=''; // reset file input
+      saveVT(); renderVT();
+      showToast(`✅ Imported ${added} vessel${added!==1?'s':''}${skipped?' ('+skipped+' duplicates skipped)':''}`);
+    } catch(err){
+      showToast('❌ Import failed: '+err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
 
 function vtExportCSV(){
   const cols = ['CY','Port','POD','Carrier','Booking / BC No.','Container Qty','Vessel Name',
