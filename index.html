@@ -592,9 +592,11 @@ td.editing .cell-edit{display:block}
   .modal > .modal-btns button{flex:1;padding:12px 8px !important;font-size:13px !important}
 
   /* Sync modal compact on mobile */
-  #sync-overlay .modal{overflow-y:auto}
-  #sync-overlay .modal p{font-size:11px !important;margin-bottom:10px}
-  #sync-overlay .modal h2{font-size:15px;margin-bottom:10px}
+  #sync-overlay .modal{overflow-y:hidden;display:flex;flex-direction:column;padding-bottom:0}
+  #sync-overlay .modal h2{font-size:15px;margin-bottom:8px;flex-shrink:0}
+  #sync-overlay .modal p{font-size:11px !important;margin-bottom:8px}
+  #sync-overlay #sync-modal-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
+  #sync-overlay .modal > .modal-btns{flex-shrink:0;margin-top:0;position:static}
   .form-grid{grid-template-columns:1fr}
   .form-group.full{grid-column:1}
   .confirm-inner{width:92vw;border-radius:14px}
@@ -2835,6 +2837,7 @@ select:focus, input:focus {
 <div class="overlay" id="sync-overlay">
   <div class="modal" style="width:520px">
     <h2>☁️ Cloud Sync</h2>
+    <div id="sync-modal-scroll">
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
       Syncs your data across all devices using <strong>JSONBin.io</strong> (free).<br>
       <a href="https://jsonbin.io" target="_blank" style="color:var(--blue)">Create a free account →</a>
@@ -2866,10 +2869,11 @@ select:focus, input:focus {
     </div>
     <div id="sync-ok"  class="info-box info-ok"  style="margin-top:10px"></div>
     <div id="sync-err" class="info-box info-err" style="margin-top:10px"></div>
+    </div><!-- end sync-modal-scroll -->
     <div class="modal-btns">
       <button class="mbtn-cancel" onclick="closeSync()">Close</button>
-      <button class="mbtn-save" style="background:#1d4ed8" onclick="pushToCloud(true)">↑ Push to Cloud</button>
-      <button class="mbtn-save" style="background:#388e3c" onclick="pullFromCloud(true)">↓ Pull from Cloud</button>
+      <button class="mbtn-save" style="background:#1d4ed8" onclick="pushToCloud(true)">↑ Push</button>
+      <button class="mbtn-save" style="background:#388e3c" onclick="pullFromCloud(true)">↓ Pull</button>
     </div>
   </div>
 </div>
