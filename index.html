@@ -430,6 +430,8 @@ td.editing .cell-edit{display:block}
 /* CLOUD SYNC */
 .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
 .sync-dot.ok{background:#10B981}.sync-dot.err{background:#EF4444}.sync-dot.off{background:#94A3B8}.sync-dot.busy{background:#F59E0B}
+.sync-dot.pending{background:#FBBF24;box-shadow:0 0 0 3px rgba(251,191,36,.35);animation:syncPulse 1.2s ease-in-out infinite}
+@keyframes syncPulse{0%,100%{box-shadow:0 0 0 3px rgba(251,191,36,.35)}50%{box-shadow:0 0 0 6px rgba(251,191,36,.1)}}
 .sync-status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;margin-top:6px}
 .sync-key-wrap{position:relative}
 .sync-key-wrap input{padding-right:32px;font-family:monospace;font-size:12px}
@@ -2272,14 +2274,6 @@ select:focus, input:focus {
     <div class="ml"><button class="btn-reset" onclick="vtResetFilters()">↺ Reset</button></div>
     <button class="btn btn-ghost" onclick="exportVesselXLSX()">↓ Export</button>
   </div>
-  <!-- SOC Inventory -->
-  <div class="soc-section">
-    <div class="soc-section-hdr">
-      <span class="soc-section-title">📦 SOC Container Inventory</span>
-      <button class="btn btn-blue" style="font-size:11px;padding:5px 12px" onclick="openSOCModal('')">+ Add Containers</button>
-    </div>
-    <div class="soc-yards" id="soc-yards-wrap"></div>
-  </div>
 
   <div style="margin:0 0 8px">
     <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port, container no…" oninput="vtCombinedSearch(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
@@ -2843,12 +2837,18 @@ select:focus, input:focus {
       <span class="sync-dot off" id="sync-dot"></span>
       <span id="sync-status-txt">Not connected</span>
     </div>
+    <!-- Manual sync guide -->
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:12px;color:#065f46;line-height:1.6">
+      <strong>🔒 Manual sync only — nothing syncs automatically.</strong><br>
+      <strong>↑ Push</strong> = send your current data to the cloud (do this after editing on this device)<br>
+      <strong>↓ Pull</strong> = load cloud data onto this device (do this on phone after pushing from desktop)
+    </div>
     <div id="sync-ok"  class="info-box info-ok"  style="margin-top:10px"></div>
     <div id="sync-err" class="info-box info-err" style="margin-top:10px"></div>
     <div class="modal-btns">
       <button class="mbtn-cancel" onclick="closeSync()">Close</button>
-      <button class="mbtn-save" onclick="pushToCloud(true)">↑ Push (overwrite cloud)</button>
-      <button class="mbtn-save" style="background:#388e3c" onclick="pullFromCloud(true)">↓ Pull (overwrite local)</button>
+      <button class="mbtn-save" style="background:#1d4ed8" onclick="pushToCloud(true)">↑ Push to Cloud</button>
+      <button class="mbtn-save" style="background:#388e3c" onclick="pullFromCloud(true)">↓ Pull from Cloud</button>
     </div>
   </div>
 </div>
@@ -3517,7 +3517,7 @@ function renderSmartInsights(){
 
   // Today's deliveries
   const todayStrSI=formatDate(d.today);
-  const todayDeliveries=CT.filter(r=>r['Tracking']!=='Arrived'&&!r['Actual Arrival']&&(r['Scheduled Slot']||'').startsWith(todayStrSI));
+  const todayDeliveries=CT.filter(r=>r['Tracking']!=='Arrived'&&!r['Actual Arrival']&&((s=>s===todayStrSI||s.startsWith(todayStrSI+' '))(r['Scheduled Slot']||'')));
 
   const cards=[
     todayDeliveries.length&&{
@@ -6520,7 +6520,7 @@ function renderTodayDeliveries(){
   const todayStr=formatDate(today);
 
   const pending=CT.filter(r=>r['Tracking']!=='Arrived'&&!r['Actual Arrival']&&r['Scheduled Slot']);
-  const todayRows=pending.filter(r=>(r['Scheduled Slot']||'').startsWith(todayStr));
+  const todayRows=pending.filter(r=>{const s=r['Scheduled Slot']||''; return s===todayStr||s.startsWith(todayStr+' ');});
   const overdueRows=pending.filter(r=>{
     const s=parseDate(r['Scheduled Slot']);
     return s&&s<today;
@@ -9055,10 +9055,7 @@ function silentRestaggerAutoSlots(){
   return assigned;
 }
 const _startupRestagged = silentRestaggerAutoSlots();
-// If startup fixed any slots, push to cloud (deferred so JBIN constant is initialized first)
-if(_startupT1Fixed || _startupRestagged){
-  setTimeout(()=>{ if(typeof pushToCloud==='function') pushToCloud(false); }, 3000);
-}
+// Startup slot fixes handled silently — no auto-push (manual sync only)
 
 // ── Migrate old Payment Status values ────────────────────────────
 (function migratePayStatus(){
@@ -9077,25 +9074,19 @@ _loadBpTrain();
 // ── CLOUD SYNC ───────────────────────────────────────────────────
 // JBIN, cloudSaveTimer, _lastPushTs declared at top of script to avoid TDZ
 
-function cloudAutoSave(){
-  if(!localStorage.getItem('owenz_sync_key')||!localStorage.getItem('owenz_bin_id')) return;
-  clearTimeout(cloudSaveTimer);
-  cloudSaveTimer = setTimeout(()=>pushToCloud(false), 2000);
-  setSyncDot('busy','Saving…');
-}
+// ── MANUAL-ONLY SYNC ──────────────────────────────────────────────
+// Auto-sync is disabled. All push/pull is triggered manually by the user.
+// This prevents mobile from silently overwriting web data.
+let _hasPendingChanges = false;
 
-// ── AUTO PULL (background sync) ────────────────────────────────────────────
-function _autoPull(){
-  // Don't pull if we have unsaved local changes pending (about to push)
-  if(cloudSaveTimer) return;
+function cloudAutoSave(){
+  // No auto-push. Just mark that there are unsaved changes.
   if(!localStorage.getItem('owenz_sync_key')||!localStorage.getItem('owenz_bin_id')) return;
-  pullFromCloud(false);
+  _hasPendingChanges = true;
+  setSyncDot('pending','Changes not yet synced — tap ☁️ to push');
+  const btn=document.getElementById('sync-btn');
+  if(btn){ btn.textContent='☁️● Sync'; btn.style.background='rgba(255,200,0,.2)'; btn.style.color='#fde68a'; }
 }
-// Pull every 30 seconds
-setInterval(_autoPull, 30000);
-// Pull when user returns to this tab
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) _autoPull(); });
-window.addEventListener('focus', _autoPull);
 
 function openSync(){
   document.getElementById('sync-key').value  = localStorage.getItem('owenz_sync_key')||'';
@@ -9655,8 +9646,11 @@ async function connectSync(){
 async function pushToCloud(manual=false){
   const key=localStorage.getItem('owenz_sync_key');
   const bin=localStorage.getItem('owenz_bin_id');
-  if(!key||!bin) return;
-  setSyncDot('busy','Saving…');
+  if(!key||!bin){
+    if(manual) openSync();
+    return;
+  }
+  setSyncDot('busy','Pushing…');
   try{
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
@@ -9665,15 +9659,18 @@ async function pushToCloud(manual=false){
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
-    cloudSaveTimer = null; // reset so future auto-pulls work correctly
-    setSyncDot('ok','Saved — '+(new Date().toLocaleTimeString()));
+    _hasPendingChanges = false;
+    cloudSaveTimer = null;
+    setSyncDot('ok','Pushed — '+(new Date().toLocaleTimeString()));
+    const btn=document.getElementById('sync-btn');
+    if(btn){ btn.textContent='☁️✓ Sync'; btn.style.background=''; btn.style.color=''; }
     if(manual){
       const ok=document.getElementById('sync-ok');
-      ok.textContent='✓ Data pushed to cloud successfully.'; ok.style.display='block';
-      setTimeout(()=>ok.style.display='none',3000);
+      ok.textContent='✓ Your data is now saved to the cloud. Open the app on any device and Pull to get this data.'; ok.style.display='block';
+      setTimeout(()=>ok.style.display='none',4000);
     }
   } catch(e){
-    setSyncDot('err','Save failed: '+e.message);
+    setSyncDot('err','Push failed: '+e.message);
     if(manual){
       const err=document.getElementById('sync-err');
       err.textContent='✗ Push failed: '+e.message; err.style.display='block';
@@ -9684,8 +9681,15 @@ async function pushToCloud(manual=false){
 async function pullFromCloud(manual=false){
   const key=localStorage.getItem('owenz_sync_key');
   const bin=localStorage.getItem('owenz_bin_id');
-  if(!key||!bin) return;
-  setSyncDot('busy','Loading…');
+  if(!key||!bin){
+    if(manual) openSync();
+    return;
+  }
+  // Warn if there are pending local changes that would be lost
+  if(manual && _hasPendingChanges){
+    if(!confirm('⚠️ You have unsaved local changes.\n\nPulling will overwrite your local data with the cloud version.\n\nPush first if you want to keep your local changes.\n\nContinue with Pull anyway?')) return;
+  }
+  setSyncDot('busy','Pulling…');
   try{
     const res=await fetch(JBIN+'/'+bin+'/latest',{headers:{'X-Master-Key':key}});
     if(!res.ok) throw new Error('HTTP '+res.status);
@@ -9706,10 +9710,9 @@ async function pullFromCloud(manual=false){
     if(rec&&rec._bpTrainDates){ _bpTrainDates=rec._bpTrainDates; localStorage.setItem(_bpTrainKey,JSON.stringify(_bpTrainDates)); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
     syncVTtoSOC(); // clean up SOC after cloud pull
-    const _t1fixed = fixT1RuleViolations();
-    const _restagged = silentRestaggerAutoSlots();
-    // If slots were corrected, push fixed data back to cloud immediately so JSONBin stays clean
-    if(_t1fixed || _restagged) pushToCloud(false);
+    fixT1RuleViolations();
+    silentRestaggerAutoSlots();
+    // Note: any corrections stay local until user manually pushes
     renderCT(); renderVT(); renderDashboard(); renderSOC();
     if(manual){
       const ok=document.getElementById('sync-ok');
