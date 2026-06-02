@@ -508,7 +508,7 @@ td.editing .cell-edit{display:block}
   .brand{font-size:14px;padding:0;flex:1;display:flex;align-items:center}
   /* Hide desktop tool buttons — use bottom nav Tools instead */
   .hbtns{display:none !important}
-  nav{display:none !important;visibility:hidden;width:0;height:0;overflow:hidden}
+  #desktop-nav{display:none !important;visibility:hidden;width:0;height:0;overflow:hidden}
   /* ── Mobile bottom nav bar ── */
   .mobile-nav{display:flex}
 
@@ -1326,7 +1326,7 @@ select:focus, input:focus {
 
 <header>
   <div class="brand">Owen Zhang</div>
-  <nav>
+  <nav id="desktop-nav">
     <button class="active" onclick="showPage('dashboard')">Dashboard</button>
     <button onclick="showPage('notices')">Notices</button>
     <button onclick="showPage('containers')">Containers</button>
