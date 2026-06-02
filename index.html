@@ -397,7 +397,7 @@ td.editing .cell-edit{display:block}
 .vt-search-msg{font-size:12px;color:var(--muted);margin-left:4px}
 
 /* OVERLAY */
-.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:1100;
   align-items:center;justify-content:center;backdrop-filter:blur(2px)}
 .overlay.open{display:flex}
 .modal{background:#fff;border-radius:16px;padding:26px;width:620px;max-width:95vw;
@@ -2869,6 +2869,11 @@ select:focus, input:focus {
     </div>
     <div id="sync-ok"  class="info-box info-ok"  style="margin-top:10px"></div>
     <div id="sync-err" class="info-box info-err" style="margin-top:10px"></div>
+    <div id="sync-pull-warn" style="display:none;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:12px;color:#713f12">
+      ⚠️ You have unsaved local changes. Pull will overwrite them with cloud data.<br>
+      <button onclick="confirmPull()" style="margin-top:8px;width:100%;padding:10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">Yes, overwrite with cloud data</button>
+      <button onclick="document.getElementById('sync-pull-warn').style.display='none'" style="margin-top:6px;width:100%;padding:8px;background:#f1f5f9;color:#334155;border:none;border-radius:7px;font-size:12px;cursor:pointer">Cancel</button>
+    </div>
     </div><!-- end sync-modal-scroll -->
     <div class="modal-btns">
       <button class="mbtn-cancel" onclick="closeSync()">Close</button>
@@ -9784,6 +9789,12 @@ async function pushToCloud(manual=false){
   }
 }
 
+function confirmPull(){
+  const warn=document.getElementById('sync-pull-warn');
+  if(warn) warn.style.display='none';
+  _hasPendingChanges=false; // bypass warning
+  pullFromCloud(true);
+}
 async function pullFromCloud(manual=false){
   const key=localStorage.getItem('owenz_sync_key');
   const bin=localStorage.getItem('owenz_bin_id');
@@ -9793,7 +9804,11 @@ async function pullFromCloud(manual=false){
   }
   // Warn if there are pending local changes that would be lost
   if(manual && _hasPendingChanges){
-    if(!confirm('⚠️ You have unsaved local changes.\n\nPulling will overwrite your local data with the cloud version.\n\nPush first if you want to keep your local changes.\n\nContinue with Pull anyway?')) return;
+    const warn=document.getElementById('sync-pull-warn');
+    if(warn && warn.style.display==='none'){
+      warn.style.display='block';
+      return; // first tap shows warning; second tap (confirmPull) actually pulls
+    }
   }
   setSyncDot('busy','Pulling…');
   try{
