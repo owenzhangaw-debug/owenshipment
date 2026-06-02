@@ -8973,6 +8973,18 @@ function toggleFX(){
   // FX is now inside the tools panel — just open tools panel
   toggleNavTools();
 }
+function toggleMobileMore(){
+  const m=document.getElementById('mobile-more-menu');
+  if(!m) return;
+  const opening=m.style.display==='none';
+  m.style.display=opening?'block':'none';
+  document.getElementById('mnav-more')?.classList.toggle('active',opening);
+}
+document.addEventListener('click',e=>{
+  const m=document.getElementById('mobile-more-menu');
+  const btn=document.getElementById('mnav-more');
+  if(m&&btn&&!m.contains(e.target)&&!btn.contains(e.target)){m.style.display='none';btn.classList.remove('active');}
+},{capture:true,passive:true});
 function toggleNavTools(){
   const panel=document.getElementById('nav-tools-panel');
   const btn=document.getElementById('nav-tools-btn');
@@ -9168,6 +9180,10 @@ function cloudAutoSave(){
   setSyncDot('pending','Changes not yet synced — tap ☁️ to push');
   const btn=document.getElementById('sync-btn');
   if(btn){ btn.textContent='☁️● Sync'; btn.style.background='rgba(255,200,0,.2)'; btn.style.color='#fde68a'; }
+  const mb=document.getElementById('mnav-sync');
+  const ml=document.getElementById('mnav-sync-label');
+  if(mb){ mb.style.color='#FBBF24'; }
+  if(ml){ ml.textContent='Sync●'; }
 }
 
 function openSync(){
@@ -9746,6 +9762,10 @@ async function pushToCloud(manual=false){
     setSyncDot('ok','Pushed — '+(new Date().toLocaleTimeString()));
     const btn=document.getElementById('sync-btn');
     if(btn){ btn.textContent='☁️✓ Sync'; btn.style.background=''; btn.style.color=''; }
+    const mb=document.getElementById('mnav-sync');
+    const ml=document.getElementById('mnav-sync-label');
+    if(mb){ mb.style.color=''; }
+    if(ml){ ml.textContent='Sync'; }
     if(manual){
       const ok=document.getElementById('sync-ok');
       ok.textContent='✓ Your data is now saved to the cloud. Open the app on any device and Pull to get this data.'; ok.style.display='block';
@@ -11691,18 +11711,19 @@ header { padding-top: max(8px, env(safe-area-inset-top)); }
   background: none;
   border: none;
   color: rgba(255,255,255,.5);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
-  padding: 10px 4px 8px;
+  padding: 8px 2px 6px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   transition: color .15s, background .15s;
-  letter-spacing: .2px;
+  letter-spacing: .1px;
+  min-width: 0;
 }
-.mobile-nav button .mnav-icon { font-size: 18px; line-height: 1; }
+.mobile-nav button .mnav-icon { font-size: 16px; line-height: 1; }
 .mobile-nav button:hover { background: rgba(255,255,255,.06); }
 .mobile-nav button.active { color: #5DD8D0; }
 .mobile-nav button.active .mnav-icon { filter: drop-shadow(0 0 4px rgba(93,216,208,.5)); }
@@ -11932,9 +11953,21 @@ window.addEventListener('resize', ()=>{ if(_currentPage==='vessels') vtApplyFree
   <button onclick="showPage('notices')" id="mnav-notices">
     <span class="mnav-icon">🔔</span>Notices
   </button>
-  <button onclick="toggleNavTools()" id="mnav-tools">
-    <span class="mnav-icon">⚙️</span>Tools
+  <button onclick="showPage('reports')" id="mnav-reports">
+    <span class="mnav-icon">📋</span>Reports
+  </button>
+  <button onclick="openSync()" id="mnav-sync">
+    <span class="mnav-icon">☁️</span><span id="mnav-sync-label">Sync</span>
+  </button>
+  <button onclick="toggleMobileMore()" id="mnav-more">
+    <span class="mnav-icon">⚙️</span>More
   </button>
 </nav>
+<!-- ── Mobile More Menu ── -->
+<div id="mobile-more-menu" style="display:none;position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;background:linear-gradient(135deg,#003534,#004D4C);border-top:1px solid rgba(255,255,255,.15);z-index:999;padding:8px 0">
+  <button onclick="showPage('planning');toggleMobileMore()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.85);font-size:14px;padding:14px 20px;text-align:left;display:flex;align-items:center;gap:12px">🗓️ Planning</button>
+  <button onclick="showPage('feedback');toggleMobileMore()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.85);font-size:14px;padding:14px 20px;text-align:left;display:flex;align-items:center;gap:12px">💬 Feedback</button>
+  <button onclick="closeNavTools();document.getElementById('nav-tools-wrap')&&showPage('dashboard');toggleNavTools();toggleMobileMore()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.85);font-size:14px;padding:14px 20px;text-align:left;display:flex;align-items:center;gap:12px">⚙️ FX / Tools Panel</button>
+</div>
 </body>
 </html>
