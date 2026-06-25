@@ -9334,20 +9334,30 @@ let SE_CONTACTS = [];  // [{id, label, emails}]
 
 function seLoadContacts(){
   try{ const s=localStorage.getItem(SE_CONTACTS_KEY); if(s) SE_CONTACTS=JSON.parse(s); }catch(e){}
+  const DEFAULTS=[
+    {id:1, label:'Skyline',    emails:'temu@qtradegroup.com, candy.tang@qtlogistics.eu'},
+    {id:2, label:'VIA EUROPE', emails:'inbound@viaeurope.com, account-tm@viaeurope.com, planningDDS-lgg@viaeurope.com'},
+    {id:3, label:'Flying',     emails:'ops@flyinglogisticssprl.be, flyingdispatch@flyinglogisticssprl.be, flyingcustoms@flyinglogisticssprl.be, David@flyinglogisticssprl.be, team@topglobal.be, ops-uk@ultralinkexpress.co.uk, temu@hh-aviation.co.uk'},
+    {id:4, label:'HSH',        emails:'ops1@hshworld.eu, operation@hshworld.eu, ydh1@hshworld.eu, ydh2@hshworld.eu, ops6@hshworld.eu, lggops@ydhexpress.com, customsteam@hshworld.eu'},
+    {id:5, label:'CACESA',     emails:'int.coordinators@cacesa.com, operations.lgg@cacesa.com, beryl.li@temu.com, giulia.zhang@temu.com, farrah.ouyang@temu.com'},
+    {id:6, label:'ViaEurope AMS (NL)',      emails:'planningDDS-ams@viaeurope.com, temu@viaeurope.com'},
+    {id:7, label:'Premiere Cargo IT (Sengi)',emails:'Cristina.portalupi@premiereair.it'},
+    {id:8, label:'Magazzini Brianza (KP)',   emails:'customercare@magazzinibrianza.it'},
+    {id:9, label:'ViaEurope IT (VE)',        emails:'temu@viaeurope.com, inbound@viaeurope.com'},
+    {id:10,label:'Shaoke',                   emails:'operations.lgg@shaoke.eu, skcs1@shaoke.com, operation@shaoke.com, yvonne.huang@shaoke.eu, lggcs.import6@swissport.com'}
+  ];
   if(!SE_CONTACTS.length){
-    SE_CONTACTS=[
-      {id:1, label:'Skyline',    emails:'temu@qtradegroup.com, candy.tang@qtlogistics.eu'},
-      {id:2, label:'VIA EUROPE', emails:'inbound@viaeurope.com, account-tm@viaeurope.com, planningDDS-lgg@viaeurope.com'},
-      {id:3, label:'Flying',     emails:'ops@flyinglogisticssprl.be, flyingdispatch@flyinglogisticssprl.be, flyingcustoms@flyinglogisticssprl.be, David@flyinglogisticssprl.be, team@topglobal.be, ops-uk@ultralinkexpress.co.uk, temu@hh-aviation.co.uk'},
-      {id:4, label:'HSH',        emails:'ops1@hshworld.eu, operation@hshworld.eu, ydh1@hshworld.eu, ydh2@hshworld.eu, ops6@hshworld.eu, lggops@ydhexpress.com, customsteam@hshworld.eu'},
-      {id:5, label:'CACESA',     emails:'int.coordinators@cacesa.com, operations.lgg@cacesa.com, beryl.li@temu.com, giulia.zhang@temu.com, farrah.ouyang@temu.com'},
-      {id:6, label:'ViaEurope AMS (NL)',      emails:'planningDDS-ams@viaeurope.com, temu@viaeurope.com'},
-      {id:7, label:'Premiere Cargo IT (Sengi)',emails:'Cristina.portalupi@premiereair.it'},
-      {id:8, label:'Magazzini Brianza (KP)',   emails:'customercare@magazzinibrianza.it'},
-      {id:9, label:'ViaEurope IT (VE)',        emails:'temu@viaeurope.com, inbound@viaeurope.com'}
-    ];
-    seSaveContacts();
+    SE_CONTACTS=DEFAULTS;
+  } else {
+    // Merge any new default entries that don't exist yet (by label)
+    const existing=new Set(SE_CONTACTS.map(c=>c.label.toLowerCase()));
+    let changed=false;
+    let nextId=Math.max(...SE_CONTACTS.map(c=>c.id||0),99)+1;
+    DEFAULTS.forEach(d=>{ if(!existing.has(d.label.toLowerCase())){ SE_CONTACTS.push({...d,id:nextId++}); changed=true; } });
+    if(changed) seSaveContacts();
+    return;
   }
+  seSaveContacts();
 }
 function seSaveContacts(){ try{ localStorage.setItem(SE_CONTACTS_KEY,JSON.stringify(SE_CONTACTS)); }catch(e){} }
 function seGetContactsFor(consignee){
