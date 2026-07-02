@@ -7873,14 +7873,15 @@ function vtRemoveBargeRoll(id, idx){
 // Mala→Hub: working-day median = 3wd (trucks don't run weekends)
 // BE Hub→Delivery: working-day median = 3wd, mode = 2wd
 // NL Hub→Delivery: working-day median = 4wd, mode = 4wd
+// Updated from 133-shipment TEMU export (2026-07-02)
 const _BEL_HIST_STATS = {
   alashankou: { n:133, mean:4.65,  p50:5.00,  p70:5.00,  p85:5.00,  p95:7.0  },
   kz_transit: { n:133, mean:7.47,  p50:8.00,  p70:9.00,  p85:9.00,  p95:9.0  },
   russia:     { n:93,  mean:9.95,  p50:9.00,  p70:11.00, p85:11.00, p95:11.0 },
-  brest:      { n:57,  mean:12.50, p50:13.00, p70:13.00, p85:14.00, p95:15.0 },
-  mala:       { n:57,  mean:13.68, p50:14.00, p70:14.00, p85:15.00, p95:15.0 },
+  brest:      { n:49,  mean:12.47, p50:13.00, p70:13.00, p85:13.00, p95:13.0 },
+  mala:       { n:57,  mean:13.68, p50:14.00, p70:14.00, p85:14.00, p95:15.0 },
   duisburg:   { n:8,   mean:17.00, p50:17.00, p70:17.00, p85:17.00, p95:17.0 },
-  customs:    { n:2,   mean:22.00, p50:22.00, p70:22.00, p85:22.00, p95:22.0 },
+  customs:    { n:8,   mean:22.12, p50:22.00, p70:22.00, p85:22.00, p95:23.0 },
 };
 // Stage avgs = calendar days from China departure. Final delivery stage uses
 // working-day projection (belAddWorkingDays) so weekends are skipped properly.
@@ -7889,7 +7890,7 @@ const BEL_STAGES = [
   { icon:'🛂', label:'Alashankou\nBorder',           avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
   { icon:'🏔️', label:'Kazakhstan\nTransit Done',    avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
   { icon:'🚩', label:'Russia\nBorder',               avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
-  { icon:'🏭', label:'Malaszewicze\nPoland',         avg:13.68, p70:14, p85:15, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
+  { icon:'🏭', label:'Malaszewicze\nPoland',         avg:13.68, p70:14, p85:14, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
   { icon:'🏗️', label:'Duisburg\nHub',               avg:17.00, p70:17, p85:17, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
   { icon:'📦', label:'Belgium\nDelivery',            avg:3,     p70:4,  p85:5,  color:'#004D4C', bg:'#E0EFEF', dColor:'#003A3A', workingDayLeg:true  },
 ];
@@ -7899,7 +7900,7 @@ const NL_STAGES = [
   { icon:'🛂', label:'Alashankou\nBorder',         avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
   { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
   { icon:'🚩', label:'Russia\nBorder',             avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
-  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:13.68, p70:14, p85:15, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
+  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:13.68, p70:14, p85:14, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
   { icon:'🏗️', label:'Duisburg\nHub',             avg:17.00, p70:17, p85:17, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
   { icon:'🇳🇱', label:'Netherlands\nDelivery',     avg:4,     p70:6,  p85:8,  color:'#c2410c', bg:'#fff7ed', dColor:'#c2410c', workingDayLeg:true  },
 ];
@@ -7908,7 +7909,7 @@ const IT_STAGES = [
   { icon:'🛂', label:'Alashankou\nBorder',         avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
   { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
   { icon:'🚩', label:'Russia\nBorder',             avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
-  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:13.68, p70:14, p85:15, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
+  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:13.68, p70:14, p85:14, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
   { icon:'🏗️', label:'Duisburg\nHub',             avg:17.00, p70:17, p85:17, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
   { icon:'🇮🇹', label:'Milan MXP\nDelivery',       avg:5,     p70:7,  p85:9,  color:'#9d174d', bg:'#fdf2f8', dColor:'#9d174d', workingDayLeg:true  },
 ];
@@ -8005,8 +8006,10 @@ function computeSmartBelStages(){
       p85=sp70(s.p85,scaleFactor);
     }
     if(i===4){ avg=smartMala; p70=sp70(H.mala.p70,scaleFactor); p85=sp70(H.mala.p85,scaleFactor); }
+    // i===5 (Duisburg): keep cumulative — renderBelgiumTimeline computes delta from Mala
     if(i===5){ avg=smartHub;  p70=sp70(H.duisburg.p70,scaleFactor); p85=sp70(H.duisburg.p85,scaleFactor); }
-    if(i===6){ avg=smartArr;  p70=sp70(H.customs.p70,scaleFactor); p85=sp70(H.customs.p85,scaleFactor); }
+    // i===6 (Belgium delivery): DELTA from Duisburg (since prev Duisburg is workingDayLeg, renderTimeline uses s.avg directly)
+    if(i===6){ avg=+(smartArr-smartHub).toFixed(2); p70=Math.max(1,sp70(H.customs.p70,scaleFactor)-sp70(H.duisburg.p70,scaleFactor)); p85=Math.max(1,sp70(H.customs.p85,scaleFactor)-sp70(H.duisburg.p85,scaleFactor)); }
     return {...s,avg,p70,p85};
   });
   const totalLiveSamples=sMala.length+sHub.length+sArr.length;
@@ -8077,19 +8080,31 @@ function renderBelgiumTimeline(){
 
   // Pre-compute stage dates: train/transit stages = calendar days from departure;
   // final leg stages (workingDayLeg:true) = working days from the previous stage date.
+  // IMPORTANT: s.avg for workingDayLeg stages is CUMULATIVE calendar days from departure,
+  // so we must use the DELTA (s.avg - prevStage.avg) as working days to add from prevDate.
+  // Exception: if prev stage was also workingDayLeg, s.avg is already a delta (e.g. NL/IT delivery leg).
   const stageDates=[];
+  const stageLegWD=[]; // stores the working-day delta actually used, for display
   let prevDate=null;
   STAGES.forEach((s,idx)=>{
-    let d;
+    let d, legWD=null;
     if(idx===0){
-      d=belAddDays(belDeparture,0); // departure itself
+      d=belAddDays(belDeparture,0);
     } else if(s.workingDayLeg && prevDate){
-      // Final leg: add working days from previous stage (hub arrival)
-      d=belAddWorkingDays(belFmtInput(prevDate), s.avg);
+      const prevIsCalendar = idx>0 && !STAGES[idx-1].workingDayLeg;
+      if(prevIsCalendar){
+        // cumulative avg → compute delta working days from previous stage
+        legWD = Math.max(1, +(s.avg - STAGES[idx-1].avg).toFixed(2));
+      } else {
+        // prev was also workingDayLeg → s.avg is already the leg delta
+        legWD = s.avg;
+      }
+      d=belAddWorkingDays(belFmtInput(prevDate), legWD);
     } else {
-      d=belAddDays(belDeparture, s.avg); // cumulative calendar days from departure
+      d=belAddDays(belDeparture, s.avg);
     }
     stageDates.push(d);
+    stageLegWD.push(legWD);
     prevDate=d;
   });
 
@@ -8099,12 +8114,20 @@ function renderBelgiumTimeline(){
     const inputVal=belFmtInput(stageDate);
     const isAnchor=idx===belAnchorIdx;
     const nameLines=s.label.split('\n');
-    // Display label: for working-day leg stages show "+Nwd", else "D+N"
+    // Display label: workingDayLeg shows the actual leg delta (not cumulative avg)
+    const legWD=stageLegWD[idx];
+    const legWDDisp=legWD!=null?+(legWD).toFixed(2):null;
+    const prevLegWD=idx>0&&STAGES[idx-1].workingDayLeg?stageLegWD[idx-1]:null;
     const offsetStr = idx===0 ? 'D+0'
-      : s.workingDayLeg ? `+${s.avg}wd`
+      : s.workingDayLeg ? `+${legWDDisp}wd`
       : `D+${s.avg}`;
+    // p70/p85 subLine: for workingDayLeg use delta percentiles
+    const prevP70 = idx>0?STAGES[idx-1].p70:0;
+    const prevP85 = idx>0?STAGES[idx-1].p85:0;
+    const dispP70 = s.workingDayLeg&&!STAGES[idx-1]?.workingDayLeg ? Math.max(1,s.p70-prevP70) : s.p70;
+    const dispP85 = s.workingDayLeg&&!STAGES[idx-1]?.workingDayLeg ? Math.max(1,s.p85-prevP85) : s.p85;
     const subLine=s.p70>0
-      ? (s.workingDayLeg ? `p70=+${s.p70}wd · p85=+${s.p85}wd` : `p70=D+${s.p70} · p85=D+${s.p85}`)
+      ? (s.workingDayLeg ? `p70=+${dispP70}wd · p85=+${dispP85}wd` : `p70=D+${s.p70} · p85=D+${s.p85}`)
       : (idx===0?'Book slot email →':'');
     const liveN=smart?(idx===4?smart.nMala:idx===5?smart.nHub:idx===6?smart.nArr:0):0;
     const liveTag=liveN>0?`<span style="font-size:8px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 4px;font-weight:700">📊${liveN}</span>`:'';
