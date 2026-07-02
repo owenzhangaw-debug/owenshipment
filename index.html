@@ -2475,7 +2475,7 @@ select:focus, input:focus {
 <!-- ══ VESSEL DISPATCH ══ -->
 <div id="page-vessel-dispatch" class="page">
   <div id="vd-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
-    <h2 style="margin:0;font-size:16px;font-weight:800;color:#003534">Vessel Dispatch</h2>
+    <h2 style="margin:0;font-size:16px;font-weight:800;color:#003534">Vessel Dispatch <span style="font-size:11px;font-weight:500;color:#64748b">grouped by Cut-Off date</span></h2>
     <span id="vd-count-badge" style="font-size:11px;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:2px 10px;font-weight:700"></span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
@@ -10555,12 +10555,12 @@ function renderVesselDispatch(){
     if(toEl){ const to=vdAddDays(today,13); toEl.value=to; toISO=to; }
   }
 
-  // Enrich rows — use ETA (Arrival) as the grouping date; fall back to ETS
+  // Enrich rows — group by Cut-Off date; fall back to ETS then ETA
   const rows=VT.map(r=>{
     const etaISO=vdParseDate(r['ETA (Arrival)']||'');
     const etsISO=vdParseDate(r['ETS (Departure)']||'');
     const cutISO=vdParseDate(r['Port Cut-Off']||'');
-    return {...r, _etaISO:etaISO, _etsISO:etsISO, _cutISO:cutISO, _groupDate:etaISO||etsISO||null};
+    return {...r, _etaISO:etaISO, _etsISO:etsISO, _cutISO:cutISO, _groupDate:cutISO||etsISO||etaISO||null};
   });
 
   // Populate filter dropdowns
