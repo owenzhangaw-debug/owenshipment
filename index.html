@@ -10593,8 +10593,10 @@ function renderVesselDispatch(){
   // Filter — exclude Discharged by default
   let filtered=rows.filter(r=>r['Status']!=='Discharged');
   if(statusFilter) filtered=rows.filter(r=>(r['Status']||'TBD')===statusFilter||(!r['Status']&&statusFilter==='TBD'));
-  if(fromISO) filtered=filtered.filter(r=>r._groupDate&&r._groupDate>=fromISO);
-  if(toISO)   filtered=filtered.filter(r=>r._groupDate&&r._groupDate<=toISO);
+  // Date filter: always include vessels with VGM or Custom unfiled (even past cut-off)
+  const needsAttention=r=>!r['VGM']||!r['Custom'];
+  if(fromISO) filtered=filtered.filter(r=>needsAttention(r)||(r._groupDate&&r._groupDate>=fromISO));
+  if(toISO)   filtered=filtered.filter(r=>needsAttention(r)||(r._groupDate&&r._groupDate<=toISO));
   if(cyFilter)      filtered=filtered.filter(r=>r['CY']===cyFilter);
   if(carrierFilter) filtered=filtered.filter(r=>r['Carrier']===carrierFilter);
 
@@ -10645,8 +10647,9 @@ function renderVesselDispatch(){
       else if(d<=5){cutColor='#854d0e';cutBg='#fef9c3';}
     }
 
-    return `<div class="dv-ct-pill" style="display:inline-flex;flex-direction:column;gap:3px;padding:6px 9px;margin:3px 3px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:11px;min-width:150px;vertical-align:top;cursor:pointer" onclick="gotoVessel(${r._id})">
-      <span style="font-family:monospace;font-weight:700;color:#1e293b;font-size:11px">🚢 ${r['Vessel Name']||'(unnamed)'}</span>
+    const isOverdue=r._cutISO&&r._cutISO<today&&(!r['VGM']||!r['Custom']);
+    return `<div class="dv-ct-pill" style="display:inline-flex;flex-direction:column;gap:3px;padding:6px 9px;margin:3px 3px;background:${isOverdue?'#fff7f7':'#f8fafc'};border:1.5px solid ${isOverdue?'#fca5a5':'#e2e8f0'};border-radius:7px;font-size:11px;min-width:150px;vertical-align:top;cursor:pointer" onclick="gotoVessel(${r._id})">
+      <span style="font-family:monospace;font-weight:700;color:#1e293b;font-size:11px">${isOverdue?'⚠️ ':''} 🚢 ${r['Vessel Name']||'(unnamed)'}</span>
       ${bookingStr?`<span style="font-size:10px;color:#64748b;font-family:monospace">${bookingStr}</span>`:''}
       <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:1px">
         ${etsStr?`<span style="font-size:10px;background:#e0f2fe;color:#0369a1;border-radius:3px;padding:1px 5px;font-weight:600">ETS ${etsStr}</span>`:''}
