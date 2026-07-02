@@ -227,6 +227,16 @@ tbody tr.hi-dl-warn:hover td{background:#fef08a}
 tbody tr.hi-dl-warn td.fc-1,tbody tr.hi-dl-warn td.fc-2,tbody tr.hi-dl-warn td.fc-3,tbody tr.hi-dl-warn td.fc-4{background:#fefce8}
 tbody tr.hi-dl-soon{background:#f7fee7}
 tbody tr.hi-dl-soon td.fc-1,tbody tr.hi-dl-soon td.fc-2,tbody tr.hi-dl-soon td.fc-3,tbody tr.hi-dl-soon td.fc-4{background:#f7fee7}
+/* Emergency level row highlighting */
+tbody tr.hi-emergency-critical{background:#fee2e2}
+tbody tr.hi-emergency-critical:hover td{background:#fecaca}
+tbody tr.hi-emergency-critical td.fc-1,tbody tr.hi-emergency-critical td.fc-2,tbody tr.hi-emergency-critical td.fc-3,tbody tr.hi-emergency-critical td.fc-4{background:#fee2e2}
+tbody tr.hi-emergency-urgent{background:#ffedd5}
+tbody tr.hi-emergency-urgent:hover td{background:#fed7aa}
+tbody tr.hi-emergency-urgent td.fc-1,tbody tr.hi-emergency-urgent td.fc-2,tbody tr.hi-emergency-urgent td.fc-3,tbody tr.hi-emergency-urgent td.fc-4{background:#ffedd5}
+tbody tr.hi-emergency-watch{background:#fefce8}
+tbody tr.hi-emergency-watch:hover td{background:#fef08a}
+tbody tr.hi-emergency-watch td.fc-1,tbody tr.hi-emergency-watch td.fc-2,tbody tr.hi-emergency-watch td.fc-3,tbody tr.hi-emergency-watch td.fc-4{background:#fefce8}
 tbody td{padding:0;vertical-align:middle;position:relative}
 /* ── Frozen columns ── */
 th.fc-1,td.fc-1,th.fc-2,td.fc-2,th.fc-3,td.fc-3,th.fc-4,td.fc-4{position:sticky;z-index:3}
@@ -1296,6 +1306,7 @@ select:focus, input:focus {
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('dispatch')">Dispatch</button>
     <button onclick="showPage('vessels')">Vessels</button>
+    <button onclick="showPage('vessel-dispatch')">Vessel Dispatch</button>
     <button onclick="showPage('reports')">Reports</button>
     <span class="nav-divider"></span>
     <!-- Tools dropdown -->
@@ -1331,7 +1342,7 @@ select:focus, input:focus {
       <div class="bel-card-top-left">
         <span style="font-size:22px">🚂</span>
         <h3 id="rt-title">Route — Stage-by-Stage Timing</h3>
-        <span id="rt-badge" style="font-size:10px;font-weight:700;background:#E8F5E9;color:#2E7D32;border-radius:20px;padding:3px 10px">🇧🇪 BELGG · 611 verified deliveries</span>
+        <span id="rt-badge" style="font-size:10px;font-weight:700;background:#E8F5E9;color:#2E7D32;border-radius:20px;padding:3px 10px">🇧🇪 BELGG · 133 tracked shipments</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;color:#94a3b8">Destination:</span>
@@ -1404,7 +1415,6 @@ select:focus, input:focus {
       <!-- Category Tabs -->
       <div class="dash-cat-tabs">
         <button class="dash-cat-tab active" onclick="switchDashCat('time',this)">⏱ Time</button>
-        <button class="dash-cat-tab" onclick="switchDashCat('hub-t1',this)">🏗️ Hub → T1</button>
         <button class="dash-cat-tab" onclick="switchDashCat('price',this)">💰 Price</button>
         <button class="dash-cat-tab" onclick="switchDashCat('vessel-fin',this)">🚢 Vessel $</button>
         <button class="dash-cat-tab" onclick="switchDashCat('qty',this)">📦 Quantity</button>
@@ -1436,40 +1446,8 @@ select:focus, input:focus {
         </div>
       </div>
 
-      <!-- ── HUB → T1 DURATION ── -->
-      <div id="dash-cat-hub-t1" class="dash-cat-section">
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">ETA Duisburg → T1 Cleared (days per batch)<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Business days from ETA Hub arrival to T1 customs clearance</p>
-            <div class="chart-wrap" style="height:300px"><canvas id="hub-t1-batch-chart"></canvas></div>
-          </div>
-        </div>
-      </div>
-
       <!-- ── PRICE ── -->
       <div id="dash-cat-price" class="dash-cat-section">
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Avg Price by Batch (€)<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Average freight price per container by batch / train</p>
-            <div class="chart-wrap" style="height:320px"><canvas id="price-trucker-avg-chart"></canvas></div>
-          </div>
-        </div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Price Trend by Trucker — per Batch (€)<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Avg base price (€) per container by trucker per batch. Outliers automatically excluded (prices too far from the group are ignored). Hover to see count and any excluded values.</p>
-            <div class="chart-wrap" style="height:360px"><canvas id="price-inflation-trucker-chart"></canvas></div>
-          </div>
-        </div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Price Trend by Broker — per Batch (€)<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Avg base price (€) per container by broker per batch. Outliers automatically excluded. Hover to see count and any excluded values.</p>
-            <div class="chart-wrap" style="height:320px"><canvas id="price-inflation-broker-chart"></canvas></div>
-          </div>
-        </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">Avg T1 Cost by Batch (€)<span class="ch-toggle">▼</span></h3>
@@ -1565,19 +1543,7 @@ select:focus, input:focus {
 
       <!-- ── QUANTITY ── -->
       <div id="dash-cat-qty" class="dash-cat-section">
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">SOC Inventory by Yard<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Available vs booked SOC containers per container yard</p>
-            <div class="chart-wrap" style="height:200px"><canvas id="soc-inventory-chart"></canvas></div>
-          </div>
-        </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Container Tracking Status<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Breakdown by current tracking state</p>
-            <div class="chart-wrap" style="height:260px"><canvas id="tracking-donut-chart"></canvas></div>
-          </div>
           <div class="chart-card">
             <h3 onclick="toggleChart(this)">On Time Rate by Trucker<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">% containers delivered on or before Scheduled Slot</p>
@@ -1603,13 +1569,6 @@ select:focus, input:focus {
             <h3 onclick="toggleChart(this)">Monthly Units per Consignee<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">How many containers each consignee received each month (by Actual Arrival)</p>
             <div class="chart-wrap" style="height:380px"><canvas id="consignee-monthly-chart"></canvas></div>
-          </div>
-        </div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Slot Reschedules by Trucker<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Number of slot changes caused by trucker or consignee</p>
-            <div class="chart-wrap" style="height:260px"><canvas id="slot-change-trucker-chart"></canvas></div>
           </div>
         </div>
       </div>
@@ -1689,7 +1648,7 @@ select:focus, input:focus {
       <!-- Status TBD Alert -->
       <div class="chart-card vt-right-card" style="padding:14px 16px">
         <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-          <span style="font-size:16px">❓</span> Status TBD
+          Status TBD
           <span id="tbd-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#f3e8ff;color:#7c3aed;border-radius:8px;padding:2px 8px"></span>
         </h3>
         <div id="tbd-alert-list" style="font-size:12px"></div>
@@ -1698,7 +1657,7 @@ select:focus, input:focus {
       <!-- VGM Not Filed -->
       <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
         <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-          <span style="font-size:16px">📋</span> VGM Not Filed
+          VGM Not Filed
           <span id="vgm-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
         </h3>
         <div id="vgm-alert-list" style="font-size:12px"></div>
@@ -1707,20 +1666,12 @@ select:focus, input:focus {
       <!-- Custom Not Filed -->
       <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
         <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-          <span style="font-size:16px">📦</span> Custom Not Filed
+          Custom Not Filed
           <span id="custom-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
         </h3>
         <div id="custom-alert-list" style="font-size:12px"></div>
       </div>
 
-      <!-- SOC Rule Violations -->
-      <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
-        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-          <span style="font-size:16px">🏗️</span> SOC Inventory Rules
-          <span id="soc-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#e8f5e9;color:#2e7d32;border-radius:8px;padding:2px 8px">All OK</span>
-        </h3>
-        <div id="soc-alert-list" style="font-size:12px"></div>
-      </div>
     </div><!-- end dash-col RIGHT -->
 
   </div><!-- end dash-split -->
@@ -1851,6 +1802,7 @@ select:focus, input:focus {
           <th onclick="ctSort('Trucker')">Trucker ↕</th>
           <th class="no-sort">Trk Confirm</th>
           <th class="no-sort">Broker</th>
+          <th class="no-sort" style="min-width:80px;text-align:center">🚦 Level</th>
           <th onclick="ctSort('ETA in Mala')" title="ETA at Port of Malaysia">ETA in Mala ↕<span class="cdf-btn" id="cdf-ct-btn-ETA in Mala" onclick="openColDF('ct','ETA in Mala',this,event)" title="Filter by date">▾</span></th>
           <th onclick="ctSort('ETA at Hub')">ETA at Hub ↕<span class="cdf-btn" id="cdf-ct-btn-ETA at Hub" onclick="openColDF('ct','ETA at Hub',this,event)" title="Filter by date">▾</span></th>
           <th onclick="ctSort('T1 Date')" title="Date when T1 customs cleared at Duisburg">T1 ↕<span class="cdf-btn" id="cdf-ct-btn-T1 Date" onclick="openColDF('ct','T1 Date',this,event)" title="Filter by date">▾</span></th>
@@ -2193,9 +2145,7 @@ select:focus, input:focus {
 
   <!-- Return Container Planning moved to Planning page -->
 
-  <div id="vt-progress-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 4px 12px"></div>
-
-  <!-- VT Filter Row — below progress cards, above table -->
+  <!-- VT Filter Row — above table -->
   <div class="toolbar" style="margin:0 0 8px" id="vt-filter-toolbar">
     <div class="ms-wrap" id="vt-wrap-cy">
       <span class="ms-label">CY</span>
@@ -2520,6 +2470,40 @@ select:focus, input:focus {
     </div>
   </div>
   <div id="dv-content" style="padding:16px;max-width:1300px;margin:0 auto"></div>
+</div>
+
+<!-- ══ VESSEL DISPATCH ══ -->
+<div id="page-vessel-dispatch" class="page">
+  <div id="vd-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
+    <h2 style="margin:0;font-size:16px;font-weight:800;color:#003534">Vessel Dispatch</h2>
+    <span id="vd-count-badge" style="font-size:11px;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:2px 10px;font-weight:700"></span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
+      <input type="date" id="vd-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderVesselDispatch()">
+      <label style="font-size:12px;color:#64748b;font-weight:600">To</label>
+      <input type="date" id="vd-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderVesselDispatch()">
+      <button onclick="vdSetRange('thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+      <button onclick="vdSetRange('next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+      <button onclick="vdSetRange('next4w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">Next 4 Wks</button>
+      <button onclick="vdSetRange('all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All Active</button>
+      <select id="vd-status-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+        <option value="">All Statuses</option>
+        <option value="Scheduled">Scheduled</option>
+        <option value="Cut-Off Soon">Cut-Off Soon</option>
+        <option value="Cut-Off Passed">Cut-Off Passed</option>
+        <option value="Departed">Departed</option>
+        <option value="Discharged">Discharged</option>
+        <option value="TBD">TBD</option>
+      </select>
+      <select id="vd-cy-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+        <option value="">All CYs</option>
+      </select>
+      <select id="vd-carrier-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+        <option value="">All Carriers</option>
+      </select>
+    </div>
+  </div>
+  <div id="vd-content" style="padding:16px;max-width:1400px;margin:0 auto"></div>
 </div>
 
 </main>
@@ -3152,6 +3136,7 @@ function showPage(p){
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='reports') renderReports();
   if(p==='dispatch') renderDispatch();
+  if(p==='vessel-dispatch') renderVesselDispatch();
 }
 function _contextAdd(){
   if(_currentPage==='vessels') openAddVesselModal();
@@ -6210,7 +6195,9 @@ function renderCT(){
     const _dlDate=parseDate(r['Deadline']);
     const _dlDays=_dlDate?(()=>{const t=new Date();t.setHours(0,0,0,0);return Math.round((_dlDate-t)/864e5);})():null;
     const _dlUrgent=r['Tracking']!=='Arrived'&&_dlDays!==null&&_dlDays<=7;
-    const rowCls=missing?'hi-missing':_lateArr?'hi-late-arr':_dlUrgent?(_dlDays<=0?'hi-dl-overdue':_dlDays<=2?'hi-dl-critical':_dlDays<=5?'hi-dl-warn':'hi-dl-soon'):'';
+    const _elv=r['Emergency Level']||'';
+    const _elvCls=_elv==='Critical'?'hi-emergency-critical':_elv==='Urgent'?'hi-emergency-urgent':_elv==='Watch'?'hi-emergency-watch':'';
+    const rowCls=_elvCls||(missing?'hi-missing':_lateArr?'hi-late-arr':_dlUrgent?(_dlDays<=0?'hi-dl-overdue':_dlDays<=2?'hi-dl-critical':_dlDays<=5?'hi-dl-warn':'hi-dl-soon'):'');
     const dl=computeDays(r);
     const dlStr=dl!==null?(dl>0?'+'+dl:String(dl)):'—';
     const trackBadge=r['Tracking']==='Arrived'?'<span class="track-arr">Arrived</span>':r['Tracking']==='T1'?'<span class="track-t1">T1</span>':'<span class="track-none">None</span>';
@@ -6423,6 +6410,25 @@ function renderCT(){
       ${truckCell}
       ${trkConfCell}
       ${brokerCell}
+      <td style="padding:4px 6px;text-align:center">${(()=>{
+        const lv=r['Emergency Level']||'';
+        const lvMap={
+          '':{bg:'transparent',color:'#94a3b8',label:'—'},
+          'Normal':{bg:'#d1fae5',color:'#065f46',label:'🟢 Normal'},
+          'Watch':{bg:'#fef9c3',color:'#854d0e',label:'🟡 Watch'},
+          'Urgent':{bg:'#ffedd5',color:'#c2410c',label:'🟠 Urgent'},
+          'Critical':{bg:'#fee2e2',color:'#991b1b',label:'🔴 Critical'},
+        };
+        const m=lvMap[lv]||lvMap[''];
+        return `<div class="cell-view" onclick="startEdit(this)" style="background:${m.bg};color:${m.color};border-radius:6px;padding:2px 6px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer">${m.label}</div>
+        <div class="cell-edit"><select onblur="blurEditSelect(this)" onchange="commitEditSelect(this,'Emergency Level',${r._id})" style="font-size:11px">
+          <option value="" ${!lv?'selected':''}>— Normal</option>
+          <option value="Normal" ${lv==='Normal'?'selected':''}>🟢 Normal</option>
+          <option value="Watch" ${lv==='Watch'?'selected':''}>🟡 Watch</option>
+          <option value="Urgent" ${lv==='Urgent'?'selected':''}>🟠 Urgent</option>
+          <option value="Critical" ${lv==='Critical'?'selected':''}>🔴 Critical</option>
+        </select></div>`;
+      })()}</td>
       ${etaMalaC}
       ${etaCell}
       ${t1dC}
@@ -7860,50 +7866,49 @@ function vtRemoveBargeRoll(id, idx){
 }
 
 // ── BELGIUM ROUTE TIMELINE (horizontal pipeline) ───────────────────────────
-// Historical baseline from TEMU 运踪表格 Excel — 611 BELGG deliveries (Oct 2025 – Apr 2026)
+// Historical baseline from TEMU 运踪表格 Excel — 133 shipments (Mar–May 2026)
 // NL (NLAMS) and IT (ITMXP) use same China→Duisburg leg; final leg adjusted per route
-// Belgium avg 26.9d · NL avg ~24-25d · IT avg ~26-28d
-// ── Historical stats updated from 832-shipment TMS export ─────────────────
+// ── Updated from 133-shipment TEMU export (2026-07) ─────────────────────
 // Mala→Hub: working-day median = 3wd (trucks don't run weekends)
 // BE Hub→Delivery: working-day median = 3wd, mode = 2wd
 // NL Hub→Delivery: working-day median = 4wd, mode = 4wd
 const _BEL_HIST_STATS = {
-  alashankou: { n:832, mean:5.42,  p50:5.00,  p70:6.00,  p85:8.00,  p95:10.0 },
-  kz_transit: { n:832, mean:9.80,  p50:9.00,  p70:11.00, p85:13.00, p95:16.0 },
-  russia:     { n:832, mean:13.59, p50:13.00, p70:15.00, p85:17.00, p95:22.0 },
-  brest:      { n:832, mean:16.50, p50:16.00, p70:17.00, p85:20.00, p95:25.0 },
-  mala:       { n:832, mean:17.03, p50:16.00, p70:18.00, p85:20.00, p95:25.0 },
-  duisburg:   { n:832, mean:21.70, p50:22.00, p70:24.00, p85:25.00, p95:28.0 },
-  customs:    { n:832, mean:26.11, p50:26.00, p70:27.00, p85:29.00, p95:32.0 },
+  alashankou: { n:133, mean:4.65,  p50:5.00,  p70:5.00,  p85:5.00,  p95:7.0  },
+  kz_transit: { n:133, mean:7.47,  p50:8.00,  p70:9.00,  p85:9.00,  p95:9.0  },
+  russia:     { n:93,  mean:9.95,  p50:9.00,  p70:11.00, p85:11.00, p95:11.0 },
+  brest:      { n:57,  mean:12.50, p50:13.00, p70:13.00, p85:14.00, p95:15.0 },
+  mala:       { n:57,  mean:13.68, p50:14.00, p70:14.00, p85:15.00, p95:15.0 },
+  duisburg:   { n:8,   mean:17.00, p50:17.00, p70:17.00, p85:17.00, p95:17.0 },
+  customs:    { n:2,   mean:22.00, p50:22.00, p70:22.00, p85:22.00, p95:22.0 },
 };
 // Stage avgs = calendar days from China departure. Final delivery stage uses
 // working-day projection (belAddWorkingDays) so weekends are skipped properly.
 const BEL_STAGES = [
   { icon:'🚉', label:'Depart China\nTerminal',      avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
-  { icon:'🛂', label:'Alashankou\nBorder',           avg:5.42,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
-  { icon:'🏔️', label:'Kazakhstan\nTransit Done',    avg:9.80,  p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
-  { icon:'🚩', label:'Russia\nBorder',               avg:13.59, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
-  { icon:'🏭', label:'Malaszewicze\nPoland',         avg:17.03, p70:18, p85:20, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
-  { icon:'🏗️', label:'Duisburg\nHub',               avg:21.70, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
+  { icon:'🛂', label:'Alashankou\nBorder',           avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
+  { icon:'🏔️', label:'Kazakhstan\nTransit Done',    avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
+  { icon:'🚩', label:'Russia\nBorder',               avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
+  { icon:'🏭', label:'Malaszewicze\nPoland',         avg:13.68, p70:14, p85:15, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
+  { icon:'🏗️', label:'Duisburg\nHub',               avg:17.00, p70:17, p85:17, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
   { icon:'📦', label:'Belgium\nDelivery',            avg:3,     p70:4,  p85:5,  color:'#004D4C', bg:'#E0EFEF', dColor:'#003A3A', workingDayLeg:true  },
 ];
 // NL: Hub→Delivery working-day median = 4wd (slower T1, ~4d customs vs 1d for BE)
 const NL_STAGES = [
   { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
-  { icon:'🛂', label:'Alashankou\nBorder',         avg:5.42,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
-  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:9.80,  p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
-  { icon:'🚩', label:'Russia\nBorder',             avg:13.59, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
-  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:17.03, p70:18, p85:20, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
-  { icon:'🏗️', label:'Duisburg\nHub',             avg:21.70, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
+  { icon:'🛂', label:'Alashankou\nBorder',         avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
+  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
+  { icon:'🚩', label:'Russia\nBorder',             avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
+  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:13.68, p70:14, p85:15, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
+  { icon:'🏗️', label:'Duisburg\nHub',             avg:17.00, p70:17, p85:17, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
   { icon:'🇳🇱', label:'Netherlands\nDelivery',     avg:4,     p70:6,  p85:8,  color:'#c2410c', bg:'#fff7ed', dColor:'#c2410c', workingDayLeg:true  },
 ];
 const IT_STAGES = [
   { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
-  { icon:'🛂', label:'Alashankou\nBorder',         avg:5.42,  p70:6,  p85:8,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
-  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:9.80,  p70:11, p85:13, color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
-  { icon:'🚩', label:'Russia\nBorder',             avg:13.59, p70:15, p85:17, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
-  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:17.03, p70:18, p85:20, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
-  { icon:'🏗️', label:'Duisburg\nHub',             avg:21.70, p70:24, p85:25, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
+  { icon:'🛂', label:'Alashankou\nBorder',         avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
+  { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
+  { icon:'🚩', label:'Russia\nBorder',             avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
+  { icon:'🏭', label:'Malaszewicze\nPoland',       avg:13.68, p70:14, p85:15, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
+  { icon:'🏗️', label:'Duisburg\nHub',             avg:17.00, p70:17, p85:17, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
   { icon:'🇮🇹', label:'Milan MXP\nDelivery',       avg:5,     p70:7,  p85:9,  color:'#9d174d', bg:'#fdf2f8', dColor:'#9d174d', workingDayLeg:true  },
 ];
 
@@ -7914,7 +7919,7 @@ function rtSwitchDest(val){
   _rtDest=val;
   belDeparture=''; belAnchorIdx=-1;
   const configs={
-    be:{label:'🇧🇪 BELGG · 611 verified deliveries',bg:'#E8F5E9',color:'#2E7D32',title:'Belgium Route — Stage-by-Stage Timing'},
+    be:{label:'🇧🇪 BELGG · 133 tracked shipments',bg:'#E8F5E9',color:'#2E7D32',title:'Belgium Route — Stage-by-Stage Timing'},
     nl:{label:'🇳🇱 NLAMS · Belgium rail baseline',   bg:'#fff7ed',color:'#c2410c',title:'Netherlands Route — Stage-by-Stage Timing'},
     it:{label:'🇮🇹 ITMXP · Belgium rail baseline',   bg:'#fdf2f8',color:'#9d174d',title:'Italy Route — Stage-by-Stage Timing'},
   };
@@ -9516,7 +9521,7 @@ function buildSlotEmails(){
 `Dear ${recipient},
 
 Please find below the pre-alert for ${qty} container${qty>1?'s':''} scheduled to arrive on ${dateLabel}.
-Kindly make the necessary arrangements for unloading and confirm the delivery window at your earliest convenience.
+Kindly confirm the slots at your earliest convenience.
 
 Arrival details:
 ${slotLines}
@@ -10480,6 +10485,217 @@ function dvSetRange(key){
   renderDispatch();
 }
 
+// ══ VESSEL DISPATCH ══════════════════════════════════════════════════
+function vdParseDate(s){
+  if(!s) return null;
+  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(m) return `${m[1]}-${String(parseInt(m[2])).padStart(2,'0')}-${String(parseInt(m[3])).padStart(2,'0')}`;
+  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  m=s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+  if(m){ const mo=months[m[2].toLowerCase()]; return mo?`${m[3]}-${String(mo).padStart(2,'0')}-${String(parseInt(m[1])).padStart(2,'0')}`:null; }
+  return null;
+}
+function vdTodayISO(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function vdAddDays(iso,n){
+  const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function vdFmtDate(iso){
+  const d=new Date(iso+'T00:00:00');
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return {full:`${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`, short:`${months[d.getMonth()]} ${d.getDate()}`};
+}
+function vdSetRange(key){
+  const today=vdTodayISO();
+  let from='',to='';
+  if(key==='thisweek'){
+    const d=new Date(); const dow=d.getDay();
+    const mon=new Date(d); mon.setDate(d.getDate()-(dow===0?6:dow-1));
+    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+    from=mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');
+    to=sun.getFullYear()+'-'+String(sun.getMonth()+1).padStart(2,'0')+'-'+String(sun.getDate()).padStart(2,'0');
+  } else if(key==='next2w'){ from=today; to=vdAddDays(today,13); }
+  else if(key==='next4w'){ from=today; to=vdAddDays(today,27); }
+  else if(key==='all'){ from=''; to=''; }
+  const f=document.getElementById('vd-from'); if(f) f.value=from;
+  const t=document.getElementById('vd-to'); if(t) t.value=to;
+  renderVesselDispatch();
+}
+function vdStatusStyle(s){
+  if(!s||s==='TBD') return 'background:#f3e8ff;color:#7c3aed';
+  if(s==='Scheduled') return 'background:#dbeafe;color:#1d4ed8';
+  if(s==='Cut-Off Soon') return 'background:#ffedd5;color:#c2410c';
+  if(s==='Cut-Off Passed') return 'background:#fee2e2;color:#991b1b';
+  if(s==='Departed') return 'background:#d1fae5;color:#065f46';
+  if(s==='Discharged') return 'background:#f1f5f9;color:#64748b';
+  return 'background:#f1f5f9;color:#475569';
+}
+function renderVesselDispatch(){
+  const content=document.getElementById('vd-content');
+  if(!content) return;
+  const fromEl=document.getElementById('vd-from');
+  const toEl=document.getElementById('vd-to');
+  const statusEl=document.getElementById('vd-status-filter');
+  const cyEl=document.getElementById('vd-cy-filter');
+  const carrierEl=document.getElementById('vd-carrier-filter');
+  let fromISO=fromEl?.value||'';
+  let toISO=toEl?.value||'';
+  const statusFilter=statusEl?.value||'';
+  const cyFilter=cyEl?.value||'';
+  const carrierFilter=carrierEl?.value||'';
+  const today=vdTodayISO();
+
+  // Default: next 2 weeks on first open
+  if(!fromISO && !toISO){
+    if(fromEl){ fromEl.value=today; fromISO=today; }
+    if(toEl){ const to=vdAddDays(today,13); toEl.value=to; toISO=to; }
+  }
+
+  // Enrich rows — use ETA (Arrival) as the grouping date; fall back to ETS
+  const rows=VT.map(r=>{
+    const etaISO=vdParseDate(r['ETA (Arrival)']||'');
+    const etsISO=vdParseDate(r['ETS (Departure)']||'');
+    const cutISO=vdParseDate(r['Port Cut-Off']||'');
+    return {...r, _etaISO:etaISO, _etsISO:etsISO, _cutISO:cutISO, _groupDate:etaISO||etsISO||null};
+  });
+
+  // Populate filter dropdowns
+  const allCYs=[...new Set(rows.map(r=>r['CY']||'').filter(Boolean))].sort();
+  const allCarriers=[...new Set(rows.map(r=>r['Carrier']||'').filter(Boolean))].sort();
+  if(cyEl){
+    const prev=cyEl.value;
+    cyEl.innerHTML='<option value="">All CYs</option>'+allCYs.map(c=>`<option value="${c}"${c===prev?' selected':''}>${c}</option>`).join('');
+  }
+  if(carrierEl){
+    const prev=carrierEl.value;
+    carrierEl.innerHTML='<option value="">All Carriers</option>'+allCarriers.map(c=>`<option value="${c}"${c===prev?' selected':''}>${c}</option>`).join('');
+  }
+
+  // Filter
+  let filtered=rows.filter(r=>r['Status']!=='Discharged'); // exclude discharged by default unless filtered to it
+  if(statusFilter){ filtered=rows.filter(r=>(r['Status']||'TBD')===statusFilter||(!r['Status']&&statusFilter==='TBD')); }
+  if(fromISO) filtered=filtered.filter(r=>r._groupDate && r._groupDate>=fromISO);
+  if(toISO) filtered=filtered.filter(r=>r._groupDate && r._groupDate<=toISO);
+  if(cyFilter) filtered=filtered.filter(r=>r['CY']===cyFilter);
+  if(carrierFilter) filtered=filtered.filter(r=>r['Carrier']===carrierFilter);
+
+  // Badge
+  const badge=document.getElementById('vd-count-badge');
+  if(badge) badge.textContent=`${filtered.length} vessel${filtered.length!==1?'s':''}`;
+
+  if(!filtered.length){
+    content.innerHTML=`<div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px">
+      No vessels found for the selected range.<br><br>
+      <button onclick="vdSetRange('all')" style="padding:6px 16px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:7px;font-size:13px;cursor:pointer">Show All Active</button>
+    </div>`;
+    return;
+  }
+
+  // Separate vessels with/without a group date
+  const withDate=filtered.filter(r=>r._groupDate);
+  const noDate=filtered.filter(r=>!r._groupDate);
+
+  // Group by date
+  const byDate={};
+  withDate.forEach(r=>{
+    const d=r._groupDate;
+    if(!byDate[d]) byDate[d]=[];
+    byDate[d].push(r);
+  });
+  const sortedDates=Object.keys(byDate).sort();
+
+  function renderVesselCard(r){
+    const status=r['Status']||'TBD';
+    const statusSt=vdStatusStyle(status);
+    const vgmOk=!!r['VGM'];
+    const custOk=!!r['Custom'];
+    const qty=r['Container Qty']||'—';
+    const etaStr=r['ETA (Arrival)']||'';
+    const etsStr=r['ETS (Departure)']||'';
+    const cutStr=r['Port Cut-Off']||'';
+    const bargeStr=r['Barge Date']||'';
+    const podStr=r['POD']||'';
+    const rmkStr=r['Remark']||'';
+    const orderStr=r['Order No.']||'';
+    const linkedCtrs=Array.isArray(r.containers)?r.containers:[];
+
+    // Cut-off urgency
+    let cutBg='#f1f5f9',cutColor='#64748b';
+    if(r._cutISO){
+      const daysTocut=Math.round((new Date(r._cutISO+'T00:00:00')-new Date(today+'T00:00:00'))/864e5);
+      if(daysTocut<0){cutBg='#fee2e2';cutColor='#991b1b';}
+      else if(daysTocut<=2){cutBg='#ffedd5';cutColor='#c2410c';}
+      else if(daysTocut<=5){cutBg='#fefce8';cutColor='#854d0e';}
+    }
+
+    return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;flex:1 1 300px;max-width:480px;min-width:280px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:800;color:#003534;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r['Vessel Name']||'(no vessel name)'}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px;font-family:monospace">${r['Booking / BC No.']||'—'}</div>
+        </div>
+        <span style="font-size:10px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;${statusSt}">${status}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">Carrier</span><br>${r['Carrier']||'—'}</div>
+        <div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">CY</span><br>${r['CY']||'—'}</div>
+        <div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">POL</span><br>${r['Port']||'—'}</div>
+        <div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">POD</span><br>${podStr||'—'}</div>
+        ${etsStr?`<div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">ETS</span><br>${etsStr}</div>`:''}
+        ${etaStr?`<div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">ETA</span><br>${etaStr}</div>`:''}
+        ${cutStr?`<div style="font-size:11px"><span style="font-weight:700;color:#475569">Cut-Off</span><br><span style="background:${cutBg};color:${cutColor};border-radius:4px;padding:1px 5px;font-weight:600">${cutStr}</span></div>`:''}
+        ${bargeStr?`<div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">Barge</span><br>${bargeStr}</div>`:''}
+        ${orderStr?`<div style="font-size:11px;color:#64748b;grid-column:1/-1"><span style="font-weight:700;color:#475569">Order No.</span> ${orderStr}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #f1f5f9">
+        <span style="font-size:11px;background:#f0fdf4;color:#15803d;border-radius:6px;padding:2px 8px;font-weight:700">${qty} ctr${qty>1?'s':''}</span>
+        <span style="font-size:11px;border-radius:6px;padding:2px 8px;font-weight:700;${vgmOk?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#991b1b'}">VGM ${vgmOk?'✓':'✗'}</span>
+        <span style="font-size:11px;border-radius:6px;padding:2px 8px;font-weight:700;${custOk?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#991b1b'}">Custom ${custOk?'✓':'✗'}</span>
+        ${linkedCtrs.length?`<span style="font-size:11px;background:#eff6ff;color:#1d4ed8;border-radius:6px;padding:2px 8px;font-weight:700">${linkedCtrs.length} linked</span>`:''}
+        <button onclick="gotoVessel(${r._id})" style="margin-left:auto;padding:3px 10px;font-size:10px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">View →</button>
+      </div>
+      ${rmkStr?`<div style="margin-top:8px;font-size:11px;color:#64748b;background:#f8fafc;border-radius:5px;padding:5px 8px;line-height:1.4">${rmkStr}</div>`:''}
+    </div>`;
+  }
+
+  const dateBlocks=sortedDates.map(date=>{
+    const vessels=byDate[date];
+    const dateInfo=vdFmtDate(date);
+    const isToday=date===today;
+    const isPast=date<today;
+    const dateBg=isToday?'linear-gradient(90deg,#003534,#0f766e)':isPast?'#f1f5f9':'#fff';
+    const dateTextColor=isToday?'#fff':isPast?'#6b7280':'#1e293b';
+    const todayLabel=isToday?'<span style="font-size:10px;background:#fef9c3;color:#92400e;border-radius:6px;padding:1px 8px;font-weight:800">TODAY</span>':'';
+    const pastLabel=isPast&&!isToday?'<span style="font-size:10px;background:#fef2f2;color:#dc2626;border-radius:6px;padding:1px 8px;font-weight:700">PAST</span>':'';
+    const countLabel=`<span style="font-size:11px;background:${isToday?'rgba(255,255,255,.15)':'#dbeafe'};color:${isToday?'#fff':'#1d4ed8'};border-radius:8px;padding:2px 10px;font-weight:700">${vessels.length} vessel${vessels.length!==1?'s':''}</span>`;
+    return `<div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px 10px 0 0;background:${dateBg};flex-wrap:wrap">
+        <span style="font-size:16px;font-weight:900;color:${dateTextColor}">${dateInfo.full}</span>
+        ${todayLabel}${pastLabel}${countLabel}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">
+        ${vessels.map(renderVesselCard).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  const noDateBlock=noDate.length?`<div style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px 10px 0 0;background:#f8fafc;border:1px solid #e2e8f0">
+      <span style="font-size:15px;font-weight:800;color:#94a3b8">No ETA / ETS Set</span>
+      <span style="font-size:11px;background:#f1f5f9;color:#64748b;border-radius:8px;padding:2px 10px;font-weight:700">${noDate.length} vessel${noDate.length!==1?'s':''}</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">
+      ${noDate.map(renderVesselCard).join('')}
+    </div>
+  </div>`:'';
+
+  content.innerHTML=dateBlocks+noDateBlock||'<div style="padding:40px;text-align:center;color:#94a3b8">No data to display.</div>';
+}
+
 function renderDispatch(){
   // CT is already loaded via loadData() on page init
   const content=document.getElementById('dv-content');
@@ -11235,6 +11451,9 @@ window.addEventListener('resize', ()=>{ if(_currentPage==='vessels') vtApplyFree
   </button>
   <button onclick="showPage('vessels')" id="mnav-vessels">
     <span class="mnav-icon">🚢</span>Vessels
+  </button>
+  <button onclick="showPage('vessel-dispatch')" id="mnav-vessel-dispatch">
+    <span class="mnav-icon">🗓️</span>Vsl Disp
   </button>
   <button onclick="showPage('notices')" id="mnav-notices">
     <span class="mnav-icon">🔔</span>Notices
