@@ -2475,7 +2475,8 @@ select:focus, input:focus {
 <!-- ══ VESSEL DISPATCH ══ -->
 <div id="page-vessel-dispatch" class="page">
   <div id="vd-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
-    <h2 style="margin:0;font-size:16px;font-weight:800;color:#003534">Vessel Dispatch <span style="font-size:11px;font-weight:500;color:#64748b">grouped by Cut-Off date</span></h2>
+    <span style="font-size:20px">🚢</span>
+    <h2 style="margin:0;font-size:16px;font-weight:800;color:#003534">Vessel Dispatch</h2>
     <span id="vd-count-badge" style="font-size:11px;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:2px 10px;font-weight:700"></span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
@@ -10534,6 +10535,27 @@ function vdStatusStyle(s){
   if(s==='Discharged') return 'background:#f1f5f9;color:#64748b';
   return 'background:#f1f5f9;color:#475569';
 }
+// carrier colour palette (mirrors DV_TRUCKER_COLORS style)
+const VD_CARRIER_COLORS={};
+const _VD_CARRIER_PALETTE=[
+  {bg:'#eff6ff',border:'#bfdbfe',text:'#1e40af'},
+  {bg:'#f0fdf4',border:'#bbf7d0',text:'#14532d'},
+  {bg:'#fdf4ff',border:'#e9d5ff',text:'#6b21a8'},
+  {bg:'#fff7ed',border:'#fed7aa',text:'#9a3412'},
+  {bg:'#fefce8',border:'#fde68a',text:'#78350f'},
+  {bg:'#f0f9ff',border:'#bae6fd',text:'#075985'},
+  {bg:'#fdf2f8',border:'#fbcfe8',text:'#831843'},
+  {bg:'#f0fdfa',border:'#99f6e4',text:'#134e4a'},
+];
+let _vdCarrierIdx=0;
+function vdCarrierStyle(c){
+  if(!VD_CARRIER_COLORS[c]){
+    VD_CARRIER_COLORS[c]=_VD_CARRIER_PALETTE[_vdCarrierIdx++%_VD_CARRIER_PALETTE.length];
+  }
+  const col=VD_CARRIER_COLORS[c];
+  return `background:${col.bg};border-color:${col.border};color:${col.text}`;
+}
+
 function renderVesselDispatch(){
   const content=document.getElementById('vd-content');
   if(!content) return;
@@ -10549,151 +10571,133 @@ function renderVesselDispatch(){
   const carrierFilter=carrierEl?.value||'';
   const today=vdTodayISO();
 
-  // Default: next 2 weeks on first open
   if(!fromISO && !toISO){
     if(fromEl){ fromEl.value=today; fromISO=today; }
     if(toEl){ const to=vdAddDays(today,13); toEl.value=to; toISO=to; }
   }
 
-  // Enrich rows — group by Cut-Off date; fall back to ETS then ETA
+  // Enrich — group by Cut-Off date, fall back to ETS then ETA
   const rows=VT.map(r=>{
     const etaISO=vdParseDate(r['ETA (Arrival)']||'');
     const etsISO=vdParseDate(r['ETS (Departure)']||'');
     const cutISO=vdParseDate(r['Port Cut-Off']||'');
-    return {...r, _etaISO:etaISO, _etsISO:etsISO, _cutISO:cutISO, _groupDate:cutISO||etsISO||etaISO||null};
+    return {...r,_etaISO:etaISO,_etsISO:etsISO,_cutISO:cutISO,_groupDate:cutISO||etsISO||etaISO||null};
   });
 
-  // Populate filter dropdowns
+  // Populate dropdowns
   const allCYs=[...new Set(rows.map(r=>r['CY']||'').filter(Boolean))].sort();
   const allCarriers=[...new Set(rows.map(r=>r['Carrier']||'').filter(Boolean))].sort();
-  if(cyEl){
-    const prev=cyEl.value;
-    cyEl.innerHTML='<option value="">All CYs</option>'+allCYs.map(c=>`<option value="${c}"${c===prev?' selected':''}>${c}</option>`).join('');
-  }
-  if(carrierEl){
-    const prev=carrierEl.value;
-    carrierEl.innerHTML='<option value="">All Carriers</option>'+allCarriers.map(c=>`<option value="${c}"${c===prev?' selected':''}>${c}</option>`).join('');
-  }
+  if(cyEl){ const p=cyEl.value; cyEl.innerHTML='<option value="">All CYs</option>'+allCYs.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join(''); }
+  if(carrierEl){ const p=carrierEl.value; carrierEl.innerHTML='<option value="">All Carriers</option>'+allCarriers.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join(''); }
 
-  // Filter
-  let filtered=rows.filter(r=>r['Status']!=='Discharged'); // exclude discharged by default unless filtered to it
-  if(statusFilter){ filtered=rows.filter(r=>(r['Status']||'TBD')===statusFilter||(!r['Status']&&statusFilter==='TBD')); }
-  if(fromISO) filtered=filtered.filter(r=>r._groupDate && r._groupDate>=fromISO);
-  if(toISO) filtered=filtered.filter(r=>r._groupDate && r._groupDate<=toISO);
-  if(cyFilter) filtered=filtered.filter(r=>r['CY']===cyFilter);
+  // Filter — exclude Discharged by default
+  let filtered=rows.filter(r=>r['Status']!=='Discharged');
+  if(statusFilter) filtered=rows.filter(r=>(r['Status']||'TBD')===statusFilter||(!r['Status']&&statusFilter==='TBD'));
+  if(fromISO) filtered=filtered.filter(r=>r._groupDate&&r._groupDate>=fromISO);
+  if(toISO)   filtered=filtered.filter(r=>r._groupDate&&r._groupDate<=toISO);
+  if(cyFilter)      filtered=filtered.filter(r=>r['CY']===cyFilter);
   if(carrierFilter) filtered=filtered.filter(r=>r['Carrier']===carrierFilter);
 
-  // Badge
   const badge=document.getElementById('vd-count-badge');
   if(badge) badge.textContent=`${filtered.length} vessel${filtered.length!==1?'s':''}`;
 
   if(!filtered.length){
-    content.innerHTML=`<div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px">
-      No vessels found for the selected range.<br><br>
-      <button onclick="vdSetRange('all')" style="padding:6px 16px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:7px;font-size:13px;cursor:pointer">Show All Active</button>
-    </div>`;
+    content.innerHTML=`<div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px">No vessels found for the selected range.<br><br>
+      <button onclick="vdSetRange('all')" style="padding:6px 16px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:7px;font-size:13px;cursor:pointer">Show All Active</button></div>`;
     return;
   }
 
-  // Separate vessels with/without a group date
   const withDate=filtered.filter(r=>r._groupDate);
   const noDate=filtered.filter(r=>!r._groupDate);
 
-  // Group by date
   const byDate={};
-  withDate.forEach(r=>{
-    const d=r._groupDate;
-    if(!byDate[d]) byDate[d]=[];
-    byDate[d].push(r);
-  });
+  withDate.forEach(r=>{ const d=r._groupDate; if(!byDate[d]) byDate[d]=[]; byDate[d].push(r); });
   const sortedDates=Object.keys(byDate).sort();
 
-  function renderVesselCard(r){
+  function vesselPill(r){
     const status=r['Status']||'TBD';
-    const statusSt=vdStatusStyle(status);
-    const vgmOk=!!r['VGM'];
-    const custOk=!!r['Custom'];
-    const qty=r['Container Qty']||'—';
-    const etaStr=r['ETA (Arrival)']||'';
+    const st=vdStatusStyle(status);
+    const vgmOk=!!r['VGM'], custOk=!!r['Custom'];
+    const qty=r['Container Qty']||'';
     const etsStr=r['ETS (Departure)']||'';
-    const cutStr=r['Port Cut-Off']||'';
-    const bargeStr=r['Barge Date']||'';
-    const podStr=r['POD']||'';
-    const rmkStr=r['Remark']||'';
-    const orderStr=r['Order No.']||'';
-    const linkedCtrs=Array.isArray(r.containers)?r.containers:[];
-
-    // Cut-off urgency
-    let cutBg='#f1f5f9',cutColor='#64748b';
-    if(r._cutISO){
-      const daysTocut=Math.round((new Date(r._cutISO+'T00:00:00')-new Date(today+'T00:00:00'))/864e5);
-      if(daysTocut<0){cutBg='#fee2e2';cutColor='#991b1b';}
-      else if(daysTocut<=2){cutBg='#ffedd5';cutColor='#c2410c';}
-      else if(daysTocut<=5){cutBg='#fefce8';cutColor='#854d0e';}
-    }
-
-    return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;flex:1 1 300px;max-width:480px;min-width:280px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:800;color:#003534;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r['Vessel Name']||'(no vessel name)'}</div>
-          <div style="font-size:11px;color:#64748b;margin-top:2px;font-family:monospace">${r['Booking / BC No.']||'—'}</div>
-        </div>
-        <span style="font-size:10px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;${statusSt}">${status}</span>
+    const etaStr=r['ETA (Arrival)']||'';
+    const rmk=r['Remark']||'';
+    const linked=Array.isArray(r.containers)?r.containers.length:0;
+    return `<div class="dv-ct-pill" style="display:inline-flex;flex-direction:column;gap:3px;padding:6px 9px;margin:3px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:11px;min-width:160px;vertical-align:top;cursor:pointer" onclick="gotoVessel(${r._id})">
+      <span style="font-weight:800;color:#003534;font-size:12px">${r['Vessel Name']||'(unnamed)'}</span>
+      ${r['Booking / BC No.']?`<span style="font-family:monospace;font-size:10px;color:#64748b">${r['Booking / BC No.']}</span>`:''}
+      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:1px">
+        <span style="font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;${st}">${status}</span>
+        ${qty?`<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:600">${qty} ctr</span>`:''}
+        <span style="font-size:10px;border-radius:4px;padding:1px 5px;font-weight:700;${vgmOk?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#991b1b'}">VGM${vgmOk?'✓':'✗'}</span>
+        <span style="font-size:10px;border-radius:4px;padding:1px 5px;font-weight:700;${custOk?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#991b1b'}">CS${custOk?'✓':'✗'}</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-        <div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">Carrier</span><br>${r['Carrier']||'—'}</div>
-        <div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">CY</span><br>${r['CY']||'—'}</div>
-        <div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">POL</span><br>${r['Port']||'—'}</div>
-        <div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">POD</span><br>${podStr||'—'}</div>
-        ${etsStr?`<div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">ETS</span><br>${etsStr}</div>`:''}
-        ${etaStr?`<div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">ETA</span><br>${etaStr}</div>`:''}
-        ${cutStr?`<div style="font-size:11px"><span style="font-weight:700;color:#475569">Cut-Off</span><br><span style="background:${cutBg};color:${cutColor};border-radius:4px;padding:1px 5px;font-weight:600">${cutStr}</span></div>`:''}
-        ${bargeStr?`<div style="font-size:11px;color:#64748b"><span style="font-weight:700;color:#475569">Barge</span><br>${bargeStr}</div>`:''}
-        ${orderStr?`<div style="font-size:11px;color:#64748b;grid-column:1/-1"><span style="font-weight:700;color:#475569">Order No.</span> ${orderStr}</div>`:''}
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #f1f5f9">
-        <span style="font-size:11px;background:#f0fdf4;color:#15803d;border-radius:6px;padding:2px 8px;font-weight:700">${qty} ctr${qty>1?'s':''}</span>
-        <span style="font-size:11px;border-radius:6px;padding:2px 8px;font-weight:700;${vgmOk?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#991b1b'}">VGM ${vgmOk?'✓':'✗'}</span>
-        <span style="font-size:11px;border-radius:6px;padding:2px 8px;font-weight:700;${custOk?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#991b1b'}">Custom ${custOk?'✓':'✗'}</span>
-        ${linkedCtrs.length?`<span style="font-size:11px;background:#eff6ff;color:#1d4ed8;border-radius:6px;padding:2px 8px;font-weight:700">${linkedCtrs.length} linked</span>`:''}
-        <button onclick="gotoVessel(${r._id})" style="margin-left:auto;padding:3px 10px;font-size:10px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">View →</button>
-      </div>
-      ${rmkStr?`<div style="margin-top:8px;font-size:11px;color:#64748b;background:#f8fafc;border-radius:5px;padding:5px 8px;line-height:1.4">${rmkStr}</div>`:''}
+      ${etsStr||etaStr?`<div style="display:flex;gap:6px;font-size:10px;color:#64748b;margin-top:1px">
+        ${etsStr?`<span>ETS ${etsStr}</span>`:''}
+        ${etaStr?`<span>ETA ${etaStr}</span>`:''}
+      </div>`:''}
+      ${rmk?`<div style="font-size:10px;color:#94a3b8;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${rmk}</div>`:''}
     </div>`;
   }
 
   const dateBlocks=sortedDates.map(date=>{
     const vessels=byDate[date];
     const dateInfo=vdFmtDate(date);
-    const isToday=date===today;
-    const isPast=date<today;
+    const isToday=date===today, isPast=date<today;
     const dateBg=isToday?'linear-gradient(90deg,#003534,#0f766e)':isPast?'#f1f5f9':'#fff';
     const dateTextColor=isToday?'#fff':isPast?'#6b7280':'#1e293b';
     const todayLabel=isToday?'<span style="font-size:10px;background:#fef9c3;color:#92400e;border-radius:6px;padding:1px 8px;font-weight:800">TODAY</span>':'';
-    const pastLabel=isPast&&!isToday?'<span style="font-size:10px;background:#fef2f2;color:#dc2626;border-radius:6px;padding:1px 8px;font-weight:700">PAST</span>':'';
-    const countLabel=`<span style="font-size:11px;background:${isToday?'rgba(255,255,255,.15)':'#dbeafe'};color:${isToday?'#fff':'#1d4ed8'};border-radius:8px;padding:2px 10px;font-weight:700">${vessels.length} vessel${vessels.length!==1?'s':''}</span>`;
-    return `<div style="margin-bottom:20px">
+    const pastLabel=isPast&&!isToday?'<span style="font-size:10px;background:#fef2f2;color:#dc2626;border-radius:6px;padding:1px 8px;font-weight:700">PAST DUE</span>':'';
+    const pendingBadge=`<span style="font-size:11px;background:${isToday?'rgba(255,255,255,.15)':'#fef9c3'};color:${isToday?'#fff':'#854d0e'};border-radius:8px;padding:2px 10px;font-weight:700">${vessels.length} vessel${vessels.length!==1?'s':''}</span>`;
+
+    // Group by CY (like consignee in container dispatch)
+    const byCY={};
+    vessels.forEach(r=>{ const cy=r['CY']||'(no CY)'; if(!byCY[cy]) byCY[cy]=[]; byCY[cy].push(r); });
+
+    const cyCards=Object.entries(byCY).map(([cy,items])=>{
+      // Group by carrier within CY (like trucker within consignee)
+      const byCarrier={};
+      items.forEach(r=>{ const c=r['Carrier']||'(unknown)'; if(!byCarrier[c]) byCarrier[c]=[]; byCarrier[c].push(r); });
+
+      const carrierRows=Object.entries(byCarrier).map(([carrier,vessels])=>{
+        const cs=vdCarrierStyle(carrier);
+        return `<div style="margin-bottom:8px;padding:7px 10px;border-radius:7px;border:1px solid;${cs}">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">🚢 ${carrier} &nbsp;<span style="font-weight:500;font-size:10px">(${vessels.length} vessel${vessels.length!==1?'s':''})</span></div>
+          <div style="line-height:1.8">${vessels.map(vesselPill).join('')}</div>
+        </div>`;
+      }).join('');
+
+      return `<div class="dv-cons-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;min-width:260px;flex:1 1 280px;max-width:420px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:800;color:#003534">${cy}</span>
+          <span style="font-size:10px;background:#fef9c3;color:#854d0e;border-radius:6px;padding:1px 8px;font-weight:700">${items.length} vessel${items.length!==1?'s':''}</span>
+        </div>
+        ${carrierRows}
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:20px" id="vd-date-${date}">
       <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px 10px 0 0;background:${dateBg};flex-wrap:wrap">
         <span style="font-size:16px;font-weight:900;color:${dateTextColor}">${dateInfo.full}</span>
-        ${todayLabel}${pastLabel}${countLabel}
+        ${todayLabel}${pastLabel}${pendingBadge}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">
-        ${vessels.map(renderVesselCard).join('')}
+        ${cyCards}
       </div>
     </div>`;
   }).join('');
 
   const noDateBlock=noDate.length?`<div style="margin-bottom:20px">
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px 10px 0 0;background:#f8fafc;border:1px solid #e2e8f0">
-      <span style="font-size:15px;font-weight:800;color:#94a3b8">No ETA / ETS Set</span>
+      <span style="font-size:15px;font-weight:800;color:#94a3b8">No Cut-Off Date Set</span>
       <span style="font-size:11px;background:#f1f5f9;color:#64748b;border-radius:8px;padding:2px 10px;font-weight:700">${noDate.length} vessel${noDate.length!==1?'s':''}</span>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">
-      ${noDate.map(renderVesselCard).join('')}
+      ${noDate.map(vesselPill).join('')}
     </div>
   </div>`:'';
 
-  content.innerHTML=dateBlocks+noDateBlock||'<div style="padding:40px;text-align:center;color:#94a3b8">No data to display.</div>';
+  content.innerHTML=dateBlocks+noDateBlock||'<div style="padding:40px;text-align:center;color:#94a3b8">No data.</div>';
 }
 
 function renderDispatch(){
