@@ -242,6 +242,9 @@ tbody td{padding:0;vertical-align:middle;position:relative}
 th.fc-1,td.fc-1,th.fc-2,td.fc-2,th.fc-3,td.fc-3,th.fc-4,td.fc-4{position:sticky;z-index:3}
 thead th.fc-1,thead th.fc-2,thead th.fc-3,thead th.fc-4{z-index:20;top:0;background:#004D4C}
 td.fc-1,td.fc-2,td.fc-3,td.fc-4{background:#fff}
+/* Master B/L column wraps to keep table narrow */
+th.fc-3,td.fc-3{max-width:170px}
+td.fc-3 .cell-view{white-space:normal;flex-direction:column;align-items:flex-start;gap:2px;padding-top:6px;padding-bottom:6px}
 tbody tr:hover td.fc-1,tbody tr:hover td.fc-2,tbody tr:hover td.fc-3,tbody tr:hover td.fc-4{background:#F8FAFC}
 tbody tr.hi-missing td.fc-1,tbody tr.hi-missing td.fc-2,
 tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
@@ -1696,11 +1699,6 @@ select:focus, input:focus {
       <button class="ms-btn" id="btn-dest" onclick="msOpen('dest')">All Countries</button>
       <div class="ms-menu" id="menu-dest"></div>
     </div>
-    <div class="ms-wrap" id="wrap-project">
-      <span class="ms-label">Project</span>
-      <button class="ms-btn" id="btn-project" onclick="msOpen('project')">All Projects</button>
-      <div class="ms-menu" id="menu-project"></div>
-    </div>
     <div class="ms-wrap" id="wrap-batch">
       <span class="ms-label">Batch</span>
       <button class="ms-btn" id="btn-batch" onclick="msOpen('batch')">All Batches</button>
@@ -1795,12 +1793,11 @@ select:focus, input:focus {
     <div class="tbl-scroll">
       <table id="ct-table">
         <thead><tr>
-          <th class="fc-1" onclick="ctSort('Batch / Train')">Batch ↕</th>
+          <th class="fc-1" onclick="ctSort('Batch / Train')">Project ↕</th>
           <th class="fc-2" onclick="ctSort('Container No.')">Container No. ↕</th>
           <th class="fc-3" onclick="ctSort('Master B/L')">Master B/L ↕</th>
           <th class="fc-4" onclick="ctSort('Consignee')">Consignee ↕</th>
           <th onclick="ctSort('Destination')">Dest ↕</th>
-          <th onclick="ctSort('Project')">Project ↕</th>
           <th onclick="ctSort('Trucker')">Trucker ↕</th>
           <th class="no-sort">Trk Confirm</th>
           <th class="no-sort">Broker</th>
@@ -2558,8 +2555,6 @@ select:focus, input:focus {
       <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker" placeholder="e.g. Wispex"/><datalist id="dl-broker"><option value="Wispex"/><option value="Self"/></datalist></div>
       <div class="form-group"><label>Destination</label>
         <input type="text" id="f_dest" list="dl-dest" placeholder="e.g. Belgium"/><datalist id="dl-dest"></datalist></div>
-      <div class="form-group"><label>Project</label>
-        <input type="text" id="f_project" list="dl-project" placeholder="e.g. Q3 Launch"/><datalist id="dl-project"></datalist></div>
       <div class="form-group"><label>Tracking</label>
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
@@ -2603,8 +2598,6 @@ select:focus, input:focus {
       <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
       <div class="form-group"><label>Destination</label>
         <input type="text" id="b_dest" list="dl-dest" placeholder="e.g. Belgium"/></div>
-      <div class="form-group"><label>Project</label>
-        <input type="text" id="b_project" list="dl-project" placeholder="e.g. Q3 Launch"/></div>
       <div class="form-group"><label>Tracking</label>
         <select id="b_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="b_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
@@ -5257,10 +5250,8 @@ function getCTRowsExcept(excludeId){
   const fsur=excludeId==='surcharge'?[]:msGetValues('surcharge');
   const fpay=excludeId==='payment'?[]:msGetValues('payment');
   const ft1pay=excludeId==='t1pay'?[]:msGetValues('t1pay');
-  const fprojs=excludeId==='project'?[]:msGetValues('project');
   return CT.filter(r=>{
     if(fds.length&&!fds.includes(r['Destination']||'Belgium')) return false;
-    if(fprojs.length&&!fprojs.includes(r['Project']||'')) return false;
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
     if(fcons.length&&!fcons.includes(r['Consignee']||'')) return false;
@@ -5321,10 +5312,8 @@ function getCTRows(){
   const fsur=msGetValues('surcharge');
   const fpay=msGetValues('payment');
   const ft1pay=msGetValues('t1pay');
-  const fprojs=msGetValues('project');
   return CT.filter(r=>{
     if(fds.length&&!fds.includes(r['Destination']||'Belgium')) return false;
-    if(fprojs.length&&!fprojs.includes(r['Project']||'')) return false;
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
     if(fcons.length&&!fcons.includes(r['Consignee']||'')) return false;
@@ -5996,7 +5985,6 @@ function resetFilters(){
   msClear('surcharge','All');
   msClear('payment','All');
   msClear('t1pay','All');
-  msClear('project','All Projects');
   _ctColDateFilters={}; _updateCDFBtns('ct');
   renderCT();
 }
@@ -6070,12 +6058,9 @@ function renderCT(){
   fillMultiSel('consignee','Consignee','All Consignees');
   fillMultiSel('broker','Broker','All Brokers');
   fillMultiSel('dest','Destination','All Countries');
-  fillMultiSel('project','Project','All Projects');
-  // Refresh datalists for Destination and Project free-text inputs
+  // Refresh datalists for Destination free-text inputs
   const _dlDest=document.getElementById('dl-dest');
   if(_dlDest){ const _dests=[...new Set(CT.map(r=>r['Destination']||'Belgium').filter(Boolean))].sort(); _dlDest.innerHTML=_dests.map(v=>`<option value="${v}"/>`).join(''); }
-  const _dlProj=document.getElementById('dl-project');
-  if(_dlProj){ const _projs=[...new Set(CT.map(r=>r['Project']||'').filter(Boolean))].sort(); _dlProj.innerHTML=_projs.map(v=>`<option value="${v}"/>`).join(''); }
   // Cascade static menus: grey out options with no matches in current filter context
   cascadeStaticMenu('tracking',(rows,v)=>rows.some(r=>r['Tracking']===v));
   cascadeStaticMenu('arrival',(rows,v)=>v==='missing'?rows.some(r=>!r['Actual Arrival']):rows.some(r=>!!r['Actual Arrival']));
@@ -6225,8 +6210,13 @@ function renderCT(){
     const editCells=EDITABLE.map(col=>{
       const v=r[col]||'';
       const fc=FC_CLASS[col]?` ${FC_CLASS[col]}`:'';
+      // Master B/L: split by spaces so each BL number shows on its own line
+      const dispV = col==='Master B/L'
+        ? (v ? v.split(/\s+/).filter(Boolean).map(b=>`<span style="display:block;font-size:11px">${b}</span>`).join('')
+             : '<span style="color:#ccc">—</span>')
+        : (v||'<span style="color:#ccc">—</span>');
       return `<td class="${fc.trim()}" data-id="${r._id}" data-col="${col.replace(/"/g,'&quot;')}">
-        <div class="cell-view" onclick="startEdit(this)">${v||'<span style="color:#ccc">—</span>'}</div>
+        <div class="cell-view" onclick="startEdit(this)">${dispV}</div>
         <div class="cell-edit"><input value="${v.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'${col}',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)"/></div>
       </td>`;
     });
@@ -6257,12 +6247,6 @@ function renderCT(){
     const destCell=`<td data-id="${r._id}" data-col="Destination">
       <div class="cell-view" onclick="startEdit(this)"><span style="background:${destColor};border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">${destFlag} ${destVal}</span></div>
       <div class="cell-edit"><input type="text" list="dl-dest" value="${destVal.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Destination',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:130px"/></div>
-    </td>`;
-    // Project Name cell
-    const projVal=r['Project']||'';
-    const projCell=`<td data-id="${r._id}" data-col="Project">
-      <div class="cell-view" onclick="startEdit(this)">${projVal||'<span style="color:#ccc">—</span>'}</div>
-      <div class="cell-edit"><input type="text" list="dl-project" value="${projVal.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Project',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:110px"/></div>
     </td>`;
 
     // split editCells into groups
@@ -6433,7 +6417,6 @@ function renderCT(){
       ${blC}
       ${conC}
       ${destCell}
-      ${projCell}
       ${truckCell}
       ${trkConfCell}
       ${brokerCell}
@@ -8300,7 +8283,6 @@ function openEdit(id){
   document.getElementById('f_truck').value =r['Trucker']||'';
   document.getElementById('f_broker').value=r['Broker']||'';
   document.getElementById('f_dest').value  =r['Destination']||'Belgium';
-  document.getElementById('f_project').value=r['Project']||'';
   document.getElementById('f_track').value =r['Tracking']||'None';
   document.getElementById('f_eta_mala').value=r['ETA in Mala']||'';
   document.getElementById('f_eta').value  =r['ETA at Hub']||'';
@@ -8328,7 +8310,7 @@ function saveRow(){
   const g=id=>document.getElementById(id).value.trim();
   const u={
     'Container No.':g('f_no'),'Master B/L':g('f_bl'),'Batch / Train':g('f_batch'),
-    'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Destination':g('f_dest')||'Belgium','Project':g('f_project'),'Tracking':g('f_track'),
+    'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Destination':g('f_dest')||'Belgium','Tracking':g('f_track'),
     'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'T1 Date':g('f_t1date'),'Scheduled Slot':g('f_slot'),
     'Actual Arrival':g('f_arr'),'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
@@ -8346,7 +8328,6 @@ function saveRow(){
 function openBulk(){
   ['b_batch','b_con','b_truck','b_eta_mala','b_eta','b_t1date','b_slot','b_dl','b_nos'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('b_dest').value='Belgium';
-  document.getElementById('b_project').value='';
   document.getElementById('b_track').value='T1';
   document.getElementById('b_cmr').checked=false;
   document.getElementById('b_ok').style.display='none';
@@ -8409,7 +8390,7 @@ function saveBulk(){
   const batch=document.getElementById('b_batch').value.trim();
   if(!batch){ err.textContent='Batch / Train is required.'; err.style.display='block'; return; }
   const g=id=>document.getElementById(id).value.trim();
-  const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),'Destination':g('b_dest')||'Belgium','Project':g('b_project'),
+  const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),'Destination':g('b_dest')||'Belgium',
     'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'T1 Date':g('b_t1date'),
     'Scheduled Slot':g('b_slot'),'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
     'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','T1 Payment Status':'','Broker':'','Remark':''};
