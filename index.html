@@ -2549,7 +2549,7 @@ select:focus, input:focus {
     <div class="form-grid">
       <div class="form-group"><label>Container No.</label><input type="text" id="f_no"/></div>
       <div class="form-group"><label>Master B/L</label><input type="text" id="f_bl"/></div>
-      <div class="form-group"><label>Batch / Train</label><input type="text" id="f_batch" list="dl-batch"/><datalist id="dl-batch"></datalist></div>
+      <div class="form-group"><label>Project</label><input type="text" id="f_batch" list="dl-batch"/><datalist id="dl-batch"></datalist></div>
       <div class="form-group"><label>Consignee</label><input type="text" id="f_con" list="dl-con"/><datalist id="dl-con"></datalist></div>
       <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/><datalist id="dl-truck"></datalist></div>
       <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker" placeholder="e.g. Wispex"/><datalist id="dl-broker"><option value="Wispex"/><option value="Self"/></datalist></div>
@@ -2593,7 +2593,7 @@ select:focus, input:focus {
     <h2>⊞ Bulk Add Containers</h2>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Fill shared fields, then paste container numbers (one per line).</p>
     <div class="form-grid">
-      <div class="form-group"><label>Batch / Train *</label><input type="text" id="b_batch" list="dl-batch"/></div>
+      <div class="form-group"><label>Project *</label><input type="text" id="b_batch" list="dl-batch"/></div>
       <div class="form-group"><label>Consignee</label><input type="text" id="b_con" list="dl-con"/></div>
       <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
       <div class="form-group"><label>Destination</label>
@@ -2790,13 +2790,15 @@ select:focus, input:focus {
     <div class="be-panel active" id="be-panel-ct">
       <div class="be-hint">Fill a field to update it · Check <span style="color:#EF4444;font-weight:700">× clear</span> to wipe that field from all selected containers.</div>
       <div class="form-grid">
-        <div class="form-group"><label>Batch / Train<label class="be-clear-lbl"><input type="checkbox" id="be_clr_batch" onchange="beToggleClear(this,'be_batch')"> × clear</label></label><input type="text" id="be_batch" list="dl-batch"/></div>
+        <div class="form-group"><label>Project<label class="be-clear-lbl"><input type="checkbox" id="be_clr_batch" onchange="beToggleClear(this,'be_batch')"> × clear</label></label><input type="text" id="be_batch" list="dl-batch"/></div>
         <div class="form-group"><label>Trucker<label class="be-clear-lbl"><input type="checkbox" id="be_clr_truck" onchange="beToggleClear(this,'be_truck')"> × clear</label></label><input type="text" id="be_truck" list="dl-truck"/></div>
         <div class="form-group"><label>Broker<label class="be-clear-lbl"><input type="checkbox" id="be_clr_broker" onchange="beToggleClear(this,'be_broker')"> × clear</label></label>
           <input type="text" id="be_broker" list="dl-broker" placeholder="e.g. Wispex"/></div>
         <div class="form-group"><label>Consignee<label class="be-clear-lbl"><input type="checkbox" id="be_clr_con" onchange="beToggleClear(this,'be_con')"> × clear</label></label><input type="text" id="be_con" list="dl-con"/></div>
         <div class="form-group"><label>Tracking<label class="be-clear-lbl"><input type="checkbox" id="be_clr_track" onchange="beToggleClear(this,'be_track')"> × clear</label></label>
           <select id="be_track"><option value="">— no change —</option><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
+        <div class="form-group"><label>Trk Confirm<label class="be-clear-lbl"><input type="checkbox" id="be_clr_trkconf" onchange="beToggleClear(this,'be_trkconf')"> × clear</label></label>
+          <select id="be_trkconf"><option value="">— no change —</option><option value="">—</option><option value="Applied">↗ Applied</option><option value="Confirmed">✔ Confirmed</option></select></div>
         <div class="form-group"><label>ETA in Mala<label class="be-clear-lbl"><input type="checkbox" id="be_clr_eta_mala" onchange="beToggleClear(this,'be_eta_mala')"> × clear</label></label><input type="text" id="be_eta_mala" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>ETA at Hub<label class="be-clear-lbl"><input type="checkbox" id="be_clr_eta" onchange="beToggleClear(this,'be_eta')"> × clear</label></label><input type="text" id="be_eta" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>T1 Date<label class="be-clear-lbl"><input type="checkbox" id="be_clr_t1date" onchange="beToggleClear(this,'be_t1date')"> × clear</label></label><input type="text" id="be_t1date" placeholder="yyyy/mm/dd"/></div>
@@ -8388,7 +8390,7 @@ function saveBulk(){
   const pairs=parseBulkPairs(), err=document.getElementById('b_err');
   if(!pairs.length){ err.textContent='Please enter at least one container number.'; err.style.display='block'; return; }
   const batch=document.getElementById('b_batch').value.trim();
-  if(!batch){ err.textContent='Batch / Train is required.'; err.style.display='block'; return; }
+  if(!batch){ err.textContent='Project is required.'; err.style.display='block'; return; }
   const g=id=>document.getElementById(id).value.trim();
   const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),'Destination':g('b_dest')||'Belgium',
     'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'T1 Date':g('b_t1date'),
@@ -9839,6 +9841,7 @@ function openBulkEdit(){
   });
   document.getElementById('be_broker').value='';
   document.getElementById('be_track').value='';
+  document.getElementById('be_trkconf').value='';
   document.getElementById('be_vstatus').value='';
   document.getElementById('be_pay_status').value='';
   document.getElementById('be_t1_pay_status').value='';
@@ -9890,6 +9893,7 @@ function applyBulkEdit(){
       'Pickup Ref':g('be_ref'),'Price':g('be_price'),'Price T1':g('be_price_t1'),'Remark':g('be_rmk'),'Broker':g('be_broker')
     };
     const tracking=g('be_track');
+    const trkConf=g('be_trkconf');
     const payStatus=g('be_pay_status');
     const t1PayStatus=g('be_t1_pay_status');
     // Build a map of which fields the user wants to explicitly CLEAR
@@ -9899,6 +9903,7 @@ function applyBulkEdit(){
       'Broker':        document.getElementById('be_clr_broker')?.checked,
       'Consignee':     document.getElementById('be_clr_con')?.checked,
       'Tracking':      document.getElementById('be_clr_track')?.checked,
+      'Trk Confirm':   document.getElementById('be_clr_trkconf')?.checked,
       'ETA in Mala':   document.getElementById('be_clr_eta_mala')?.checked,
       'ETA at Hub':    document.getElementById('be_clr_eta')?.checked,
       'T1 Date':       document.getElementById('be_clr_t1date')?.checked,
@@ -9921,6 +9926,8 @@ function applyBulkEdit(){
       });
       if(clearMap['Tracking']) r['Tracking']='';
       else if(tracking) r['Tracking']=tracking;
+      if(clearMap['Trk Confirm']) r['Trk Confirm']='';
+      else if(trkConf) r['Trk Confirm']=trkConf;
       if(clearMap['Payment Status']) r['Payment Status']='';
       else if(payStatus) r['Payment Status']=payStatus;
       if(clearMap['T1 Payment Status']) r['T1 Payment Status']='';
