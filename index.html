@@ -1694,11 +1694,12 @@ select:focus, input:focus {
     <div class="ms-wrap" id="wrap-dest">
       <span class="ms-label">Destination</span>
       <button class="ms-btn" id="btn-dest" onclick="msOpen('dest')">All Countries</button>
-      <div class="ms-menu" id="menu-dest">
-        <label><input type="checkbox" value="Belgium"     onchange="msChange('dest','All Countries')"> 🇧🇪 Belgium</label>
-        <label><input type="checkbox" value="Netherlands" onchange="msChange('dest','All Countries')"> 🇳🇱 Netherlands</label>
-        <label><input type="checkbox" value="Italy"       onchange="msChange('dest','All Countries')"> 🇮🇹 Italy</label>
-      </div>
+      <div class="ms-menu" id="menu-dest"></div>
+    </div>
+    <div class="ms-wrap" id="wrap-project">
+      <span class="ms-label">Project</span>
+      <button class="ms-btn" id="btn-project" onclick="msOpen('project')">All Projects</button>
+      <div class="ms-menu" id="menu-project"></div>
     </div>
     <div class="ms-wrap" id="wrap-batch">
       <span class="ms-label">Batch</span>
@@ -1799,6 +1800,7 @@ select:focus, input:focus {
           <th class="fc-3" onclick="ctSort('Master B/L')">Master B/L ↕</th>
           <th class="fc-4" onclick="ctSort('Consignee')">Consignee ↕</th>
           <th onclick="ctSort('Destination')">Dest ↕</th>
+          <th onclick="ctSort('Project')">Project ↕</th>
           <th onclick="ctSort('Trucker')">Trucker ↕</th>
           <th class="no-sort">Trk Confirm</th>
           <th class="no-sort">Broker</th>
@@ -2555,7 +2557,9 @@ select:focus, input:focus {
       <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/><datalist id="dl-truck"></datalist></div>
       <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker" placeholder="e.g. Wispex"/><datalist id="dl-broker"><option value="Wispex"/><option value="Self"/></datalist></div>
       <div class="form-group"><label>Destination</label>
-        <select id="f_dest"><option value="Belgium">🇧🇪 Belgium</option><option value="Netherlands">🇳🇱 Netherlands</option><option value="Italy">🇮🇹 Italy</option></select></div>
+        <input type="text" id="f_dest" list="dl-dest" placeholder="e.g. Belgium"/><datalist id="dl-dest"></datalist></div>
+      <div class="form-group"><label>Project</label>
+        <input type="text" id="f_project" list="dl-project" placeholder="e.g. Q3 Launch"/><datalist id="dl-project"></datalist></div>
       <div class="form-group"><label>Tracking</label>
         <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
@@ -2598,7 +2602,9 @@ select:focus, input:focus {
       <div class="form-group"><label>Consignee</label><input type="text" id="b_con" list="dl-con"/></div>
       <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
       <div class="form-group"><label>Destination</label>
-        <select id="b_dest"><option value="Belgium">🇧🇪 Belgium</option><option value="Netherlands">🇳🇱 Netherlands</option><option value="Italy">🇮🇹 Italy</option></select></div>
+        <input type="text" id="b_dest" list="dl-dest" placeholder="e.g. Belgium"/></div>
+      <div class="form-group"><label>Project</label>
+        <input type="text" id="b_project" list="dl-project" placeholder="e.g. Q3 Launch"/></div>
       <div class="form-group"><label>Tracking</label>
         <select id="b_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="b_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
@@ -5251,8 +5257,10 @@ function getCTRowsExcept(excludeId){
   const fsur=excludeId==='surcharge'?[]:msGetValues('surcharge');
   const fpay=excludeId==='payment'?[]:msGetValues('payment');
   const ft1pay=excludeId==='t1pay'?[]:msGetValues('t1pay');
+  const fprojs=excludeId==='project'?[]:msGetValues('project');
   return CT.filter(r=>{
     if(fds.length&&!fds.includes(r['Destination']||'Belgium')) return false;
+    if(fprojs.length&&!fprojs.includes(r['Project']||'')) return false;
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
     if(fcons.length&&!fcons.includes(r['Consignee']||'')) return false;
@@ -5313,8 +5321,10 @@ function getCTRows(){
   const fsur=msGetValues('surcharge');
   const fpay=msGetValues('payment');
   const ft1pay=msGetValues('t1pay');
+  const fprojs=msGetValues('project');
   return CT.filter(r=>{
     if(fds.length&&!fds.includes(r['Destination']||'Belgium')) return false;
+    if(fprojs.length&&!fprojs.includes(r['Project']||'')) return false;
     if(fbs.length&&!fbs.includes(r['Batch / Train'])) return false;
     if(fts.length&&!fts.includes(r['Trucker'])) return false;
     if(fcons.length&&!fcons.includes(r['Consignee']||'')) return false;
@@ -5986,6 +5996,7 @@ function resetFilters(){
   msClear('surcharge','All');
   msClear('payment','All');
   msClear('t1pay','All');
+  msClear('project','All Projects');
   _ctColDateFilters={}; _updateCDFBtns('ct');
   renderCT();
 }
@@ -6058,6 +6069,13 @@ function renderCT(){
   fillMultiSel('trucker','Trucker','All Truckers');
   fillMultiSel('consignee','Consignee','All Consignees');
   fillMultiSel('broker','Broker','All Brokers');
+  fillMultiSel('dest','Destination','All Countries');
+  fillMultiSel('project','Project','All Projects');
+  // Refresh datalists for Destination and Project free-text inputs
+  const _dlDest=document.getElementById('dl-dest');
+  if(_dlDest){ const _dests=[...new Set(CT.map(r=>r['Destination']||'Belgium').filter(Boolean))].sort(); _dlDest.innerHTML=_dests.map(v=>`<option value="${v}"/>`).join(''); }
+  const _dlProj=document.getElementById('dl-project');
+  if(_dlProj){ const _projs=[...new Set(CT.map(r=>r['Project']||'').filter(Boolean))].sort(); _dlProj.innerHTML=_projs.map(v=>`<option value="${v}"/>`).join(''); }
   // Cascade static menus: grey out options with no matches in current filter context
   cascadeStaticMenu('tracking',(rows,v)=>rows.some(r=>r['Tracking']===v));
   cascadeStaticMenu('arrival',(rows,v)=>v==='missing'?rows.some(r=>!r['Actual Arrival']):rows.some(r=>!!r['Actual Arrival']));
@@ -6231,13 +6249,20 @@ function renderCT(){
       <div class="cell-edit"><input type="text" list="dl-broker" value="${brokerVal.replace(/"/g,'&quot;')}" placeholder="e.g. Wispex" onblur="commitEdit(this,'Broker',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:110px"/></div>
     </td>`;
 
-    // Destination badge cell
+    // Destination badge cell — free text with flag auto-detection
     const destVal=r['Destination']||'Belgium';
-    const destFlag=destVal==='Netherlands'?'🇳🇱':destVal==='Italy'?'🇮🇹':'🇧🇪';
-    const destColor=destVal==='Netherlands'?'#fff3e0;color:#c2410c':destVal==='Italy'?'#fdf2f8;color:#9d174d':'#e0efef;color:#003a3a';
+    const _destFlags={'Belgium':'🇧🇪','Netherlands':'🇳🇱','Italy':'🇮🇹','Germany':'🇩🇪','France':'🇫🇷','Spain':'🇪🇸','Poland':'🇵🇱','UK':'🇬🇧','Austria':'🇦🇹','Switzerland':'🇨🇭','Sweden':'🇸🇪','Denmark':'🇩🇰','Czech Republic':'🇨🇿','Hungary':'🇭🇺','Romania':'🇷🇴','Portugal':'🇵🇹','Greece':'🇬🇷','Slovakia':'🇸🇰','Slovenia':'🇸🇮','Croatia':'🇭🇷','Bulgaria':'🇧🇬','Finland':'🇫🇮','Norway':'🇳🇴'};
+    const destFlag=_destFlags[destVal]||'🌍';
+    const destColor=destVal==='Netherlands'?'#fff3e0;color:#c2410c':destVal==='Italy'?'#fdf2f8;color:#9d174d':destVal==='Germany'?'#fef3c7;color:#92400e':destVal==='France'?'#eff6ff;color:#1d4ed8':destVal==='Spain'?'#fef2f2;color:#991b1b':'#e0efef;color:#003a3a';
     const destCell=`<td data-id="${r._id}" data-col="Destination">
       <div class="cell-view" onclick="startEdit(this)"><span style="background:${destColor};border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">${destFlag} ${destVal}</span></div>
-      <div class="cell-edit"><select onblur="commitEdit(this,'Destination',${r._id})" onchange="this.blur()" style="width:130px"><option value="Belgium" ${destVal==='Belgium'?'selected':''}>🇧🇪 Belgium</option><option value="Netherlands" ${destVal==='Netherlands'?'selected':''}>🇳🇱 Netherlands</option><option value="Italy" ${destVal==='Italy'?'selected':''}>🇮🇹 Italy</option></select></div>
+      <div class="cell-edit"><input type="text" list="dl-dest" value="${destVal.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Destination',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:130px"/></div>
+    </td>`;
+    // Project Name cell
+    const projVal=r['Project']||'';
+    const projCell=`<td data-id="${r._id}" data-col="Project">
+      <div class="cell-view" onclick="startEdit(this)">${projVal||'<span style="color:#ccc">—</span>'}</div>
+      <div class="cell-edit"><input type="text" list="dl-project" value="${projVal.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Project',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:110px"/></div>
     </td>`;
 
     // split editCells into groups
@@ -6408,6 +6433,7 @@ function renderCT(){
       ${blC}
       ${conC}
       ${destCell}
+      ${projCell}
       ${truckCell}
       ${trkConfCell}
       ${brokerCell}
@@ -8274,6 +8300,7 @@ function openEdit(id){
   document.getElementById('f_truck').value =r['Trucker']||'';
   document.getElementById('f_broker').value=r['Broker']||'';
   document.getElementById('f_dest').value  =r['Destination']||'Belgium';
+  document.getElementById('f_project').value=r['Project']||'';
   document.getElementById('f_track').value =r['Tracking']||'None';
   document.getElementById('f_eta_mala').value=r['ETA in Mala']||'';
   document.getElementById('f_eta').value  =r['ETA at Hub']||'';
@@ -8301,7 +8328,7 @@ function saveRow(){
   const g=id=>document.getElementById(id).value.trim();
   const u={
     'Container No.':g('f_no'),'Master B/L':g('f_bl'),'Batch / Train':g('f_batch'),
-    'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Destination':g('f_dest'),'Tracking':g('f_track'),
+    'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Destination':g('f_dest')||'Belgium','Project':g('f_project'),'Tracking':g('f_track'),
     'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'T1 Date':g('f_t1date'),'Scheduled Slot':g('f_slot'),
     'Actual Arrival':g('f_arr'),'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
@@ -8319,6 +8346,7 @@ function saveRow(){
 function openBulk(){
   ['b_batch','b_con','b_truck','b_eta_mala','b_eta','b_t1date','b_slot','b_dl','b_nos'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('b_dest').value='Belgium';
+  document.getElementById('b_project').value='';
   document.getElementById('b_track').value='T1';
   document.getElementById('b_cmr').checked=false;
   document.getElementById('b_ok').style.display='none';
@@ -8381,7 +8409,7 @@ function saveBulk(){
   const batch=document.getElementById('b_batch').value.trim();
   if(!batch){ err.textContent='Batch / Train is required.'; err.style.display='block'; return; }
   const g=id=>document.getElementById(id).value.trim();
-  const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),'Destination':g('b_dest'),
+  const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),'Destination':g('b_dest')||'Belgium','Project':g('b_project'),
     'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'T1 Date':g('b_t1date'),
     'Scheduled Slot':g('b_slot'),'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
     'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','T1 Payment Status':'','Broker':'','Remark':''};
