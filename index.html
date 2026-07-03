@@ -1472,67 +1472,11 @@ select:focus, input:focus {
             <div class="chart-wrap" style="height:260px"><canvas id="price-broker-total-chart"></canvas></div>
           </div>
         </div>
-        <div id="surcharge-summary-row" class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card" style="padding:16px 18px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <h3 style="margin:0">💸 Surcharge Summary</h3>
-              <span id="surcharge-total-badge" style="font-size:12px;font-weight:700;color:#880E4F;background:#FCE4EC;border-radius:8px;padding:3px 10px"></span>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;overflow-x:auto">
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Batch</div>
-                <div id="surcharge-by-batch"></div>
-              </div>
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">By Reason</div>
-                <div id="surcharge-by-reason"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Unpaid by Batch -->
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card" style="padding:16px 18px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <h3 style="margin:0">💳 Unpaid by Batch</h3>
-              <span id="unpaid-total-badge" style="font-size:12px;font-weight:700;color:#856404;background:#fff3cd;border-radius:8px;padding:3px 10px"></span>
-            </div>
-            <div id="unpaid-batch" style="overflow-x:auto"></div>
-          </div>
-        </div>
       </div>
 
       <!-- ── VESSEL FINANCIALS ── -->
       <div id="dash-cat-vessel-fin" class="dash-cat-section">
-        <!-- KPI row -->
         <div class="kpi-row" id="vf-kpi-row" style="margin-bottom:16px"></div>
-        <!-- Charts row 1: Total Freight Cost by Vessel + Payment Status donut -->
-        <div class="charts-row" style="margin-top:0;grid-template-columns:2fr 1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)" id="vf-cost-title">Total Freight Cost by Vessel<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Price + Surcharge per vessel booking</p>
-            <div class="chart-wrap" style="height:300px"><canvas id="vf-cost-vessel-chart"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Freight Payment Status<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Breakdown of vessel freight payment status</p>
-            <div class="chart-wrap" style="height:300px"><canvas id="vf-pay-status-chart"></canvas></div>
-          </div>
-        </div>
-        <!-- Charts row 2: Booking Fees by Vessel + Booking Fee Payment donut -->
-        <div class="charts-row" style="margin-top:0;grid-template-columns:2fr 1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)" id="vf-bf-title">Booking Fee by Vessel<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Rhenus booking fee per vessel booking</p>
-            <div class="chart-wrap" style="height:280px"><canvas id="vf-booking-fee-chart"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Booking Fee Payment Status<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Breakdown of booking fee payment status</p>
-            <div class="chart-wrap" style="height:280px"><canvas id="vf-bfp-status-chart"></canvas></div>
-          </div>
-        </div>
-        <!-- Vessel financials table -->
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card" style="padding:16px 18px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1578,45 +1522,7 @@ select:focus, input:focus {
 
       <!-- ── DELAYS ── -->
       <div id="dash-cat-delays" class="dash-cat-section">
-        <!-- KPI summary row -->
         <div id="delay-kpi-row" class="kpi-row" style="margin-bottom:16px"></div>
-        <!-- Late Arrivals by Batch -->
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Late Arrivals by Batch<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Containers where Actual Arrival was after Scheduled Slot — grouped by batch</p>
-            <div class="chart-wrap" style="height:320px"><canvas id="late-arrival-batch-chart"></canvas></div>
-          </div>
-        </div>
-        <!-- Deadline Exceeded by Batch (custom HTML with reason inputs) -->
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card" style="padding:16px 18px">
-            <h3 style="margin:0 0 4px">Deadline Exceeded by Batch</h3>
-            <p class="chart-subtitle" style="margin:0 0 14px">Containers that missed their deadline — add a reason for each batch</p>
-            <div id="deadline-exceeded-batch-chart"></div>
-          </div>
-        </div>
-        <!-- Late by Trucker donut -->
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Late Arrivals by Trucker<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Click a slice to jump to those containers in the tracker</p>
-            <div class="chart-wrap" style="height:280px"><canvas id="late-arrival-trucker-chart"></canvas></div>
-          </div>
-        </div>
-        <!-- Detail table -->
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card" style="padding:16px 18px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <h3 style="margin:0">📋 Delay Detail</h3>
-              <div style="display:flex;gap:8px">
-                <span id="delay-tbl-mode-late" onclick="delayTblMode='late';renderDelayTable()" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;cursor:pointer;background:#FEE2E2;color:#991B1B">Late Arrivals</span>
-                <span id="delay-tbl-mode-deadline" onclick="delayTblMode='deadline';renderDelayTable()" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;cursor:pointer;background:#f3f4f6;color:#6b7280">Deadline Exceeded</span>
-              </div>
-            </div>
-            <div id="delay-detail-table" style="overflow-x:auto;max-height:400px;overflow-y:auto"></div>
-          </div>
-        </div>
       </div>
 
       <!-- Invalid Slots (T1 Rule) — belongs to Containers -->
@@ -1648,31 +1554,36 @@ select:focus, input:focus {
         </div>
       </div>
 
-      <!-- Status TBD Alert -->
+      <!-- Upcoming Vessels -->
       <div class="chart-card vt-right-card" style="padding:14px 16px">
         <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-          Status TBD
-          <span id="tbd-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#f3e8ff;color:#7c3aed;border-radius:8px;padding:2px 8px"></span>
+          Upcoming Vessels
+          <span id="upcoming-vt-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;border-radius:8px;padding:2px 8px"></span>
         </h3>
-        <div id="tbd-alert-list" style="font-size:12px"></div>
+        <div id="upcoming-vt-list" style="font-size:12px"></div>
       </div>
 
-      <!-- VGM Not Filed -->
+      <!-- Alerts: VGM / Custom / TBD — compact single card -->
       <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
-        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-          VGM Not Filed
-          <span id="vgm-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
-        </h3>
-        <div id="vgm-alert-list" style="font-size:12px"></div>
-      </div>
-
-      <!-- Custom Not Filed -->
-      <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
-        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">
-          Custom Not Filed
-          <span id="custom-alert-badge" style="margin-left:auto;font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:2px 8px"></span>
-        </h3>
-        <div id="custom-alert-list" style="font-size:12px"></div>
+        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">Alerts</h3>
+        <div style="margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7c3aed;margin-bottom:4px">
+            Status TBD <span id="tbd-alert-badge" style="font-size:11px;font-weight:700;background:#f3e8ff;color:#7c3aed;border-radius:8px;padding:1px 6px;margin-left:4px"></span>
+          </div>
+          <div id="tbd-alert-list" style="font-size:12px"></div>
+        </div>
+        <div style="margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#c62828;margin-bottom:4px">
+            VGM Not Filed <span id="vgm-alert-badge" style="font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:1px 6px;margin-left:4px"></span>
+          </div>
+          <div id="vgm-alert-list" style="font-size:12px"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#c62828;margin-bottom:4px">
+            Custom Not Filed <span id="custom-alert-badge" style="font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:1px 6px;margin-left:4px"></span>
+          </div>
+          <div id="custom-alert-list" style="font-size:12px"></div>
+        </div>
       </div>
 
     </div><!-- end dash-col RIGHT -->
@@ -4492,9 +4403,9 @@ function renderDashboard(){
   if(kvTbd){ kvTbd.textContent=tbdRows.length||'0';
     kvTbd.style.color=tbdRows.length?'#7c3aed':'#2e7d32'; }
   if(!tbdRows.length){
-    tbdEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No vessels with TBD status</div>';
+    tbdEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">None ✓</div>';
   } else {
-    tbdEl.innerHTML=tbdRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">❓</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span>${r['Booking / BC No.']?`<span style="color:#7c3aed;font-size:10px;font-weight:600;background:#f3e8ff;padding:1px 7px;border-radius:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r['Booking / BC No.']}">${r['Booking / BC No.']}</span>`:''}  <span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
+    tbdEl.innerHTML=tbdRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
   // VGM not filed (active vessels where VGM is falsy)
@@ -4505,9 +4416,9 @@ function renderDashboard(){
   vgmBadge.style.background=vgmRows.length?'#fdecea':'#e8f5e9';
   vgmBadge.style.color=vgmRows.length?'#c62828':'#2e7d32';
   if(!vgmRows.length){
-    vgmEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All active vessels have VGM filed</div>';
+    vgmEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All VGM filed ✓</div>';
   } else {
-    vgmEl.innerHTML=vgmRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span>${r['Booking / BC No.']?`<span style="color:#c62828;font-size:10px;font-weight:600;background:#fdecea;padding:1px 7px;border-radius:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r['Booking / BC No.']}">${r['Booking / BC No.']}</span>`:''}  <span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
+    vgmEl.innerHTML=vgmRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
   // Custom not filed
@@ -4518,9 +4429,49 @@ function renderDashboard(){
   custBadge.style.background=customRows.length?'#fdecea':'#e8f5e9';
   custBadge.style.color=customRows.length?'#c62828':'#2e7d32';
   if(!customRows.length){
-    custEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All active vessels have Custom filed</div>';
+    custEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All custom filed ✓</div>';
   } else {
-    custEl.innerHTML=customRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="font-size:16px">☐</span><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span>${r['Booking / BC No.']?`<span style="color:#c62828;font-size:10px;font-weight:600;background:#fdecea;padding:1px 7px;border-radius:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r['Booking / BC No.']}">${r['Booking / BC No.']}</span>`:''}  <span style="color:var(--muted);font-size:11px">${r['Port']||''} ${r['ETS (Departure)']||''}</span></div>`).join('');
+    custEl.innerHTML=customRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['ETS (Departure)']||''}</span></div>`).join('');
+  }
+
+  // ── Upcoming Vessels list ──
+  const _vtParseDate=s=>{ if(!s) return null; const p=s.toString().trim(); const m=p.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; };
+  const _vtFmtDate=s=>{ const d=_vtParseDate(s); if(!d) return s||'—'; return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); };
+  const today=new Date(); today.setHours(0,0,0,0);
+  const upcomingVT=VT.filter(r=>{
+    const s=r['Status']||''; if(s==='Discharged') return false;
+    const ets=_vtParseDate(r['ETS (Departure)']); return ets&&ets>=today;
+  }).sort((a,b)=>{ const da=_vtParseDate(a['ETS (Departure)']),db=_vtParseDate(b['ETS (Departure)']); return (da||0)-(db||0); });
+  const uvEl=document.getElementById('upcoming-vt-list');
+  const uvBadge=document.getElementById('upcoming-vt-badge');
+  if(uvEl){
+    uvBadge.textContent=upcomingVT.length+' vessel'+(upcomingVT.length!==1?'s':'');
+    if(!upcomingVT.length){
+      uvEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No upcoming departures</div>';
+    } else {
+      const statusColor=s=>s==='Cut-Off Soon'?'#dc2626':s==='Cut-Off Passed'?'#9a3412':s==='Scheduled'?'#0369a1':s==='Departed'?'#15803d':'#6b7280';
+      const statusBg=s=>s==='Cut-Off Soon'?'#fee2e2':s==='Cut-Off Passed'?'#ffedd5':s==='Scheduled'?'#e0f2fe':s==='Departed'?'#dcfce7':'#f3f4f6';
+      uvEl.innerHTML=upcomingVT.map(r=>{
+        const st=r['Status']||'—';
+        const vgm=r['VGM']?'<span style="font-size:9px;background:#dcfce7;color:#15803d;border-radius:3px;padding:0 4px;font-weight:700">VGM✓</span>':'<span style="font-size:9px;background:#fee2e2;color:#dc2626;border-radius:3px;padding:0 4px;font-weight:700">VGM✗</span>';
+        const cust=r['Custom']?'<span style="font-size:9px;background:#dcfce7;color:#15803d;border-radius:3px;padding:0 4px;font-weight:700">CST✓</span>':'<span style="font-size:9px;background:#fee2e2;color:#dc2626;border-radius:3px;padding:0 4px;font-weight:700">CST✗</span>';
+        const cutoff=r['Port Cut-Off']?`<span style="font-size:10px;color:#92400e;background:#fef9c3;border-radius:4px;padding:1px 5px">Cut ${_vtFmtDate(r['Port Cut-Off'])}</span>`:'';
+        return `<div class="vt-alert-row" onclick="gotoVessel(${r._id})" style="align-items:flex-start;padding:6px 0">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;color:var(--navy);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r['Vessel Name']||'(no name)'}</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">
+              <span style="font-size:9px;font-weight:700;background:${statusBg(st)};color:${statusColor(st)};border-radius:4px;padding:1px 5px">${st}</span>
+              ${r['Carrier']?`<span style="font-size:10px;color:#64748b">${r['Carrier']}</span>`:''}
+              ${r['Port']?`<span style="font-size:10px;color:#64748b">${r['Port']}</span>`:''}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;margin-left:8px">
+            <div style="font-size:11px;font-weight:700;color:#0369a1">ETS ${_vtFmtDate(r['ETS (Departure)'])}</div>
+            <div style="display:flex;gap:3px;margin-top:2px;justify-content:flex-end">${cutoff}${vgm}${cust}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
   }
 
   // ── Invalid Slots (T1 Rule) — shown in Containers column, hidden when all OK ──
