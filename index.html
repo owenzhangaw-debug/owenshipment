@@ -1309,7 +1309,6 @@ select:focus, input:focus {
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('dispatch')">Dispatch</button>
     <button onclick="showPage('vessels')">Vessels</button>
-    <button onclick="showPage('vessel-dispatch')">Vessel Dispatch</button>
     <button onclick="showPage('reports')">Reports</button>
     <span class="nav-divider"></span>
     <!-- Tools dropdown -->
@@ -1419,6 +1418,7 @@ select:focus, input:focus {
       <div class="dash-cat-tabs">
         <button class="dash-cat-tab active" onclick="switchDashCat('time',this)">⏱ Time</button>
         <button class="dash-cat-tab" onclick="switchDashCat('price',this)">💰 Price</button>
+        <button class="dash-cat-tab" onclick="switchDashCat('vessel-fin',this)">🚢 Vessel $</button>
         <button class="dash-cat-tab" onclick="switchDashCat('qty',this)">📦 Quantity</button>
         <button class="dash-cat-tab" onclick="switchDashCat('delays',this)">⚠️ Delays</button>
       </div>
@@ -1430,6 +1430,20 @@ select:focus, input:focus {
             <h3 onclick="toggleChart(this)">Delivered by Month<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">Total containers with Actual Arrival recorded</p>
             <div class="chart-wrap" style="height:320px"><canvas id="monthly-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Avg Slot–ETA by Batch<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Days between Scheduled Slot and ETA at Hub</p>
+            <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-batch-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card">
+            <h3 onclick="toggleChart(this)">Slot–ETA by Trucker &amp; Batch<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Days between slot and ETA, grouped by trucker and batch</p>
+            <div class="chart-wrap" style="height:360px"><canvas id="slot-eta-trucker-batch-chart"></canvas></div>
           </div>
         </div>
       </div>
@@ -1455,6 +1469,20 @@ select:focus, input:focus {
             <h3 onclick="toggleChart(this)">Total Freight Cost by Broker (€)<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">Sum of all freight prices by broker</p>
             <div class="chart-wrap" style="height:260px"><canvas id="price-broker-total-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VESSEL FINANCIALS ── -->
+      <div id="dash-cat-vessel-fin" class="dash-cat-section">
+        <div class="kpi-row" id="vf-kpi-row" style="margin-bottom:16px"></div>
+        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+          <div class="chart-card" style="padding:16px 18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <h3 style="margin:0">📋 Vessel Financials Detail</h3>
+              <span id="vf-table-total" style="font-size:12px;font-weight:700;color:#0369a1;background:#e0f2fe;border-radius:8px;padding:3px 10px"></span>
+            </div>
+            <div id="vf-detail-table" style="overflow-x:auto"></div>
           </div>
         </div>
       </div>
@@ -1560,6 +1588,12 @@ select:focus, input:focus {
     </div><!-- end dash-col RIGHT -->
 
   </div><!-- end dash-split -->
+
+  <!-- ══ Trucker Reviews ══ -->
+  <div class="tr-review-section">
+    <div class="tr-review-hdr">🚛 Trucker Performance Reviews <span style="font-size:9px;font-weight:500;opacity:.75;margin-left:4px">auto-updated from ratings &amp; data</span></div>
+    <div class="tr-review-grid" id="tr-review-grid"></div>
+  </div>
 
 </div>
 
@@ -2320,66 +2354,71 @@ select:focus, input:focus {
 
 
 <!-- ══════════════════════════════════════════════════════════
-     DISPATCH VIEW PAGE
+     DISPATCH PAGE (Container + Vessel tabs)
 ══════════════════════════════════════════════════════════ -->
 <div id="page-dispatch" class="page">
-  <div id="dv-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
-    <span style="font-size:20px">📦</span>
-    <h2 style="margin:0;font-size:16px;font-weight:800;color:#003534">Dispatch View</h2>
-    <span id="dv-count-badge" style="font-size:11px;background:#f0fdf4;color:#15803d;border-radius:10px;padding:2px 10px;font-weight:700"></span>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
-      <input type="date" id="dv-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderDispatch()">
-      <label style="font-size:12px;color:#64748b;font-weight:600">To</label>
-      <input type="date" id="dv-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderDispatch()">
-      <button onclick="dvSetRange('may23')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">May 23 – Jun 3</button>
-      <button onclick="dvSetRange('thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-      <button onclick="dvSetRange('next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-      <button onclick="dvSetRange('all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All Pending</button>
-      <select id="dv-trucker-filter" onchange="renderDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-        <option value="">All Truckers</option>
-      </select>
-      <select id="dv-consignee-filter" onchange="renderDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-        <option value="">All Consignees</option>
-      </select>
-    </div>
+  <!-- Tab switcher -->
+  <div style="display:flex;background:#003534;padding:0 16px;gap:2px">
+    <button id="dispatch-tab-ct" onclick="switchDispatchTab('ct')" style="padding:9px 18px;font-size:12px;font-weight:700;border:none;cursor:pointer;border-radius:0;background:rgba(255,255,255,.12);color:#fff;border-bottom:2px solid transparent;transition:all .15s">📦 Container Dispatch</button>
+    <button id="dispatch-tab-vt" onclick="switchDispatchTab('vt')" style="padding:9px 18px;font-size:12px;font-weight:700;border:none;cursor:pointer;border-radius:0;background:transparent;color:rgba(255,255,255,.6);border-bottom:2px solid transparent;transition:all .15s">🚢 Vessel Dispatch</button>
   </div>
-  <div id="dv-content" style="padding:16px;max-width:1300px;margin:0 auto"></div>
-</div>
 
-<!-- ══ VESSEL DISPATCH ══ -->
-<div id="page-vessel-dispatch" class="page">
-  <div id="vd-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
-    <span style="font-size:20px">🚢</span>
-    <h2 style="margin:0;font-size:16px;font-weight:800;color:#003534">Vessel Dispatch</h2>
-    <span id="vd-count-badge" style="font-size:11px;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:2px 10px;font-weight:700"></span>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
-      <input type="date" id="vd-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderVesselDispatch()">
-      <label style="font-size:12px;color:#64748b;font-weight:600">To</label>
-      <input type="date" id="vd-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderVesselDispatch()">
-      <button onclick="vdSetRange('thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-      <button onclick="vdSetRange('next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-      <button onclick="vdSetRange('next4w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">Next 4 Wks</button>
-      <button onclick="vdSetRange('all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All Active</button>
-      <select id="vd-status-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-        <option value="">All Statuses</option>
-        <option value="Scheduled">Scheduled</option>
-        <option value="Cut-Off Soon">Cut-Off Soon</option>
-        <option value="Cut-Off Passed">Cut-Off Passed</option>
-        <option value="Departed">Departed</option>
-        <option value="Discharged">Discharged</option>
-        <option value="TBD">TBD</option>
-      </select>
-      <select id="vd-cy-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-        <option value="">All CYs</option>
-      </select>
-      <select id="vd-carrier-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-        <option value="">All Carriers</option>
-      </select>
+  <!-- Container Dispatch panel -->
+  <div id="dispatch-panel-ct">
+    <div id="dv-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
+      <span id="dv-count-badge" style="font-size:11px;background:#f0fdf4;color:#15803d;border-radius:10px;padding:2px 10px;font-weight:700"></span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
+        <input type="date" id="dv-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderDispatch()">
+        <label style="font-size:12px;color:#64748b;font-weight:600">To</label>
+        <input type="date" id="dv-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderDispatch()">
+        <button onclick="dvSetRange('may23')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">May 23 – Jun 3</button>
+        <button onclick="dvSetRange('thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+        <button onclick="dvSetRange('next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+        <button onclick="dvSetRange('all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All Pending</button>
+        <select id="dv-trucker-filter" onchange="renderDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+          <option value="">All Truckers</option>
+        </select>
+        <select id="dv-consignee-filter" onchange="renderDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+          <option value="">All Consignees</option>
+        </select>
+      </div>
     </div>
+    <div id="dv-content" style="padding:16px;max-width:1300px;margin:0 auto"></div>
   </div>
-  <div id="vd-content" style="padding:16px;max-width:1400px;margin:0 auto"></div>
+
+  <!-- Vessel Dispatch panel -->
+  <div id="dispatch-panel-vt" style="display:none">
+    <div id="vd-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
+      <span id="vd-count-badge" style="font-size:11px;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:2px 10px;font-weight:700"></span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
+        <input type="date" id="vd-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderVesselDispatch()">
+        <label style="font-size:12px;color:#64748b;font-weight:600">To</label>
+        <input type="date" id="vd-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderVesselDispatch()">
+        <button onclick="vdSetRange('thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+        <button onclick="vdSetRange('next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+        <button onclick="vdSetRange('next4w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">Next 4 Wks</button>
+        <button onclick="vdSetRange('all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All Active</button>
+        <select id="vd-status-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+          <option value="">All Statuses</option>
+          <option value="Scheduled">Scheduled</option>
+          <option value="Cut-Off Soon">Cut-Off Soon</option>
+          <option value="Cut-Off Passed">Cut-Off Passed</option>
+          <option value="Departed">Departed</option>
+          <option value="Discharged">Discharged</option>
+          <option value="TBD">TBD</option>
+        </select>
+        <select id="vd-cy-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+          <option value="">All CYs</option>
+        </select>
+        <select id="vd-carrier-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+          <option value="">All Carriers</option>
+        </select>
+      </div>
+    </div>
+    <div id="vd-content" style="padding:16px;max-width:1400px;margin:0 auto"></div>
+  </div>
 </div>
 
 </main>
@@ -2861,21 +2900,6 @@ select:focus, input:focus {
 </div>
 
 <script>
-// ── GLOBAL ERROR GUARD: surface script errors instead of silently blanking sections ──
-window.addEventListener('error',function(e){
-  try{
-    console.error('App error:', e.message, e.filename, e.lineno);
-    let b=document.getElementById('app-err-banner');
-    if(!b && document.body){
-      b=document.createElement('div'); b.id='app-err-banner';
-      b.style.cssText='position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:99999;background:#7f1d1d;color:#fff;font:12px/1.4 -apple-system,sans-serif;padding:8px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:90vw;display:flex;gap:10px;align-items:center';
-      b.innerHTML='<span id="app-err-msg"></span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;font-weight:700;cursor:pointer;font-size:13px">✕</button>';
-      document.body.appendChild(b);
-    }
-    const m=document.getElementById('app-err-msg');
-    if(m) m.textContent='⚠️ Script error: '+(e.message||'unknown')+' — some sections may not render. Check console (F12).';
-  }catch(_){}
-});
 // ── CLOUD SYNC CONSTANTS (must be first to avoid TDZ errors) ──────
 const JBIN = 'https://api.jsonbin.io/v3/b';
 let cloudSaveTimer = null;
@@ -3028,8 +3052,7 @@ function showPage(p){
   if(p==='planning'){ rcpRender(); }
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='reports') renderReports();
-  if(p==='dispatch') renderDispatch();
-  if(p==='vessel-dispatch') renderVesselDispatch();
+  if(p==='dispatch'){ switchDispatchTab(_activeDispatchTab||'ct'); }
 }
 function _contextAdd(){
   if(_currentPage==='vessels') openAddVesselModal();
@@ -3897,9 +3920,8 @@ function renderDashboard(){
   const seKeys=Object.keys(seBatchDays).sort();
   const seAvgs=seKeys.map(b=>+(seBatchDays[b].sum/seBatchDays[b].count).toFixed(1));
   const seColors=seAvgs.map(v=>v<0?'#e53935':v<=2?'#F9A825':v<=5?'#9CCC65':'#43A047');
-  const _sebEl=document.getElementById('slot-eta-batch-chart');
   if(window.slotEtaBatchChart) window.slotEtaBatchChart.destroy();
-  if(_sebEl) window.slotEtaBatchChart = new Chart(_sebEl,{
+  window.slotEtaBatchChart = new Chart(document.getElementById('slot-eta-batch-chart'),{
     type:'bar',
     data:{ labels:seKeys, datasets:[{
       label:'Avg Days', data:seAvgs,
@@ -3943,9 +3965,8 @@ function renderDashboard(){
     return { label:trucker, data, backgroundColor:truckerBatchPalette[ti%truckerBatchPalette.length], borderRadius:3 };
   });
 
-  const _setbEl=document.getElementById('slot-eta-trucker-batch-chart');
   if(slotEtaTruckerBatchChart) slotEtaTruckerBatchChart.destroy();
-  if(_setbEl) slotEtaTruckerBatchChart = new Chart(_setbEl,{
+  slotEtaTruckerBatchChart = new Chart(document.getElementById('slot-eta-trucker-batch-chart'),{
     type:'bar',
     data:{ labels:allBatchesForSE, datasets:seTruckerBatchDs },
     options:{ responsive:true, maintainAspectRatio:false,
@@ -4179,9 +4200,8 @@ function renderDashboard(){
   });
   const _scKeys=Object.keys(_scTruckerMap).sort((a,b)=>(_scTruckerMap[b].byTrucker+_scTruckerMap[b].byCon)-(_scTruckerMap[a].byTrucker+_scTruckerMap[a].byCon));
   if(slotChangeTruckerChart) slotChangeTruckerChart.destroy();
-  const _scCvs=document.getElementById('slot-change-trucker-chart');
-  if(_scCvs&&_scKeys.length){
-    slotChangeTruckerChart = new Chart(_scCvs,{
+  if(_scKeys.length){
+    slotChangeTruckerChart = new Chart(document.getElementById('slot-change-trucker-chart'),{
       type:'bar',
       data:{
         labels:_scKeys,
@@ -4201,8 +4221,8 @@ function renderDashboard(){
         }
       }
     });
-  } else if(_scCvs){
-    const cvs=_scCvs;
+  } else {
+    const cvs=document.getElementById('slot-change-trucker-chart');
     const ctx2=cvs.getContext('2d'); ctx2.clearRect(0,0,cvs.width,cvs.height);
     ctx2.font='13px sans-serif'; ctx2.fillStyle='#94a3b8'; ctx2.textAlign='center';
     ctx2.fillText('No slot changes recorded yet.',cvs.width/2,cvs.height/2);
@@ -4282,7 +4302,6 @@ function renderDashboard(){
   const surRows=CT.filter(r=>r['Surcharge']&&parseFloat(r['Surcharge'])>0);
   const surTotalAll=surRows.reduce((s,r)=>s+parseFloat(r['Surcharge']),0);
   const surRow=document.getElementById('surcharge-summary-row');
-  if(surRow){
   surRow.style.display='';  // always show
   if(!surRows.length){
     document.getElementById('surcharge-total-badge').textContent='No surcharges';
@@ -4370,7 +4389,6 @@ function renderDashboard(){
       <tbody>${upRows}</tbody>
     </table>`;
   }
-  } // end surcharge/unpaid guard (elements removed from dashboard)
 
   // ── VT Alerts: Port Cut-Off / VGM / Custom ────────────────────
   const vtToday=new Date(); vtToday.setHours(0,0,0,0);
@@ -4420,12 +4438,7 @@ function renderDashboard(){
   }
 
   // ── Upcoming Vessels list ──
-  const _vtParseDate=s=>{ if(!s) return null; const p=s.toString().trim();
-    let m=p.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); if(m) return new Date(+m[1],+m[2]-1,+m[3]);
-    m=p.match(/(\d{1,2})[\/\- ]([A-Za-z]{3,})[\/\- ,]+(\d{4})/);
-    if(m){ const mi=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m[2].slice(0,3).toLowerCase()); if(mi>=0) return new Date(+m[3],mi,+m[1]); }
-    m=p.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/); if(m) return new Date(+m[3],+m[1]-1,+m[2]);
-    return null; };
+  const _vtParseDate=s=>{ if(!s) return null; const p=s.toString().trim(); const m=p.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; };
   const _vtFmtDate=s=>{ const d=_vtParseDate(s); if(!d) return s||'—'; return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); };
   const today=new Date(); today.setHours(0,0,0,0);
   const upcomingVT=VT.filter(r=>{
@@ -4521,6 +4534,8 @@ function renderDashboard(){
     })
     .filter(x=>x.malaDt)
     .sort((a,b)=>a.malaDt-b.malaDt);
+
+  renderTruckerReviews();
 
   // ── Vessel Financials ─────────────────────────────────────────
   (function(){
@@ -10534,6 +10549,19 @@ function vdCarrierStyle(c){
   return `background:${col.bg};border-color:${col.border};color:${col.text}`;
 }
 
+let _activeDispatchTab='ct';
+function switchDispatchTab(tab){
+  _activeDispatchTab=tab;
+  const isCt=tab==='ct';
+  document.getElementById('dispatch-panel-ct').style.display=isCt?'':'none';
+  document.getElementById('dispatch-panel-vt').style.display=isCt?'none':'';
+  const tabCt=document.getElementById('dispatch-tab-ct');
+  const tabVt=document.getElementById('dispatch-tab-vt');
+  if(tabCt){ tabCt.style.background=isCt?'rgba(255,255,255,.18)':'transparent'; tabCt.style.color=isCt?'#fff':'rgba(255,255,255,.6)'; tabCt.style.borderBottom=isCt?'2px solid #5DD8D0':'2px solid transparent'; }
+  if(tabVt){ tabVt.style.background=!isCt?'rgba(255,255,255,.18)':'transparent'; tabVt.style.color=!isCt?'#fff':'rgba(255,255,255,.6)'; tabVt.style.borderBottom=!isCt?'2px solid #5DD8D0':'2px solid transparent'; }
+  if(isCt) renderDispatch(); else renderVesselDispatch();
+}
+
 function renderVesselDispatch(){
   const content=document.getElementById('vd-content');
   if(!content) return;
@@ -11130,10 +11158,6 @@ function remToggle(){
   if(ic) ic.textContent=_remOpen?'▼':'▶';
 }
 remLoad(); remRender();
-
-// ── INITIAL RENDER: dashboard is the default page, render it on load so
-//    vessel panel / KPIs / charts are always current without clicking tabs ──
-try{ renderDashboard(); }catch(e){ console.error('Initial dashboard render failed:', e); }
 </script>
 
 <style id="sticky-header-patch">
@@ -11471,9 +11495,6 @@ window.addEventListener('resize', ()=>{ if(_currentPage==='vessels') vtApplyFree
   </button>
   <button onclick="showPage('vessels')" id="mnav-vessels">
     <span class="mnav-icon">🚢</span>Vessels
-  </button>
-  <button onclick="showPage('vessel-dispatch')" id="mnav-vessel-dispatch">
-    <span class="mnav-icon">🗓️</span>Vsl Disp
   </button>
   <button onclick="showPage('notices')" id="mnav-notices">
     <span class="mnav-icon">🔔</span>Notices
