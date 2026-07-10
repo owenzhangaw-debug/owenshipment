@@ -1418,7 +1418,6 @@ select:focus, input:focus {
       <div class="dash-cat-tabs">
         <button class="dash-cat-tab active" onclick="switchDashCat('time',this)">⏱ Time</button>
         <button class="dash-cat-tab" onclick="switchDashCat('price',this)">💰 Price</button>
-        <button class="dash-cat-tab" onclick="switchDashCat('vessel-fin',this)">🚢 Vessel $</button>
         <button class="dash-cat-tab" onclick="switchDashCat('qty',this)">📦 Quantity</button>
         <button class="dash-cat-tab" onclick="switchDashCat('delays',this)">⚠️ Delays</button>
       </div>
@@ -1430,20 +1429,6 @@ select:focus, input:focus {
             <h3 onclick="toggleChart(this)">Delivered by Month<span class="ch-toggle">▼</span></h3>
             <p class="chart-subtitle">Total containers with Actual Arrival recorded</p>
             <div class="chart-wrap" style="height:320px"><canvas id="monthly-chart"></canvas></div>
-          </div>
-        </div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Avg Slot–ETA by Batch<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Days between Scheduled Slot and ETA at Hub</p>
-            <div class="chart-wrap" style="height:320px"><canvas id="slot-eta-batch-chart"></canvas></div>
-          </div>
-        </div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Slot–ETA by Trucker &amp; Batch<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Days between slot and ETA, grouped by trucker and batch</p>
-            <div class="chart-wrap" style="height:360px"><canvas id="slot-eta-trucker-batch-chart"></canvas></div>
           </div>
         </div>
       </div>
@@ -1466,23 +1451,9 @@ select:focus, input:focus {
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Total Freight Cost by Broker (€)<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Sum of all freight prices by broker</p>
+            <h3 onclick="toggleChart(this)">Total T1 Cost by Broker (€)<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Sum of all T1 customs costs by broker</p>
             <div class="chart-wrap" style="height:260px"><canvas id="price-broker-total-chart"></canvas></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── VESSEL FINANCIALS ── -->
-      <div id="dash-cat-vessel-fin" class="dash-cat-section">
-        <div class="kpi-row" id="vf-kpi-row" style="margin-bottom:16px"></div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card" style="padding:16px 18px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <h3 style="margin:0">📋 Vessel Financials Detail</h3>
-              <span id="vf-table-total" style="font-size:12px;font-weight:700;color:#0369a1;background:#e0f2fe;border-radius:8px;padding:3px 10px"></span>
-            </div>
-            <div id="vf-detail-table" style="overflow-x:auto"></div>
           </div>
         </div>
       </div>
@@ -1498,8 +1469,8 @@ select:focus, input:focus {
         </div>
         <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
           <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Containers by Batch<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Total containers per batch / train</p>
+            <h3 onclick="toggleChart(this)">Containers by Project<span class="ch-toggle">▼</span></h3>
+            <p class="chart-subtitle">Total containers per project</p>
             <div class="chart-wrap" style="height:320px"><canvas id="batch-chart"></canvas></div>
           </div>
         </div>
@@ -1562,38 +1533,9 @@ select:focus, input:focus {
         <div id="upcoming-vt-list" style="font-size:12px"></div>
       </div>
 
-      <!-- Alerts: VGM / Custom / TBD — compact single card -->
-      <div class="chart-card vt-right-card" style="padding:14px 16px;margin-top:0">
-        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">Alerts</h3>
-        <div style="margin-bottom:8px">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7c3aed;margin-bottom:4px">
-            Status TBD <span id="tbd-alert-badge" style="font-size:11px;font-weight:700;background:#f3e8ff;color:#7c3aed;border-radius:8px;padding:1px 6px;margin-left:4px"></span>
-          </div>
-          <div id="tbd-alert-list" style="font-size:12px"></div>
-        </div>
-        <div style="margin-bottom:8px">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#c62828;margin-bottom:4px">
-            VGM Not Filed <span id="vgm-alert-badge" style="font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:1px 6px;margin-left:4px"></span>
-          </div>
-          <div id="vgm-alert-list" style="font-size:12px"></div>
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#c62828;margin-bottom:4px">
-            Custom Not Filed <span id="custom-alert-badge" style="font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:1px 6px;margin-left:4px"></span>
-          </div>
-          <div id="custom-alert-list" style="font-size:12px"></div>
-        </div>
-      </div>
-
     </div><!-- end dash-col RIGHT -->
 
   </div><!-- end dash-split -->
-
-  <!-- ══ Trucker Reviews ══ -->
-  <div class="tr-review-section">
-    <div class="tr-review-hdr">🚛 Trucker Performance Reviews <span style="font-size:9px;font-weight:500;opacity:.75;margin-left:4px">auto-updated from ratings &amp; data</span></div>
-    <div class="tr-review-grid" id="tr-review-grid"></div>
-  </div>
 
 </div>
 
@@ -1602,6 +1544,8 @@ select:focus, input:focus {
   <div id="page-notice-containers"></div>
   <div id="today-deliveries-widget" style="display:none;margin:0 0 14px"></div>
   <div id="ct-batch-progress" style="margin:0 0 12px"></div>
+  <!-- Delay KPIs (mirrored from dashboard Delays tab) -->
+  <div id="delay-kpi-row-ct" class="kpi-row" style="margin:0 0 12px"></div>
 
   <div class="toolbar" style="margin:0 0 8px">
     <div class="ms-wrap" id="wrap-dest">
@@ -1713,6 +1657,7 @@ select:focus, input:focus {
           <th class="no-sort">Broker</th>
           <th class="no-sort" style="min-width:80px;text-align:center">🚦 Level</th>
           <th onclick="ctSort('ETA in Mala')" title="ETA at Port of Malaysia">ETA in Mala ↕<span class="cdf-btn" id="cdf-ct-btn-ETA in Mala" onclick="openColDF('ct','ETA in Mala',this,event)" title="Filter by date">▾</span></th>
+          <th onclick="ctSort('Hub')" title="Temu routing — hub (T1 issued there) or direct from Małaszewicze">Hub ↕</th>
           <th onclick="ctSort('ETA at Hub')">ETA at Hub ↕<span class="cdf-btn" id="cdf-ct-btn-ETA at Hub" onclick="openColDF('ct','ETA at Hub',this,event)" title="Filter by date">▾</span></th>
           <th onclick="ctSort('T1 Date')" title="Date when T1 customs cleared at Duisburg">T1 ↕<span class="cdf-btn" id="cdf-ct-btn-T1 Date" onclick="openColDF('ct','T1 Date',this,event)" title="Filter by date">▾</span></th>
           <th onclick="ctSort('Scheduled Slot')">Scheduled Slot ↕<span class="cdf-btn" id="cdf-ct-btn-Scheduled Slot" onclick="openColDF('ct','Scheduled Slot',this,event)" title="Filter by date">▾</span></th>
@@ -2051,6 +1996,31 @@ select:focus, input:focus {
 <!-- ══ VESSELS ══ -->
 <div id="page-vessels" class="page">
   <div id="page-notice-vessels"></div>
+
+  <!-- Alerts: VGM / Custom / TBD (moved from dashboard) -->
+  <div class="chart-card" style="padding:14px 16px;margin:0 0 12px">
+    <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">🚨 Alerts</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7c3aed;margin-bottom:4px">
+          Status TBD <span id="tbd-alert-badge" style="font-size:11px;font-weight:700;background:#f3e8ff;color:#7c3aed;border-radius:8px;padding:1px 6px;margin-left:4px"></span>
+        </div>
+        <div id="tbd-alert-list" style="font-size:12px"></div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#c62828;margin-bottom:4px">
+          VGM Not Filed <span id="vgm-alert-badge" style="font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:1px 6px;margin-left:4px"></span>
+        </div>
+        <div id="vgm-alert-list" style="font-size:12px"></div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#c62828;margin-bottom:4px">
+          Custom Not Filed <span id="custom-alert-badge" style="font-size:11px;font-weight:700;background:#fdecea;color:#c62828;border-radius:8px;padding:1px 6px;margin-left:4px"></span>
+        </div>
+        <div id="custom-alert-list" style="font-size:12px"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- Return Container Planning moved to Planning page -->
 
@@ -2468,6 +2438,7 @@ select:focus, input:focus {
       <div class="form-group"><label>Consignee</label><input type="text" id="f_con" list="dl-con"/><datalist id="dl-con"></datalist></div>
       <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/><datalist id="dl-truck"></datalist></div>
       <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker" placeholder="e.g. Wispex"/><datalist id="dl-broker"><option value="Wispex"/><option value="Self"/></datalist></div>
+      <datalist id="dl-hub"><option value="Duisburg"/><option value="Tilburg"/><option value="Direct (Małaszewicze)"/></datalist>
       <div class="form-group"><label>Destination</label>
         <input type="text" id="f_dest" list="dl-dest" placeholder="e.g. Belgium"/><datalist id="dl-dest"></datalist></div>
       <div class="form-group"><label>Tracking</label>
@@ -2900,6 +2871,21 @@ select:focus, input:focus {
 </div>
 
 <script>
+// ── GLOBAL ERROR GUARD: surface script errors instead of silently blanking sections ──
+window.addEventListener('error',function(e){
+  try{
+    console.error('App error:', e.message, e.filename, e.lineno);
+    let b=document.getElementById('app-err-banner');
+    if(!b && document.body){
+      b=document.createElement('div'); b.id='app-err-banner';
+      b.style.cssText='position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:99999;background:#7f1d1d;color:#fff;font:12px/1.4 -apple-system,sans-serif;padding:8px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:90vw;display:flex;gap:10px;align-items:center';
+      b.innerHTML='<span id="app-err-msg"></span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;font-weight:700;cursor:pointer;font-size:13px">✕</button>';
+      document.body.appendChild(b);
+    }
+    const m=document.getElementById('app-err-msg');
+    if(m) m.textContent='⚠️ Script error: '+(e.message||'unknown')+' — some sections may not render. Check console (F12).';
+  }catch(_){}
+});
 // ── CLOUD SYNC CONSTANTS (must be first to avoid TDZ errors) ──────
 const JBIN = 'https://api.jsonbin.io/v3/b';
 let cloudSaveTimer = null;
@@ -3874,11 +3860,11 @@ function renderDashboard(){
       });
   }
 
-  // ── Total Freight Cost by Broker ─────────────────────────────────
+  // ── Total T1 Cost by Broker (brokers charge T1 customs, not freight) ──
   const priceBrokers={};
   CT.forEach(r=>{
     const b=r['Broker']||'(No Broker)';
-    const p=parseFloat(r['Price']);
+    const p=parseFloat(r['Price T1']);
     if(isNaN(p)||p<=0) return;
     if(!priceBrokers[b]) priceBrokers[b]={sum:0,count:0};
     priceBrokers[b].sum+=p; priceBrokers[b].count++;
@@ -3890,7 +3876,7 @@ function renderDashboard(){
     window.priceBrokerTotalChart = new Chart(document.getElementById('price-broker-total-chart'),{
       type:'bar',
       data:{ labels:pbKeys, datasets:[{
-        label:'Total Freight (€)',
+        label:'Total T1 Cost (€)',
         data:pbKeys.map(k=>+priceBrokers[k].sum.toFixed(0)),
         backgroundColor:['#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd'],
         borderRadius:5
@@ -3920,8 +3906,9 @@ function renderDashboard(){
   const seKeys=Object.keys(seBatchDays).sort();
   const seAvgs=seKeys.map(b=>+(seBatchDays[b].sum/seBatchDays[b].count).toFixed(1));
   const seColors=seAvgs.map(v=>v<0?'#e53935':v<=2?'#F9A825':v<=5?'#9CCC65':'#43A047');
+  const _sebEl=document.getElementById('slot-eta-batch-chart');
   if(window.slotEtaBatchChart) window.slotEtaBatchChart.destroy();
-  window.slotEtaBatchChart = new Chart(document.getElementById('slot-eta-batch-chart'),{
+  if(_sebEl) window.slotEtaBatchChart = new Chart(_sebEl,{
     type:'bar',
     data:{ labels:seKeys, datasets:[{
       label:'Avg Days', data:seAvgs,
@@ -3965,8 +3952,9 @@ function renderDashboard(){
     return { label:trucker, data, backgroundColor:truckerBatchPalette[ti%truckerBatchPalette.length], borderRadius:3 };
   });
 
+  const _setbEl=document.getElementById('slot-eta-trucker-batch-chart');
   if(slotEtaTruckerBatchChart) slotEtaTruckerBatchChart.destroy();
-  slotEtaTruckerBatchChart = new Chart(document.getElementById('slot-eta-trucker-batch-chart'),{
+  if(_setbEl) slotEtaTruckerBatchChart = new Chart(_setbEl,{
     type:'bar',
     data:{ labels:allBatchesForSE, datasets:seTruckerBatchDs },
     options:{ responsive:true, maintainAspectRatio:false,
@@ -4200,8 +4188,9 @@ function renderDashboard(){
   });
   const _scKeys=Object.keys(_scTruckerMap).sort((a,b)=>(_scTruckerMap[b].byTrucker+_scTruckerMap[b].byCon)-(_scTruckerMap[a].byTrucker+_scTruckerMap[a].byCon));
   if(slotChangeTruckerChart) slotChangeTruckerChart.destroy();
-  if(_scKeys.length){
-    slotChangeTruckerChart = new Chart(document.getElementById('slot-change-trucker-chart'),{
+  const _scCvs=document.getElementById('slot-change-trucker-chart');
+  if(_scCvs&&_scKeys.length){
+    slotChangeTruckerChart = new Chart(_scCvs,{
       type:'bar',
       data:{
         labels:_scKeys,
@@ -4221,8 +4210,8 @@ function renderDashboard(){
         }
       }
     });
-  } else {
-    const cvs=document.getElementById('slot-change-trucker-chart');
+  } else if(_scCvs){
+    const cvs=_scCvs;
     const ctx2=cvs.getContext('2d'); ctx2.clearRect(0,0,cvs.width,cvs.height);
     ctx2.font='13px sans-serif'; ctx2.fillStyle='#94a3b8'; ctx2.textAlign='center';
     ctx2.fillText('No slot changes recorded yet.',cvs.width/2,cvs.height/2);
@@ -4302,6 +4291,7 @@ function renderDashboard(){
   const surRows=CT.filter(r=>r['Surcharge']&&parseFloat(r['Surcharge'])>0);
   const surTotalAll=surRows.reduce((s,r)=>s+parseFloat(r['Surcharge']),0);
   const surRow=document.getElementById('surcharge-summary-row');
+  if(surRow){
   surRow.style.display='';  // always show
   if(!surRows.length){
     document.getElementById('surcharge-total-badge').textContent='No surcharges';
@@ -4389,6 +4379,7 @@ function renderDashboard(){
       <tbody>${upRows}</tbody>
     </table>`;
   }
+  } // end surcharge/unpaid guard (elements removed from dashboard)
 
   // ── VT Alerts: Port Cut-Off / VGM / Custom ────────────────────
   const vtToday=new Date(); vtToday.setHours(0,0,0,0);
@@ -4408,7 +4399,7 @@ function renderDashboard(){
   if(!tbdRows.length){
     tbdEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">None ✓</div>';
   } else {
-    tbdEl.innerHTML=tbdRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['ETS (Departure)']||''}</span></div>`).join('');
+    tbdEl.innerHTML=tbdRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:#0369a1;font-size:10px;font-weight:600;margin-right:6px">${((r['Booking / BC No.']||'').split('\n')[0])||'no booking no.'}</span><span style="color:var(--muted);font-size:11px">${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
   // VGM not filed (active vessels where VGM is falsy)
@@ -4421,7 +4412,7 @@ function renderDashboard(){
   if(!vgmRows.length){
     vgmEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All VGM filed ✓</div>';
   } else {
-    vgmEl.innerHTML=vgmRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['ETS (Departure)']||''}</span></div>`).join('');
+    vgmEl.innerHTML=vgmRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:#0369a1;font-size:10px;font-weight:600;margin-right:6px">${((r['Booking / BC No.']||'').split('\n')[0])||'no booking no.'}</span><span style="color:var(--muted);font-size:11px">${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
   // Custom not filed
@@ -4434,11 +4425,16 @@ function renderDashboard(){
   if(!customRows.length){
     custEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">All custom filed ✓</div>';
   } else {
-    custEl.innerHTML=customRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:var(--muted);font-size:11px">${r['ETS (Departure)']||''}</span></div>`).join('');
+    custEl.innerHTML=customRows.map(r=>`<div class="vt-alert-row" onclick="gotoVessel(${r._id})" title="Go to vessel"><span style="flex:1;font-weight:600;color:var(--navy)">${r['Vessel Name']||'(no name)'}</span><span style="color:#0369a1;font-size:10px;font-weight:600;margin-right:6px">${((r['Booking / BC No.']||'').split('\n')[0])||'no booking no.'}</span><span style="color:var(--muted);font-size:11px">${r['ETS (Departure)']||''}</span></div>`).join('');
   }
 
   // ── Upcoming Vessels list ──
-  const _vtParseDate=s=>{ if(!s) return null; const p=s.toString().trim(); const m=p.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; };
+  const _vtParseDate=s=>{ if(!s) return null; const p=s.toString().trim();
+    let m=p.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+    m=p.match(/(\d{1,2})[\/\- ]([A-Za-z]{3,})[\/\- ,]+(\d{4})/);
+    if(m){ const mi=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m[2].slice(0,3).toLowerCase()); if(mi>=0) return new Date(+m[3],mi,+m[1]); }
+    m=p.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/); if(m) return new Date(+m[3],+m[1]-1,+m[2]);
+    return null; };
   const _vtFmtDate=s=>{ const d=_vtParseDate(s); if(!d) return s||'—'; return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); };
   const today=new Date(); today.setHours(0,0,0,0);
   const upcomingVT=VT.filter(r=>{
@@ -4534,8 +4530,6 @@ function renderDashboard(){
     })
     .filter(x=>x.malaDt)
     .sort((a,b)=>a.malaDt-b.malaDt);
-
-  renderTruckerReviews();
 
   // ── Vessel Financials ─────────────────────────────────────────
   (function(){
@@ -4778,17 +4772,20 @@ function renderDashboard(){
     _delayData = {lateArr, deadlineExc};
 
     // KPI row
-    const kpiEl = document.getElementById('delay-kpi-row');
-    if(kpiEl){
+    const kpiEl   = document.getElementById('delay-kpi-row');
+    const kpiElCt = document.getElementById('delay-kpi-row-ct'); // mirror on Containers page
+    {
       const totalLate = lateArr.length;
       const totalDL   = deadlineExc.length;
       const pendingDL = deadlineExc.filter(r=>r.pending).length;
       const avgLate   = totalLate ? (lateArr.reduce((s,r)=>s+r.daysLate,0)/totalLate).toFixed(1) : 0;
-      kpiEl.innerHTML = `
+      const kpiHTML = `
         <div class="kpi-card"><div class="kpi-val" style="color:#dc2626">${totalLate}</div><div class="kpi-lbl">Late Arrivals</div></div>
         <div class="kpi-card"><div class="kpi-val" style="color:#dc2626">${totalDL}</div><div class="kpi-lbl">Deadline Exceeded</div></div>
         <div class="kpi-card"><div class="kpi-val" style="color:#f59e0b">${pendingDL}</div><div class="kpi-lbl">Pending Past Deadline</div></div>
         <div class="kpi-card"><div class="kpi-val" style="color:#7c3aed">${avgLate}d</div><div class="kpi-lbl">Avg Days Late</div></div>`;
+      if(kpiEl)   kpiEl.innerHTML   = kpiHTML;
+      if(kpiElCt) kpiElCt.innerHTML = kpiHTML;
     }
 
     // Helper: aggregate by key
@@ -6269,6 +6266,26 @@ function renderCT(){
       <div class="cell-edit"><input type="text" data-fptype="date" value="${dlV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Deadline',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
     </td>`;
 
+    // ── Hub routing (Temu project = containers with Master B/L) ───
+    const _isTemu=!!((r['Master B/L']||'').toString().trim());
+    let hubCell;
+    if(_isTemu){
+      const hv=r['Hub']||'';
+      const _hubStyles={
+        'Duisburg':'background:#e0f2fe;color:#0369a1',
+        'Tilburg':'background:#ecfdf5;color:#065f46',
+        'Direct (Małaszewicze)':'background:#fef3c7;color:#92400e',
+        '':'color:#94a3b8'
+      };
+      const _hubLbl={'Duisburg':'🏭 Duisburg','Tilburg':'🏭 Tilburg','Direct (Małaszewicze)':'🚛 Direct','':'—'};
+      hubCell=`<td data-id="${r._id}" data-col="Hub" style="white-space:nowrap">
+        <div class="cell-view" onclick="startEdit(this)" style="${_hubStyles[hv]||''};border-radius:6px;padding:2px 6px;font-size:11px;font-weight:700;text-align:center">${_hubLbl[hv]!==undefined?_hubLbl[hv]:hv}</div>
+        <div class="cell-edit"><input type="text" list="dl-hub" value="${hv.replace(/"/g,'&quot;')}" placeholder="Duisburg / Tilburg / Direct…" onblur="commitEdit(this,'Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur()" style="font-size:11px"/></div>
+      </td>`;
+    } else {
+      hubCell=`<td style="text-align:center"><span style="color:#d1d5db;font-size:10px" title="Hub routing applies to Temu containers (Master B/L filled) only">n/a</span></td>`;
+    }
+
     // ── Smart hint overrides ──────────────────────────────────────
     const sd=_smartData||computeSmartData();
     const cn=(r['Container No.']||'').toUpperCase();
@@ -6290,6 +6307,14 @@ function renderCT(){
           <div class="cell-edit"><input type="text" data-fptype="date" value="" onblur="commitEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD" style="width:120px"/></div>
         </td>`;
       }
+    }
+
+    // ETA at Hub is a Temu-hub concept — show n/a for non-Temu / direct-routed rows
+    if((!_isTemu || r['Hub']==='Direct (Małaszewicze)') && !r['ETA at Hub']){
+      etaCell=`<td data-id="${r._id}" data-col="ETA at Hub">
+        <div class="cell-view" onclick="startEdit(this)"><span style="color:#d1d5db;font-size:10px" title="${_isTemu?'Direct route — no hub leg':'Hub leg applies to Temu containers (Master B/L filled) only'}">n/a</span></div>
+        <div class="cell-edit"><input type="text" data-fptype="date" value="" onblur="commitEdit(this,'ETA at Hub',${r._id})" onkeydown="if(event.key==='Enter')this.blur()"/></div>
+      </td>`;
     }
 
     // Scheduled Slot: same day as ETA at Hub (slot is booked on arrival day)
@@ -6369,7 +6394,7 @@ function renderCT(){
 
     return `<tr class="${rowCls}" id="row-${r._id}">
       <td class="fc-1" style="padding:4px 6px;white-space:nowrap"><button class="ct-exp-btn" onclick="ctToggleExpand(${r._id})" title="${ctIsOpen?'Collapse':'Expand'}">${ctIsOpen?'▼':'▶'}</button>${r['Batch / Train']||''}${slotBadge}</td>
-      <td class="fc-2" style="padding:7px 10px"><strong>${r['Container No.']||''}</strong></td>
+      <td class="fc-2" style="padding:7px 10px;white-space:nowrap"><strong>${r['Container No.']||''}</strong>${_isTemu?' <span title="Temu project (Master B/L filled)" style="font-size:8px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:middle">TEMU</span>':''}</td>
       ${blC}
       ${conC}
       ${destCell}
@@ -6396,6 +6421,7 @@ function renderCT(){
         </select></div>`;
       })()}</td>
       ${etaMalaC}
+      ${hubCell}
       ${etaCell}
       ${t1dC}
       ${slotCell}
@@ -7374,7 +7400,7 @@ function renderVT(){
       ${vtCell(r,'Barge Date')}
       <td style="padding:7px 10px;text-align:center;font-weight:700;color:${r['Status']==='Discharged'?'#6b7280':_daysColor};white-space:nowrap">${_daysDisp}</td>
       <td style="text-align:center;padding:6px"><input type="checkbox" title="VGM" ${r['VGM']?'checked':''} onchange="vtToggleFlag(${r._id},'VGM',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--blue)"/></td>
-      <td style="text-align:center;padding:6px"><input type="checkbox" title="Custom" ${r['Custom']?'checked':''} onchange="vtToggleFlag(${r._id},'Custom',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#8B4513"/></td>
+      <td style="text-align:center;padding:6px;white-space:nowrap"><input type="checkbox" title="Custom" ${r['Custom']?'checked':''} onchange="vtToggleFlag(${r._id},'Custom',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#8B4513;vertical-align:middle"/><button title="Email custom clearance request (export@wispex.nl)" onclick="event.stopPropagation();customEmail(${r._id})" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0;margin-left:5px;vertical-align:middle">✉️</button></td>
       ${vtCell(r,'Status',{select:STATUS_OPTS})}
       ${vtCell(r,'Order No.')}
       ${vtFeeCell(r,'ocean')}
@@ -7759,6 +7785,22 @@ function vtToggleFlag(id, col, checked){
   VT[i][col]=checked; saveVT();
   // Refresh dashboard alerts if dashboard is currently visible
   if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+}
+
+// ── AUTO EMAIL: custom clearance request to Wispex ────────────────
+const CUSTOM_EMAIL_TO = 'export@wispex.nl';
+const CUSTOM_EMAIL_CC = '';  // ← fill in CC addresses, comma-separated (e.g. 'mark@...,shantina@...')
+function customEmail(id){
+  const r=VT.find(x=>x._id===id); if(!r) return;
+  const bk=((r['Booking / BC No.']||'').split('\n')[0]).trim()||r['Vessel Name']||'';
+  const subject=bk+'/ custom clearance';
+  const body='Dear Team,\n\n'
+    +'Pls find in attachment VGM, SOC data list and booking confirmation for '+bk+' and proceed to cc process,\n\n'
+    +'Thanks & Best regards,\nOwen Zhang';
+  window.location.href='mailto:'+CUSTOM_EMAIL_TO
+    +(CUSTOM_EMAIL_CC?'?cc='+encodeURIComponent(CUSTOM_EMAIL_CC)+'&':'?')
+    +'subject='+encodeURIComponent(subject)
+    +'&body='+encodeURIComponent(body);
 }
 
 function vtAddVesselHistory(id){
@@ -8439,7 +8481,7 @@ function _mergeTemuTracking(){
 function exportCSV(){
   const headers=[
     'Batch / Train','Container No.','Master B/L','Consignee','Trucker','Broker',
-    'ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Deadline',
+    'ETA in Mala','Hub','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Deadline',
     'Tracking','CMR','Pickup Ref',
     'Price','Price T1','Surcharge','Surcharge Reason',
     'Payment Status','T1 Payment Status','Remark'
@@ -8529,7 +8571,7 @@ function exportVesselXLSX(){
 const COL_MAP={
   'batch':'Batch / Train','batch / train':'Batch / Train','batch/train':'Batch / Train',
   'container no':'Container No.','container no.':'Container No.','container number':'Container No.','container':'Container No.',
-  'master b/l':'Master B/L','mbl':'Master B/L','b/l':'Master B/L','master bl':'Master B/L',
+  'master b/l':'Master B/L','mbl':'Master B/L','b/l':'Master B/L','hub':'Hub','master bl':'Master B/L',
   'consignee':'Consignee','trucker':'Trucker','carrier':'Trucker','broker':'Broker',
   'eta in mala':'ETA in Mala','eta mala':'ETA in Mala',
   'eta at hub':'ETA at Hub','eta hub':'ETA at Hub','eta':'ETA at Hub',
@@ -8542,7 +8584,7 @@ const COL_MAP={
   'destination':'Destination','country':'Destination','dest':'Destination','delivery country':'Destination',
 };
 const IMP_FIELDS=['Batch / Train','Container No.','Master B/L','Consignee','Trucker','Broker','Destination',
-  'ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Deadline','CMR','Tracking','Pickup Ref','Surcharge','Price','Remark'];
+  'ETA in Mala','Hub','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Deadline','CMR','Tracking','Pickup Ref','Surcharge','Price','Remark'];
 
 function openImport(){ importWB=null; importRows=[];
   ['imp-sheet','imp-mapinfo','imp-preview-wrap','imp-opts','imp-ok','imp-err'].forEach(id=>document.getElementById(id).style.display='none');
@@ -11158,6 +11200,10 @@ function remToggle(){
   if(ic) ic.textContent=_remOpen?'▼':'▶';
 }
 remLoad(); remRender();
+
+// ── INITIAL RENDER: dashboard is the default page, render it on load so
+//    vessel panel / KPIs / charts are always current without clicking tabs ──
+try{ renderDashboard(); }catch(e){ console.error('Initial dashboard render failed:', e); }
 </script>
 
 <style id="sticky-header-patch">
