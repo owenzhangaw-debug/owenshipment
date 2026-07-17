@@ -1992,6 +1992,7 @@ select:focus, input:focus {
 
 <!-- ══ CONTAINER ORDERS (normal, non-TEMU) ══ -->
 <div id="page-orders" class="page">
+  <div id="page-notice-orders"></div>
   <div class="chart-card" style="padding:14px 16px;margin:0 0 12px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <h3 style="margin:0">📦 Container Orders <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:6px">normal orders — separate from TEMU</span></h3>
@@ -2301,6 +2302,7 @@ select:focus, input:focus {
         <div id="nb-filter-bar" style="display:flex;gap:6px;padding:9px 14px 4px;border-bottom:1px solid #f0f4f8;background:#fafcff">
           <button id="nbf-all" class="nb-filter-tab active" onclick="noticeSetFilter('all')">All</button>
           <button id="nbf-containers" class="nb-filter-tab" onclick="noticeSetFilter('containers')">📦 Containers</button>
+          <button id="nbf-orders" class="nb-filter-tab" onclick="noticeSetFilter('orders')">🧾 Orders</button>
           <button id="nbf-vessels" class="nb-filter-tab" onclick="noticeSetFilter('vessels')">🚢 Vessels</button>
         </div>
         <div id="notice-add-form" style="display:none">
@@ -2315,6 +2317,7 @@ select:focus, input:focus {
                 <option value="all">📋 All Pages</option>
                 <option value="vessels">🚢 Vessels Only</option>
                 <option value="containers">📦 Containers Only</option>
+                <option value="orders">🧾 Orders Only</option>
               </select>
             </div>
             <textarea id="notice-text" class="nb-textarea" placeholder="Type your notice here…" rows="2"></textarea>
@@ -3080,7 +3083,7 @@ function showPage(p){
   if(p==='planning'){ rcpRender(); }
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='reports') renderReports();
-  if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); }
+  if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); if(typeof renderPageNotices==='function') renderPageNotices(); }
   if(p==='dispatch'){ switchDispatchTab(_activeDispatchTab||'ct'); }
 }
 function _contextAdd(){
@@ -11240,7 +11243,7 @@ function noticeDeleteFromModal(){
 let _noticeFilter='all'; // 'all' | 'containers' | 'vessels'
 function noticeSetFilter(cat){
   _noticeFilter=cat;
-  ['all','containers','vessels'].forEach(c=>{
+  ['all','containers','orders','vessels'].forEach(c=>{
     const el=document.getElementById('nbf-'+c);
     if(el) el.classList.toggle('active',c===cat);
   });
@@ -11274,7 +11277,7 @@ function renderNotices(){
     return;
   }
   if(!filtered.length){
-    const lbl=_noticeFilter==='containers'?'📦 Containers':'🚢 Vessels';
+    const lbl=_noticeFilter==='containers'?'📦 Containers':_noticeFilter==='orders'?'🧾 Orders':'🚢 Vessels';
     el.innerHTML=`<div style="color:#94a3b8;font-size:13px;padding:14px 0;text-align:center">No ${lbl} notices.</div>`;
     return;
   }
@@ -11310,6 +11313,10 @@ function renderPageNotices(){
   const ctEl=document.getElementById('page-notice-containers');
   const ctNotes=NOTICES.filter(n=>n.cat==='all'||n.cat==='containers');
   _buildFoldableNotices(ctEl, ctNotes, 'pn_containers_collapsed');
+
+  const noEl=document.getElementById('page-notice-orders');
+  const noNotes=NOTICES.filter(n=>n.cat==='all'||n.cat==='orders');
+  _buildFoldableNotices(noEl, noNotes, 'pn_orders_collapsed');
 }
 renderNotices();
 renderPageNotices();
