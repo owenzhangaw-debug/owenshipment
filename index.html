@@ -1601,6 +1601,7 @@ tbody tr:hover{background:#fafbfc}
 <!-- ══ CONTAINERS ══ -->
 <div id="page-containers" class="page">
   <div id="page-notice-containers"></div>
+  <div id="page-rem-containers"></div>
   <div id="today-deliveries-widget" style="display:none;margin:0 0 14px"></div>
   <div id="ct-batch-progress" style="margin:0 0 12px"></div>
 
@@ -2053,6 +2054,7 @@ tbody tr:hover{background:#fafbfc}
 <!-- ══ CONTAINER ORDERS (normal, non-TEMU) ══ -->
 <div id="page-orders" class="page">
   <div id="page-notice-orders"></div>
+  <div id="page-rem-orders"></div>
   <div class="chart-card" style="padding:14px 16px;margin:0 0 12px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <h3 style="margin:0">📦 Container Orders <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:6px">normal orders — separate from TEMU</span></h3>
@@ -2096,6 +2098,7 @@ tbody tr:hover{background:#fafbfc}
 <!-- ══ VESSELS ══ -->
 <div id="page-vessels" class="page">
   <div id="page-notice-vessels"></div>
+  <div id="page-rem-vessels"></div>
 
   <!-- Alerts: VGM / Custom / TBD (moved from dashboard) -->
   <div class="chart-card" style="padding:14px 16px;margin:0 0 12px">
@@ -2406,6 +2409,7 @@ tbody tr:hover{background:#fafbfc}
           <select id="rem-cat-sel" class="rem-cat-sel">
             <option value="container">📦 Container</option>
             <option value="vessel">🚢 Vessel</option>
+            <option value="order">🧾 Order</option>
             <option value="payment">💰 Payment</option>
             <option value="other">📝 Other</option>
           </select>
@@ -2415,6 +2419,7 @@ tbody tr:hover{background:#fafbfc}
           <button class="rem-ftab active" id="remf-all"       onclick="remSetFilter('all')">All</button>
           <button class="rem-ftab"        id="remf-container" onclick="remSetFilter('container')">📦 Container</button>
           <button class="rem-ftab"        id="remf-vessel"    onclick="remSetFilter('vessel')">🚢 Vessel</button>
+          <button class="rem-ftab"        id="remf-order"     onclick="remSetFilter('order')">🧾 Order</button>
           <button class="rem-ftab"        id="remf-payment"   onclick="remSetFilter('payment')">💰 Payment</button>
           <button class="rem-ftab"        id="remf-other"     onclick="remSetFilter('other')">📝 Other</button>
         </div>
@@ -3145,12 +3150,12 @@ function showPage(p){
     addBtn.textContent=p==='vessels'?'+ Add Vessel':'+ Add Container';
   }
   if(p==='dashboard') renderDashboard();
-  if(p==='containers'){ renderCT(); if(typeof renderPageNotices==='function') renderPageNotices(); }
-  if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); setTimeout(vtApplyFreezeColumns,50); }
+  if(p==='containers'){ renderCT(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); }
+  if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); setTimeout(vtApplyFreezeColumns,50); }
   if(p==='planning'){ rcpRender(); }
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='reports') renderReports();
-  if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); if(typeof renderPageNotices==='function') renderPageNotices(); }
+  if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); }
   if(p==='dispatch'){ switchDispatchTab(_activeDispatchTab||'ct'); }
 }
 function _contextAdd(){
@@ -11400,9 +11405,27 @@ let _remNextId=1;
 const REM_CATS={
   container:{label:'📦 Container', cls:'container'},
   vessel:   {label:'🚢 Vessel',    cls:'vessel'},
+  order:    {label:'🧾 Order',     cls:'other'},
   payment:  {label:'💰 Payment',   cls:'payment'},
   other:    {label:'📝 Other',     cls:'other'}
 };
+// Compact pending-reminder strips shown on Containers / Vessels / Orders pages
+function renderPageReminders(){
+  const map={'containers':'container','vessels':'vessel','orders':'order'};
+  Object.keys(map).forEach(page=>{
+    const el=document.getElementById('page-rem-'+page); if(!el) return;
+    const items=REMINDERS.filter(r=>!r.done&&r.cat===map[page]);
+    if(!items.length){ el.innerHTML=''; return; }
+    el.innerHTML=`<div class="chart-card" style="padding:10px 14px;margin:0 0 12px">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#b45309;margin-bottom:6px">🗒 Reminders <span style="background:#fef3c7;color:#92400e;border-radius:8px;padding:1px 7px;font-size:10px">${items.length}</span></div>
+      ${items.map(r=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12.5px">
+        <input type="checkbox" onchange="remToggleDone(${r.id})" style="width:15px;height:15px;cursor:pointer;accent-color:#0f766e" title="Mark done"/>
+        <span style="flex:1">${(r.text||'').replace(/</g,'&lt;')}</span>
+        <span style="color:#94a3b8;font-size:10px;white-space:nowrap">${r.ts||''}</span>
+      </div>`).join('')}
+    </div>`;
+  });
+}
 
 function remLoad(){
   try{ const s=localStorage.getItem(REM_KEY); if(s){ REMINDERS=JSON.parse(s); _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; } }catch(e){}
@@ -11411,7 +11434,7 @@ function remSave(){ try{ localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS))
 
 function remSetFilter(f){
   _remFilter=f;
-  ['all','container','vessel','payment','other'].forEach(k=>{
+  ['all','container','vessel','order','payment','other'].forEach(k=>{
     const el=document.getElementById('remf-'+k);
     if(el) el.classList.toggle('active',k===f);
   });
@@ -11419,6 +11442,7 @@ function remSetFilter(f){
 }
 
 function remRender(){
+  if(typeof renderPageReminders==='function') renderPageReminders();
   const el=document.getElementById('rem-list'); if(!el) return;
   const badge=document.getElementById('rem-badge');
   const pending=REMINDERS.filter(r=>!r.done).length;
@@ -11458,6 +11482,7 @@ function remAdd(){
   inp.value='';
   remSave(); remRender();
 }
+function remToggleDone_hookPages(){ if(typeof renderPageReminders==='function') renderPageReminders(); }
 function remToggleDone(id){
   const r=REMINDERS.find(x=>x.id===id); if(!r) return;
   r.done=!r.done;
