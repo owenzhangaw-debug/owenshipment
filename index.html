@@ -1307,6 +1307,7 @@ select:focus, input:focus {
     <button class="active" onclick="showPage('dashboard')">Dashboard</button>
     <button onclick="showPage('notices')">Notices</button>
     <button onclick="showPage('containers')">Containers</button>
+    <button onclick="showPage('orders')">Orders</button>
     <button onclick="showPage('dispatch')">Dispatch</button>
     <button onclick="showPage('vessels')">Vessels</button>
     <button onclick="showPage('reports')">Reports</button>
@@ -1544,8 +1545,6 @@ select:focus, input:focus {
   <div id="page-notice-containers"></div>
   <div id="today-deliveries-widget" style="display:none;margin:0 0 14px"></div>
   <div id="ct-batch-progress" style="margin:0 0 12px"></div>
-  <!-- Delay KPIs (mirrored from dashboard Delays tab) -->
-  <div id="delay-kpi-row-ct" class="kpi-row" style="margin:0 0 12px"></div>
 
   <div class="toolbar" style="margin:0 0 8px">
     <div class="ms-wrap" id="wrap-dest">
@@ -1992,6 +1991,44 @@ select:focus, input:focus {
   </div>
 </div>
 
+
+<!-- ══ CONTAINER ORDERS (normal, non-TEMU) ══ -->
+<div id="page-orders" class="page">
+  <div class="chart-card" style="padding:14px 16px;margin:0 0 12px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <h3 style="margin:0">📦 Container Orders <span style="font-size:10px;color:#94a3b8;font-weight:600">normal orders — separate from TEMU</span></h3>
+      <span id="no-count-badge" style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;border-radius:8px;padding:2px 8px"></span>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="no-status-filter" onchange="renderOrders()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+          <option value="">All Statuses</option>
+          <option value="New">New</option>
+          <option value="Booked">Booked</option>
+          <option value="Picked Up">Picked Up</option>
+          <option value="In Transit">In Transit</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+        <button onclick="noAdd()" style="padding:5px 14px;font-size:12px;font-weight:700;background:var(--navy,#004D4C);color:#fff;border:none;border-radius:7px;cursor:pointer">+ Add Order</button>
+      </div>
+    </div>
+  </div>
+  <div class="chart-card" style="padding:0;overflow-x:auto">
+    <table class="sur-tbl" style="width:100%;min-width:900px">
+      <thead><tr>
+        <th style="width:28px"></th>
+        <th>Order No.</th>
+        <th>Container No.</th>
+        <th>Consignee</th>
+        <th>Destination</th>
+        <th>Delivery Date</th>
+        <th>Trucker</th>
+        <th style="text-align:right">Price</th>
+        <th style="text-align:center">Status</th>
+      </tr></thead>
+      <tbody id="no-body"></tbody>
+    </table>
+  </div>
+</div>
 
 <!-- ══ VESSELS ══ -->
 <div id="page-vessels" class="page">
@@ -3038,6 +3075,7 @@ function showPage(p){
   if(p==='planning'){ rcpRender(); }
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='reports') renderReports();
+  if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); }
   if(p==='dispatch'){ switchDispatchTab(_activeDispatchTab||'ct'); }
 }
 function _contextAdd(){
@@ -4773,7 +4811,7 @@ function renderDashboard(){
 
     // KPI row
     const kpiEl   = document.getElementById('delay-kpi-row');
-    const kpiElCt = document.getElementById('delay-kpi-row-ct'); // mirror on Containers page
+    const kpiElCt = null; // container-page mirror removed per user request
     {
       const totalLate = lateArr.length;
       const totalDL   = deadlineExc.length;
@@ -9666,7 +9704,7 @@ async function connectSync(){
       const res=await fetch(JBIN,{
         method:'POST',
         headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'Owen Zhang'},
-        body:JSON.stringify({CT,VT,NOTICES,REMINDERS})
+        body:JSON.stringify({CT,VT,NOTICES,REMINDERS,NO:(typeof NO!=='undefined'?NO:[])})
       });
       if(!res.ok) throw new Error('Failed to create bin (HTTP '+res.status+'). Check your Master Key.');
       const data=await res.json();
@@ -9700,7 +9738,7 @@ async function pushToCloud(manual=false){
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,_dlReasons,_bpTrainDates,_ts:Date.now()})
+      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),_dlReasons,_bpTrainDates,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
@@ -9755,6 +9793,7 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.CT){ CT=rec.CT; nextId=Math.max(0,...CT.map(r=>r._id||0))+1; _mergeTemuTracking(); _mergeEarlyArrivals(); localStorage.setItem(LS_CT,JSON.stringify(CT)); }
     if(rec&&rec.VT){ VT=rec.VT; vtNextId=Math.max(0,...VT.map(r=>r._id||0))+1; localStorage.setItem(LS_VT,JSON.stringify(VT)); }
     if(rec&&rec.FB){ FB=rec.FB; localStorage.setItem(FB_KEY,JSON.stringify(FB)); }
+    if(rec&&Array.isArray(rec.NO)){ NO=rec.NO; noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; localStorage.setItem(LS_NO,JSON.stringify(NO)); if(typeof renderOrders==='function') renderOrders(); }
     if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     if(rec&&Array.isArray(rec.REMINDERS)){ REMINDERS=rec.REMINDERS; _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); if(typeof remRender==='function') remRender(); }
@@ -10516,6 +10555,7 @@ function dvSetRange(key){
   }
   else if(key==='next2w'){ from=today; to=dvAddDays(today,13); }
   else if(key==='all'){ from=''; to=''; }
+  window._dvDefaultApplied=true; // user chose a range — don't re-apply default
   const f=document.getElementById('dv-from'); if(f) f.value=from;
   const t=document.getElementById('dv-to'); if(t) t.value=to;
   renderDispatch();
@@ -10797,14 +10837,18 @@ function renderDispatch(){
   const truckFilter=truckEl?.value||'';
   const consFilter=consEl?.value||'';
 
-  // Set default date range (May 23 – Jun 3) on first open
-  if(!fromISO && !toISO){
+  // Set default date range (May 23 – Jun 3) on first open only
+  // (guarded so the "All" button can actually clear the range)
+  if(!fromISO && !toISO && !window._dvDefaultApplied){
+    window._dvDefaultApplied=true;
     if(fromEl){ fromEl.value='2026-05-23'; fromISO='2026-05-23'; }
     if(toEl){ toEl.value='2026-06-03'; toISO='2026-06-03'; }
   }
 
   // Build enriched rows: only UNDELIVERED containers (no Actual Arrival)
-  const rows=CT.map(r=>{
+  // — includes normal container orders (🧾) alongside TEMU containers
+  const _noRows=(typeof noDispatchRows==='function')?noDispatchRows():[];
+  const rows=CT.concat(_noRows).map(r=>{
     const slotISO=dvParseSlot(r['Scheduled Slot']||'');
     const arrISO=dvParseArrival(r['Actual Arrival']||'');
     const etaISO=dvParseSlot(r['ETA at Hub']||'');
@@ -11200,6 +11244,107 @@ function remToggle(){
   if(ic) ic.textContent=_remOpen?'▼':'▶';
 }
 remLoad(); remRender();
+
+// ── NORMAL CONTAINER ORDERS (non-TEMU) ────────────────────────────
+const LS_NO='owenz_no_v1';
+let NO=[]; let noNextId=1;
+const _noOpen=new Set();
+const NO_STATUS=['New','Booked','Picked Up','In Transit','Delivered','Cancelled'];
+const NO_ST_STYLE={
+  'New':'background:#e0f2fe;color:#0369a1','Booked':'background:#ede9fe;color:#6d28d9',
+  'Picked Up':'background:#fef3c7;color:#92400e','In Transit':'background:#dbeafe;color:#1d4ed8',
+  'Delivered':'background:#dcfce7;color:#15803d','Cancelled':'background:#fee2e2;color:#b91c1c'
+};
+function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.parse(s); noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; } }catch(e){ NO=[]; } }
+function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
+function noAdd(){
+  const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
+    'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','Trucker':'',
+    'Price':'','Payment Status':'','Status':'New','Note':''};
+  NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
+}
+function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
+function noToggle(id){ _noOpen.has(id)?_noOpen.delete(id):_noOpen.add(id); renderOrders(); }
+function noSet(id,field,val){
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  NO[i][field]=val; saveNO();
+  if(field==='Status') renderOrders(); // status changes the badge + filter
+  const dp=document.getElementById('page-dispatch');
+  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+}
+function _noEsc(v){ return (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function renderOrders(){
+  const body=document.getElementById('no-body'); if(!body) return;
+  const filt=document.getElementById('no-status-filter')?.value||'';
+  const badge=document.getElementById('no-count-badge');
+  const rows=filt?NO.filter(o=>(o['Status']||'New')===filt):NO;
+  if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+(filt?' ('+filt+')':'');
+  if(!rows.length){
+    body.innerHTML='<tr><td colspan="9" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    return;
+  }
+  const inp=(o,f,ph,style)=>`<label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">${f}
+    <input type="text" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="font-size:12px;font-weight:500;color:#1e293b;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;${style||''}"/></label>`;
+  body.innerHTML=rows.map(o=>{
+    const open=_noOpen.has(o._id);
+    const st=o['Status']||'New';
+    const stStyle=NO_ST_STYLE[st]||'background:#f1f5f9;color:#475569';
+    const main=`<tr onclick="noToggle(${o._id})" style="cursor:pointer" title="Click to ${open?'collapse':'expand'}">
+      <td style="text-align:center;color:#94a3b8;font-size:10px">${open?'▼':'▶'}</td>
+      <td style="font-weight:700;color:var(--navy)">${_noEsc(o['Order No.'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="font-family:monospace;font-weight:600">${_noEsc(o['Container No.'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td>${_noEsc(o['Consignee'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td>${_noEsc(o['Destination'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="white-space:nowrap">${_noEsc(o['Delivery Date'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td>${_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="text-align:right;font-weight:700;color:#0369a1">${o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="text-align:center"><span style="${stStyle};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">${_noEsc(st)}</span></td>
+    </tr>`;
+    if(!open) return main;
+    const detail=`<tr><td colspan="9" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:10px">
+        ${inp(o,'Order No.','e.g. ORD-001')}
+        ${inp(o,'Container No.','e.g. ABCD1234567')}
+        ${inp(o,'Consignee','')}
+        ${inp(o,'Destination','country / city')}
+        ${inp(o,'Pickup Location','')}
+        ${inp(o,'Pickup Date','YYYY/MM/DD')}
+        ${inp(o,'ETA','YYYY/MM/DD')}
+        ${inp(o,'Delivery Date','YYYY/MM/DD')}
+        ${inp(o,'Trucker','')}
+        ${inp(o,'Price','€')}
+        <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">Payment Status
+          <select onchange="noSet(${o._id},'Payment Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
+            ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
+          </select></label>
+        <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">Status
+          <select onchange="noSet(${o._id},'Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
+            ${NO_STATUS.map(v=>`<option value="${v}" ${st===v?'selected':''}>${v}</option>`).join('')}
+          </select></label>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">Note
+        <textarea rows="2" placeholder="Add a note for this order…" onchange="noSet(${o._id},'Note',this.value)" style="font-size:12px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;resize:vertical;font-family:inherit">${_noEsc(o['Note'])}</textarea></label>
+      <div style="margin-top:10px;text-align:right">
+        <button onclick="noDel(${o._id})" style="padding:4px 12px;font-size:11px;font-weight:700;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;cursor:pointer">🗑 Delete Order</button>
+      </div>
+    </td></tr>`;
+    return main+detail;
+  }).join('');
+}
+// Map orders into dispatch pseudo-rows (used by renderDispatch)
+function noDispatchRows(){
+  return NO.filter(o=>(o['Status']||'')!=='Cancelled').map(o=>({
+    'Container No.':'🧾 '+(o['Container No.']||o['Order No.']||'Order'),
+    'Consignee':o['Consignee']||'(no consignee)',
+    'Trucker':o['Trucker']||'',
+    'Scheduled Slot':o['Delivery Date']||'',
+    'Actual Arrival':(o['Status']==='Delivered')?(o['Delivery Date']||''):'',
+    'ETA at Hub':o['ETA']||'',
+    'Destination':o['Destination']||'',
+    _isOrder:true,_id:-(o._id||0)
+  }));
+}
+loadNO();
 
 // ── INITIAL RENDER: dashboard is the default page, render it on load so
 //    vessel panel / KPIs / charts are always current without clicking tabs ──
