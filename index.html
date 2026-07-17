@@ -2020,7 +2020,8 @@ select:focus, input:focus {
         <th>Container No.</th>
         <th>Consignee</th>
         <th>Destination</th>
-        <th>ETA Station (Date)</th>
+        <th>Hub</th>
+        <th>ETA Station</th>
         <th>Delivery Date</th>
         <th>ATA</th>
         <th>Trucker</th>
@@ -2478,6 +2479,7 @@ select:focus, input:focus {
       <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/><datalist id="dl-truck"></datalist></div>
       <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker" placeholder="e.g. Wispex"/><datalist id="dl-broker"><option value="Wispex"/><option value="Self"/></datalist></div>
       <datalist id="dl-hub"><option value="Duisburg"/><option value="Tilburg"/><option value="Direct (Małaszewicze)"/></datalist>
+      <datalist id="dl-hub-o"><option value="Duisburg"/><option value="Tilburg"/><option value="Małaszewicze"/><option value="Rotterdam"/><option value="Antwerp"/></datalist>
       <div class="form-group"><label>Destination</label>
         <input type="text" id="f_dest" list="dl-dest" placeholder="e.g. Belgium"/><datalist id="dl-dest"></datalist></div>
       <div class="form-group"><label>Tracking</label>
@@ -11261,7 +11263,7 @@ function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.pars
 function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
-    'Pickup Location':'','Pickup Date':'','ETA':'','ETA Station':'','Delivery Date':'','ATA':'','Trucker':'',
+    'Hub':'','Pickup Location':'','Pickup Date':'','ETA':'','ETA Station':'','Delivery Date':'','ATA':'','Trucker':'',
     'Price':'','Payment Status':'','Status':'New'};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
@@ -11283,7 +11285,7 @@ function renderOrders(){
   const rows=filt?NO.filter(o=>(o['Status']||'New')===filt):NO;
   if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+(filt?' ('+filt+')':'');
   if(!rows.length){
-    body.innerHTML='<tr><td colspan="11" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="12" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   const inp=(o,f,ph,style)=>`<label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">${f}
@@ -11302,9 +11304,10 @@ function renderOrders(){
           +(cs.length>1?` <span style="font-size:9px;background:#e0f2fe;color:#0369a1;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:top">×${cs.length}</span>`:'');})()}</td>
       <td>${_noEsc(o['Consignee'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td>${_noEsc(o['Destination'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="white-space:nowrap">${_noEsc(o['Hub'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="white-space:nowrap">${(()=>{const st=_noEsc(o['ETA Station']),dt=_noEsc(o['ETA']);
         if(st&&dt) return st+' <span style="color:#64748b;font-size:11px">('+dt+')</span>';
-        if(st) return st; if(dt) return '<span style="color:#64748b">('+dt+')</span>';
+        if(st) return st; if(dt) return '<span style="color:#64748b">'+dt+'</span>';
         return '<span style="color:#cbd5e1">—</span>';})()}</td>
       <td style="white-space:nowrap">${_noEsc(o['Delivery Date'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="white-space:nowrap;font-weight:600;color:#15803d">${_noEsc(o['ATA'])||'<span style="color:#cbd5e1">—</span>'}</td>
@@ -11313,29 +11316,44 @@ function renderOrders(){
       <td style="text-align:center"><span style="${stStyle};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">${_noEsc(st)}</span></td>
     </tr>`;
     if(!open) return main;
-    const detail=`<tr><td colspan="11" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:10px">
+    const _lblCss='display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px';
+    const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px';
+    const _noToISO=v=>{const m=(v||'').toString().match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);return m?`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`:'';};
+    const dinp=(f,lbl)=>`<label style="${_lblCss}">${lbl||f}
+      <input type="date" value="${_noToISO(o[f])}" onchange="noSet(${o._id},'${f}',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></label>`;
+    const linp=(f,ph)=>`<label style="${_lblCss}">${f}
+      <input type="text" list="dl-hub-o" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss}"/></label>`;
+    const flowCard=(icon,title,color,inner)=>`<div style="flex:1;min-width:185px;background:#fff;border:1px solid #e2e8f0;border-left:3px solid ${color};border-radius:10px;padding:10px 12px">
+      <div style="font-size:11px;font-weight:800;color:${color};margin-bottom:6px">${icon} ${title}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">${inner}</div></div>`;
+    const flowArrow='<div style="align-self:center;color:#94a3b8;font-size:18px;font-weight:800;padding:0 2px">→</div>';
+    const detail=`<tr><td colspan="12" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
         ${inp(o,'Order No.','e.g. ORD-001')}
-        <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;grid-column:span 2">Container No.(s) — one per line or comma-separated
+        <label style="${_lblCss};grid-column:span 2">Container No.(s) — one per line or comma-separated
           <textarea rows="2" placeholder="ABCD1234567, EFGH7654321…" onchange="noSet(${o._id},'Container No.',this.value)" style="font-size:12px;font-family:monospace;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;resize:vertical">${_noEsc(o['Container No.'])}</textarea></label>
         ${inp(o,'Consignee','')}
         ${inp(o,'Destination','country / city')}
-        ${inp(o,'Pickup Location','')}
-        ${inp(o,'Pickup Date','YYYY/MM/DD')}
-        ${inp(o,'ETA','YYYY/MM/DD')}
-        ${inp(o,'ETA Station','e.g. Duisburg / Tilburg / Małaszewicze')}
-        ${inp(o,'Delivery Date','YYYY/MM/DD')}
-        ${inp(o,'ATA','YYYY/MM/DD')}
         ${inp(o,'Trucker','')}
         ${inp(o,'Price','€')}
-        <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">Payment Status
+        <label style="${_lblCss}">Payment Status
           <select onchange="noSet(${o._id},'Payment Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
             ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
           </select></label>
-        <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">Status
+        <label style="${_lblCss}">Status
           <select onchange="noSet(${o._id},'Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
             ${NO_STATUS.map(v=>`<option value="${v}" ${st===v?'selected':''}>${v}</option>`).join('')}
           </select></label>
+      </div>
+      <div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin-top:14px">
+        ${flowCard('🚂','ETA','#0369a1', linp('Hub','Duisburg / Tilburg / Małaszewicze…')+linp('ETA Station','station name')+dinp('ETA','ETA Date'))}
+        ${flowArrow}
+        ${flowCard('📦','Pickup','#92400e', `<label style="${_lblCss}">Pickup Location
+          <input type="text" value="${_noEsc(o['Pickup Location'])}" onchange="noSet(${o._id},'Pickup Location',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss}"/></label>`+dinp('Pickup Date'))}
+        ${flowArrow}
+        ${flowCard('🚚','Delivery','#6d28d9', dinp('Delivery Date'))}
+        ${flowArrow}
+        ${flowCard('✅','ATA — Delivered','#15803d', dinp('ATA','ATA Date'))}
       </div>
       <div style="margin-top:10px;text-align:right">
         <button onclick="noDel(${o._id})" style="padding:4px 12px;font-size:11px;font-weight:700;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;cursor:pointer">🗑 Delete Order</button>
