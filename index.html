@@ -1298,6 +1298,65 @@ select:focus, input:focus {
 ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 </style>
+
+<!-- ══ MINIMAL THEME — Apple/Google-inspired flat design layer ══ -->
+<style id="minimal-theme">
+:root{
+  --bg:#f7f8fa;
+  --card:#ffffff;
+  --border:#ebedf0;
+  --rad:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04);
+  --shadow-md:0 6px 16px rgba(16,24,40,.08);
+  --muted:#8a94a3;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,'Inter',Arial,sans-serif;
+  font-size:13.5px;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+/* ── Header & nav: flat, pill navigation ── */
+header{background:#0b3736;box-shadow:none;border-bottom:1px solid rgba(255,255,255,.06)}
+nav button{border-radius:999px;padding:7px 15px;margin:0 1px;font-weight:600;letter-spacing:.1px;
+  border-bottom:none!important;transition:background .15s,color .15s}
+nav button:hover{background:rgba(255,255,255,.08);color:#fff}
+nav button.active{background:rgba(255,255,255,.16);color:#fff;border-bottom:none}
+/* ── Cards: hairline borders, whisper shadows, no color stripes ── */
+.kpi{border:1px solid var(--border)!important;border-top-width:1px!important;
+  box-shadow:var(--shadow);border-radius:var(--rad);background:#fff!important}
+.kpi:hover{transform:none;box-shadow:var(--shadow-md);border-color:#dfe3e8!important}
+.kv{font-weight:700;letter-spacing:-.7px;font-size:27px}
+.kl{font-weight:600;letter-spacing:.8px;color:var(--muted)}
+.ks{color:#9aa3b0}
+.chart-card{border:1px solid var(--border);box-shadow:var(--shadow);border-radius:var(--rad)}
+.chart-card h3{letter-spacing:.7px}
+/* ── Pills & filters ── */
+.dash-cat-tab{border:1px solid var(--border);background:#fff;border-radius:999px;font-weight:600;letter-spacing:.2px}
+.dash-cat-tab:hover{border-color:#c9ced6}
+.dash-cat-tab.active{background:#0f172a;border-color:#0f172a;color:#fff}
+.ms-btn{border-radius:999px;border:1px solid var(--border);background:#fff}
+.nb-filter-tab{border-radius:999px}
+/* ── Buttons & inputs: flat, rounded, calm ── */
+.btn{border-radius:10px;font-weight:600;letter-spacing:.1px;box-shadow:none}
+.btn:hover{opacity:.92;transform:none}
+input[type=text],input[type=search],input[type=date],input[type=number],select,textarea{
+  border-radius:10px;accent-color:#0f766e;outline-color:#0f766e}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(15,118,110,.25);outline-offset:0;border-color:#0f766e!important}
+/* ── Tables: airy rows, quiet headers ── */
+th{font-weight:600!important;letter-spacing:.5px;color:#8a94a3}
+tbody tr{transition:background .1s}
+tbody tr:hover{background:#fafbfc}
+/* ── Modals & overlays: frosted, floating ── */
+.overlay{background:rgba(15,23,42,.32)!important;backdrop-filter:blur(10px) saturate(1.1);-webkit-backdrop-filter:blur(10px) saturate(1.1)}
+.modal-inner,.confirm-inner{border-radius:16px;box-shadow:0 24px 56px rgba(16,24,40,.22);border:none}
+/* ── Notice items & alert rows ── */
+.ni{border-radius:12px;box-shadow:none;border:1px solid var(--border)}
+.vt-alert-row{border-radius:8px}
+.vt-alert-row:hover{background:#f7f8fa}
+/* ── Softer scrollbars ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#d7dbe0}
+</style>
 </head>
 <body>
 
@@ -2869,21 +2928,27 @@ select:focus, input:focus {
 
 <!-- NOTICE EDIT MODAL -->
 <div class="overlay" id="notice-edit-overlay">
-  <div class="modal-inner" style="max-width:640px;width:92vw">
-    <div class="modal-header"><span>✏️ Edit Notice</span></div>
-    <div class="modal-body" style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;gap:8px">
-        <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">Level</label>
-          <select id="ne-level" class="nb-select" style="margin:0">
+  <div class="modal-inner" style="max-width:640px;width:92vw;border-radius:16px;overflow:hidden;box-shadow:0 24px 64px rgba(0,30,30,.35);background:#fff">
+    <div style="background:linear-gradient(135deg,#003534 0%,#0f766e 100%);padding:16px 22px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px;background:rgba(255,255,255,.15);border-radius:10px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center">✏️</span>
+      <div>
+        <div style="color:#fff;font-size:15px;font-weight:800;letter-spacing:.3px">Edit Notice</div>
+        <div style="color:rgba(255,255,255,.65);font-size:11px">Update the message, level or target page</div>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;background:#fafcfc">
+      <div style="display:flex;gap:12px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+          <label style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px">Level</label>
+          <select id="ne-level" class="nb-select" style="margin:0;padding:9px 12px;border:1.5px solid #d7e3e2;border-radius:10px;font-size:13px;font-weight:600;background:#fff;cursor:pointer">
             <option value="info">ℹ️  Info</option>
             <option value="warn">⚠️  Warning</option>
             <option value="urgent">🚨  Urgent</option>
           </select>
         </div>
-        <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">Category</label>
-          <select id="ne-cat" class="nb-select" style="margin:0">
+        <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+          <label style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px">Show On Page</label>
+          <select id="ne-cat" class="nb-select" style="margin:0;padding:9px 12px;border:1.5px solid #d7e3e2;border-radius:10px;font-size:13px;font-weight:600;background:#fff;cursor:pointer">
             <option value="all">📋 All Pages</option>
             <option value="vessels">🚢 Vessels Only</option>
             <option value="containers">📦 Containers Only</option>
@@ -2891,15 +2956,15 @@ select:focus, input:focus {
           </select>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">Notice Text</label>
-        <textarea id="ne-text" class="nb-textarea" rows="10" placeholder="Notice text…" style="min-height:180px;resize:vertical;font-size:14px;line-height:1.5"></textarea>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <label style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px">Notice Text</label>
+        <textarea id="ne-text" class="nb-textarea" rows="10" placeholder="Notice text…" style="min-height:190px;resize:vertical;font-size:14px;line-height:1.6;padding:12px 14px;border:1.5px solid #d7e3e2;border-radius:12px;background:#fff;font-family:inherit;color:#1e293b"></textarea>
       </div>
     </div>
-    <div class="modal-btns" style="padding:12px 18px;display:flex;gap:8px">
-      <button class="mbtn-save" style="flex:1" onclick="noticeSaveEdit()">💾 Save Changes</button>
-      <button class="mbtn-cancel" onclick="noticeCloseEditModal()">Cancel</button>
-      <button onclick="noticeDeleteFromModal()" style="padding:7px 14px;font-size:12px;font-weight:700;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;cursor:pointer">🗑 Delete</button>
+    <div class="modal-btns" style="padding:14px 22px 18px;display:flex;gap:10px;background:#fafcfc;border-top:1px solid #eef2f2">
+      <button onclick="noticeSaveEdit()" style="flex:1;padding:11px;font-size:13.5px;font-weight:800;background:linear-gradient(135deg,#0f766e,#0d9488);color:#fff;border:none;border-radius:11px;cursor:pointer;box-shadow:0 4px 12px rgba(15,118,110,.35);letter-spacing:.3px">💾 Save Changes</button>
+      <button onclick="noticeCloseEditModal()" style="padding:11px 22px;font-size:13.5px;font-weight:700;background:#fff;color:#475569;border:1.5px solid #e2e8f0;border-radius:11px;cursor:pointer">Cancel</button>
+      <button onclick="noticeDeleteFromModal()" style="padding:11px 18px;font-size:13.5px;font-weight:700;background:#fff;color:#dc2626;border:1.5px solid #fecaca;border-radius:11px;cursor:pointer">🗑 Delete</button>
     </div>
   </div>
 </div>
