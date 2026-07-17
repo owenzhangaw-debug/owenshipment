@@ -1397,8 +1397,8 @@ select:focus, input:focus {
         <div class="kpi" style="border-color:#b45309;cursor:pointer" onclick="showPage('orders')">
           <div class="kl">🧾 Orders</div><div class="kv" id="kv-orders" style="color:#b45309">—</div><div class="ks" id="ks-orders">non-TEMU containers</div>
         </div>
-        <div class="kpi" style="border-color:#b45309;cursor:pointer" onclick="gotoSlotChanges()" title="Click to view the rescheduled containers">
-          <div class="kl">Slot Changes</div><div class="kv" id="kv-slot-changes" style="color:#b45309">—</div><div class="ks">reschedules recorded — click to view</div>
+        <div class="kpi" style="border-color:#7c3aed;cursor:pointer" onclick="gotoSlotChanges()" title="Click to view the rescheduled containers">
+          <div class="kl">Slot Changes</div><div class="kv" id="kv-slot-changes" style="color:#7c3aed">—</div><div class="ks">reschedules recorded — click to view</div>
         </div>
       </div>
 
@@ -3543,13 +3543,18 @@ function renderDashboard(){
     if(kvO) kvO.textContent=noTotal;
     if(ksO) ksO.textContent=noTotal?`${noArr} delivered · ${noTotal-noArr} on the way`:'non-TEMU containers';
   }
-  // Country breakdown KPIs
+  // Country breakdown KPIs — TEMU containers + order containers (matched on Destination text)
   ['Belgium','Netherlands','Italy'].forEach(dest=>{
     const key={'Belgium':'be','Netherlands':'nl','Italy':'it'}[dest];
     const rows=CT.filter(r=>(r['Destination']||'Belgium')===dest);
+    const ordRows=(typeof NO!=='undefined'?NO:[]).filter(o=>(o['Status']||'')!=='Cancelled'
+      && (o['Destination']||'').toLowerCase().includes(dest.toLowerCase()));
+    const _cnt=o=>(typeof _noContainers==='function')?Math.max(_noContainers(o).length,1):1;
+    const ordTotal=ordRows.reduce((s,o)=>s+_cnt(o),0);
+    const ordPend =ordRows.filter(o=>!(o['ATA']||o['Status']==='Delivered')).reduce((s,o)=>s+_cnt(o),0);
     const el=document.getElementById('kv-'+key), sl=document.getElementById('ks-'+key);
-    if(el) el.textContent=rows.length;
-    if(sl){ const pend=rows.filter(r=>!r['Actual Arrival']).length; sl.textContent=pend?`${pend} pending`:'all arrived'; }
+    if(el) el.innerHTML=(rows.length+ordTotal)+(ordTotal?` <span style="font-size:12px;font-weight:700;color:#b45309" title="${ordTotal} from Orders">incl. ${ordTotal}🧾</span>`:'');
+    if(sl){ const pend=rows.filter(r=>!r['Actual Arrival']).length+ordPend; sl.textContent=pend?`${pend} pending`:'all arrived'; }
   });
   document.getElementById('kv-vessels').textContent = VT.length;
   const _totalSlotChanges=CT.reduce((acc,r)=>acc+(Array.isArray(r.slotHistory)?r.slotHistory.filter(h=>h.to&&h.to.trim()).length:0),0);
