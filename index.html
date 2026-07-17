@@ -11545,32 +11545,21 @@ function renderOrders(){
           <select onchange="noSet(${o._id},'Payment Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
             ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
           </select></label>
-        <label style="${_lblCss};grid-column:span 2">Service Type — click to toggle, multiple allowed
+        <label style="${_lblCss};grid-column:span 2">Service Type — type & press Enter to add
           <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:2px">
-            ${(()=>{
-              const sel=_noSvcList(o);
-              const base=['LCL','FCL','T1','Custom Clearance','Delivery','Storage','Transshipment'];
-              const all=[...base,...sel.filter(s=>!base.some(b=>b.toLowerCase()===s.toLowerCase()))];
-              return all.map(svc=>{
-                const on=sel.some(s=>s.toLowerCase()===svc.toLowerCase());
-                const esc=svc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-                return `<button type="button" onclick="noToggleService(${o._id},'${esc}')" style="padding:4px 11px;font-size:11px;font-weight:700;border-radius:14px;cursor:pointer;transition:all .12s;border:1.5px solid ${on?'#0f766e':'#e2e8f0'};background:${on?'#0f766e':'#fff'};color:${on?'#fff':'#64748b'}">${on?'✓ ':''}${_noEsc(svc)}</button>`;
-              }).join('');
-            })()}
-            <input type="text" placeholder="+ other, press Enter" onkeydown="if(event.key==='Enter'){noToggleService(${o._id},this.value);this.value='';}" style="font-size:11px;padding:4px 9px;border:1.5px dashed #cbd5e1;border-radius:14px;width:130px"/>
+            ${_noSvcList(o).map(svc=>{
+              const esc=svc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+              return `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 7px 3px 11px;font-size:11px;font-weight:700;border-radius:14px;background:#0f766e;color:#fff">${_noEsc(svc)}<button type="button" onclick="noToggleService(${o._id},'${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:15px;height:15px;line-height:1;font-size:9px;cursor:pointer;padding:0">✕</button></span>`;
+            }).join('')}
+            <input type="text" list="dl-service-o" placeholder="type service + Enter…" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleService(${o._id},this.value);this.value='';}" style="font-size:11px;padding:4px 10px;border:1.5px dashed #cbd5e1;border-radius:14px;width:150px"/>
           </div></label>
-        <label style="${_lblCss};grid-column:span 2">Status — click to toggle, multiple allowed
+        <label style="${_lblCss};grid-column:span 2">Status — type & press Enter to add
           <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:2px">
-            ${(()=>{
-              const sel=(o['Status']||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean);
-              const all=[...NO_STATUS,...sel.filter(s=>!NO_STATUS.some(b=>b.toLowerCase()===s.toLowerCase()))];
-              return all.map(sv=>{
-                const on=sel.some(s=>s.toLowerCase()===sv.toLowerCase());
-                const esc=sv.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-                return `<button type="button" onclick="noToggleStatus(${o._id},'${esc}')" style="padding:4px 11px;font-size:11px;font-weight:700;border-radius:14px;cursor:pointer;transition:all .12s;border:1.5px solid ${on?'#7c3aed':'#e2e8f0'};background:${on?'#7c3aed':'#fff'};color:${on?'#fff':'#64748b'}">${on?'✓ ':''}${_noEsc(sv)}</button>`;
-              }).join('');
-            })()}
-            <input type="text" placeholder="+ other, press Enter" onkeydown="if(event.key==='Enter'){noToggleStatus(${o._id},this.value);this.value='';}" style="font-size:11px;padding:4px 9px;border:1.5px dashed #cbd5e1;border-radius:14px;width:130px"/>
+            ${(o['Status']||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean).map(sv=>{
+              const esc=sv.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+              return `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 7px 3px 11px;font-size:11px;font-weight:700;border-radius:14px;background:#7c3aed;color:#fff">${_noEsc(sv)}<button type="button" onclick="noToggleStatus(${o._id},'${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:15px;height:15px;line-height:1;font-size:9px;cursor:pointer;padding:0">✕</button></span>`;
+            }).join('')}
+            <input type="text" list="dl-status-o" placeholder="type status + Enter…" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleStatus(${o._id},this.value);this.value='';}" style="font-size:11px;padding:4px 10px;border:1.5px dashed #cbd5e1;border-radius:14px;width:150px"/>
           </div></label>
       </div>
       <div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin-top:14px">
