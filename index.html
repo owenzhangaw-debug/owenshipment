@@ -1996,7 +1996,7 @@ select:focus, input:focus {
 <div id="page-orders" class="page">
   <div class="chart-card" style="padding:14px 16px;margin:0 0 12px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <h3 style="margin:0">📦 Container Orders <span style="font-size:10px;color:#94a3b8;font-weight:600">normal orders — separate from TEMU</span></h3>
+      <h3 style="margin:0">📦 Container Orders <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:6px">normal orders — separate from TEMU</span></h3>
       <span id="no-count-badge" style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;border-radius:8px;padding:2px 8px"></span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <select id="no-status-filter" onchange="renderOrders()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
@@ -11259,8 +11259,8 @@ function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.pars
 function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
-    'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','Trucker':'',
-    'Price':'','Payment Status':'','Status':'New','Note':''};
+    'Pickup Location':'','Pickup Date':'','ETA':'','ETA Station':'','Delivery Date':'','Trucker':'',
+    'Price':'','Payment Status':'','Status':'New'};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -11273,6 +11273,7 @@ function noSet(id,field,val){
   if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
 }
 function _noEsc(v){ return (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function _noContainers(o){ return (o['Container No.']||'').split(/[\s,;\n]+/).map(s=>s.trim()).filter(Boolean); }
 function renderOrders(){
   const body=document.getElementById('no-body'); if(!body) return;
   const filt=document.getElementById('no-status-filter')?.value||'';
@@ -11292,7 +11293,11 @@ function renderOrders(){
     const main=`<tr onclick="noToggle(${o._id})" style="cursor:pointer" title="Click to ${open?'collapse':'expand'}">
       <td style="text-align:center;color:#94a3b8;font-size:10px">${open?'▼':'▶'}</td>
       <td style="font-weight:700;color:var(--navy)">${_noEsc(o['Order No.'])||'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="font-family:monospace;font-weight:600">${_noEsc(o['Container No.'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="font-family:monospace;font-weight:600;font-size:12px">${(()=>{const cs=_noContainers(o);
+        if(!cs.length) return '<span style="color:#cbd5e1">—</span>';
+        const shown=cs.slice(0,3).map(_noEsc).join('<br>');
+        return shown+(cs.length>3?`<br><span style="color:#64748b;font-size:10px;font-weight:700">+${cs.length-3} more</span>`:'')
+          +(cs.length>1?` <span style="font-size:9px;background:#e0f2fe;color:#0369a1;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:top">×${cs.length}</span>`:'');})()}</td>
       <td>${_noEsc(o['Consignee'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td>${_noEsc(o['Destination'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="white-space:nowrap">${_noEsc(o['Delivery Date'])||'<span style="color:#cbd5e1">—</span>'}</td>
@@ -11304,12 +11309,14 @@ function renderOrders(){
     const detail=`<tr><td colspan="9" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:10px">
         ${inp(o,'Order No.','e.g. ORD-001')}
-        ${inp(o,'Container No.','e.g. ABCD1234567')}
+        <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;grid-column:span 2">Container No.(s) — one per line or comma-separated
+          <textarea rows="2" placeholder="ABCD1234567, EFGH7654321…" onchange="noSet(${o._id},'Container No.',this.value)" style="font-size:12px;font-family:monospace;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;resize:vertical">${_noEsc(o['Container No.'])}</textarea></label>
         ${inp(o,'Consignee','')}
         ${inp(o,'Destination','country / city')}
         ${inp(o,'Pickup Location','')}
         ${inp(o,'Pickup Date','YYYY/MM/DD')}
         ${inp(o,'ETA','YYYY/MM/DD')}
+        ${inp(o,'ETA Station','e.g. Duisburg / Tilburg / Małaszewicze')}
         ${inp(o,'Delivery Date','YYYY/MM/DD')}
         ${inp(o,'Trucker','')}
         ${inp(o,'Price','€')}
@@ -11322,8 +11329,6 @@ function renderOrders(){
             ${NO_STATUS.map(v=>`<option value="${v}" ${st===v?'selected':''}>${v}</option>`).join('')}
           </select></label>
       </div>
-      <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">Note
-        <textarea rows="2" placeholder="Add a note for this order…" onchange="noSet(${o._id},'Note',this.value)" style="font-size:12px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;resize:vertical;font-family:inherit">${_noEsc(o['Note'])}</textarea></label>
       <div style="margin-top:10px;text-align:right">
         <button onclick="noDel(${o._id})" style="padding:4px 12px;font-size:11px;font-weight:700;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;cursor:pointer">🗑 Delete Order</button>
       </div>
@@ -11333,16 +11338,23 @@ function renderOrders(){
 }
 // Map orders into dispatch pseudo-rows (used by renderDispatch)
 function noDispatchRows(){
-  return NO.filter(o=>(o['Status']||'')!=='Cancelled').map(o=>({
-    'Container No.':'🧾 '+(o['Container No.']||o['Order No.']||'Order'),
-    'Consignee':o['Consignee']||'(no consignee)',
-    'Trucker':o['Trucker']||'',
-    'Scheduled Slot':o['Delivery Date']||'',
-    'Actual Arrival':(o['Status']==='Delivered')?(o['Delivery Date']||''):'',
-    'ETA at Hub':o['ETA']||'',
-    'Destination':o['Destination']||'',
-    _isOrder:true,_id:-(o._id||0)
-  }));
+  const out=[];
+  NO.filter(o=>(o['Status']||'')!=='Cancelled').forEach(o=>{
+    const cs=_noContainers(o);
+    (cs.length?cs:[o['Order No.']||'Order']).forEach((cn,i)=>{
+      out.push({
+        'Container No.':'🧾 '+cn,
+        'Consignee':o['Consignee']||'(no consignee)',
+        'Trucker':o['Trucker']||'',
+        'Scheduled Slot':o['Delivery Date']||'',
+        'Actual Arrival':(o['Status']==='Delivered')?(o['Delivery Date']||''):'',
+        'ETA at Hub':o['ETA']||'',
+        'Destination':o['Destination']||'',
+        _isOrder:true,_id:-((o._id||0)*1000+i)
+      });
+    });
+  });
+  return out;
 }
 loadNO();
 
