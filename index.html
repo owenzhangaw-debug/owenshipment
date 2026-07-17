@@ -1392,6 +1392,9 @@ select:focus, input:focus {
         <div class="kpi k-hi" onclick="gotoFilter('_missing_arrival','')">
           <div class="kl">OTW</div><div class="kv" id="kv-hi">—</div><div class="ks">arrival not filled</div>
         </div>
+        <div class="kpi" style="border-color:#b45309;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">🧾 Orders</div><div class="kv" id="kv-orders" style="color:#b45309">—</div><div class="ks" id="ks-orders">non-TEMU containers</div>
+        </div>
         <div class="kpi" style="border-color:#b45309;cursor:default">
           <div class="kl">Slot Changes</div><div class="kv" id="kv-slot-changes" style="color:#b45309">—</div><div class="ks">reschedules recorded</div>
         </div>
@@ -1524,6 +1527,14 @@ select:focus, input:focus {
           <div class="kv" id="kv-tbd" style="color:#7c3aed">—</div>
           <div class="ks">pending confirmation</div>
         </div>
+      </div>
+
+      <!-- Monthly bookings by Port Cut-Off month -->
+      <div class="chart-card vt-right-card" style="padding:14px 16px">
+        <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:6px">Monthly Bookings
+          <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:2px">by Port Cut-Off month</span>
+        </h3>
+        <div id="vt-monthly-list" style="font-size:12px"></div>
       </div>
 
       <!-- Upcoming Vessels -->
@@ -3499,19 +3510,19 @@ function renderDashboard(){
   // Unified timeline: render skeleton on first dashboard load
   const rtBody=document.getElementById('bel-timeline-body');
   if(rtBody&&!rtBody.querySelector('.bel-node')) renderBelgiumTimeline();
-  // Container KPIs — include normal-order containers, marked separately (🧾)
+  // Container KPIs — TEMU counts, plus a separate total for normal Orders (🧾)
   {
+    document.getElementById('kv-total').textContent = CT.length;
+    document.getElementById('kv-arr').textContent   = CT.filter(r=>r['Tracking']==='Arrived').length;
+    document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
+    document.getElementById('kv-hi').textContent    = CT.filter(r=>!r['Actual Arrival']).length;
     const _noAll=(typeof NO!=='undefined')?NO.filter(o=>(o['Status']||'')!=='Cancelled'):[];
     const _cnt=o=>(typeof _noContainers==='function')?_noContainers(o).length:0;
     const noTotal=_noAll.reduce((s,o)=>s+_cnt(o),0);
     const noArr  =_noAll.filter(o=>o['Status']==='Delivered'||o['ATA']).reduce((s,o)=>s+_cnt(o),0);
-    const noOtw  =noTotal-noArr;
-    const _mark=(el,base,extra)=>{ const e=document.getElementById(el); if(!e) return;
-      e.innerHTML=base+(extra>0?` <span style="font-size:12px;font-weight:700;color:#b45309" title="${extra} container${extra!==1?'s':''} from normal Orders">+${extra}🧾</span>`:''); };
-    _mark('kv-total', CT.length, noTotal);
-    _mark('kv-arr',   CT.filter(r=>r['Tracking']==='Arrived').length, noArr);
-    document.getElementById('kv-t1').textContent = CT.filter(r=>r['Tracking']==='T1').length;
-    _mark('kv-hi',    CT.filter(r=>!r['Actual Arrival']).length, noOtw);
+    const kvO=document.getElementById('kv-orders'), ksO=document.getElementById('ks-orders');
+    if(kvO) kvO.textContent=noTotal;
+    if(ksO) ksO.textContent=noTotal?`${noArr} delivered · ${noTotal-noArr} on the way`:'non-TEMU containers';
   }
   // Country breakdown KPIs
   ['Belgium','Netherlands','Italy'].forEach(dest=>{
@@ -4521,6 +4532,38 @@ function renderDashboard(){
             <div style="font-size:11px;font-weight:700;color:#0369a1">ETS ${_vtFmtDate(r['ETS (Departure)'])}</div>
             <div style="display:flex;gap:3px;margin-top:2px;justify-content:flex-end">${cutoff}${vgm}${cust}</div>
           </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ── Monthly vessel bookings by Port Cut-Off month ──────────────
+  const vtmEl=document.getElementById('vt-monthly-list');
+  if(vtmEl){
+    const byMonth={};
+    VT.forEach(r=>{
+      const d=_vtParseDate(r['Port Cut-Off']);
+      if(!d) return;
+      const mk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      if(!byMonth[mk]) byMonth[mk]={vessels:0,qty:0};
+      byMonth[mk].vessels++;
+      const q=parseFloat(r['Container Qty']); if(!isNaN(q)) byMonth[mk].qty+=q;
+    });
+    const mKeys=Object.keys(byMonth).sort();
+    if(!mKeys.length){
+      vtmEl.innerHTML='<div style="color:var(--muted);font-style:italic;padding:4px 0">No Port Cut-Off dates yet</div>';
+    } else {
+      const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const nowMk=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+      const maxQty=Math.max(...mKeys.map(k=>byMonth[k].qty),1);
+      vtmEl.innerHTML=mKeys.map(mk=>{
+        const [y,m]=mk.split('-'); const cur=mk===nowMk;
+        const {vessels,qty}=byMonth[mk];
+        const pct=Math.round(qty/maxQty*100);
+        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;${cur?'background:#f0fdfa;border-radius:6px;padding-left:6px;padding-right:6px':''}">
+          <span style="min-width:64px;font-weight:${cur?'800':'600'};color:${cur?'#0f766e':'var(--navy)'}">${MN[+m-1]} ${y}${cur?' •':''}</span>
+          <div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${cur?'#0f766e':'#7B1FA2'};border-radius:4px"></div></div>
+          <span style="min-width:88px;text-align:right;font-size:11px"><strong>${qty||0}</strong> ctns · ${vessels} bkg${vessels!==1?'s':''}</span>
         </div>`;
       }).join('');
     }
