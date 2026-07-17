@@ -1320,6 +1320,8 @@ select:focus, input:focus {
         <button onclick="openImport();closeNavTools()">↑ Import Excel</button>
         <button onclick="exportCSV();closeNavTools()">↓ Export CSV</button>
         <button onclick="exportAllData();closeNavTools()">⬇ Extract All Data (Excel)</button>
+        <button onclick="restoreAllData();closeNavTools()">⟳ Restore from Excel</button>
+        <input type="file" id="restore-file-input" accept=".xlsx" style="display:none" onchange="_restoreFromFile(event)"/>
         <button onclick="autoGenerateSlots();closeNavTools()">⚡ Auto Slots</button>
         <button onclick="openSlotEmails();closeNavTools()">📧 Slot Emails</button>
         <button id="sync-btn" onclick="openSync();closeNavTools()">☁ Sync</button>
@@ -1395,8 +1397,8 @@ select:focus, input:focus {
         <div class="kpi" style="border-color:#b45309;cursor:pointer" onclick="showPage('orders')">
           <div class="kl">🧾 Orders</div><div class="kv" id="kv-orders" style="color:#b45309">—</div><div class="ks" id="ks-orders">non-TEMU containers</div>
         </div>
-        <div class="kpi" style="border-color:#b45309;cursor:default">
-          <div class="kl">Slot Changes</div><div class="kv" id="kv-slot-changes" style="color:#b45309">—</div><div class="ks">reschedules recorded</div>
+        <div class="kpi" style="border-color:#b45309;cursor:pointer" onclick="gotoSlotChanges()" title="Click to view the rescheduled containers">
+          <div class="kl">Slot Changes</div><div class="kv" id="kv-slot-changes" style="color:#b45309">—</div><div class="ks">reschedules recorded — click to view</div>
         </div>
       </div>
 
@@ -3122,6 +3124,21 @@ function gotoFilter(col, val){
   if(col==='Batch / Train')     msSetValues('batch',[val],val);
   showPage('containers');
 }
+// Jump from the Slot Changes KPI to the rescheduled container rows
+function gotoSlotChanges(){
+  const ids=CT.filter(r=>Array.isArray(r.slotHistory)&&r.slotHistory.some(h=>h.to&&String(h.to).trim())).map(r=>r._id);
+  showPage('containers');
+  if(!ids.length) return;
+  ids.forEach(id=>ctExpanded.add(id)); // expand to show the slot-change history
+  renderCT();
+  setTimeout(()=>{
+    const row=document.getElementById('row-'+ids[0]);
+    if(row){
+      row.scrollIntoView({behavior:'smooth',block:'center'});
+      ids.forEach(id=>{ const r2=document.getElementById('row-'+id); if(r2){ r2.style.outline='2px solid #b45309'; r2.style.outlineOffset='-2px'; setTimeout(()=>{r2.style.outline='';},3000); } });
+    }
+  },120);
+}
 function toggleChart(h3el){
   h3el.closest('.chart-card').classList.toggle('collapsed');
 }
@@ -3504,6 +3521,8 @@ function applySmartETA(id){
 
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function renderDashboard(){
+  // TEMU containers + normal-order pseudo-rows (batch "🧾 Orders") for the chart sections
+  const CTD=CT.concat((typeof _ordersAsCtRows==='function')?_ordersAsCtRows():[]);
   renderSmartInsights();
   if(typeof renderNotices==='function') renderNotices();
   // Init NL/IT timeline skeletons on first render
@@ -3536,9 +3555,9 @@ function renderDashboard(){
   const _totalSlotChanges=CT.reduce((acc,r)=>acc+(Array.isArray(r.slotHistory)?r.slotHistory.filter(h=>h.to&&h.to.trim()).length:0),0);
   document.getElementById('kv-slot-changes').textContent = _totalSlotChanges||'0';
 
-  // Monthly deliveries
+  // Monthly deliveries (incl. 🧾 orders)
   const monthly = {};
-  CT.forEach(r=>{
+  CTD.forEach(r=>{
     const d=parseDate(r['Actual Arrival']); if(!d) return;
     const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     monthly[k]=(monthly[k]||0)+1;
@@ -3563,9 +3582,9 @@ function renderDashboard(){
       scales:{y:{ticks:{stepSize:5},grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true},x:{grid:{display:false}}} }
   });
 
-  // Batch bar
+  // Batch bar (incl. 🧾 orders)
   const bCounts={};
-  CT.forEach(r=>{ const b=r['Batch / Train']||'?'; bCounts[b]=(bCounts[b]||0)+1; });
+  CTD.forEach(r=>{ const b=r['Batch / Train']||'?'; bCounts[b]=(bCounts[b]||0)+1; });
   const bKeys=Object.keys(bCounts).sort();
   if(batchChart) batchChart.destroy();
   batchChart = new Chart(document.getElementById('batch-chart'),{
@@ -3594,7 +3613,7 @@ function renderDashboard(){
 
   // ── Price by Trucker and T1 Cost by Batch ──────────────────────
   const priceTruckers={};
-  CT.forEach(r=>{
+  CTD.forEach(r=>{
     const t=r['Trucker']||'Unknown';
     const p=parseFloat(r['Price']), p1=parseFloat(r['Price T1']);
     const hasP=!isNaN(p)&&p>0, hasP1=!isNaN(p1)&&p1>0;
@@ -4034,7 +4053,7 @@ function renderDashboard(){
 
   // ── Containers by Consignee ──────────────────────────────────────
   const conCounts={};
-  CT.forEach(r=>{ const c=r['Consignee']||'(Unknown)'; conCounts[c]=(conCounts[c]||0)+1; });
+  CTD.forEach(r=>{ const c=r['Consignee']||'(Unknown)'; conCounts[c]=(conCounts[c]||0)+1; });
   // Sort descending by count
   const conKeys=Object.keys(conCounts).sort((a,b)=>conCounts[b]-conCounts[a]);
   const conVals=conKeys.map(k=>conCounts[k]);
@@ -4098,7 +4117,7 @@ function renderDashboard(){
     const conSet   = new Set();
     const matrix   = {}; // matrix[monthKey][consignee] = count
 
-    CT.forEach(r => {
+    CTD.forEach(r => {
       const con = (r['Consignee']||'').trim(); if(!con) return;
       let d = parseDate(r['Actual Arrival']);
       if(!d) d = _batchDatePlusDays(r['Batch / Train'], 25);
@@ -4201,7 +4220,7 @@ function renderDashboard(){
 
   // ── On Time Rate by Trucker ──────────────────────────────────────
   const onTimeRate={};
-  CT.forEach(r=>{
+  CTD.forEach(r=>{
     const t=r['Trucker']||'Unknown';
     const arrD=parseDate(r['Actual Arrival']), slotD=parseDate(r['Scheduled Slot']);
     if(!slotD || !arrD) return; // only count containers that have both slot AND actual arrival
@@ -4839,7 +4858,7 @@ function renderDashboard(){
 
     // Classify every container
     const lateArr=[], deadlineExc=[];
-    CT.forEach(r=>{
+    CTD.forEach(r=>{
       const slot   = parseDate(r['Scheduled Slot']);
       const actual = parseDate(r['Actual Arrival']);
       const dl     = parseDate(r['Deadline']);
@@ -8594,7 +8613,6 @@ function exportAllData(){
   addSheet('Containers (TEMU)',CT);
   addSheet('Vessels',VT);
   addSheet('Orders',(typeof NO!=='undefined')?NO:[]);
-  if(typeof SOC_YARDS!=='undefined') addSheet('SOC Yards',SOC_YARDS);
   if(typeof NOTICES!=='undefined') addSheet('Notices',NOTICES);
   if(typeof REMINDERS!=='undefined') addSheet('Reminders',REMINDERS);
   const meta=[
@@ -8608,6 +8626,43 @@ function exportAllData(){
   const wsInfo=XLSX.utils.aoa_to_sheet(meta); wsInfo['!cols']=[{wch:22},{wch:30}];
   XLSX.utils.book_append_sheet(wb,wsInfo,'Info');
   _xlsxWrite(wb,'OZ_Logistics_AllData_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ── RESTORE FROM EXCEL: recover data from an "Extract All Data" file ──
+function restoreAllData(){ const inp=document.getElementById('restore-file-input'); if(inp) inp.click(); }
+function _restoreFromFile(e){
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      const parse=name=>{
+        const ws=wb.Sheets[name]; if(!ws) return null;
+        return XLSX.utils.sheet_to_json(ws,{defval:''}).map(r=>{
+          const o={};
+          Object.keys(r).forEach(k=>{
+            let v=r[k];
+            if(typeof v==='string'&&(v.startsWith('[')||v.startsWith('{'))){ try{ v=JSON.parse(v); }catch(_){} }
+            o[k]=v;
+          });
+          return o;
+        });
+      };
+      const ct=parse('Containers (TEMU)'), vt=parse('Vessels'), no=parse('Orders'), nts=parse('Notices'), rem=parse('Reminders');
+      if(!ct&&!vt&&!no){ alert('No recognizable sheets found.\nUse a file created by "Extract All Data (Excel)".'); return; }
+      const found=[ct&&('Containers ('+ct.length+')'),vt&&('Vessels ('+vt.length+')'),no&&('Orders ('+no.length+')'),nts&&('Notices ('+nts.length+')'),rem&&('Reminders ('+rem.length+')')].filter(Boolean).join(', ');
+      if(!confirm('Restore data from this Excel?\n\nFound: '+found+'\n\nThis REPLACES the current data for those sheets.')) return;
+      if(ct){ CT=ct; nextId=Math.max(0,...CT.map(r=>r._id||0))+1; localStorage.setItem(LS_CT,JSON.stringify(CT)); }
+      if(vt){ VT=vt; vtNextId=Math.max(0,...VT.map(r=>r._id||0))+1; localStorage.setItem(LS_VT,JSON.stringify(VT)); }
+      if(no&&typeof NO!=='undefined'){ NO=no; noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; localStorage.setItem(LS_NO,JSON.stringify(NO)); }
+      if(nts&&typeof NOTICES!=='undefined'){ NOTICES=nts; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); if(typeof renderNotices==='function') renderNotices(); }
+      if(rem&&typeof REMINDERS!=='undefined'){ REMINDERS=rem; _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); if(typeof remRender==='function') remRender(); }
+      renderCT(); renderVT(); renderDashboard(); if(typeof renderOrders==='function') renderOrders();
+      alert('✓ Restored: '+found);
+    }catch(err){ alert('Restore failed: '+(err&&err.message||err)); }
+  };
+  reader.readAsArrayBuffer(f);
+  e.target.value='';
 }
 
 function exportCSV(){
@@ -11475,6 +11530,30 @@ function noDispatchRows(){
   return out;
 }
 loadNO();
+// Map orders to CT-like rows so dashboard charts can include them (batch = "🧾 Orders")
+function _ordersAsCtRows(){
+  const out=[];
+  NO.filter(o=>(o['Status']||'')!=='Cancelled').forEach(o=>{
+    const cs=_noContainers(o); const list=cs.length?cs:[o['Order No.']||'Order'];
+    list.forEach((cn,i)=>{
+      out.push({
+        'Batch / Train':'🧾 Orders',
+        'Container No.':cn,
+        'Consignee':o['Consignee']||'',
+        'Trucker':o['Trucker']||'',
+        'Broker':'',
+        'Destination':o['Destination']||'',
+        'Scheduled Slot':o['Delivery Date']||'',
+        'Actual Arrival':o['ATA']||((o['Status']==='Delivered')?(o['Delivery Date']||''):''),
+        'ETA at Hub':'',
+        'Price': i===0?(o['Price']||''):'', // price counted once per order
+        'Tracking': (o['ATA']||o['Status']==='Delivered')?'Arrived':'',
+        _isOrder:true,_id:-((o._id||0)*1000+i)
+      });
+    });
+  });
+  return out;
+}
 
 // ── INITIAL RENDER: dashboard is the default page, render it on load so
 //    vessel panel / KPIs / charts are always current without clicking tabs ──
