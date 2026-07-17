@@ -3522,10 +3522,10 @@ function renderDashboard(){
     document.getElementById('kv-arr').textContent   = CT.filter(r=>r['Tracking']==='Arrived').length;
     document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
     document.getElementById('kv-hi').textContent    = CT.filter(r=>!r['Actual Arrival']).length;
-    const _noAll=(typeof NO!=='undefined')?NO.filter(o=>(o['Status']||'')!=='Cancelled'):[];
+    const _noAll=(typeof NO!=='undefined')?NO.filter(o=>!(typeof _noHasSt==='function'&&_noHasSt(o,'Cancelled'))):[];
     const _cnt=o=>(typeof _noContainers==='function')?_noContainers(o).length:0;
     const noTotal=_noAll.reduce((s,o)=>s+_cnt(o),0);
-    const noArr  =_noAll.filter(o=>o['Status']==='Delivered'||o['ATA']).reduce((s,o)=>s+_cnt(o),0);
+    const noArr  =_noAll.filter(o=>(typeof _noHasSt==='function'&&_noHasSt(o,'Delivered'))||o['ATA']).reduce((s,o)=>s+_cnt(o),0);
     const kvO=document.getElementById('kv-orders'), ksO=document.getElementById('ks-orders');
     if(kvO) kvO.textContent=noTotal;
     if(ksO) ksO.textContent=noTotal?`${noArr} delivered · ${noTotal-noArr} on the way`:'non-TEMU containers';
@@ -3561,9 +3561,9 @@ function renderDashboard(){
       if(isOrder) groups[r.key].orders+=n; else if(!groups[r.key].ctDest) groups[r.key].ctDest=rawDest;
     };
     CT.forEach(r=>{ const d=r['Destination']||'Belgium'; add(d,1,r['Actual Arrival']?0:1,false,d); });
-    (typeof NO!=='undefined'?NO:[]).filter(o=>(o['Status']||'')!=='Cancelled').forEach(o=>{
+    (typeof NO!=='undefined'?NO:[]).filter(o=>!(typeof _noHasSt==='function'&&_noHasSt(o,'Cancelled'))).forEach(o=>{
       const n=(typeof _noContainers==='function')?Math.max(_noContainers(o).length,1):1;
-      const arrived=!!(o['ATA']||o['Status']==='Delivered');
+      const arrived=!!(o['ATA']||(typeof _noHasSt==='function'&&_noHasSt(o,'Delivered')));
       add(o['Destination'],n,arrived?0:n,true,null);
     });
     const PALETTE=[['#1d4ed8','#eff6ff','#1e40af'],['#c2410c','#fff7ed','#9a3412'],['#9d174d','#fdf2f8','#831843'],['#047857','#ecfdf5','#065f46'],['#7c3aed','#f5f3ff','#6d28d9'],['#0891b2','#ecfeff','#155e75'],['#b45309','#fffbeb','#92400e']];
@@ -11452,19 +11452,42 @@ function noSet(id,field,val){
   if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
 }
 function _noEsc(v){ return (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function _noSvcList(o){ return ((o&&o['Service Type'])||'').split(/\s*[,;+]\s*/).map(s=>s.trim()).filter(Boolean); }
+function _noStList(o){ const l=((o&&o['Status'])||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean); return l.length?l:['New']; }
+function _noHasSt(o,s){ return _noStList(o).some(x=>x.toLowerCase()===String(s).toLowerCase()); }
+function noToggleStatus(id,st){
+  st=(st||'').trim(); if(!st) return;
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  let list=((NO[i]['Status'])||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean);
+  if(list.some(s=>s.toLowerCase()===st.toLowerCase())) list=list.filter(s=>s.toLowerCase()!==st.toLowerCase());
+  else list.push(st);
+  NO[i]['Status']=list.join(', ');
+  saveNO(); renderOrders();
+  const dp=document.getElementById('page-dispatch');
+  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+}
+function noToggleService(id,svc){
+  svc=(svc||'').trim(); if(!svc) return;
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  let list=_noSvcList(NO[i]);
+  if(list.some(s=>s.toLowerCase()===svc.toLowerCase())) list=list.filter(s=>s.toLowerCase()!==svc.toLowerCase());
+  else list.push(svc);
+  NO[i]['Service Type']=list.join(', ');
+  saveNO(); renderOrders();
+}
 function _noContainers(o){ return (o['Container No.']||'').split(/[\s,;\n]+/).map(s=>s.trim()).filter(Boolean); }
 function renderOrders(){
   const body=document.getElementById('no-body'); if(!body) return;
   // status filter options follow whatever statuses exist in the data (free-typed included)
   const sf=document.getElementById('no-status-filter');
   if(sf){ const cur=sf.value;
-    const opts=[...new Set(NO.map(o=>o['Status']||'New'))].sort();
+    const opts=[...new Set(NO.flatMap(o=>_noStList(o)))].sort();
     sf.innerHTML='<option value="">All Statuses</option>'+opts.map(v=>`<option value="${_noEsc(v)}"${v===cur?' selected':''}>${_noEsc(v)}</option>`).join('');
   }
   const filt=document.getElementById('no-status-filter')?.value||'';
   const q=(document.getElementById('no-search')?.value||'').trim().toLowerCase();
   const badge=document.getElementById('no-count-badge');
-  let rows=filt?NO.filter(o=>(o['Status']||'New')===filt):NO;
+  let rows=filt?NO.filter(o=>_noHasSt(o,filt)):NO;
   if(q) rows=rows.filter(o=>Object.keys(o).some(k=>k!=='_id'&&String(o[k]??'').toLowerCase().includes(q)));
   if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
   if(!rows.length){
@@ -11475,8 +11498,8 @@ function renderOrders(){
     <input type="text" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="font-size:12px;font-weight:500;color:#1e293b;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;${style||''}"/></label>`;
   body.innerHTML=rows.map(o=>{
     const open=_noOpen.has(o._id);
-    const st=o['Status']||'New';
-    const stStyle=NO_ST_STYLE[st]||'background:#f1f5f9;color:#475569';
+    const stList=_noStList(o);
+    const stBadges=stList.map(s=>`<span style="${NO_ST_STYLE[s]||'background:#f1f5f9;color:#475569'};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join('');
     const main=`<tr onclick="noToggle(${o._id})" style="cursor:pointer" title="Click to ${open?'collapse':'expand'}">
       <td style="text-align:center;color:#94a3b8;font-size:10px">${open?'▼':'▶'}</td>
       <td style="font-weight:700;color:var(--navy)">${_noEsc(o['Order No.'])||'<span style="color:#cbd5e1">—</span>'}</td>
@@ -11495,7 +11518,7 @@ function renderOrders(){
       <td>${_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="white-space:nowrap">${o['Service Type']?`<span style="font-size:10px;background:#f1f5f9;color:#475569;border-radius:6px;padding:2px 7px;font-weight:700">${_noEsc(o['Service Type'])}</span>`:'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:right;font-weight:700;color:#0369a1">${o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="text-align:center"><span style="${stStyle};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">${_noEsc(st)}</span></td>
+      <td style="text-align:center">${stBadges}</td>
     </tr>`;
     if(!open) return main;
     const _lblCss='display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px';
@@ -11522,10 +11545,33 @@ function renderOrders(){
           <select onchange="noSet(${o._id},'Payment Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
             ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
           </select></label>
-        <label style="${_lblCss}">Service Type
-          <input type="text" list="dl-service-o" value="${_noEsc(o['Service Type'])}" placeholder="LCL / FCL / T1 / Custom Clearance…" onchange="noSet(${o._id},'Service Type',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss}"/></label>
-        <label style="${_lblCss}">Status
-          <input type="text" list="dl-status-o" value="${_noEsc(st)}" placeholder="type any status…" onchange="noSet(${o._id},'Status',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss}"/></label>
+        <label style="${_lblCss};grid-column:span 2">Service Type — click to toggle, multiple allowed
+          <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:2px">
+            ${(()=>{
+              const sel=_noSvcList(o);
+              const base=['LCL','FCL','T1','Custom Clearance','Delivery','Storage','Transshipment'];
+              const all=[...base,...sel.filter(s=>!base.some(b=>b.toLowerCase()===s.toLowerCase()))];
+              return all.map(svc=>{
+                const on=sel.some(s=>s.toLowerCase()===svc.toLowerCase());
+                const esc=svc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+                return `<button type="button" onclick="noToggleService(${o._id},'${esc}')" style="padding:4px 11px;font-size:11px;font-weight:700;border-radius:14px;cursor:pointer;transition:all .12s;border:1.5px solid ${on?'#0f766e':'#e2e8f0'};background:${on?'#0f766e':'#fff'};color:${on?'#fff':'#64748b'}">${on?'✓ ':''}${_noEsc(svc)}</button>`;
+              }).join('');
+            })()}
+            <input type="text" placeholder="+ other, press Enter" onkeydown="if(event.key==='Enter'){noToggleService(${o._id},this.value);this.value='';}" style="font-size:11px;padding:4px 9px;border:1.5px dashed #cbd5e1;border-radius:14px;width:130px"/>
+          </div></label>
+        <label style="${_lblCss};grid-column:span 2">Status — click to toggle, multiple allowed
+          <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:2px">
+            ${(()=>{
+              const sel=(o['Status']||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean);
+              const all=[...NO_STATUS,...sel.filter(s=>!NO_STATUS.some(b=>b.toLowerCase()===s.toLowerCase()))];
+              return all.map(sv=>{
+                const on=sel.some(s=>s.toLowerCase()===sv.toLowerCase());
+                const esc=sv.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+                return `<button type="button" onclick="noToggleStatus(${o._id},'${esc}')" style="padding:4px 11px;font-size:11px;font-weight:700;border-radius:14px;cursor:pointer;transition:all .12s;border:1.5px solid ${on?'#7c3aed':'#e2e8f0'};background:${on?'#7c3aed':'#fff'};color:${on?'#fff':'#64748b'}">${on?'✓ ':''}${_noEsc(sv)}</button>`;
+              }).join('');
+            })()}
+            <input type="text" placeholder="+ other, press Enter" onkeydown="if(event.key==='Enter'){noToggleStatus(${o._id},this.value);this.value='';}" style="font-size:11px;padding:4px 9px;border:1.5px dashed #cbd5e1;border-radius:14px;width:130px"/>
+          </div></label>
       </div>
       <div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin-top:14px">
         ${flowCard('🚂','ETA','#0369a1', linp('Hub','Duisburg / Tilburg / Małaszewicze…')+dinp('ETA','ETA Date'))}
@@ -11547,7 +11593,7 @@ function renderOrders(){
 // Map orders into dispatch pseudo-rows (used by renderDispatch)
 function noDispatchRows(){
   const out=[];
-  NO.filter(o=>(o['Status']||'')!=='Cancelled').forEach(o=>{
+  NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
     const cs=_noContainers(o);
     (cs.length?cs:[o['Order No.']||'Order']).forEach((cn,i)=>{
       out.push({
@@ -11555,7 +11601,7 @@ function noDispatchRows(){
         'Consignee':o['Consignee']||'(no consignee)',
         'Trucker':o['Trucker']||'',
         'Scheduled Slot':o['Delivery Date']||'',
-        'Actual Arrival':(o['Status']==='Delivered')?(o['Delivery Date']||''):'',
+        'Actual Arrival':_noHasSt(o,'Delivered')?(o['Delivery Date']||''):'',
         'ETA at Hub':'', // orders are scheduled by Delivery Date only — no ETA fallback
         'Destination':o['Destination']||'',
         _isOrder:true,_id:-((o._id||0)*1000+i)
@@ -11568,7 +11614,7 @@ loadNO();
 // Map orders to CT-like rows so dashboard charts can include them (batch = "🧾 Orders")
 function _ordersAsCtRows(){
   const out=[];
-  NO.filter(o=>(o['Status']||'')!=='Cancelled').forEach(o=>{
+  NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
     const cs=_noContainers(o); const list=cs.length?cs:[o['Order No.']||'Order'];
     list.forEach((cn,i)=>{
       out.push({
@@ -11579,10 +11625,10 @@ function _ordersAsCtRows(){
         'Broker':'',
         'Destination':o['Destination']||'',
         'Scheduled Slot':o['Delivery Date']||'',
-        'Actual Arrival':o['ATA']||((o['Status']==='Delivered')?(o['Delivery Date']||''):''),
+        'Actual Arrival':o['ATA']||(_noHasSt(o,'Delivered')?(o['Delivery Date']||''):''),
         'ETA at Hub':'',
         'Price': i===0?(o['Price']||''):'', // price counted once per order
-        'Tracking': (o['ATA']||o['Status']==='Delivered')?'Arrived':'',
+        'Tracking': (o['ATA']||_noHasSt(o,'Delivered'))?'Arrived':'',
         _isOrder:true,_id:-((o._id||0)*1000+i)
       });
     });
