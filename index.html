@@ -2869,7 +2869,7 @@ select:focus, input:focus {
 
 <!-- NOTICE EDIT MODAL -->
 <div class="overlay" id="notice-edit-overlay">
-  <div class="modal-inner" style="max-width:480px">
+  <div class="modal-inner" style="max-width:640px;width:92vw">
     <div class="modal-header"><span>✏️ Edit Notice</span></div>
     <div class="modal-body" style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;gap:8px">
@@ -2887,12 +2887,13 @@ select:focus, input:focus {
             <option value="all">📋 All Pages</option>
             <option value="vessels">🚢 Vessels Only</option>
             <option value="containers">📦 Containers Only</option>
+            <option value="orders">🧾 Orders Only</option>
           </select>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">Notice Text</label>
-        <textarea id="ne-text" class="nb-textarea" rows="4" placeholder="Notice text…"></textarea>
+        <textarea id="ne-text" class="nb-textarea" rows="10" placeholder="Notice text…" style="min-height:180px;resize:vertical;font-size:14px;line-height:1.5"></textarea>
       </div>
     </div>
     <div class="modal-btns" style="padding:12px 18px;display:flex;gap:8px">
