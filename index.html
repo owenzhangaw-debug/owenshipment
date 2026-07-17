@@ -1403,23 +1403,7 @@ select:focus, input:focus {
       </div>
 
       <!-- Country breakdown KPIs -->
-      <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px" id="kpi-country-row">
-        <div class="kpi" style="border-top-color:#1d4ed8;background:linear-gradient(160deg,#fff 70%,#eff6ff 100%);cursor:pointer" onclick="filterByDestination('Belgium')">
-          <div class="kl" style="color:#1d4ed8">🇧🇪 Belgium</div>
-          <div class="kv" id="kv-be" style="color:#1e40af">—</div>
-          <div class="ks" id="ks-be">containers</div>
-        </div>
-        <div class="kpi" style="border-top-color:#c2410c;background:linear-gradient(160deg,#fff 70%,#fff7ed 100%);cursor:pointer" onclick="filterByDestination('Netherlands')">
-          <div class="kl" style="color:#c2410c">🇳🇱 Netherlands</div>
-          <div class="kv" id="kv-nl" style="color:#9a3412">—</div>
-          <div class="ks" id="ks-nl">containers</div>
-        </div>
-        <div class="kpi" style="border-top-color:#9d174d;background:linear-gradient(160deg,#fff 70%,#fdf2f8 100%);cursor:pointer" onclick="filterByDestination('Italy')">
-          <div class="kl" style="color:#9d174d">🇮🇹 Italy</div>
-          <div class="kv" id="kv-it" style="color:#831843">—</div>
-          <div class="ks" id="ks-it">containers</div>
-        </div>
-      </div>
+      <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px" id="kpi-country-row"></div>
 
       <!-- Category Tabs -->
       <div class="dash-cat-tabs">
@@ -3543,19 +3527,55 @@ function renderDashboard(){
     if(kvO) kvO.textContent=noTotal;
     if(ksO) ksO.textContent=noTotal?`${noArr} delivered · ${noTotal-noArr} on the way`:'non-TEMU containers';
   }
-  // Country breakdown KPIs — TEMU containers + order containers (matched on Destination text)
-  ['Belgium','Netherlands','Italy'].forEach(dest=>{
-    const key={'Belgium':'be','Netherlands':'nl','Italy':'it'}[dest];
-    const rows=CT.filter(r=>(r['Destination']||'Belgium')===dest);
-    const ordRows=(typeof NO!=='undefined'?NO:[]).filter(o=>(o['Status']||'')!=='Cancelled'
-      && (o['Destination']||'').toLowerCase().includes(dest.toLowerCase()));
-    const _cnt=o=>(typeof _noContainers==='function')?Math.max(_noContainers(o).length,1):1;
-    const ordTotal=ordRows.reduce((s,o)=>s+_cnt(o),0);
-    const ordPend =ordRows.filter(o=>!(o['ATA']||o['Status']==='Delivered')).reduce((s,o)=>s+_cnt(o),0);
-    const el=document.getElementById('kv-'+key), sl=document.getElementById('ks-'+key);
-    if(el) el.innerHTML=(rows.length+ordTotal)+(ordTotal?` <span style="font-size:12px;font-weight:700;color:#b45309" title="${ordTotal} from Orders">incl. ${ordTotal}🧾</span>`:'');
-    if(sl){ const pend=rows.filter(r=>!r['Actual Arrival']).length+ordPend; sl.textContent=pend?`${pend} pending`:'all arrived'; }
-  });
+  // Destination cards — dynamic from TEMU containers + Orders.
+  // Countries get their flag; city-only destinations show the city with its country's flag.
+  (function(){
+    const rowEl=document.getElementById('kpi-country-row'); if(!rowEl) return;
+    const FLAGS={'belgium':'🇧🇪','netherlands':'🇳🇱','holland':'🇳🇱','italy':'🇮🇹','germany':'🇩🇪','france':'🇫🇷','poland':'🇵🇱','spain':'🇪🇸','slovakia':'🇸🇰','czech republic':'🇨🇿','czechia':'🇨🇿','austria':'🇦🇹','hungary':'🇭🇺','united kingdom':'🇬🇧','uk':'🇬🇧','lithuania':'🇱🇹','portugal':'🇵🇹','romania':'🇷🇴','slovenia':'🇸🇮','croatia':'🇭🇷','bulgaria':'🇧🇬','greece':'🇬🇷','sweden':'🇸🇪','denmark':'🇩🇰','norway':'🇳🇴','finland':'🇫🇮','switzerland':'🇨🇭','luxembourg':'🇱🇺','ireland':'🇮🇪','estonia':'🇪🇪','latvia':'🇱🇻'};
+    const CITY2COUNTRY={'hirson':'france','paris':'france','lille':'france','lyon':'france','marseille':'france',
+      'nysa':'poland','warsaw':'poland','malaszewicze':'poland','małaszewicze':'poland','wroclaw':'poland','gdansk':'poland','krakow':'poland','lodz':'poland','poznan':'poland',
+      'antwerp':'belgium','brussels':'belgium','ghent':'belgium','liege':'belgium','genk':'belgium',
+      'rotterdam':'netherlands','amsterdam':'netherlands','tilburg':'netherlands','venlo':'netherlands','eindhoven':'netherlands',
+      'duisburg':'germany','hamburg':'germany','cologne':'germany','frankfurt':'germany','munich':'germany','berlin':'germany',
+      'milan':'italy','rome':'italy','turin':'italy','naples':'italy',
+      'madrid':'spain','barcelona':'spain','valencia':'spain',
+      'prague':'czech republic','vienna':'austria','bratislava':'slovakia','budapest':'hungary',
+      'london':'united kingdom','felixstowe':'united kingdom','vilnius':'lithuania','klaipeda':'lithuania'};
+    const _cap=s=>s.replace(/(^|\s|-)\S/g,c=>c.toUpperCase());
+    const resolve=dest=>{
+      const t=(dest||'').trim(); if(!t) return null;
+      const low=t.toLowerCase();
+      for(const c in FLAGS){ if(low===c||low.includes(c)) return {key:'country:'+FLAGS[c],label:_cap(c==='uk'?'united kingdom':c),flag:FLAGS[c]}; }
+      const cityKey=Object.keys(CITY2COUNTRY).find(city=>low===city||low.includes(city));
+      if(cityKey) return {key:'city:'+cityKey,label:_cap(cityKey),flag:FLAGS[CITY2COUNTRY[cityKey]]||'🌍'};
+      return {key:'other:'+low,label:t,flag:'🌍'};
+    };
+    const groups={};
+    const add=(dest,n,pend,isOrder,rawDest)=>{
+      const r=resolve(dest); if(!r) return;
+      if(!groups[r.key]) groups[r.key]={...r,total:0,pending:0,orders:0,ctDest:null};
+      groups[r.key].total+=n; groups[r.key].pending+=pend;
+      if(isOrder) groups[r.key].orders+=n; else if(!groups[r.key].ctDest) groups[r.key].ctDest=rawDest;
+    };
+    CT.forEach(r=>{ const d=r['Destination']||'Belgium'; add(d,1,r['Actual Arrival']?0:1,false,d); });
+    (typeof NO!=='undefined'?NO:[]).filter(o=>(o['Status']||'')!=='Cancelled').forEach(o=>{
+      const n=(typeof _noContainers==='function')?Math.max(_noContainers(o).length,1):1;
+      const arrived=!!(o['ATA']||o['Status']==='Delivered');
+      add(o['Destination'],n,arrived?0:n,true,null);
+    });
+    const PALETTE=[['#1d4ed8','#eff6ff','#1e40af'],['#c2410c','#fff7ed','#9a3412'],['#9d174d','#fdf2f8','#831843'],['#047857','#ecfdf5','#065f46'],['#7c3aed','#f5f3ff','#6d28d9'],['#0891b2','#ecfeff','#155e75'],['#b45309','#fffbeb','#92400e']];
+    const keys=Object.keys(groups).sort((a,b)=>groups[b].total-groups[a].total);
+    rowEl.style.gridTemplateColumns=`repeat(${Math.min(Math.max(keys.length,1),4)},1fr)`;
+    rowEl.innerHTML=keys.map((k,i)=>{
+      const g=groups[k]; const [c1,bg,c2]=PALETTE[i%PALETTE.length];
+      const click=g.ctDest?`filterByDestination('${String(g.ctDest).replace(/'/g,"\\'")}')`:`showPage('orders')`;
+      return `<div class="kpi" style="border-top-color:${c1};background:linear-gradient(160deg,#fff 70%,${bg} 100%);cursor:pointer" onclick="${click}">
+        <div class="kl" style="color:${c1}">${g.flag} ${g.label}</div>
+        <div class="kv" style="color:${c2}">${g.total}${g.orders?` <span style="font-size:11px;font-weight:700;color:#b45309" title="${g.orders} from Orders">${g.orders}🧾</span>`:''}</div>
+        <div class="ks">${g.pending?g.pending+' pending':'all arrived'}</div>
+      </div>`;
+    }).join('');
+  })();
   document.getElementById('kv-vessels').textContent = VT.length;
   const _totalSlotChanges=CT.reduce((acc,r)=>acc+(Array.isArray(r.slotHistory)?r.slotHistory.filter(h=>h.to&&h.to.trim()).length:0),0);
   document.getElementById('kv-slot-changes').textContent = _totalSlotChanges||'0';
