@@ -1319,6 +1319,7 @@ select:focus, input:focus {
         <button onclick="openBulk();closeNavTools()">⊞ Bulk Add</button>
         <button onclick="openImport();closeNavTools()">↑ Import Excel</button>
         <button onclick="exportCSV();closeNavTools()">↓ Export CSV</button>
+        <button onclick="exportAllData();closeNavTools()">⬇ Extract All Data (Excel)</button>
         <button onclick="autoGenerateSlots();closeNavTools()">⚡ Auto Slots</button>
         <button onclick="openSlotEmails();closeNavTools()">📧 Slot Emails</button>
         <button id="sync-btn" onclick="openSync();closeNavTools()">☁ Sync</button>
@@ -2368,9 +2369,9 @@ select:focus, input:focus {
 ══════════════════════════════════════════════════════════ -->
 <div id="page-dispatch" class="page">
   <!-- Tab switcher -->
-  <div style="display:flex;background:#003534;padding:0 16px;gap:2px">
-    <button id="dispatch-tab-ct" onclick="switchDispatchTab('ct')" style="padding:9px 18px;font-size:12px;font-weight:700;border:none;cursor:pointer;border-radius:0;background:rgba(255,255,255,.12);color:#fff;border-bottom:2px solid transparent;transition:all .15s">📦 Container Dispatch</button>
-    <button id="dispatch-tab-vt" onclick="switchDispatchTab('vt')" style="padding:9px 18px;font-size:12px;font-weight:700;border:none;cursor:pointer;border-radius:0;background:transparent;color:rgba(255,255,255,.6);border-bottom:2px solid transparent;transition:all .15s">🚢 Vessel Dispatch</button>
+  <div style="display:flex;background:#003534;padding:8px 16px 0;gap:6px">
+    <button id="dispatch-tab-ct" onclick="switchDispatchTab('ct')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:#fff;color:#003534;transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:none">📦</span> Container Dispatch</button>
+    <button id="dispatch-tab-vt" onclick="switchDispatchTab('vt')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:grayscale(.4) brightness(1.3)">🚢</span> Vessel Dispatch</button>
   </div>
 
   <!-- Container Dispatch panel -->
@@ -3498,10 +3499,20 @@ function renderDashboard(){
   // Unified timeline: render skeleton on first dashboard load
   const rtBody=document.getElementById('bel-timeline-body');
   if(rtBody&&!rtBody.querySelector('.bel-node')) renderBelgiumTimeline();
-  document.getElementById('kv-total').textContent = CT.length;
-  document.getElementById('kv-arr').textContent   = CT.filter(r=>r['Tracking']==='Arrived').length;
-  document.getElementById('kv-t1').textContent    = CT.filter(r=>r['Tracking']==='T1').length;
-  document.getElementById('kv-hi').textContent    = CT.filter(r=>!r['Actual Arrival']).length;
+  // Container KPIs — include normal-order containers, marked separately (🧾)
+  {
+    const _noAll=(typeof NO!=='undefined')?NO.filter(o=>(o['Status']||'')!=='Cancelled'):[];
+    const _cnt=o=>(typeof _noContainers==='function')?_noContainers(o).length:0;
+    const noTotal=_noAll.reduce((s,o)=>s+_cnt(o),0);
+    const noArr  =_noAll.filter(o=>o['Status']==='Delivered'||o['ATA']).reduce((s,o)=>s+_cnt(o),0);
+    const noOtw  =noTotal-noArr;
+    const _mark=(el,base,extra)=>{ const e=document.getElementById(el); if(!e) return;
+      e.innerHTML=base+(extra>0?` <span style="font-size:12px;font-weight:700;color:#b45309" title="${extra} container${extra!==1?'s':''} from normal Orders">+${extra}🧾</span>`:''); };
+    _mark('kv-total', CT.length, noTotal);
+    _mark('kv-arr',   CT.filter(r=>r['Tracking']==='Arrived').length, noArr);
+    document.getElementById('kv-t1').textContent = CT.filter(r=>r['Tracking']==='T1').length;
+    _mark('kv-hi',    CT.filter(r=>!r['Actual Arrival']).length, noOtw);
+  }
   // Country breakdown KPIs
   ['Belgium','Netherlands','Italy'].forEach(dest=>{
     const key={'Belgium':'be','Netherlands':'nl','Italy':'it'}[dest];
@@ -8520,6 +8531,42 @@ function _mergeTemuTracking(){
 }
 
 // ── EXPORT CONTAINERS ─────────────────────────────────────────────
+// ── EXTRACT ALL DATA: every dataset as its own Excel sheet, for analysis ──
+function exportAllData(){
+  const wb=XLSX.utils.book_new();
+  const addSheet=(name,arr)=>{
+    if(!Array.isArray(arr)||!arr.length) return;
+    // dynamic headers = every key that appears anywhere in the dataset
+    const keys=[...new Set(arr.flatMap(r=>Object.keys(r||{})))].filter(k=>k==='_id'||!k.startsWith('_'));
+    const rows=arr.map(r=>keys.map(k=>{
+      const v=(r||{})[k];
+      if(v==null) return '';
+      if(Array.isArray(v)||typeof v==='object'){ try{ return JSON.stringify(v); }catch(e){ return String(v); } }
+      return v;
+    }));
+    const ws=XLSX.utils.aoa_to_sheet([keys,...rows]);
+    ws['!cols']=keys.map(k=>({wch:Math.min(32,Math.max(11,String(k).length+3))}));
+    XLSX.utils.book_append_sheet(wb,ws,name);
+  };
+  addSheet('Containers (TEMU)',CT);
+  addSheet('Vessels',VT);
+  addSheet('Orders',(typeof NO!=='undefined')?NO:[]);
+  if(typeof SOC_YARDS!=='undefined') addSheet('SOC Yards',SOC_YARDS);
+  if(typeof NOTICES!=='undefined') addSheet('Notices',NOTICES);
+  if(typeof REMINDERS!=='undefined') addSheet('Reminders',REMINDERS);
+  const meta=[
+    ['OZ Logistics — full data extract'],
+    ['Exported',new Date().toLocaleString()],
+    ['Containers (TEMU)',CT.length],
+    ['Vessels',VT.length],
+    ['Orders',(typeof NO!=='undefined')?NO.length:0],
+    ['Note','Object/array fields are exported as JSON text']
+  ];
+  const wsInfo=XLSX.utils.aoa_to_sheet(meta); wsInfo['!cols']=[{wch:22},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,wsInfo,'Info');
+  _xlsxWrite(wb,'OZ_Logistics_AllData_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
 function exportCSV(){
   const headers=[
     'Batch / Train','Container No.','Master B/L','Consignee','Trucker','Broker',
@@ -10643,8 +10690,10 @@ function switchDispatchTab(tab){
   document.getElementById('dispatch-panel-vt').style.display=isCt?'none':'';
   const tabCt=document.getElementById('dispatch-tab-ct');
   const tabVt=document.getElementById('dispatch-tab-vt');
-  if(tabCt){ tabCt.style.background=isCt?'rgba(255,255,255,.18)':'transparent'; tabCt.style.color=isCt?'#fff':'rgba(255,255,255,.6)'; tabCt.style.borderBottom=isCt?'2px solid #5DD8D0':'2px solid transparent'; }
-  if(tabVt){ tabVt.style.background=!isCt?'rgba(255,255,255,.18)':'transparent'; tabVt.style.color=!isCt?'#fff':'rgba(255,255,255,.6)'; tabVt.style.borderBottom=!isCt?'2px solid #5DD8D0':'2px solid transparent'; }
+  const _tabOn=el=>{ el.style.background='#fff'; el.style.color='#003534'; const ic=el.querySelector('span'); if(ic) ic.style.filter='none'; };
+  const _tabOff=el=>{ el.style.background='rgba(255,255,255,.1)'; el.style.color='rgba(255,255,255,.75)'; const ic=el.querySelector('span'); if(ic) ic.style.filter='grayscale(.4) brightness(1.3)'; };
+  if(tabCt) (isCt?_tabOn:_tabOff)(tabCt);
+  if(tabVt) (!isCt?_tabOn:_tabOff)(tabVt);
   if(isCt) renderDispatch(); else renderVesselDispatch();
 }
 
