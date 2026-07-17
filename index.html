@@ -1999,6 +1999,7 @@ select:focus, input:focus {
       <h3 style="margin:0">📦 Container Orders <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:6px">normal orders — separate from TEMU</span></h3>
       <span id="no-count-badge" style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;border-radius:8px;padding:2px 8px"></span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="search" id="no-search" placeholder="🔍 Search orders…" oninput="renderOrders()" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;width:190px"/>
         <select id="no-status-filter" onchange="renderOrders()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
           <option value="">All Statuses</option>
           <option value="New">New</option>
@@ -11280,9 +11281,11 @@ function _noContainers(o){ return (o['Container No.']||'').split(/[\s,;\n]+/).ma
 function renderOrders(){
   const body=document.getElementById('no-body'); if(!body) return;
   const filt=document.getElementById('no-status-filter')?.value||'';
+  const q=(document.getElementById('no-search')?.value||'').trim().toLowerCase();
   const badge=document.getElementById('no-count-badge');
-  const rows=filt?NO.filter(o=>(o['Status']||'New')===filt):NO;
-  if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+(filt?' ('+filt+')':'');
+  let rows=filt?NO.filter(o=>(o['Status']||'New')===filt):NO;
+  if(q) rows=rows.filter(o=>Object.keys(o).some(k=>k!=='_id'&&String(o[k]??'').toLowerCase().includes(q)));
+  if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
   if(!rows.length){
     body.innerHTML='<tr><td colspan="11" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
@@ -11298,8 +11301,7 @@ function renderOrders(){
       <td style="font-weight:700;color:var(--navy)">${_noEsc(o['Order No.'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="font-family:monospace;font-weight:600;font-size:12px">${(()=>{const cs=_noContainers(o);
         if(!cs.length) return '<span style="color:#cbd5e1">—</span>';
-        const shown=cs.slice(0,3).map(_noEsc).join('<br>');
-        return shown+(cs.length>3?`<br><span style="color:#64748b;font-size:10px;font-weight:700">+${cs.length-3} more</span>`:'')
+        return cs.map(_noEsc).join('<br>')
           +(cs.length>1?` <span style="font-size:9px;background:#e0f2fe;color:#0369a1;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:top">×${cs.length}</span>`:'');})()}</td>
       <td>${_noEsc(o['Consignee'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td>${_noEsc(o['Destination'])||'<span style="color:#cbd5e1">—</span>'}</td>
@@ -11372,7 +11374,7 @@ function noDispatchRows(){
         'Trucker':o['Trucker']||'',
         'Scheduled Slot':o['Delivery Date']||'',
         'Actual Arrival':(o['Status']==='Delivered')?(o['Delivery Date']||''):'',
-        'ETA at Hub':o['ETA']||'',
+        'ETA at Hub':'', // orders are scheduled by Delivery Date only — no ETA fallback
         'Destination':o['Destination']||'',
         _isOrder:true,_id:-((o._id||0)*1000+i)
       });
