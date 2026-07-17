@@ -2020,7 +2020,9 @@ select:focus, input:focus {
         <th>Container No.</th>
         <th>Consignee</th>
         <th>Destination</th>
+        <th>ETA Station (Date)</th>
         <th>Delivery Date</th>
+        <th>ATA</th>
         <th>Trucker</th>
         <th style="text-align:right">Price</th>
         <th style="text-align:center">Status</th>
@@ -11259,7 +11261,7 @@ function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.pars
 function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
-    'Pickup Location':'','Pickup Date':'','ETA':'','ETA Station':'','Delivery Date':'','Trucker':'',
+    'Pickup Location':'','Pickup Date':'','ETA':'','ETA Station':'','Delivery Date':'','ATA':'','Trucker':'',
     'Price':'','Payment Status':'','Status':'New'};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
@@ -11281,7 +11283,7 @@ function renderOrders(){
   const rows=filt?NO.filter(o=>(o['Status']||'New')===filt):NO;
   if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+(filt?' ('+filt+')':'');
   if(!rows.length){
-    body.innerHTML='<tr><td colspan="9" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="11" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   const inp=(o,f,ph,style)=>`<label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">${f}
@@ -11300,13 +11302,18 @@ function renderOrders(){
           +(cs.length>1?` <span style="font-size:9px;background:#e0f2fe;color:#0369a1;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:top">×${cs.length}</span>`:'');})()}</td>
       <td>${_noEsc(o['Consignee'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td>${_noEsc(o['Destination'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="white-space:nowrap">${(()=>{const st=_noEsc(o['ETA Station']),dt=_noEsc(o['ETA']);
+        if(st&&dt) return st+' <span style="color:#64748b;font-size:11px">('+dt+')</span>';
+        if(st) return st; if(dt) return '<span style="color:#64748b">('+dt+')</span>';
+        return '<span style="color:#cbd5e1">—</span>';})()}</td>
       <td style="white-space:nowrap">${_noEsc(o['Delivery Date'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="white-space:nowrap;font-weight:600;color:#15803d">${_noEsc(o['ATA'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td>${_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:right;font-weight:700;color:#0369a1">${o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:center"><span style="${stStyle};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">${_noEsc(st)}</span></td>
     </tr>`;
     if(!open) return main;
-    const detail=`<tr><td colspan="9" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
+    const detail=`<tr><td colspan="11" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:10px">
         ${inp(o,'Order No.','e.g. ORD-001')}
         <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;grid-column:span 2">Container No.(s) — one per line or comma-separated
@@ -11318,6 +11325,7 @@ function renderOrders(){
         ${inp(o,'ETA','YYYY/MM/DD')}
         ${inp(o,'ETA Station','e.g. Duisburg / Tilburg / Małaszewicze')}
         ${inp(o,'Delivery Date','YYYY/MM/DD')}
+        ${inp(o,'ATA','YYYY/MM/DD')}
         ${inp(o,'Trucker','')}
         ${inp(o,'Price','€')}
         <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">Payment Status
