@@ -2090,7 +2090,7 @@ tbody tr:hover{background:#fafbfc}
         <th style="text-align:right">Price</th>
         <th style="text-align:center">Status</th>
         <th style="text-align:center" title="Customs office provided?">Customs Office</th>
-        <th>Remark</th>
+        <th style="min-width:260px">Remark</th>
       </tr></thead>
       <tbody id="no-body"></tbody>
     </table>
@@ -11621,7 +11621,7 @@ function renderOrders(){
       <td style="text-align:right;font-weight:700;color:#0369a1">${o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:center">${stBadges}</td>
       <td style="text-align:center"><input type="checkbox" ${o['Customs Office']?'checked':''} onclick="event.stopPropagation()" onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/></td>
-      <td style="max-width:180px;font-size:12px;color:#475569">${_noEsc(o['Remark'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="min-width:260px;max-width:420px;font-size:12px;color:#475569;line-height:1.45;white-space:pre-line" title="${_noEsc(o['Remark'])}">${_noEsc(o['Remark'])||'<span style="color:#cbd5e1">—</span>'}</td>
     </tr>`;
     if(!open) return main;
     const _lblCss='display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px';
