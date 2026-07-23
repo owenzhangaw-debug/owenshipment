@@ -2089,6 +2089,7 @@ tbody tr:hover{background:#fafbfc}
         <th>Service</th>
         <th style="text-align:right">Price</th>
         <th style="text-align:center">Status</th>
+        <th style="text-align:center" title="Customs office provided?">Customs Office</th>
         <th>Remark</th>
       </tr></thead>
       <tbody id="no-body"></tbody>
@@ -11530,16 +11531,16 @@ let NO=[]; let noNextId=1;
 const _noOpen=new Set();
 const NO_STATUS=['New','Booked','Picked Up','In Transit','Delivered','Cancelled'];
 const NO_ST_STYLE={
-  'New':'background:#e0f2fe;color:#0369a1','Booked':'background:#ede9fe;color:#6d28d9',
-  'Picked Up':'background:#fef3c7;color:#92400e','In Transit':'background:#dbeafe;color:#1d4ed8',
-  'Delivered':'background:#dcfce7;color:#15803d','Cancelled':'background:#fee2e2;color:#b91c1c'
+  'New':'background:#1d4ed8;color:#fff','Booked':'background:#6d28d9;color:#fff',
+  'Picked Up':'background:#b45309;color:#fff','In Transit':'background:#0e7490;color:#fff',
+  'Delivered':'background:#15803d;color:#fff','Cancelled':'background:#b91c1c;color:#fff'
 };
 function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.parse(s); noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; } }catch(e){ NO=[]; } }
 function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
-    'Price':'','Payment Status':'','Service Type':'','Status':'New','Remark':''};
+    'Price':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'Remark':''};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -11591,7 +11592,7 @@ function renderOrders(){
   if(q) rows=rows.filter(o=>Object.keys(o).some(k=>k!=='_id'&&String(o[k]??'').toLowerCase().includes(q)));
   if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
   if(!rows.length){
-    body.innerHTML='<tr><td colspan="13" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="14" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   const inp=(o,f,ph,style)=>`<label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">${f}
@@ -11599,7 +11600,7 @@ function renderOrders(){
   body.innerHTML=rows.map(o=>{
     const open=_noOpen.has(o._id);
     const stList=_noStList(o);
-    const stBadges=stList.map(s=>`<span style="${NO_ST_STYLE[s]||'background:#f1f5f9;color:#475569'};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join('');
+    const stBadges=stList.map(s=>`<span style="${NO_ST_STYLE[s]||'background:#be123c;color:#fff'};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join('');
     const main=`<tr onclick="noToggle(${o._id})" style="cursor:pointer" title="Click to ${open?'collapse':'expand'}">
       <td style="text-align:center;color:#94a3b8;font-size:10px">${open?'▼':'▶'}</td>
       <td style="font-weight:700;color:var(--navy)">${_noEsc(o['Order No.'])||'<span style="color:#cbd5e1">—</span>'}</td>
@@ -11616,9 +11617,10 @@ function renderOrders(){
       <td style="white-space:nowrap">${_noEsc(o['Delivery Date'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="white-space:nowrap;font-weight:600;color:#15803d">${_noEsc(o['ATA'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td>${_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="white-space:nowrap">${o['Service Type']?`<span style="font-size:10px;background:#f1f5f9;color:#475569;border-radius:6px;padding:2px 7px;font-weight:700">${_noEsc(o['Service Type'])}</span>`:'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="white-space:nowrap">${_noSvcList(o).length?_noSvcList(o).map(s=>`<span style="font-size:10px;background:#5b21b6;color:#fff;border-radius:6px;padding:2px 7px;font-weight:700;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join(''):'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:right;font-weight:700;color:#0369a1">${o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:center">${stBadges}</td>
+      <td style="text-align:center"><input type="checkbox" ${o['Customs Office']?'checked':''} onclick="event.stopPropagation()" onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/></td>
       <td style="max-width:180px;font-size:12px;color:#475569">${_noEsc(o['Remark'])||'<span style="color:#cbd5e1">—</span>'}</td>
     </tr>`;
     if(!open) return main;
@@ -11633,7 +11635,7 @@ function renderOrders(){
       <div style="font-size:11px;font-weight:800;color:${color};margin-bottom:6px">${icon} ${title}</div>
       <div style="display:flex;flex-direction:column;gap:8px">${inner}</div></div>`;
     const flowArrow='<div style="align-self:center;color:#94a3b8;font-size:18px;font-weight:800;padding:0 2px">→</div>';
-    const detail=`<tr><td colspan="13" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
+    const detail=`<tr><td colspan="14" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
         ${inp(o,'Order No.','e.g. ORD-001')}
         <label style="${_lblCss};grid-column:span 2">Container No.(s) — one per line or comma-separated
@@ -11642,6 +11644,11 @@ function renderOrders(){
         ${inp(o,'Destination','country / city')}
         ${inp(o,'Trucker','')}
         ${inp(o,'Price','€')}
+        <label style="${_lblCss}">Customs Office
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 2px">
+            <input type="checkbox" ${o['Customs Office']?'checked':''} onchange="noSet(${o._id},'Customs Office',this.checked)" style="width:17px;height:17px;accent-color:#0f766e;cursor:pointer"/>
+            <span style="font-size:12px;font-weight:500;color:#475569;text-transform:none;letter-spacing:0">${o['Customs Office']?'provided ✓':'not provided yet'}</span>
+          </div></label>
         <label style="${_lblCss}">Payment Status
           <select onchange="noSet(${o._id},'Payment Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
             ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
