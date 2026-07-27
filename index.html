@@ -2083,6 +2083,7 @@ tbody tr:hover{background:#fafbfc}
         <th>Consignee</th>
         <th>Destination</th>
         <th>Hub (ETA)</th>
+        <th style="text-align:center" title="Arrived at hub — ready to be picked up">At Hub</th>
         <th>Delivery Date</th>
         <th>ATA</th>
         <th>Trucker</th>
@@ -11539,7 +11540,7 @@ function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.pars
 function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
-    'Hub':'','Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
+    'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
     'Price':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'Remark':''};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
@@ -11592,7 +11593,7 @@ function renderOrders(){
   if(q) rows=rows.filter(o=>Object.keys(o).some(k=>k!=='_id'&&String(o[k]??'').toLowerCase().includes(q)));
   if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
   if(!rows.length){
-    body.innerHTML='<tr><td colspan="14" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="15" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   const inp=(o,f,ph,style)=>`<label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">${f}
@@ -11614,6 +11615,7 @@ function renderOrders(){
         if(hb&&dt) return hb+' <span style="color:#64748b;font-size:11px">('+dt+')</span>';
         if(hb) return hb; if(dt) return '<span style="color:#64748b">'+dt+'</span>';
         return '<span style="color:#cbd5e1">—</span>';})()}</td>
+      <td style="text-align:center"><input type="checkbox" ${o['Arrived at Hub']?'checked':''} onclick="event.stopPropagation()" onchange="noSet(${o._id},'Arrived at Hub',this.checked)" title="${o['Arrived at Hub']?'Arrived at hub — ready to be picked up':'Not at hub yet'}" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
       <td style="white-space:nowrap">${_noEsc(o['Delivery Date'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="white-space:nowrap;font-weight:600;color:#15803d">${_noEsc(o['ATA'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td>${_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'}</td>
@@ -11635,7 +11637,7 @@ function renderOrders(){
       <div style="font-size:11px;font-weight:800;color:${color};margin-bottom:6px">${icon} ${title}</div>
       <div style="display:flex;flex-direction:column;gap:8px">${inner}</div></div>`;
     const flowArrow='<div style="align-self:center;color:#94a3b8;font-size:18px;font-weight:800;padding:0 2px">→</div>';
-    const detail=`<tr><td colspan="14" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
+    const detail=`<tr><td colspan="15" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
         ${inp(o,'Order No.','e.g. ORD-001')}
         <label style="${_lblCss};grid-column:span 2">Container No.(s) — one per line or comma-separated
@@ -11673,7 +11675,12 @@ function renderOrders(){
           <textarea rows="2" placeholder="Remark for this order…" onchange="noSet(${o._id},'Remark',this.value)" style="font-size:12px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;resize:vertical;font-family:inherit;color:#1e293b">${_noEsc(o['Remark'])}</textarea></label>
       </div>
       <div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin-top:14px">
-        ${flowCard('🚂','ETA','#0369a1', linp('Hub','Duisburg / Tilburg / Małaszewicze…')+dinp('ETA','ETA Date'))}
+        ${flowCard('🚂','ETA','#0369a1', linp('Hub','Duisburg / Tilburg / Małaszewicze…')+dinp('ETA','ETA Date')
+          +`<label style="${_lblCss}">Arrived at Hub
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 2px">
+              <input type="checkbox" ${o['Arrived at Hub']?'checked':''} onchange="noSet(${o._id},'Arrived at Hub',this.checked)" style="width:17px;height:17px;accent-color:#b45309;cursor:pointer"/>
+              <span style="font-size:12px;font-weight:500;color:#475569;text-transform:none;letter-spacing:0">${o['Arrived at Hub']?'ready to be picked ✓':'not at hub yet'}</span>
+            </div></label>`)}
         ${flowArrow}
         ${flowCard('📦','Pickup','#92400e', `<label style="${_lblCss}">Pickup Location
           <input type="text" value="${_noEsc(o['Pickup Location'])}" onchange="noSet(${o._id},'Pickup Location',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss}"/></label>`+dinp('Pickup Date'))}
