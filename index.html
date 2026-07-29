@@ -11619,6 +11619,15 @@ function renderOrders(){
       if(!vs.length) return '';
       return ` <span style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:top;cursor:help" title="${_noEsc(vs.map(x=>x.cn+': '+x.v).join('  |  '))}">±${vs.length}</span>`;
     };
+    // display order value, or the shared/varying per-container value
+    const _pcDisplay=f=>{
+      const ov=_noEsc(o[f]);
+      if(ov) return ov+_pcMark(f);
+      const vs=_noContainers(o).map(cn=>_noPc(o,cn)[f]).filter(Boolean);
+      if(vs.length){ const uniq=[...new Set(vs)];
+        return (uniq.length===1?_noEsc(uniq[0]):'<span style="color:#64748b;font-style:italic">varies</span>')+_pcMark(f); }
+      return '<span style="color:#cbd5e1">—</span>';
+    };
     const stList=_noStList(o);
     const stBadges=stList.map(s=>`<span style="${NO_ST_STYLE[s]||'background:#be123c;color:#fff'};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join('');
     const main=`<tr onclick="noToggle(${o._id})" style="cursor:pointer" title="Click to ${open?'collapse':'expand'}">
@@ -11635,8 +11644,8 @@ function renderOrders(){
         if(hb) return hb; if(dt) return '<span style="color:#64748b">'+dt+'</span>';
         return '<span style="color:#cbd5e1">—</span>';})()}</td>
       <td style="text-align:center"><input type="checkbox" ${o['Arrived at Hub']?'checked':''} onclick="event.stopPropagation()" onchange="noSet(${o._id},'Arrived at Hub',this.checked)" title="${o['Arrived at Hub']?'Arrived at hub — ready to be picked up':'Not at hub yet'}" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
-      <td style="white-space:nowrap">${(_noEsc(o['Delivery Date'])||'<span style="color:#cbd5e1">—</span>')+_pcMark('Delivery Date')}</td>
-      <td style="white-space:nowrap;font-weight:600;color:#15803d">${(_noEsc(o['ATA'])||'<span style="color:#cbd5e1">—</span>')+_pcMark('ATA')}</td>
+      <td style="white-space:nowrap">${_pcDisplay('Delivery Date')}</td>
+      <td style="white-space:nowrap;font-weight:600;color:#15803d">${_pcDisplay('ATA')}</td>
       <td>${_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="white-space:nowrap">${_noSvcList(o).length?_noSvcList(o).map(s=>`<span style="font-size:10px;background:#5b21b6;color:#fff;border-radius:6px;padding:2px 7px;font-weight:700;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join(''):'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:right;font-weight:700;color:#0369a1">${o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'}</td>
@@ -11663,6 +11672,8 @@ function renderOrders(){
           <textarea rows="2" placeholder="ABCD1234567, EFGH7654321…" onchange="noSet(${o._id},'Container No.',this.value)" style="font-size:12px;font-family:monospace;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;resize:vertical">${_noEsc(o['Container No.'])}</textarea></label>
         ${inp(o,'Consignee','')}
         ${inp(o,'Destination','country / city')}
+        ${linp('Hub','Duisburg / Tilburg / Małaszewicze…')}
+        ${dinp('ETA','ETA Date')}
         ${inp(o,'Trucker','')}
         ${inp(o,'Price','€')}
         <label style="${_lblCss}">Payment Status
@@ -11688,37 +11699,21 @@ function renderOrders(){
         <label style="${_lblCss};grid-column:1/-1">Remark
           <textarea rows="2" placeholder="Remark for this order…" onchange="noSet(${o._id},'Remark',this.value)" style="font-size:12px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;resize:vertical;font-family:inherit;color:#1e293b">${_noEsc(o['Remark'])}</textarea></label>
       </div>
-      <div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin-top:14px">
-        ${flowCard('🚂','ETA','#0369a1', linp('Hub','Duisburg / Tilburg / Małaszewicze…')+dinp('ETA','ETA Date')
-          +`<label style="${_lblCss}">Arrived at Hub
-            <div style="display:flex;align-items:center;gap:8px;padding:5px 2px">
-              <input type="checkbox" ${o['Arrived at Hub']?'checked':''} onchange="noSet(${o._id},'Arrived at Hub',this.checked)" style="width:17px;height:17px;accent-color:#b45309;cursor:pointer"/>
-              <span style="font-size:12px;font-weight:500;color:#475569;text-transform:none;letter-spacing:0">${o['Arrived at Hub']?'ready to be picked ✓':'not at hub yet'}</span>
-            </div></label>`)}
-        ${flowArrow}
-        ${flowCard('📦','Pickup','#92400e', `<label style="${_lblCss}">Pickup Location
-          <input type="text" value="${_noEsc(o['Pickup Location'])}" onchange="noSet(${o._id},'Pickup Location',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss}"/></label>`+dinp('Pickup Date'))}
-        ${flowArrow}
-        ${flowCard('🚚','Delivery','#6d28d9', dinp('Delivery Date'))}
-        ${flowArrow}
-        ${flowCard('✅','ATA — Delivered','#15803d', dinp('ATA','ATA Date'))}
-      </div>
-      ${(()=>{ // ── Per-container details when the order has multiple containers ──
-        const cs=_noContainers(o); if(cs.length<2) return '';
+      ${(()=>{ // ── Container Detail — each container has its own dates & pickup state ──
+        const cs=_noContainers(o); if(!cs.length) return '';
         return `<div style="margin-top:14px">
-          <div style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Per-Container Details
-            <span style="color:#94a3b8;font-weight:600;text-transform:none;letter-spacing:0"> — set only where a container differs from the order; empty = uses order values</span></div>
+          <div style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Container Detail</div>
           <div style="overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:10px">
           <table class="sur-tbl" style="width:100%">
-            <thead><tr><th>Container</th><th>Delivery Date</th><th>ATA</th><th>Status</th><th style="text-align:center" title="Arrived at hub">At Hub</th></tr></thead>
+            <thead><tr><th>Container</th><th>At Hub Date</th><th style="text-align:center">Ready to be Picked</th><th>Delivery Date</th><th>ATA</th></tr></thead>
             <tbody>${cs.map(cn=>{
               const pc=_noPc(o,cn); const ce=cn.replace(/'/g,"\\'").replace(/"/g,'&quot;');
               return `<tr>
                 <td style="font-family:monospace;font-weight:700;white-space:nowrap">${_noEsc(cn)}</td>
+                <td><input type="date" value="${_noToISO(pc['At Hub Date'])}" onchange="noSetCtn(${o._id},'${ce}','At Hub Date',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></td>
+                <td style="text-align:center"><input type="checkbox" ${pc['At Hub']?'checked':''} onchange="noSetCtn(${o._id},'${ce}','At Hub',this.checked)" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
                 <td><input type="date" value="${_noToISO(pc['Delivery Date'])}" onchange="noSetCtn(${o._id},'${ce}','Delivery Date',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></td>
                 <td><input type="date" value="${_noToISO(pc['ATA'])}" onchange="noSetCtn(${o._id},'${ce}','ATA',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></td>
-                <td><input type="text" list="dl-status-o" value="${_noEsc(pc['Status']||'')}" placeholder="(order status)" onchange="noSetCtn(${o._id},'${ce}','Status',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:130px"/></td>
-                <td style="text-align:center"><input type="checkbox" ${pc['At Hub']?'checked':''} onchange="noSetCtn(${o._id},'${ce}','At Hub',this.checked)" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
               </tr>`;}).join('')}</tbody>
           </table></div>
         </div>`;})()}
