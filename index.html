@@ -2060,7 +2060,6 @@ tbody tr:hover{background:#fafbfc}
       <h3 style="margin:0">📦 Container Orders <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:6px">normal orders — separate from TEMU</span></h3>
       <span id="no-count-badge" style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;border-radius:8px;padding:2px 8px"></span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="search" id="no-search" placeholder="🔍 Search orders…" oninput="renderOrders()" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;width:190px"/>
         <select id="no-status-filter" onchange="renderOrders()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
           <option value="">All Statuses</option>
           <option value="New">New</option>
@@ -2072,6 +2071,9 @@ tbody tr:hover{background:#fafbfc}
         </select>
         <button onclick="noAdd()" style="padding:5px 14px;font-size:12px;font-weight:700;background:var(--navy,#004D4C);color:#fff;border:none;border-radius:7px;cursor:pointer">+ Add Order</button>
       </div>
+    </div>
+    <div style="margin-top:10px">
+      <input type="search" id="no-search" placeholder="🔍  Search order no., container, consignee, trucker, hub, remark…" oninput="renderOrders()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
     </div>
   </div>
   <div class="chart-card" style="padding:0;overflow-x:auto">
@@ -11578,6 +11580,17 @@ function noToggleService(id,svc){
   saveNO(); renderOrders();
 }
 function _noContainers(o){ return (o['Container No.']||'').split(/[\s,;\n]+/).map(s=>s.trim()).filter(Boolean); }
+// Per-container overrides: order.perCtn = { 'CONTAINERNO': {'Delivery Date','ATA','Status','At Hub'} }
+function _noPc(o,cn){ return ((o&&o.perCtn)||{})[cn]||{}; }
+function noSetCtn(id,cn,field,val){
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  NO[i].perCtn=NO[i].perCtn||{};
+  NO[i].perCtn[cn]=NO[i].perCtn[cn]||{};
+  NO[i].perCtn[cn][field]=val;
+  saveNO(); renderOrders();
+  const dp=document.getElementById('page-dispatch');
+  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+}
 function renderOrders(){
   const body=document.getElementById('no-body'); if(!body) return;
   // status filter options follow whatever statuses exist in the data (free-typed included)
@@ -11600,6 +11613,12 @@ function renderOrders(){
     <input type="text" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="font-size:12px;font-weight:500;color:#1e293b;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;${style||''}"/></label>`;
   body.innerHTML=rows.map(o=>{
     const open=_noOpen.has(o._id);
+    // per-container override marker (± badge with tooltip listing container values)
+    const _pcMark=f=>{
+      const vs=_noContainers(o).map(cn=>({cn,v:_noPc(o,cn)[f]})).filter(x=>x.v);
+      if(!vs.length) return '';
+      return ` <span style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:top;cursor:help" title="${_noEsc(vs.map(x=>x.cn+': '+x.v).join('  |  '))}">±${vs.length}</span>`;
+    };
     const stList=_noStList(o);
     const stBadges=stList.map(s=>`<span style="${NO_ST_STYLE[s]||'background:#be123c;color:#fff'};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join('');
     const main=`<tr onclick="noToggle(${o._id})" style="cursor:pointer" title="Click to ${open?'collapse':'expand'}">
@@ -11616,8 +11635,8 @@ function renderOrders(){
         if(hb) return hb; if(dt) return '<span style="color:#64748b">'+dt+'</span>';
         return '<span style="color:#cbd5e1">—</span>';})()}</td>
       <td style="text-align:center"><input type="checkbox" ${o['Arrived at Hub']?'checked':''} onclick="event.stopPropagation()" onchange="noSet(${o._id},'Arrived at Hub',this.checked)" title="${o['Arrived at Hub']?'Arrived at hub — ready to be picked up':'Not at hub yet'}" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
-      <td style="white-space:nowrap">${_noEsc(o['Delivery Date'])||'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="white-space:nowrap;font-weight:600;color:#15803d">${_noEsc(o['ATA'])||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="white-space:nowrap">${(_noEsc(o['Delivery Date'])||'<span style="color:#cbd5e1">—</span>')+_pcMark('Delivery Date')}</td>
+      <td style="white-space:nowrap;font-weight:600;color:#15803d">${(_noEsc(o['ATA'])||'<span style="color:#cbd5e1">—</span>')+_pcMark('ATA')}</td>
       <td>${_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="white-space:nowrap">${_noSvcList(o).length?_noSvcList(o).map(s=>`<span style="font-size:10px;background:#5b21b6;color:#fff;border-radius:6px;padding:2px 7px;font-weight:700;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join(''):'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:right;font-weight:700;color:#0369a1">${o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'}</td>
@@ -11646,11 +11665,6 @@ function renderOrders(){
         ${inp(o,'Destination','country / city')}
         ${inp(o,'Trucker','')}
         ${inp(o,'Price','€')}
-        <label style="${_lblCss}">Customs Office
-          <div style="display:flex;align-items:center;gap:8px;padding:8px 2px">
-            <input type="checkbox" ${o['Customs Office']?'checked':''} onchange="noSet(${o._id},'Customs Office',this.checked)" style="width:17px;height:17px;accent-color:#0f766e;cursor:pointer"/>
-            <span style="font-size:12px;font-weight:500;color:#475569;text-transform:none;letter-spacing:0">${o['Customs Office']?'provided ✓':'not provided yet'}</span>
-          </div></label>
         <label style="${_lblCss}">Payment Status
           <select onchange="noSet(${o._id},'Payment Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
             ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
@@ -11689,6 +11703,25 @@ function renderOrders(){
         ${flowArrow}
         ${flowCard('✅','ATA — Delivered','#15803d', dinp('ATA','ATA Date'))}
       </div>
+      ${(()=>{ // ── Per-container details when the order has multiple containers ──
+        const cs=_noContainers(o); if(cs.length<2) return '';
+        return `<div style="margin-top:14px">
+          <div style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Per-Container Details
+            <span style="color:#94a3b8;font-weight:600;text-transform:none;letter-spacing:0"> — set only where a container differs from the order; empty = uses order values</span></div>
+          <div style="overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:10px">
+          <table class="sur-tbl" style="width:100%">
+            <thead><tr><th>Container</th><th>Delivery Date</th><th>ATA</th><th>Status</th><th style="text-align:center" title="Arrived at hub">At Hub</th></tr></thead>
+            <tbody>${cs.map(cn=>{
+              const pc=_noPc(o,cn); const ce=cn.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+              return `<tr>
+                <td style="font-family:monospace;font-weight:700;white-space:nowrap">${_noEsc(cn)}</td>
+                <td><input type="date" value="${_noToISO(pc['Delivery Date'])}" onchange="noSetCtn(${o._id},'${ce}','Delivery Date',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></td>
+                <td><input type="date" value="${_noToISO(pc['ATA'])}" onchange="noSetCtn(${o._id},'${ce}','ATA',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></td>
+                <td><input type="text" list="dl-status-o" value="${_noEsc(pc['Status']||'')}" placeholder="(order status)" onchange="noSetCtn(${o._id},'${ce}','Status',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:130px"/></td>
+                <td style="text-align:center"><input type="checkbox" ${pc['At Hub']?'checked':''} onchange="noSetCtn(${o._id},'${ce}','At Hub',this.checked)" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
+              </tr>`;}).join('')}</tbody>
+          </table></div>
+        </div>`;})()}
       <div style="margin-top:10px;text-align:right">
         <button onclick="noDel(${o._id})" style="padding:4px 12px;font-size:11px;font-weight:700;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;cursor:pointer">🗑 Delete Order</button>
       </div>
@@ -11702,12 +11735,14 @@ function noDispatchRows(){
   NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
     const cs=_noContainers(o);
     (cs.length?cs:[o['Order No.']||'Order']).forEach((cn,i)=>{
+      const pc=_noPc(o,cn);
+      const pcDelivered=/delivered/i.test(pc['Status']||'');
       out.push({
         'Container No.':'🧾 '+cn,
         'Consignee':o['Consignee']||'(no consignee)',
         'Trucker':o['Trucker']||'',
-        'Scheduled Slot':o['Delivery Date']||'',
-        'Actual Arrival':_noHasSt(o,'Delivered')?(o['Delivery Date']||''):'',
+        'Scheduled Slot':pc['Delivery Date']||o['Delivery Date']||'',
+        'Actual Arrival':pc['ATA']||((pcDelivered||_noHasSt(o,'Delivered'))?(pc['Delivery Date']||o['Delivery Date']||''):''),
         'ETA at Hub':'', // orders are scheduled by Delivery Date only — no ETA fallback
         'Destination':o['Destination']||'',
         _isOrder:true,_id:-((o._id||0)*1000+i)
@@ -11723,6 +11758,8 @@ function _ordersAsCtRows(){
   NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
     const cs=_noContainers(o); const list=cs.length?cs:[o['Order No.']||'Order'];
     list.forEach((cn,i)=>{
+      const pc=_noPc(o,cn);
+      const pcDelivered=/delivered/i.test(pc['Status']||'');
       out.push({
         'Batch / Train':'🧾 Orders',
         'Container No.':cn,
@@ -11730,11 +11767,11 @@ function _ordersAsCtRows(){
         'Trucker':o['Trucker']||'',
         'Broker':'',
         'Destination':o['Destination']||'',
-        'Scheduled Slot':o['Delivery Date']||'',
-        'Actual Arrival':o['ATA']||(_noHasSt(o,'Delivered')?(o['Delivery Date']||''):''),
+        'Scheduled Slot':pc['Delivery Date']||o['Delivery Date']||'',
+        'Actual Arrival':pc['ATA']||o['ATA']||((pcDelivered||_noHasSt(o,'Delivered'))?(pc['Delivery Date']||o['Delivery Date']||''):''),
         'ETA at Hub':'',
         'Price': i===0?(o['Price']||''):'', // price counted once per order
-        'Tracking': (o['ATA']||_noHasSt(o,'Delivered'))?'Arrived':'',
+        'Tracking': (pc['ATA']||o['ATA']||pcDelivered||_noHasSt(o,'Delivered'))?'Arrived':'',
         _isOrder:true,_id:-((o._id||0)*1000+i)
       });
     });
