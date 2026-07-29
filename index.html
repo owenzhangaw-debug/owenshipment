@@ -11644,7 +11644,14 @@ function renderOrders(){
         if(hb) return hb; if(dt) return '<span style="color:#64748b">'+dt+'</span>';
         return '<span style="color:#cbd5e1">—</span>';})()}</td>
       <td style="text-align:center"><input type="checkbox" ${o['Arrived at Hub']?'checked':''} onclick="event.stopPropagation()" onchange="noSet(${o._id},'Arrived at Hub',this.checked)" title="${o['Arrived at Hub']?'Arrived at hub — ready to be picked up':'Not at hub yet'}" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
-      <td style="white-space:nowrap">${_pcDisplay('Delivery Date')}</td>
+      <td style="white-space:nowrap">${(()=>{
+        // per-container delivery days, one line per container (aligned with the container list)
+        const cs=_noContainers(o);
+        const vals=cs.map(cn=>_noPc(o,cn)['Delivery Date']||o['Delivery Date']||'');
+        const uniq=[...new Set(vals.filter(Boolean))];
+        if(cs.length<2||uniq.length<=1) return _pcDisplay('Delivery Date');
+        return cs.map((cn,i)=>`<div style="font-size:11.5px;line-height:1.45;white-space:nowrap">${vals[i]?_noEsc(vals[i]):'<span style="color:#cbd5e1">—</span>'}</div>`).join('');
+      })()}</td>
       <td style="white-space:nowrap;font-weight:600;color:#15803d">${_pcDisplay('ATA')}</td>
       <td>${_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="white-space:nowrap">${_noSvcList(o).length?_noSvcList(o).map(s=>`<span style="font-size:10px;background:#5b21b6;color:#fff;border-radius:6px;padding:2px 7px;font-weight:700;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join(''):'<span style="color:#cbd5e1">—</span>'}</td>
@@ -11733,7 +11740,7 @@ function noDispatchRows(){
       const pc=_noPc(o,cn);
       const pcDelivered=/delivered/i.test(pc['Status']||'');
       out.push({
-        'Container No.':'🧾 '+cn,
+        'Container No.':'🧾 '+cn+(o['Order No.']?' · '+o['Order No.']:''),
         'Consignee':o['Consignee']||'(no consignee)',
         'Trucker':o['Trucker']||'',
         'Scheduled Slot':pc['Delivery Date']||o['Delivery Date']||'',
