@@ -11820,11 +11820,11 @@ function renderOrders(){
         }).join('')}
         <input type="text" list="dl-status-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleStatus(${o._id},this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
       </div>`;
-    // Surcharge — multiple reason+fee line items (e.g. Demurrage €80, Storage €40)
+    // Surcharge — each entry is a tag (reason) + price, and you can stack as many as needed
     const surchargeEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
         ${_noSurcharges(o).map((s,idx)=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#c2410c;color:#fff;white-space:nowrap">${_noEsc(s.reason)}${s.fee?': €'+_noEsc(s.fee):''}<button type="button" onclick="noRemoveSurcharge(${o._id},${idx})" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`).join('')}
-        <input type="text" placeholder="reason" style="font-size:10.5px;padding:3px 6px;border:1.5px dashed #cbd5e1;border-radius:10px;width:64px"/>
-        <input type="text" placeholder="€ fee" onkeydown="if(event.key==='Enter'){event.preventDefault();const r=this.previousElementSibling;noAddSurcharge(${o._id},r.value,this.value);r.value='';this.value='';}" style="font-size:10.5px;padding:3px 6px;border:1.5px dashed #cbd5e1;border-radius:10px;width:52px"/>
+        <input type="text" placeholder="+ tag" onkeydown="if(event.key==='Enter'){event.preventDefault();const f=this.nextElementSibling;noAddSurcharge(${o._id},this.value,f.value);this.value='';f.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:70px"/>
+        <input type="text" placeholder="€ price" onkeydown="if(event.key==='Enter'){event.preventDefault();const r=this.previousElementSibling;noAddSurcharge(${o._id},r.value,this.value);r.value='';this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:56px"/>
       </div>`;
     // At Hub (ready to be picked): per-container when a container exists, else falls back to the order-level flag
     const atHubChecked=cn?!!pc['At Hub']:!!o['Arrived at Hub'];
@@ -11909,11 +11909,12 @@ function _noParseDate(v){
 function _noFmtDate(d){ return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0'); }
 // Computes free-storage status for one container of an order.
 // Free days count from "At Hub Date"; alert if Delivery Date (or, once at hub, today if no delivery date yet) is past the expiry.
+// Falls back to the order's Hub ETA when At Hub Date hasn't been filled in yet, so the calc still works with just Free Days + Price/Day + ETA + Delivery Date.
 function _noStorageInfo(o,cn){
   const freeDays=parseInt(o['Free Storage (Days)'],10);
   if(!freeDays||freeDays<=0) return null;
   const pc=_noPc(o,cn);
-  const atHub=_noParseDate(pc['At Hub Date']);
+  const atHub=_noParseDate(pc['At Hub Date'])||_noParseDate(o['ETA']);
   if(!atHub) return null;
   const expiry=new Date(atHub); expiry.setDate(expiry.getDate()+freeDays);
   const ata=_noParseDate(pc['ATA']);
