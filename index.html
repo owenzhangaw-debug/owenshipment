@@ -2077,27 +2077,31 @@ tbody tr:hover{background:#fafbfc}
     </div>
     <div id="no-storage-alerts"></div>
   </div>
-  <div class="chart-card" style="padding:0;overflow-x:auto">
-    <table class="sur-tbl" style="width:100%;min-width:900px">
+  <div class="chart-card tbl-scroll" style="padding:0">
+    <table class="sur-tbl" id="no-table" style="width:100%;min-width:900px">
       <thead><tr>
-        <th style="width:28px"></th>
-        <th>Order No.</th>
-        <th>Container No.</th>
-        <th>Consignee</th>
+        <th class="fc-1">Order No.</th>
+        <th class="fc-2">Container No.</th>
+        <th class="fc-3">Consignee</th>
         <th>Destination</th>
-        <th>Hub (ETA)</th>
+        <th style="text-align:center" title="Customs office provided?">Customs Office</th>
+        <th>Hub</th>
+        <th>ETA</th>
         <th>At Hub Date</th>
         <th style="text-align:center" title="Arrived at hub — ready to be picked up">Ready to be Picked</th>
         <th style="text-align:center" title="T1 customs transit document issued?">T1</th>
         <th>Delivery Date</th>
         <th>ATA</th>
         <th>Free Storage</th>
+        <th title="Days of free storage before charges start">Free Days</th>
         <th>Trucker</th>
-        <th>Service</th>
         <th style="text-align:right">Price</th>
-        <th style="text-align:center">Status</th>
-        <th style="text-align:center" title="Customs office provided?">Customs Office</th>
-        <th style="min-width:260px">Remark</th>
+        <th style="min-width:160px" title="Extra fees — can have multiple reasons">Surcharge</th>
+        <th>Payment Status</th>
+        <th style="min-width:150px">Service</th>
+        <th style="text-align:center;min-width:150px">Status</th>
+        <th style="min-width:220px">Remark</th>
+        <th style="width:32px"></th>
       </tr></thead>
       <tbody id="no-body"></tbody>
     </table>
@@ -11547,7 +11551,7 @@ function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
-    'Price':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'Remark':'','Free Storage (Days)':''};
+    'Price':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'Remark':'','Free Storage (Days)':'','Surcharges':[]};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -11562,6 +11566,30 @@ function noDelCtn(id,cn){
   saveNO(); renderOrders();
   const dp=document.getElementById('page-dispatch');
   if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+}
+// Rename a container in-place (row is directly editable — no expand panel anymore)
+function noRenameCtn(id,oldCn,newCn){
+  newCn=(newCn||'').trim();
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  if(!newCn||newCn===oldCn){ renderOrders(); return; }
+  const cs=_noContainers(NO[i]);
+  const idx=cs.indexOf(oldCn); if(idx<0) return;
+  cs[idx]=newCn;
+  NO[i]['Container No.']=cs.join('\n');
+  if(NO[i].perCtn&&NO[i].perCtn[oldCn]){ NO[i].perCtn[newCn]=NO[i].perCtn[oldCn]; delete NO[i].perCtn[oldCn]; }
+  saveNO(); renderOrders();
+  const dp=document.getElementById('page-dispatch');
+  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+}
+// Add another container row to an existing order
+function noAddCtnPrompt(id){
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  const cn=((typeof prompt==='function'?prompt('New container number:'):'')||'').trim(); if(!cn) return;
+  const cs=_noContainers(NO[i]);
+  if(cs.includes(cn)){ alert('That container is already on this order.'); return; }
+  cs.push(cn);
+  NO[i]['Container No.']=cs.join('\n');
+  saveNO(); renderOrders();
 }
 function noToggle(id){ _noOpen.has(id)?_noOpen.delete(id):_noOpen.add(id); renderOrders(); }
 function noSet(id,field,val){
@@ -11595,6 +11623,21 @@ function noToggleService(id,svc){
   NO[i]['Service Type']=list.join(', ');
   saveNO(); renderOrders();
 }
+// Surcharges: an order can carry multiple separate reason+fee line items (e.g. Demurrage €80, Storage €40)
+function _noSurcharges(o){ return Array.isArray(o&&o.Surcharges)?o.Surcharges:[]; }
+function noAddSurcharge(id,reason,fee){
+  reason=(reason||'').trim(); if(!reason) return;
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  if(!Array.isArray(NO[i].Surcharges)) NO[i].Surcharges=[];
+  NO[i].Surcharges.push({reason,fee:(fee||'').toString().trim()});
+  saveNO(); renderOrders();
+}
+function noRemoveSurcharge(id,idx){
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  if(!Array.isArray(NO[i].Surcharges)) return;
+  NO[i].Surcharges.splice(idx,1);
+  saveNO(); renderOrders();
+}
 function _noContainers(o){ return (o['Container No.']||'').split(/[\s,;\n]+/).map(s=>s.trim()).filter(Boolean); }
 // Per-container overrides: order.perCtn = { 'CONTAINERNO': {'Delivery Date','ATA','Status','At Hub'} }
 function _noPc(o,cn){ return ((o&&o.perCtn)||{})[cn]||{}; }
@@ -11623,24 +11666,39 @@ function renderOrders(){
   const totalCtns=rows.reduce((n,o)=>n+Math.max(1,_noContainers(o).length),0);
   if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+' · '+totalCtns+' container'+(totalCtns!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
   if(!rows.length){
-    body.innerHTML='<tr><td colspan="18" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="22" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
-  const inp=(o,f,ph,style)=>`<label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">${f}
-    <input type="text" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="font-size:12px;font-weight:500;color:#1e293b;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;${style||''}"/></label>`;
-  const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px';
-  const _lblCss='display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px';
-  const stBadgesOf=o=>_noStList(o).map(s=>`<span style="${NO_ST_STYLE[s]||'background:#be123c;color:#fff'};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join('');
+  const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box';
+  const tinp=(o,f,ph,w)=>`<input type="text" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:${w||90}px"/>`;
+  const dinp=(o,f,w)=>`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(o[f])}" placeholder="YYYY/MM/DD" onblur="noSet(${o._id},'${f}',this.value.trim())" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:${w||100}px"/>`;
 
   body.innerHTML=rows.map(o=>{
-    const open=_noOpen.has(o._id);
     const cs=_noContainers(o);
     const rowList=cs.length?cs:[null]; // orders with no container yet still get one placeholder row
-    const stBadges=stBadgesOf(o);
-    const svcTags=_noSvcList(o).length?_noSvcList(o).map(s=>`<span style="font-size:10px;background:#5b21b6;color:#fff;border-radius:6px;padding:2px 7px;font-weight:700;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join(''):'<span style="color:#cbd5e1">—</span>';
+    const svcTagsEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+        ${_noSvcList(o).map(svc=>{
+          const esc=svc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+          return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#5b21b6;color:#fff;white-space:nowrap">${_noEsc(svc)}<button type="button" onclick="noToggleService(${o._id},'${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`;
+        }).join('')}
+        <input type="text" list="dl-service-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleService(${o._id},this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
+      </div>`;
+    const stTagsEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center">
+        ${_noStList(o).map(sv=>{
+          const esc=sv.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+          return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'};white-space:nowrap">${_noEsc(sv)}<button type="button" onclick="noToggleStatus(${o._id},'${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`;
+        }).join('')}
+        <input type="text" list="dl-status-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleStatus(${o._id},this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
+      </div>`;
+    // Surcharge — multiple reason+fee line items (e.g. Demurrage €80, Storage €40)
+    const surchargeEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+        ${_noSurcharges(o).map((s,idx)=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#c2410c;color:#fff;white-space:nowrap">${_noEsc(s.reason)}${s.fee?': €'+_noEsc(s.fee):''}<button type="button" onclick="noRemoveSurcharge(${o._id},${idx})" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`).join('')}
+        <input type="text" placeholder="reason" style="font-size:10.5px;padding:3px 6px;border:1.5px dashed #cbd5e1;border-radius:10px;width:64px"/>
+        <input type="text" placeholder="€ fee" onkeydown="if(event.key==='Enter'){event.preventDefault();const r=this.previousElementSibling;noAddSurcharge(${o._id},r.value,this.value);r.value='';this.value='';}" style="font-size:10.5px;padding:3px 6px;border:1.5px dashed #cbd5e1;border-radius:10px;width:52px"/>
+      </div>`;
 
-    // ── one row per container (flat, like the TEMU container tracker) ──
-    const ctnRows=rowList.map((cn,idx)=>{
+    // ── one row per container, all fields directly editable — no fold, just like the TEMU container tracker ──
+    return rowList.map((cn,idx)=>{
       const pc=cn?_noPc(o,cn):{};
       const ce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
       const st=cn?_noStorageInfo(o,cn):null;
@@ -11660,84 +11718,58 @@ function renderOrders(){
       const ataOnchange=cn?`noSetCtn(${o._id},'${ce}','ATA',this.value.trim())`:`noSet(${o._id},'ATA',this.value.trim())`;
       const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:'';
       return `<tr data-no-order="${o._id}" style="${groupBorder}">
-        <td style="text-align:center;color:#94a3b8;font-size:10px;cursor:pointer" onclick="noToggle(${o._id})" title="Click to ${open?'collapse':'expand'} order details">${isFirst?(open?'▼':'▶'):'<span style="color:#e2e8f0">·</span>'}</td>
-        <td style="font-weight:700;color:var(--navy);cursor:pointer" onclick="noToggle(${o._id})">${isFirst?(_noEsc(o['Order No.'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
-        <td style="font-family:monospace;font-weight:600;font-size:12px">${cn?_noEsc(cn):'<span style="color:#cbd5e1;font-style:italic">no container yet</span>'}
-          ${cs.length>1?`<button type="button" title="Remove this container" onclick="event.stopPropagation();noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:4px">✕</button>`:''}</td>
-        <td>${isFirst?(_noEsc(o['Consignee'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
-        <td>${isFirst?(_noEsc(o['Destination'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
-        <td style="white-space:nowrap">${isFirst?(()=>{const hb=_noEsc(o['Hub']),dt=_noEsc(o['ETA']);
-          if(hb&&dt) return hb+' <span style="color:#64748b;font-size:11px">('+dt+')</span>';
-          if(hb) return hb; if(dt) return '<span style="color:#64748b">'+dt+'</span>';
-          return '<span style="color:#cbd5e1">—</span>';})():''}</td>
-        <td>${cn?`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};width:100px"/>`:'<span style="color:#cbd5e1">—</span>'}</td>
+        <td class="fc-1" style="font-weight:700;color:var(--navy)">${tinp(o,'Order No.','ORD-001',90)}</td>
+        <td class="fc-2" style="font-family:monospace;font-weight:600;font-size:12px;white-space:nowrap">
+          ${cn?`<input type="text" value="${_noEsc(cn)}" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};width:110px;display:inline-block;font-family:monospace"/>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no container yet</span>'}
+          ${cn?`<button type="button" title="Remove this container" onclick="noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:2px">✕</button>`:''}
+          ${isFirst?`<button type="button" title="Add another container to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px">+</button>`:''}
+        </td>
+        <td class="fc-3">${tinp(o,'Consignee','',110)}</td>
+        <td>${tinp(o,'Destination','country / city',100)}</td>
+        <td style="text-align:center"><input type="checkbox" ${o['Customs Office']?'checked':''} onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/></td>
+        <td>${(()=>`<input type="text" list="dl-hub-o" value="${_noEsc(o['Hub'])}" placeholder="Duisburg / Tilburg…" onchange="noSet(${o._id},'Hub',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:110px"/>`)()}</td>
+        <td>${dinp(o,'ETA',95)}</td>
+        <td>${cn?`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/>`:'<span style="color:#cbd5e1">—</span>'}</td>
         <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
         <td style="text-align:center"><input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}" style="width:16px;height:16px;accent-color:#1d4ed8;cursor:pointer"/></td>
-        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};width:100px"/></td>
-        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};width:100px"/></td>
-        <td style="white-space:nowrap;font-size:11.5px">${st?(st.exceeded?`<span style="color:#b91c1c;font-weight:800">⚠ exceeded by ${st.byDays}d</span>`:`<span style="color:#0f766e;font-weight:600">free until ${st.expiry}</span>`):'<span style="color:#cbd5e1">—</span>'}</td>
-        <td>${isFirst?(_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
-        <td style="white-space:nowrap">${isFirst?svcTags:''}</td>
-        <td style="text-align:right;font-weight:700;color:#0369a1">${isFirst?(o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'):''}</td>
-        <td style="text-align:center">${isFirst?stBadges:''}</td>
-        <td style="text-align:center">${isFirst?`<input type="checkbox" ${o['Customs Office']?'checked':''} onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/>`:''}</td>
-        <td style="min-width:260px;max-width:420px;font-size:12px;color:#475569;line-height:1.45;white-space:pre-line" title="${_noEsc(o['Remark'])}">${isFirst?(_noEsc(o['Remark'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
+        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
+        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
+        <td style="white-space:nowrap;font-size:11.5px">${st?(st.exceeded?`<span style="color:#b91c1c;font-weight:800">⚠ +${st.byDays}d</span>`:`<span style="color:#0f766e;font-weight:600">until ${st.expiry}</span>`):'<span style="color:#cbd5e1">—</span>'}</td>
+        <td>${(()=>`<input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days" onchange="noSet(${o._id},'Free Storage (Days)',this.value)" style="${_inpCss};min-width:64px"/>`)()}</td>
+        <td>${tinp(o,'Trucker','',100)}</td>
+        <td style="text-align:right;font-weight:700;color:#0369a1">${tinp(o,'Price','€',70)}</td>
+        <td>${surchargeEditor}</td>
+        <td>${(()=>`<select onchange="noSet(${o._id},'Payment Status',this.value)" style="${_inpCss};min-width:110px">
+            ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
+          </select>`)()}</td>
+        <td>${svcTagsEditor}</td>
+        <td style="text-align:center">${stTagsEditor}</td>
+        <td style="min-width:200px"><textarea rows="1" placeholder="Remark…" onchange="noSet(${o._id},'Remark',this.value)" style="${_inpCss};resize:vertical;font-family:inherit;min-height:28px">${_noEsc(o['Remark'])}</textarea></td>
+        <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
       </tr>`;
     }).join('');
-
-    if(!open) return ctnRows;
-
-    // ── shared, order-level edit panel (Order No., Consignee, Service/Status tags, Remark, etc.) ──
-    const _noToISO=v=>{const m=(v||'').toString().match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);return m?`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`:'';};
-    const dinp=(f,lbl)=>`<label style="${_lblCss}">${lbl||f}
-      <input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(o[f])}" placeholder="YYYY/MM/DD" onblur="noSet(${o._id},'${f}',this.value.trim())" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss}"/></label>`;
-    const linp=(f,ph)=>`<label style="${_lblCss}">${f}
-      <input type="text" list="dl-hub-o" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss}"/></label>`;
-    const detail=`<tr><td colspan="18" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
-        ${inp(o,'Order No.','e.g. ORD-001')}
-        <label style="${_lblCss};grid-column:span 2">Container No.(s) — one per line or comma-separated
-          <textarea rows="2" placeholder="ABCD1234567, EFGH7654321…" onchange="noSet(${o._id},'Container No.',this.value)" style="font-size:12px;font-family:monospace;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;resize:vertical">${_noEsc(o['Container No.'])}</textarea></label>
-        ${inp(o,'Consignee','')}
-        ${inp(o,'Destination','country / city')}
-        ${linp('Hub','Duisburg / Tilburg / Małaszewicze…')}
-        ${dinp('ETA','ETA Date')}
-        ${inp(o,'Trucker','')}
-        ${inp(o,'Price','€')}
-        <label style="${_lblCss}">Free Storage (Days) <span title="Days of free storage at hub before charges start, counted from At Hub Date">ⓘ</span>
-          <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="e.g. 5" onchange="noSet(${o._id},'Free Storage (Days)',this.value)" style="${_inpCss}"/></label>
-        <label style="${_lblCss}">Payment Status
-          <select onchange="noSet(${o._id},'Payment Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
-            ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
-          </select></label>
-        <label style="${_lblCss};grid-column:span 2">Service Type — type & press Enter to add
-          <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:2px">
-            ${_noSvcList(o).map(svc=>{
-              const esc=svc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-              return `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 7px 3px 11px;font-size:11px;font-weight:700;border-radius:14px;background:#0f766e;color:#fff">${_noEsc(svc)}<button type="button" onclick="noToggleService(${o._id},'${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:15px;height:15px;line-height:1;font-size:9px;cursor:pointer;padding:0">✕</button></span>`;
-            }).join('')}
-            <input type="text" list="dl-service-o" placeholder="type service + Enter…" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleService(${o._id},this.value);this.value='';}" style="font-size:11px;padding:4px 10px;border:1.5px dashed #cbd5e1;border-radius:14px;width:150px"/>
-          </div></label>
-        <label style="${_lblCss};grid-column:span 2">Status — type & press Enter to add
-          <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:2px">
-            ${(o['Status']||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean).map(sv=>{
-              const esc=sv.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-              return `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 7px 3px 11px;font-size:11px;font-weight:700;border-radius:14px;background:#7c3aed;color:#fff">${_noEsc(sv)}<button type="button" onclick="noToggleStatus(${o._id},'${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:15px;height:15px;line-height:1;font-size:9px;cursor:pointer;padding:0">✕</button></span>`;
-            }).join('')}
-            <input type="text" list="dl-status-o" placeholder="type status + Enter…" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleStatus(${o._id},this.value);this.value='';}" style="font-size:11px;padding:4px 10px;border:1.5px dashed #cbd5e1;border-radius:14px;width:150px"/>
-          </div></label>
-        <label style="${_lblCss};grid-column:1/-1">Remark
-          <textarea rows="2" placeholder="Remark for this order…" onchange="noSet(${o._id},'Remark',this.value)" style="font-size:12px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;resize:vertical;font-family:inherit;color:#1e293b">${_noEsc(o['Remark'])}</textarea></label>
-      </div>
-      <div style="margin-top:10px;text-align:right">
-        <button onclick="noDel(${o._id})" style="padding:4px 12px;font-size:11px;font-weight:700;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;cursor:pointer">🗑 Delete Order</button>
-      </div>
-    </td></tr>`;
-    return ctnRows+detail;
   }).join('');
   // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
   body.querySelectorAll('input.no-fp-date').forEach(el=>{ if(typeof fpDate==='function') fpDate(el); });
   _noRenderStorageAlerts(rows);
+  if(typeof requestAnimationFrame==='function') requestAnimationFrame(updateNoFrozenOffsets);
+}
+// Dynamically set left offsets for the Orders table's frozen columns (Order No. / Container No. / Consignee)
+function updateNoFrozenOffsets(){
+  const table=document.getElementById('no-table'); if(!table) return;
+  const ths=Array.from(table.querySelectorAll('thead th'));
+  let offset=0;
+  for(let i=0;i<3;i++){
+    const th=ths[i]; if(!th) break;
+    const left=offset+'px';
+    th.style.left=left;
+    table.querySelectorAll('tbody tr').forEach(tr=>{ const td=tr.children[i]; if(td) td.style.left=left; });
+    offset+=th.offsetWidth;
+  }
+  const lastIdx=2;
+  [ths[lastIdx],...Array.from(table.querySelectorAll('tbody tr td:nth-child('+(lastIdx+1)+')'))].forEach(el=>{
+    if(el) el.style.boxShadow='3px 0 6px -2px rgba(0,0,0,.18)';
+  });
 }
 // ── Free storage / demurrage alert ────────────────────────────────
 // Parses the app's date strings (YYYY/M/D, YYYY-MM-DD, etc.) into a Date at local midnight.
