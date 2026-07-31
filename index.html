@@ -11638,6 +11638,8 @@ function noRemoveSurcharge(id,idx){
   NO[i].Surcharges.splice(idx,1);
   saveNO(); renderOrders();
 }
+// Auto-grow a textarea to fit its content (no clipping, no inner scrollbar) — called on input and on render
+function _noAutoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=Math.max(el.scrollHeight,28)+'px'; }
 function _noContainers(o){ return (o['Container No.']||'').split(/[\s,;\n]+/).map(s=>s.trim()).filter(Boolean); }
 // Per-container overrides: order.perCtn = { 'CONTAINERNO': {'Delivery Date','ATA','Status','At Hub'} }
 function _noPc(o,cn){ return ((o&&o.perCtn)||{})[cn]||{}; }
@@ -11670,7 +11672,9 @@ function renderOrders(){
     return;
   }
   const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box';
-  const tinp=(o,f,ph,w)=>`<input type="text" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:${w||90}px"/>`;
+  const _taCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:break-word;overflow:hidden;resize:vertical;font-family:inherit;line-height:1.35;display:block';
+  // wrapping, auto-growing text field — content is never clipped, the box grows to fit (drag the corner to resize further)
+  const tinp=(o,f,ph,w)=>`<textarea rows="1" class="no-autogrow" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" oninput="_noAutoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:${w||90}px">${_noEsc(o[f])}</textarea>`;
   const dinp=(o,f,w)=>`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(o[f])}" placeholder="YYYY/MM/DD" onblur="noSet(${o._id},'${f}',this.value.trim())" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:${w||100}px"/>`;
 
   body.innerHTML=rows.map(o=>{
@@ -11719,13 +11723,15 @@ function renderOrders(){
       const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:'';
       return `<tr data-no-order="${o._id}" style="${groupBorder}">
         <td class="fc-1" style="font-weight:700;color:var(--navy)">${tinp(o,'Order No.','ORD-001',90)}</td>
-        <td class="fc-2" style="font-family:monospace;font-weight:600;font-size:12px;white-space:nowrap">
-          ${cn?`<input type="text" value="${_noEsc(cn)}" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};width:110px;display:inline-block;font-family:monospace"/>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no container yet</span>'}
-          ${cn?`<button type="button" title="Remove this container" onclick="noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:2px">✕</button>`:''}
-          ${isFirst?`<button type="button" title="Add another container to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px">+</button>`:''}
+        <td class="fc-2" style="font-family:monospace;font-weight:600;font-size:12px">
+          <div style="display:flex;align-items:flex-start;gap:2px">
+          ${cn?`<textarea rows="1" class="no-autogrow" oninput="_noAutoGrow(this)" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:110px;font-family:monospace">${_noEsc(cn)}</textarea>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no container yet</span>'}
+          ${cn?`<button type="button" title="Remove this container" onclick="noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:2px;flex-shrink:0">✕</button>`:''}
+          ${isFirst?`<button type="button" title="Add another container to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px;flex-shrink:0">+</button>`:''}
+          </div>
         </td>
-        <td class="fc-3">${tinp(o,'Consignee','',110)}</td>
-        <td>${tinp(o,'Destination','country / city',100)}</td>
+        <td class="fc-3">${tinp(o,'Consignee','',130)}</td>
+        <td>${tinp(o,'Destination','country / city',110)}</td>
         <td style="text-align:center"><input type="checkbox" ${o['Customs Office']?'checked':''} onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/></td>
         <td>${(()=>`<input type="text" list="dl-hub-o" value="${_noEsc(o['Hub'])}" placeholder="Duisburg / Tilburg…" onchange="noSet(${o._id},'Hub',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:110px"/>`)()}</td>
         <td>${dinp(o,'ETA',95)}</td>
@@ -11744,13 +11750,14 @@ function renderOrders(){
           </select>`)()}</td>
         <td>${svcTagsEditor}</td>
         <td style="text-align:center">${stTagsEditor}</td>
-        <td style="min-width:200px"><textarea rows="1" placeholder="Remark…" onchange="noSet(${o._id},'Remark',this.value)" style="${_inpCss};resize:vertical;font-family:inherit;min-height:28px">${_noEsc(o['Remark'])}</textarea></td>
+        <td style="min-width:200px"><textarea rows="1" class="no-autogrow" placeholder="Remark…" onchange="noSet(${o._id},'Remark',this.value)" oninput="_noAutoGrow(this)" style="${_taCss}">${_noEsc(o['Remark'])}</textarea></td>
         <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
       </tr>`;
     }).join('');
   }).join('');
   // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
   body.querySelectorAll('input.no-fp-date').forEach(el=>{ if(typeof fpDate==='function') fpDate(el); });
+  body.querySelectorAll('textarea.no-autogrow').forEach(el=>_noAutoGrow(el));
   _noRenderStorageAlerts(rows);
   if(typeof requestAnimationFrame==='function') requestAnimationFrame(updateNoFrozenOffsets);
 }
