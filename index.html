@@ -11658,19 +11658,33 @@ function noToggleService(id,svc){
   NO[i]['Service Type']=list.join(', ');
   saveNO(); renderOrders();
 }
-// Surcharges: an order can carry multiple separate reason+fee line items (e.g. Demurrage €80, Storage €40)
-function _noSurcharges(o){ return Array.isArray(o&&o.Surcharges)?o.Surcharges:[]; }
-function noAddSurcharge(id,reason,fee){
+// Surcharges: PER CONTAINER — each container can carry its own separate reason+fee line items
+// (e.g. one container gets Demurrage €80, another gets nothing). Falls back to the order level
+// only for the placeholder row of an order that has no container yet.
+function _noSurcharges(o,cn){
+  if(cn){ const pc=_noPc(o,cn); return Array.isArray(pc.Surcharges)?pc.Surcharges:[]; }
+  return Array.isArray(o&&o.Surcharges)?o.Surcharges:[];
+}
+function noAddSurcharge(id,cn,reason,fee){
   reason=(reason||'').trim(); if(!reason) return;
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
-  if(!Array.isArray(NO[i].Surcharges)) NO[i].Surcharges=[];
-  NO[i].Surcharges.push({reason,fee:(fee||'').toString().trim()});
+  if(cn){
+    NO[i].perCtn=NO[i].perCtn||{};
+    NO[i].perCtn[cn]=NO[i].perCtn[cn]||{};
+    if(!Array.isArray(NO[i].perCtn[cn].Surcharges)) NO[i].perCtn[cn].Surcharges=[];
+    NO[i].perCtn[cn].Surcharges.push({reason,fee:(fee||'').toString().trim()});
+  } else {
+    if(!Array.isArray(NO[i].Surcharges)) NO[i].Surcharges=[];
+    NO[i].Surcharges.push({reason,fee:(fee||'').toString().trim()});
+  }
   saveNO(); renderOrders();
 }
-function noRemoveSurcharge(id,idx){
+function noRemoveSurcharge(id,cn,idx){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
-  if(!Array.isArray(NO[i].Surcharges)) return;
-  NO[i].Surcharges.splice(idx,1);
+  if(cn){
+    const arr=NO[i].perCtn&&NO[i].perCtn[cn]&&NO[i].perCtn[cn].Surcharges;
+    if(Array.isArray(arr)) arr.splice(idx,1);
+  } else if(Array.isArray(NO[i].Surcharges)) NO[i].Surcharges.splice(idx,1);
   saveNO(); renderOrders();
 }
 // Auto-grow a textarea to fit its content (no clipping, no inner scrollbar) — called on input and on render
@@ -11761,7 +11775,10 @@ function renderOrders(){
     sf.innerHTML='<option value="">All Statuses</option>'+opts.map(v=>`<option value="${_noEsc(v)}"${v===cur?' selected':''}>${_noEsc(v)}</option>`).join('');
   }
   const filt=document.getElementById('no-status-filter')?.value||'';
-  const q=(document.getElementById('no-search')?.value||'').trim().toLowerCase();
+  // Same tokenizing as the container tracker's search (getCTRows/#f-search): split on whitespace/comma/semicolon
+  // so pasting several container numbers or search terms at once works, matching if ANY token is found.
+  const qRaw=(document.getElementById('no-search')?.value||'');
+  const qTokens=qRaw.split(/[\s,;]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
   const badge=document.getElementById('no-count-badge');
 
   // Flatten to one entry per container FIRST (same unit CT's tracker filters on), then filter —
@@ -11772,10 +11789,11 @@ function renderOrders(){
     (cs.length?cs:[null]).forEach(cn=>flat.push({o,cn}));
   });
   if(filt) flat=flat.filter(({o})=>_noHasSt(o,filt));
-  if(q){
+  if(qTokens.length){
     flat=flat.filter(({o,cn})=>{
-      if(cn&&cn.toLowerCase().includes(q)) return true;
-      return Object.keys(o).some(k=>k!=='_id'&&k!=='perCtn'&&k!=='Container No.'&&String(o[k]??'').toLowerCase().includes(q));
+      const h=[cn||'',o['Order No.'],o['Consignee'],o['Destination'],o['Hub'],o['Trucker'],
+               o['Service Type'],o['Status'],o['Payment Status'],o['Remark']].join(' ').toLowerCase();
+      return qTokens.some(t=>h.includes(t));
     });
   }
   // recompute which row is "first" for its order within the FILTERED set (so Order No./shared fields
@@ -11784,7 +11802,7 @@ function renderOrders(){
   flat=flat.map(r=>{ const isFirst=!seenOrder.has(r.o._id); seenOrder.add(r.o._id); return {...r,isFirst}; });
   const uniqueOrders=[...new Map(flat.map(r=>[r.o._id,r.o])).values()];
 
-  if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' container'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
+  if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' container'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
     body.innerHTML='<tr><td colspan="24" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
@@ -11820,11 +11838,12 @@ function renderOrders(){
         }).join('')}
         <input type="text" list="dl-status-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleStatus(${o._id},this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
       </div>`;
-    // Surcharge — each entry is a tag (reason) + price, and you can stack as many as needed
+    // Surcharge — per CONTAINER: each entry is a tag (reason) + price, stack as many as needed for this container
+    const _sce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
     const surchargeEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
-        ${_noSurcharges(o).map((s,idx)=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#c2410c;color:#fff;white-space:nowrap">${_noEsc(s.reason)}${s.fee?': €'+_noEsc(s.fee):''}<button type="button" onclick="noRemoveSurcharge(${o._id},${idx})" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`).join('')}
-        <input type="text" placeholder="+ tag" onkeydown="if(event.key==='Enter'){event.preventDefault();const f=this.nextElementSibling;noAddSurcharge(${o._id},this.value,f.value);this.value='';f.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:70px"/>
-        <input type="text" placeholder="€ price" onkeydown="if(event.key==='Enter'){event.preventDefault();const r=this.previousElementSibling;noAddSurcharge(${o._id},r.value,this.value);r.value='';this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:56px"/>
+        ${_noSurcharges(o,cn).map((s,idx)=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#c2410c;color:#fff;white-space:nowrap">${_noEsc(s.reason)}${s.fee?': €'+_noEsc(s.fee):''}<button type="button" onclick="noRemoveSurcharge(${o._id},'${_sce}',${idx})" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`).join('')}
+        <input type="text" placeholder="+ tag" onkeydown="if(event.key==='Enter'){event.preventDefault();const f=this.nextElementSibling;noAddSurcharge(${o._id},'${_sce}',this.value,f.value);this.value='';f.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:70px"/>
+        <input type="text" placeholder="€ price" onkeydown="if(event.key==='Enter'){event.preventDefault();const r=this.previousElementSibling;noAddSurcharge(${o._id},'${_sce}',r.value,this.value);r.value='';this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:56px"/>
       </div>`;
     // At Hub (ready to be picked): per-container when a container exists, else falls back to the order-level flag
     const atHubChecked=cn?!!pc['At Hub']:!!o['Arrived at Hub'];
