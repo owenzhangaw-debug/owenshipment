@@ -2075,6 +2075,7 @@ tbody tr:hover{background:#fafbfc}
     <div style="margin-top:10px">
       <input type="search" id="no-search" placeholder="🔍  Search order no., container, consignee, trucker, hub, remark…" oninput="renderOrders()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
     </div>
+    <div id="no-storage-alerts"></div>
   </div>
   <div class="chart-card" style="padding:0;overflow-x:auto">
     <table class="sur-tbl" style="width:100%;min-width:900px">
@@ -2085,9 +2086,12 @@ tbody tr:hover{background:#fafbfc}
         <th>Consignee</th>
         <th>Destination</th>
         <th>Hub (ETA)</th>
-        <th style="text-align:center" title="Arrived at hub — ready to be picked up">At Hub</th>
+        <th>At Hub Date</th>
+        <th style="text-align:center" title="Arrived at hub — ready to be picked up">Ready to be Picked</th>
+        <th style="text-align:center" title="T1 customs transit document issued?">T1</th>
         <th>Delivery Date</th>
         <th>ATA</th>
+        <th>Free Storage</th>
         <th>Trucker</th>
         <th>Service</th>
         <th style="text-align:right">Price</th>
@@ -11543,10 +11547,22 @@ function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
-    'Price':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'Remark':''};
+    'Price':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'Remark':'','Free Storage (Days)':''};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
+// Remove a single container's row. If it's the last container on the order, delete the whole order.
+function noDelCtn(id,cn){
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  const cs=_noContainers(NO[i]);
+  if(cs.length<=1){ noDel(id); return; }
+  if(!confirm('Remove container '+cn+' from this order?')) return;
+  NO[i]['Container No.']=cs.filter(c=>c!==cn).join('\n');
+  if(NO[i].perCtn) delete NO[i].perCtn[cn];
+  saveNO(); renderOrders();
+  const dp=document.getElementById('page-dispatch');
+  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+}
 function noToggle(id){ _noOpen.has(id)?_noOpen.delete(id):_noOpen.add(id); renderOrders(); }
 function noSet(id,field,val){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
@@ -11604,75 +11620,80 @@ function renderOrders(){
   const badge=document.getElementById('no-count-badge');
   let rows=filt?NO.filter(o=>_noHasSt(o,filt)):NO;
   if(q) rows=rows.filter(o=>Object.keys(o).some(k=>k!=='_id'&&String(o[k]??'').toLowerCase().includes(q)));
-  if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
+  const totalCtns=rows.reduce((n,o)=>n+Math.max(1,_noContainers(o).length),0);
+  if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+' · '+totalCtns+' container'+(totalCtns!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
   if(!rows.length){
-    body.innerHTML='<tr><td colspan="15" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="18" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   const inp=(o,f,ph,style)=>`<label style="display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px">${f}
     <input type="text" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="font-size:12px;font-weight:500;color:#1e293b;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;${style||''}"/></label>`;
+  const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px';
+  const _lblCss='display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px';
+  const stBadgesOf=o=>_noStList(o).map(s=>`<span style="${NO_ST_STYLE[s]||'background:#be123c;color:#fff'};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join('');
+
   body.innerHTML=rows.map(o=>{
     const open=_noOpen.has(o._id);
-    // per-container override marker (± badge with tooltip listing container values)
-    const _pcMark=f=>{
-      const vs=_noContainers(o).map(cn=>({cn,v:_noPc(o,cn)[f]})).filter(x=>x.v);
-      if(!vs.length) return '';
-      return ` <span style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:top;cursor:help" title="${_noEsc(vs.map(x=>x.cn+': '+x.v).join('  |  '))}">±${vs.length}</span>`;
-    };
-    // display order value, or the shared/varying per-container value
-    const _pcDisplay=f=>{
-      const ov=_noEsc(o[f]);
-      if(ov) return ov+_pcMark(f);
-      const vs=_noContainers(o).map(cn=>_noPc(o,cn)[f]).filter(Boolean);
-      if(vs.length){ const uniq=[...new Set(vs)];
-        return (uniq.length===1?_noEsc(uniq[0]):'<span style="color:#64748b;font-style:italic">varies</span>')+_pcMark(f); }
-      return '<span style="color:#cbd5e1">—</span>';
-    };
-    const stList=_noStList(o);
-    const stBadges=stList.map(s=>`<span style="${NO_ST_STYLE[s]||'background:#be123c;color:#fff'};border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join('');
-    const main=`<tr onclick="noToggle(${o._id})" style="cursor:pointer" title="Click to ${open?'collapse':'expand'}">
-      <td style="text-align:center;color:#94a3b8;font-size:10px">${open?'▼':'▶'}</td>
-      <td style="font-weight:700;color:var(--navy)">${_noEsc(o['Order No.'])||'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="font-family:monospace;font-weight:600;font-size:12px">${(()=>{const cs=_noContainers(o);
-        if(!cs.length) return '<span style="color:#cbd5e1">—</span>';
-        return cs.map(_noEsc).join('<br>')
-          +(cs.length>1?` <span style="font-size:9px;background:#e0f2fe;color:#0369a1;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:top">×${cs.length}</span>`:'');})()}</td>
-      <td>${_noEsc(o['Consignee'])||'<span style="color:#cbd5e1">—</span>'}</td>
-      <td>${_noEsc(o['Destination'])||'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="white-space:nowrap">${(()=>{const hb=_noEsc(o['Hub']),dt=_noEsc(o['ETA']);
-        if(hb&&dt) return hb+' <span style="color:#64748b;font-size:11px">('+dt+')</span>';
-        if(hb) return hb; if(dt) return '<span style="color:#64748b">'+dt+'</span>';
-        return '<span style="color:#cbd5e1">—</span>';})()}</td>
-      <td style="text-align:center"><input type="checkbox" ${o['Arrived at Hub']?'checked':''} onclick="event.stopPropagation()" onchange="noSet(${o._id},'Arrived at Hub',this.checked)" title="${o['Arrived at Hub']?'Arrived at hub — ready to be picked up':'Not at hub yet'}" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
-      <td style="white-space:nowrap">${(()=>{
-        // per-container delivery days, one line per container (aligned with the container list)
-        const cs=_noContainers(o);
-        const vals=cs.map(cn=>_noPc(o,cn)['Delivery Date']||o['Delivery Date']||'');
-        const uniq=[...new Set(vals.filter(Boolean))];
-        if(cs.length<2||uniq.length<=1) return _pcDisplay('Delivery Date');
-        return cs.map((cn,i)=>`<div style="font-size:11.5px;line-height:1.45;white-space:nowrap">${vals[i]?_noEsc(vals[i]):'<span style="color:#cbd5e1">—</span>'}</div>`).join('');
-      })()}</td>
-      <td style="white-space:nowrap;font-weight:600;color:#15803d">${_pcDisplay('ATA')}</td>
-      <td>${_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="white-space:nowrap">${_noSvcList(o).length?_noSvcList(o).map(s=>`<span style="font-size:10px;background:#5b21b6;color:#fff;border-radius:6px;padding:2px 7px;font-weight:700;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join(''):'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="text-align:right;font-weight:700;color:#0369a1">${o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="text-align:center">${stBadges}</td>
-      <td style="text-align:center"><input type="checkbox" ${o['Customs Office']?'checked':''} onclick="event.stopPropagation()" onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/></td>
-      <td style="min-width:260px;max-width:420px;font-size:12px;color:#475569;line-height:1.45;white-space:pre-line" title="${_noEsc(o['Remark'])}">${_noEsc(o['Remark'])||'<span style="color:#cbd5e1">—</span>'}</td>
-    </tr>`;
-    if(!open) return main;
-    const _lblCss='display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px';
-    const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px';
+    const cs=_noContainers(o);
+    const rowList=cs.length?cs:[null]; // orders with no container yet still get one placeholder row
+    const stBadges=stBadgesOf(o);
+    const svcTags=_noSvcList(o).length?_noSvcList(o).map(s=>`<span style="font-size:10px;background:#5b21b6;color:#fff;border-radius:6px;padding:2px 7px;font-weight:700;display:inline-block;margin:1px">${_noEsc(s)}</span>`).join(''):'<span style="color:#cbd5e1">—</span>';
+
+    // ── one row per container (flat, like the TEMU container tracker) ──
+    const ctnRows=rowList.map((cn,idx)=>{
+      const pc=cn?_noPc(o,cn):{};
+      const ce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
+      const st=cn?_noStorageInfo(o,cn):null;
+      const isFirst=idx===0;
+      const groupBorder=isFirst?'border-top:2px solid #dbeafe':'';
+      // At Hub (ready to be picked): per-container when a container exists, else falls back to the order-level flag
+      const atHubChecked=cn?!!pc['At Hub']:!!o['Arrived at Hub'];
+      const atHubOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub',this.checked)`:`noSet(${o._id},'Arrived at Hub',this.checked)`;
+      // T1: per-container when a container exists, else order-level fallback
+      const t1Checked=cn?!!pc['T1']:!!o['T1'];
+      const t1Onchange=cn?`noSetCtn(${o._id},'${ce}','T1',this.checked)`:`noSet(${o._id},'T1',this.checked)`;
+      // Delivery Date / ATA: per-container, falling back to the order-level value (legacy single-container orders)
+      const delivVal=cn?(pc['Delivery Date']||o['Delivery Date']||''):(o['Delivery Date']||'');
+      const ataVal=cn?(pc['ATA']||o['ATA']||''):(o['ATA']||'');
+      const atHubDateVal=cn?(pc['At Hub Date']||''):'';
+      const delivOnchange=cn?`noSetCtn(${o._id},'${ce}','Delivery Date',this.value.trim())`:`noSet(${o._id},'Delivery Date',this.value.trim())`;
+      const ataOnchange=cn?`noSetCtn(${o._id},'${ce}','ATA',this.value.trim())`:`noSet(${o._id},'ATA',this.value.trim())`;
+      const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:'';
+      return `<tr data-no-order="${o._id}" style="${groupBorder}">
+        <td style="text-align:center;color:#94a3b8;font-size:10px;cursor:pointer" onclick="noToggle(${o._id})" title="Click to ${open?'collapse':'expand'} order details">${isFirst?(open?'▼':'▶'):'<span style="color:#e2e8f0">·</span>'}</td>
+        <td style="font-weight:700;color:var(--navy);cursor:pointer" onclick="noToggle(${o._id})">${isFirst?(_noEsc(o['Order No.'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
+        <td style="font-family:monospace;font-weight:600;font-size:12px">${cn?_noEsc(cn):'<span style="color:#cbd5e1;font-style:italic">no container yet</span>'}
+          ${cs.length>1?`<button type="button" title="Remove this container" onclick="event.stopPropagation();noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:4px">✕</button>`:''}</td>
+        <td>${isFirst?(_noEsc(o['Consignee'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
+        <td>${isFirst?(_noEsc(o['Destination'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
+        <td style="white-space:nowrap">${isFirst?(()=>{const hb=_noEsc(o['Hub']),dt=_noEsc(o['ETA']);
+          if(hb&&dt) return hb+' <span style="color:#64748b;font-size:11px">('+dt+')</span>';
+          if(hb) return hb; if(dt) return '<span style="color:#64748b">'+dt+'</span>';
+          return '<span style="color:#cbd5e1">—</span>';})():''}</td>
+        <td>${cn?`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};width:100px"/>`:'<span style="color:#cbd5e1">—</span>'}</td>
+        <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
+        <td style="text-align:center"><input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}" style="width:16px;height:16px;accent-color:#1d4ed8;cursor:pointer"/></td>
+        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};width:100px"/></td>
+        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};width:100px"/></td>
+        <td style="white-space:nowrap;font-size:11.5px">${st?(st.exceeded?`<span style="color:#b91c1c;font-weight:800">⚠ exceeded by ${st.byDays}d</span>`:`<span style="color:#0f766e;font-weight:600">free until ${st.expiry}</span>`):'<span style="color:#cbd5e1">—</span>'}</td>
+        <td>${isFirst?(_noEsc(o['Trucker'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
+        <td style="white-space:nowrap">${isFirst?svcTags:''}</td>
+        <td style="text-align:right;font-weight:700;color:#0369a1">${isFirst?(o['Price']?'€'+_noEsc(o['Price']):'<span style="color:#cbd5e1">—</span>'):''}</td>
+        <td style="text-align:center">${isFirst?stBadges:''}</td>
+        <td style="text-align:center">${isFirst?`<input type="checkbox" ${o['Customs Office']?'checked':''} onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/>`:''}</td>
+        <td style="min-width:260px;max-width:420px;font-size:12px;color:#475569;line-height:1.45;white-space:pre-line" title="${_noEsc(o['Remark'])}">${isFirst?(_noEsc(o['Remark'])||'<span style="color:#cbd5e1">—</span>'):''}</td>
+      </tr>`;
+    }).join('');
+
+    if(!open) return ctnRows;
+
+    // ── shared, order-level edit panel (Order No., Consignee, Service/Status tags, Remark, etc.) ──
     const _noToISO=v=>{const m=(v||'').toString().match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);return m?`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`:'';};
     const dinp=(f,lbl)=>`<label style="${_lblCss}">${lbl||f}
-      <input type="date" value="${_noToISO(o[f])}" onchange="noSet(${o._id},'${f}',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></label>`;
+      <input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(o[f])}" placeholder="YYYY/MM/DD" onblur="noSet(${o._id},'${f}',this.value.trim())" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss}"/></label>`;
     const linp=(f,ph)=>`<label style="${_lblCss}">${f}
       <input type="text" list="dl-hub-o" value="${_noEsc(o[f])}" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss}"/></label>`;
-    const flowCard=(icon,title,color,inner)=>`<div style="flex:1;min-width:185px;background:#fff;border:1px solid #e2e8f0;border-left:3px solid ${color};border-radius:10px;padding:10px 12px">
-      <div style="font-size:11px;font-weight:800;color:${color};margin-bottom:6px">${icon} ${title}</div>
-      <div style="display:flex;flex-direction:column;gap:8px">${inner}</div></div>`;
-    const flowArrow='<div style="align-self:center;color:#94a3b8;font-size:18px;font-weight:800;padding:0 2px">→</div>';
-    const detail=`<tr><td colspan="15" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
+    const detail=`<tr><td colspan="18" style="background:#f8fafc;padding:14px 16px;border-bottom:2px solid #e2e8f0">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
         ${inp(o,'Order No.','e.g. ORD-001')}
         <label style="${_lblCss};grid-column:span 2">Container No.(s) — one per line or comma-separated
@@ -11683,6 +11704,8 @@ function renderOrders(){
         ${dinp('ETA','ETA Date')}
         ${inp(o,'Trucker','')}
         ${inp(o,'Price','€')}
+        <label style="${_lblCss}">Free Storage (Days) <span title="Days of free storage at hub before charges start, counted from At Hub Date">ⓘ</span>
+          <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="e.g. 5" onchange="noSet(${o._id},'Free Storage (Days)',this.value)" style="${_inpCss}"/></label>
         <label style="${_lblCss}">Payment Status
           <select onchange="noSet(${o._id},'Payment Status',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px">
             ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
@@ -11706,30 +11729,48 @@ function renderOrders(){
         <label style="${_lblCss};grid-column:1/-1">Remark
           <textarea rows="2" placeholder="Remark for this order…" onchange="noSet(${o._id},'Remark',this.value)" style="font-size:12px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;resize:vertical;font-family:inherit;color:#1e293b">${_noEsc(o['Remark'])}</textarea></label>
       </div>
-      ${(()=>{ // ── Container Detail — each container has its own dates & pickup state ──
-        const cs=_noContainers(o); if(!cs.length) return '';
-        return `<div style="margin-top:14px">
-          <div style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Container Detail</div>
-          <div style="overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:10px">
-          <table class="sur-tbl" style="width:100%">
-            <thead><tr><th>Container</th><th>At Hub Date</th><th style="text-align:center">Ready to be Picked</th><th>Delivery Date</th><th>ATA</th></tr></thead>
-            <tbody>${cs.map(cn=>{
-              const pc=_noPc(o,cn); const ce=cn.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-              return `<tr>
-                <td style="font-family:monospace;font-weight:700;white-space:nowrap">${_noEsc(cn)}</td>
-                <td><input type="date" value="${_noToISO(pc['At Hub Date'])}" onchange="noSetCtn(${o._id},'${ce}','At Hub Date',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></td>
-                <td style="text-align:center"><input type="checkbox" ${pc['At Hub']?'checked':''} onchange="noSetCtn(${o._id},'${ce}','At Hub',this.checked)" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
-                <td><input type="date" value="${_noToISO(pc['Delivery Date'])}" onchange="noSetCtn(${o._id},'${ce}','Delivery Date',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></td>
-                <td><input type="date" value="${_noToISO(pc['ATA'])}" onchange="noSetCtn(${o._id},'${ce}','ATA',this.value?this.value.replace(/-/g,'/'):'')" style="${_inpCss}"/></td>
-              </tr>`;}).join('')}</tbody>
-          </table></div>
-        </div>`;})()}
       <div style="margin-top:10px;text-align:right">
         <button onclick="noDel(${o._id})" style="padding:4px 12px;font-size:11px;font-weight:700;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;cursor:pointer">🗑 Delete Order</button>
       </div>
     </td></tr>`;
-    return main+detail;
+    return ctnRows+detail;
   }).join('');
+  // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
+  body.querySelectorAll('input.no-fp-date').forEach(el=>{ if(typeof fpDate==='function') fpDate(el); });
+  _noRenderStorageAlerts(rows);
+}
+// ── Free storage / demurrage alert ────────────────────────────────
+// Parses the app's date strings (YYYY/M/D, YYYY-MM-DD, etc.) into a Date at local midnight.
+function _noParseDate(v){
+  const m=(v||'').toString().match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(!m) return null;
+  const d=new Date(+m[1], +m[2]-1, +m[3]);
+  return isNaN(d.getTime())?null:d;
+}
+function _noFmtDate(d){ return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0'); }
+// Computes free-storage status for one container of an order.
+// Free days count from "At Hub Date"; alert if Delivery Date (or, once at hub, today if no delivery date yet) is past the expiry.
+function _noStorageInfo(o,cn){
+  const freeDays=parseInt(o['Free Storage (Days)'],10);
+  if(!freeDays||freeDays<=0) return null;
+  const pc=_noPc(o,cn);
+  const atHub=_noParseDate(pc['At Hub Date']);
+  if(!atHub) return null;
+  const expiry=new Date(atHub); expiry.setDate(expiry.getDate()+freeDays);
+  const ata=_noParseDate(pc['ATA']);
+  const delivery=_noParseDate(pc['Delivery Date']||o['Delivery Date']);
+  const compareDate=ata||delivery||new Date(); // already delivered → use ATA; else planned delivery; else today (still sitting at hub)
+  const diffDays=Math.round((compareDate-expiry)/86400000);
+  return {expiry:_noFmtDate(expiry), exceeded:diffDays>0, byDays:diffDays>0?diffDays:0};
+}
+function _noOrderStorageExceeded(o){ return _noContainers(o).some(cn=>{ const s=_noStorageInfo(o,cn); return s&&s.exceeded; }); }
+function _noRenderStorageAlerts(rows){
+  const el=document.getElementById('no-storage-alerts'); if(!el) return;
+  const bad=rows.filter(_noOrderStorageExceeded);
+  if(!bad.length){ el.innerHTML=''; return; }
+  el.innerHTML=`<div style="margin-top:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#b91c1c;font-weight:600">
+    ⚠ ${bad.length} order${bad.length!==1?'s':''} exceeding free storage: ${bad.map(o=>_noEsc(o['Order No.']||('Order #'+o._id))).join(', ')}
+  </div>`;
 }
 // Map orders into dispatch pseudo-rows (used by renderDispatch)
 function noDispatchRows(){
