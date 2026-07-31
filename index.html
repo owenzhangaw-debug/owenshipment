@@ -11767,6 +11767,22 @@ function applyNoBulkEdit(){
   if(ok){ ok.textContent='✓ Updated '+count+' order'+(count!==1?'s':'')+'.'; ok.style.display='block'; }
   setTimeout(()=>{ closeNoBE(); noClearSel(); },900);
 }
+// Smart search tokenizer: splits on commas/semicolons/newlines into phrases (each phrase can still
+// contain spaces, since Order No. values here are often "PREFIX 123 C4" — one identifier with spaces
+// in it). Within a phrase, if EVERY space-separated word looks like a container number (4 letters +
+// 6-8 digits), it's treated as a pasted list and split into separate tokens; otherwise the phrase is
+// kept whole so a single Order No. with spaces still matches exactly instead of bleeding into siblings.
+function _noTokenizeSearch(qRaw){
+  const isCtnLike=s=>/^[A-Za-z]{4}\d{6,8}$/.test(s);
+  const phrases=(qRaw||'').split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
+  const tokens=[];
+  phrases.forEach(phrase=>{
+    const words=phrase.split(/\s+/).filter(Boolean);
+    if(words.length>1 && words.every(isCtnLike)) words.forEach(w=>tokens.push(w.toLowerCase()));
+    else tokens.push(phrase.toLowerCase());
+  });
+  return tokens.filter(Boolean);
+}
 // ── Order progress cards (same look/behavior as the container tracker's batch progress bars) ──
 function renderNoBatchProgress(){
   const el=document.getElementById('no-batch-progress'); if(!el) return;
@@ -11840,12 +11856,8 @@ function renderOrders(){
     sf.innerHTML='<option value="">All Statuses</option>'+opts.map(v=>`<option value="${_noEsc(v)}"${v===cur?' selected':''}>${_noEsc(v)}</option>`).join('');
   }
   const filt=document.getElementById('no-status-filter')?.value||'';
-  // Split only on comma/semicolon (NOT whitespace) — Order No. values here often contain spaces
-  // as part of a single identifier (e.g. "ZNNEPRF26060023 C4"), so splitting on space would break
-  // exact matches and bleed into every sibling order sharing the same prefix. Pasting several
-  // full values separated by commas still works (e.g. "ORD-1, ORD-2").
   const qRaw=(document.getElementById('no-search')?.value||'');
-  const qTokens=qRaw.split(/[,;]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const qTokens=_noTokenizeSearch(qRaw);
   const badge=document.getElementById('no-count-badge');
 
   // Flatten to one entry per container FIRST (same unit CT's tracker filters on), then filter —
