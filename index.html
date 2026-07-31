@@ -2073,7 +2073,12 @@ tbody tr:hover{background:#fafbfc}
       </div>
     </div>
     <div style="margin-top:10px">
-      <input type="search" id="no-search" placeholder="🔍  Search order no., container, consignee, trucker, hub, remark…" oninput="renderOrders()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
+      <input type="search" id="no-search" placeholder="🔍  Search order no., container, consignee, trucker, hub, remark… — a container number narrows to just that container" oninput="renderOrders()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
+    </div>
+    <div id="no-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;margin-top:10px">
+      <span id="no-inline-sel-count">0 selected</span>
+      <button onclick="openNoBulkEdit()" style="background:#fff;color:#004D4C;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
+      <button onclick="noClearSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
     </div>
     <div id="no-storage-alerts"></div>
   </div>
@@ -2085,6 +2090,7 @@ tbody tr:hover{background:#fafbfc}
         <th class="fc-3">Consignee</th>
         <th>Destination</th>
         <th style="text-align:center" title="Customs office provided?">Customs Office</th>
+        <th>Trucker</th>
         <th>Hub</th>
         <th>ETA</th>
         <th>At Hub Date</th>
@@ -2093,13 +2099,15 @@ tbody tr:hover{background:#fafbfc}
         <th>Delivery Date</th>
         <th>ATA</th>
         <th title="Days of free storage before charges start — Delivery Date turns red once it's exceeded">Free Days</th>
-        <th>Trucker</th>
+        <th title="Storage fee charged per day once free days are exceeded">Price/Day</th>
+        <th title="Calculated: (days over free storage) × price/day">Storage Fee</th>
         <th style="text-align:right">Price</th>
         <th style="min-width:160px" title="Extra fees — can have multiple reasons">Surcharge</th>
         <th>Payment Status</th>
         <th style="min-width:150px">Service</th>
         <th style="text-align:center;min-width:150px">Status</th>
         <th style="min-width:220px">Remark</th>
+        <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="no-sel-all" onchange="noSelAllVisible(this.checked)" title="Select all visible"/></th>
         <th style="width:32px"></th>
       </tr></thead>
       <tbody id="no-body"></tbody>
@@ -2841,6 +2849,34 @@ tbody tr:hover{background:#fafbfc}
     <div class="modal-btns">
       <button class="mbtn-cancel" onclick="closeBE()">Cancel</button>
       <button class="mbtn-save" onclick="applyBulkEdit()">✏️ Apply to Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDERS BULK EDIT MODAL -->
+<div class="overlay" id="no-be-overlay">
+  <div class="modal" style="width:640px">
+    <h2>✏️ Bulk Edit Orders <span id="no-be-badge" style="font-size:11px;background:#e0f2fe;color:#0369a1;border-radius:8px;padding:1px 7px;margin-left:4px">0</span></h2>
+    <div class="be-hint">Fill in only the fields you want to change — blank fields are left alone. Applies to every selected order.</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Trucker</label><input type="text" id="nbe_truck" placeholder="leave blank to skip"/></div>
+      <div class="form-group"><label>Hub</label><input type="text" id="nbe_hub" list="dl-hub-o" placeholder="leave blank to skip"/></div>
+      <div class="form-group"><label>Customs Office</label>
+        <select id="nbe_customs"><option value="">— no change —</option><option value="yes">✔ Provided</option><option value="no">✕ Not provided</option></select></div>
+      <div class="form-group"><label>T1</label>
+        <select id="nbe_t1"><option value="">— no change —</option><option value="yes">✔ Issued</option><option value="no">✕ Not issued</option></select></div>
+      <div class="form-group"><label>Payment Status</label>
+        <select id="nbe_pay"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
+      <div class="form-group"><label>Price per Day (€)</label><input type="text" id="nbe_ppd" placeholder="leave blank to skip"/></div>
+      <div class="form-group"><label>Add Service Tag</label><input type="text" id="nbe_svc" placeholder="e.g. FCL Delivery"/></div>
+      <div class="form-group"><label>Add Status Tag</label><input type="text" id="nbe_status" placeholder="e.g. Booked"/></div>
+      <div class="form-group full"><label>Remark (overwrites)</label><input type="text" id="nbe_remark" placeholder="leave blank to skip"/></div>
+    </div>
+    <div id="no-be-ok" class="info-box info-ok"></div>
+    <div id="no-be-err" class="info-box info-err"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeNoBE()">Cancel</button>
+      <button class="mbtn-save" onclick="applyNoBulkEdit()">✏️ Apply to Selected</button>
     </div>
   </div>
 </div>
@@ -11550,7 +11586,7 @@ function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
-    'Price':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'Remark':'','Free Storage (Days)':'','Surcharges':[]};
+    'Price':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'Remark':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -11651,6 +11687,71 @@ function noSetCtn(id,cn,field,val){
   const dp=document.getElementById('page-dispatch');
   if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
 }
+
+// ── BULK EDIT — select orders (checkbox appears per container row, but selection is by order) ──
+let noSel=new Set();
+function noToggleSel(cb){
+  const id=+cb.dataset.id;
+  if(cb.checked) noSel.add(id); else noSel.delete(id);
+  noUpdateSelBar();
+}
+function noSelAllVisible(checked){
+  document.querySelectorAll('.no-sel-cb').forEach(cb=>{ cb.checked=checked; const id=+cb.dataset.id; if(checked) noSel.add(id); else noSel.delete(id); });
+  noUpdateSelBar();
+}
+function noClearSel(){
+  noSel.clear();
+  document.querySelectorAll('.no-sel-cb').forEach(cb=>cb.checked=false);
+  const all=document.getElementById('no-sel-all'); if(all) all.checked=false;
+  noUpdateSelBar();
+}
+function noUpdateSelBar(){
+  const bar=document.getElementById('no-inline-sel-bar'); if(!bar) return;
+  bar.style.display=noSel.size>0?'flex':'none';
+  const cnt=document.getElementById('no-inline-sel-count');
+  if(cnt) cnt.textContent=noSel.size+' order'+(noSel.size!==1?'s':'')+' selected';
+}
+function openNoBulkEdit(){
+  if(noSel.size===0){ showToast?showToast('Select at least one order first.'):alert('Select at least one order first.'); return; }
+  ['nbe_truck','nbe_hub','nbe_ppd','nbe_svc','nbe_status','nbe_remark'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['nbe_customs','nbe_t1','nbe_pay'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const badge=document.getElementById('no-be-badge'); if(badge) badge.textContent=noSel.size;
+  const ok=document.getElementById('no-be-ok'); if(ok) ok.style.display='none';
+  const err=document.getElementById('no-be-err'); if(err) err.style.display='none';
+  document.getElementById('no-be-overlay').classList.add('open');
+}
+function closeNoBE(){ document.getElementById('no-be-overlay').classList.remove('open'); }
+function applyNoBulkEdit(){
+  const g=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
+  const truck=g('nbe_truck'), hub=g('nbe_hub'), ppd=g('nbe_ppd'), svc=g('nbe_svc'), status=g('nbe_status'), remark=g('nbe_remark');
+  const customs=g('nbe_customs'), t1=g('nbe_t1'), pay=g('nbe_pay');
+  let count=0;
+  NO.forEach(o=>{
+    if(!noSel.has(o._id)) return;
+    let touched=false;
+    if(truck){ o['Trucker']=truck; touched=true; }
+    if(hub){ o['Hub']=hub; touched=true; }
+    if(ppd){ o['Price per Day']=ppd; touched=true; }
+    if(pay){ o['Payment Status']=pay; touched=true; }
+    if(remark){ o['Remark']=remark; touched=true; }
+    if(customs){ o['Customs Office']=(customs==='yes'); touched=true; }
+    if(t1){ o['T1']=(t1==='yes'); touched=true; }
+    if(svc && !_noSvcList(o).some(s=>s.toLowerCase()===svc.toLowerCase())){ const l=_noSvcList(o); l.push(svc); o['Service Type']=l.join(', '); touched=true; }
+    if(status && !_noHasSt(o,status)){ const l=_noStList(o); l.push(status); o['Status']=l.join(', '); touched=true; }
+    if(touched) count++;
+  });
+  if(!count){
+    const err=document.getElementById('no-be-err');
+    if(err){ err.textContent='No changes to apply (all fields blank).'; err.style.display='block'; }
+    return;
+  }
+  saveNO(); renderOrders();
+  const dp=document.getElementById('page-dispatch');
+  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+  const ok=document.getElementById('no-be-ok');
+  if(ok){ ok.textContent='✓ Updated '+count+' order'+(count!==1?'s':'')+'.'; ok.style.display='block'; }
+  setTimeout(()=>{ closeNoBE(); noClearSel(); },900);
+}
 function renderOrders(){
   const body=document.getElementById('no-body'); if(!body) return;
   // status filter options follow whatever statuses exist in the data (free-typed included)
@@ -11662,12 +11763,34 @@ function renderOrders(){
   const filt=document.getElementById('no-status-filter')?.value||'';
   const q=(document.getElementById('no-search')?.value||'').trim().toLowerCase();
   const badge=document.getElementById('no-count-badge');
-  let rows=filt?NO.filter(o=>_noHasSt(o,filt)):NO;
-  if(q) rows=rows.filter(o=>Object.keys(o).some(k=>k!=='_id'&&String(o[k]??'').toLowerCase().includes(q)));
-  const totalCtns=rows.reduce((n,o)=>n+Math.max(1,_noContainers(o).length),0);
-  if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+' · '+totalCtns+' container'+(totalCtns!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
-  if(!rows.length){
-    body.innerHTML='<tr><td colspan="21" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+
+  // Flatten to one entry per container FIRST (same unit CT's tracker filters on), then filter —
+  // so searching a container number narrows down to just that container, not its whole order.
+  let flat=[];
+  NO.forEach(o=>{
+    const cs=_noContainers(o);
+    (cs.length?cs:[null]).forEach(cn=>flat.push({o,cn}));
+  });
+  if(filt) flat=flat.filter(({o})=>_noHasSt(o,filt));
+  if(q){
+    flat=flat.filter(({o,cn})=>{
+      if(cn&&cn.toLowerCase().includes(q)) return true;
+      return Object.keys(o).some(k=>k!=='_id'&&k!=='perCtn'&&k!=='Container No.'&&String(o[k]??'').toLowerCase().includes(q));
+    });
+  }
+  // recompute which row is "first" for its order within the FILTERED set (so Order No./shared fields
+  // still land correctly even when some sibling containers got filtered out)
+  const seenOrder=new Set();
+  flat=flat.map(r=>{ const isFirst=!seenOrder.has(r.o._id); seenOrder.add(r.o._id); return {...r,isFirst}; });
+  const uniqueOrders=[...new Map(flat.map(r=>[r.o._id,r.o])).values()];
+
+  if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' container'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
+  if(!NO.length){
+    body.innerHTML='<tr><td colspan="24" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    return;
+  }
+  if(!flat.length){
+    body.innerHTML='<tr><td colspan="24" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
     return;
   }
   const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box';
@@ -11676,9 +11799,13 @@ function renderOrders(){
   const tinp=(o,f,ph,w)=>`<textarea rows="1" class="no-autogrow" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" oninput="_noAutoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:${w||90}px">${_noEsc(o[f])}</textarea>`;
   const dinp=(o,f,w)=>`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(o[f])}" placeholder="YYYY/MM/DD" onblur="noSet(${o._id},'${f}',this.value.trim())" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:${w||100}px"/>`;
 
-  body.innerHTML=rows.map(o=>{
-    const cs=_noContainers(o);
-    const rowList=cs.length?cs:[null]; // orders with no container yet still get one placeholder row
+  // ── one row per (order, container) — all fields directly editable — no fold, just like the TEMU container tracker ──
+  body.innerHTML=flat.map(({o,cn,isFirst})=>{
+    const pc=cn?_noPc(o,cn):{};
+    const ce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
+    const st=cn?_noStorageInfo(o,cn):null;
+    const fee=cn?_noStorageFee(o,cn):null;
+    const groupBorder=isFirst?'border-top:2px solid #dbeafe':'';
     const svcTagsEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
         ${_noSvcList(o).map(svc=>{
           const esc=svc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
@@ -11699,64 +11826,59 @@ function renderOrders(){
         <input type="text" placeholder="reason" style="font-size:10.5px;padding:3px 6px;border:1.5px dashed #cbd5e1;border-radius:10px;width:64px"/>
         <input type="text" placeholder="€ fee" onkeydown="if(event.key==='Enter'){event.preventDefault();const r=this.previousElementSibling;noAddSurcharge(${o._id},r.value,this.value);r.value='';this.value='';}" style="font-size:10.5px;padding:3px 6px;border:1.5px dashed #cbd5e1;border-radius:10px;width:52px"/>
       </div>`;
-
-    // ── one row per container, all fields directly editable — no fold, just like the TEMU container tracker ──
-    return rowList.map((cn,idx)=>{
-      const pc=cn?_noPc(o,cn):{};
-      const ce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
-      const st=cn?_noStorageInfo(o,cn):null;
-      const isFirst=idx===0;
-      const groupBorder=isFirst?'border-top:2px solid #dbeafe':'';
-      // At Hub (ready to be picked): per-container when a container exists, else falls back to the order-level flag
-      const atHubChecked=cn?!!pc['At Hub']:!!o['Arrived at Hub'];
-      const atHubOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub',this.checked)`:`noSet(${o._id},'Arrived at Hub',this.checked)`;
-      // T1: per-container when a container exists, else order-level fallback
-      const t1Checked=cn?!!pc['T1']:!!o['T1'];
-      const t1Onchange=cn?`noSetCtn(${o._id},'${ce}','T1',this.checked)`:`noSet(${o._id},'T1',this.checked)`;
-      // Delivery Date / ATA: per-container, falling back to the order-level value (legacy single-container orders)
-      const delivVal=cn?(pc['Delivery Date']||o['Delivery Date']||''):(o['Delivery Date']||'');
-      const ataVal=cn?(pc['ATA']||o['ATA']||''):(o['ATA']||'');
-      const atHubDateVal=cn?(pc['At Hub Date']||''):'';
-      const delivOnchange=cn?`noSetCtn(${o._id},'${ce}','Delivery Date',this.value.trim())`:`noSet(${o._id},'Delivery Date',this.value.trim())`;
-      const ataOnchange=cn?`noSetCtn(${o._id},'${ce}','ATA',this.value.trim())`:`noSet(${o._id},'ATA',this.value.trim())`;
-      const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:'';
-      return `<tr data-no-order="${o._id}" style="${groupBorder}">
-        <td class="fc-1" style="font-weight:700;color:var(--navy)">${isFirst?tinp(o,'Order No.','ORD-001',90):''}</td>
-        <td class="fc-2" style="font-family:monospace;font-weight:600;font-size:12px">
-          <div style="display:flex;align-items:flex-start;gap:2px">
-          ${cn?`<textarea rows="1" class="no-autogrow" oninput="_noAutoGrow(this)" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:110px;font-family:monospace">${_noEsc(cn)}</textarea>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no container yet</span>'}
-          ${cn?`<button type="button" title="Remove this container" onclick="noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:2px;flex-shrink:0">✕</button>`:''}
-          ${isFirst?`<button type="button" title="Add another container to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px;flex-shrink:0">+</button>`:''}
-          </div>
-        </td>
-        <td class="fc-3">${tinp(o,'Consignee','',130)}</td>
-        <td>${tinp(o,'Destination','country / city',110)}</td>
-        <td style="text-align:center"><input type="checkbox" ${o['Customs Office']?'checked':''} onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/></td>
-        <td>${(()=>`<input type="text" list="dl-hub-o" value="${_noEsc(o['Hub'])}" placeholder="Duisburg / Tilburg…" onchange="noSet(${o._id},'Hub',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:110px"/>`)()}</td>
-        <td>${dinp(o,'ETA',95)}</td>
-        <td>${cn?`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/>`:'<span style="color:#cbd5e1">—</span>'}</td>
-        <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
-        <td style="text-align:center"><input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}" style="width:16px;height:16px;accent-color:#1d4ed8;cursor:pointer"/></td>
-        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s) — free until '+st.expiry:''}" style="${_inpCss};min-width:95px${st&&st.exceeded?';background:#fee2e2;border-color:#fca5a5;color:#b91c1c;font-weight:700':''}"/></td>
-        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
-        <td>${(()=>`<input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days" onchange="noSet(${o._id},'Free Storage (Days)',this.value)" style="${_inpCss};min-width:64px"/>`)()}</td>
-        <td>${tinp(o,'Trucker','',100)}</td>
-        <td style="text-align:right;font-weight:700;color:#0369a1">${tinp(o,'Price','€',70)}</td>
-        <td>${surchargeEditor}</td>
-        <td>${(()=>`<select onchange="noSet(${o._id},'Payment Status',this.value)" style="${_inpCss};min-width:110px">
-            ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
-          </select>`)()}</td>
-        <td>${svcTagsEditor}</td>
-        <td style="text-align:center">${stTagsEditor}</td>
-        <td style="min-width:200px"><textarea rows="1" class="no-autogrow" placeholder="Remark…" onchange="noSet(${o._id},'Remark',this.value)" oninput="_noAutoGrow(this)" style="${_taCss}">${_noEsc(o['Remark'])}</textarea></td>
-        <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
-      </tr>`;
-    }).join('');
+    // At Hub (ready to be picked): per-container when a container exists, else falls back to the order-level flag
+    const atHubChecked=cn?!!pc['At Hub']:!!o['Arrived at Hub'];
+    const atHubOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub',this.checked)`:`noSet(${o._id},'Arrived at Hub',this.checked)`;
+    // T1: per-container when a container exists, else order-level fallback
+    const t1Checked=cn?!!pc['T1']:!!o['T1'];
+    const t1Onchange=cn?`noSetCtn(${o._id},'${ce}','T1',this.checked)`:`noSet(${o._id},'T1',this.checked)`;
+    // Delivery Date / ATA: per-container, falling back to the order-level value (legacy single-container orders)
+    const delivVal=cn?(pc['Delivery Date']||o['Delivery Date']||''):(o['Delivery Date']||'');
+    const ataVal=cn?(pc['ATA']||o['ATA']||''):(o['ATA']||'');
+    const atHubDateVal=cn?(pc['At Hub Date']||''):'';
+    const delivOnchange=cn?`noSetCtn(${o._id},'${ce}','Delivery Date',this.value.trim())`:`noSet(${o._id},'Delivery Date',this.value.trim())`;
+    const ataOnchange=cn?`noSetCtn(${o._id},'${ce}','ATA',this.value.trim())`:`noSet(${o._id},'ATA',this.value.trim())`;
+    const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:'';
+    return `<tr data-no-order="${o._id}" style="${groupBorder}">
+      <td class="fc-1" style="font-weight:700;color:var(--navy)">${isFirst?tinp(o,'Order No.','ORD-001',90):''}</td>
+      <td class="fc-2" style="font-family:monospace;font-weight:600;font-size:12px">
+        <div style="display:flex;align-items:flex-start;gap:2px">
+        ${cn?`<textarea rows="1" class="no-autogrow" oninput="_noAutoGrow(this)" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:110px;font-family:monospace">${_noEsc(cn)}</textarea>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no container yet</span>'}
+        ${cn?`<button type="button" title="Remove this container" onclick="noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:2px;flex-shrink:0">✕</button>`:''}
+        ${isFirst?`<button type="button" title="Add another container to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px;flex-shrink:0">+</button>`:''}
+        </div>
+      </td>
+      <td class="fc-3">${tinp(o,'Consignee','',130)}</td>
+      <td>${tinp(o,'Destination','country / city',110)}</td>
+      <td style="text-align:center"><input type="checkbox" ${o['Customs Office']?'checked':''} onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/></td>
+      <td>${tinp(o,'Trucker','',100)}</td>
+      <td>${(()=>`<input type="text" list="dl-hub-o" value="${_noEsc(o['Hub'])}" placeholder="Duisburg / Tilburg…" onchange="noSet(${o._id},'Hub',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:110px"/>`)()}</td>
+      <td>${dinp(o,'ETA',95)}</td>
+      <td>${cn?`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/>`:'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
+      <td style="text-align:center"><input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}" style="width:16px;height:16px;accent-color:#1d4ed8;cursor:pointer"/></td>
+      <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s) — free until '+st.expiry:''}" style="${_inpCss};min-width:95px${st&&st.exceeded?';background:#fee2e2;border-color:#fca5a5;color:#b91c1c;font-weight:700':''}"/></td>
+      <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
+      <td>${(()=>`<input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days" onchange="noSet(${o._id},'Free Storage (Days)',this.value)" style="${_inpCss};min-width:64px"/>`)()}</td>
+      <td>${(()=>`<input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€/day" onchange="noSet(${o._id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px"/>`)()}</td>
+      <td style="white-space:nowrap;font-size:11.5px">${fee?`<span style="color:#b91c1c;font-weight:800">€${fee.fee}</span> <span style="color:#94a3b8;font-size:10px">(${fee.byDays}d×€${fee.ppd})</span>`:'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="text-align:right;font-weight:700;color:#0369a1">${tinp(o,'Price','€',70)}</td>
+      <td>${surchargeEditor}</td>
+      <td>${(()=>`<select onchange="noSet(${o._id},'Payment Status',this.value)" style="${_inpCss};min-width:110px">
+          ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
+        </select>`)()}</td>
+      <td>${svcTagsEditor}</td>
+      <td style="text-align:center">${stTagsEditor}</td>
+      <td style="min-width:200px"><textarea rows="1" class="no-autogrow" placeholder="Remark…" onchange="noSet(${o._id},'Remark',this.value)" oninput="_noAutoGrow(this)" style="${_taCss}">${_noEsc(o['Remark'])}</textarea></td>
+      <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
+      <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
+    </tr>`;
   }).join('');
   // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
   body.querySelectorAll('input.no-fp-date').forEach(el=>{ if(typeof fpDate==='function') fpDate(el); });
   body.querySelectorAll('textarea.no-autogrow').forEach(el=>_noAutoGrow(el));
-  _noRenderStorageAlerts(rows);
+  _noRenderStorageAlerts(uniqueOrders);
+  noUpdateSelBar();
   if(typeof requestAnimationFrame==='function') requestAnimationFrame(updateNoFrozenOffsets);
 }
 // Dynamically set left offsets for the Orders table's frozen columns (Order No. / Container No. / Consignee)
@@ -11799,6 +11921,13 @@ function _noStorageInfo(o,cn){
   const compareDate=ata||delivery||new Date(); // already delivered → use ATA; else planned delivery; else today (still sitting at hub)
   const diffDays=Math.round((compareDate-expiry)/86400000);
   return {expiry:_noFmtDate(expiry), exceeded:diffDays>0, byDays:diffDays>0?diffDays:0};
+}
+// Storage fee = (days over free storage) × price/day, for one container
+function _noStorageFee(o,cn){
+  const st=_noStorageInfo(o,cn); if(!st||!st.exceeded) return null;
+  const ppd=parseFloat(o['Price per Day']);
+  if(!ppd||ppd<=0) return null;
+  return {byDays:st.byDays, ppd, fee:Math.round(st.byDays*ppd*100)/100};
 }
 function _noOrderStorageExceeded(o){ return _noContainers(o).some(cn=>{ const s=_noStorageInfo(o,cn); return s&&s.exceeded; }); }
 function _noRenderStorageAlerts(rows){
