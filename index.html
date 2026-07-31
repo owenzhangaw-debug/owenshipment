@@ -2105,7 +2105,7 @@ tbody tr:hover{background:#fafbfc}
         <th style="text-align:right">Freight</th>
         <th style="text-align:right" title="Customs Clearance price">CC</th>
         <th style="text-align:right;min-width:100px" title="Storage fee + Freight + CC + this container's own surcharges (storage, waiting fee, customs clearance, etc.)">Container Amt</th>
-        <th style="text-align:right;min-width:100px" title="Whole order: Freight + CC + all containers' storage fees and surcharges">Order Total</th>
+        <th style="text-align:right;min-width:100px" title="Sum of every container's own amount (Storage Fee + Freight + CC + Surcharge) across the whole order">Order Total</th>
         <th style="min-width:160px" title="Extra fees — can have multiple reasons (e.g. storage, waiting fee, customs clearance)">Surcharge</th>
         <th>Payment Status</th>
         <th style="min-width:150px">Service</th>
@@ -12044,16 +12044,13 @@ function _noContainerAmount(o,cn){
   const total=freight+cc+(sf?sf.fee:0)+(cn?_noCtnSurchargeSum(o,cn):_noCtnSurchargeSum(o,null));
   return Math.round(total*100)/100;
 }
-// Whole-order total: Freight + CC + every container's storage fee and surcharges combined
+// Whole-order total: sum of every container's own amount (each container carries its own full
+// Storage Fee + Freight + CC + Surcharge, so the order total is that added up across all containers)
 function _noOrderTotal(o){
   const cs=_noContainers(o);
-  const freight=parseFloat(o['Price'])||0, cc=parseFloat(o['CC'])||0;
-  let extra=0;
-  (cs.length?cs:[null]).forEach(cn=>{
-    if(cn){ const sf=_noStorageFee(o,cn); if(sf) extra+=sf.fee; extra+=_noCtnSurchargeSum(o,cn); }
-    else extra+=_noCtnSurchargeSum(o,null);
-  });
-  return Math.round((freight+cc+extra)*100)/100;
+  const list=cs.length?cs:[null];
+  const total=list.reduce((s,cn)=>s+_noContainerAmount(o,cn),0);
+  return Math.round(total*100)/100;
 }
 function _noRenderStorageAlerts(rows){
   const el=document.getElementById('no-storage-alerts'); if(!el) return;
