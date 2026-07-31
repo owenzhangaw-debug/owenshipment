@@ -2102,8 +2102,11 @@ tbody tr:hover{background:#fafbfc}
         <th title="Days of free storage before charges start — Delivery Date turns red once it's exceeded">Free Days</th>
         <th title="Storage fee charged per day once free days are exceeded">Price/Day</th>
         <th title="Calculated: (days over free storage) × price/day">Storage Fee</th>
-        <th style="text-align:right">Price</th>
-        <th style="min-width:160px" title="Extra fees — can have multiple reasons">Surcharge</th>
+        <th style="text-align:right">Freight</th>
+        <th style="text-align:right" title="Customs Clearance price">CC</th>
+        <th style="text-align:right;min-width:100px" title="This container's share of Freight+CC, plus its own storage fee and surcharges (storage, waiting fee, customs clearance, etc.)">Container Amt</th>
+        <th style="text-align:right;min-width:100px" title="Whole order: Freight + CC + all containers' storage fees and surcharges">Order Total</th>
+        <th style="min-width:160px" title="Extra fees — can have multiple reasons (e.g. storage, waiting fee, customs clearance)">Surcharge</th>
         <th>Payment Status</th>
         <th style="min-width:150px">Service</th>
         <th style="text-align:center;min-width:150px">Status</th>
@@ -11587,7 +11590,7 @@ function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
-    'Price':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'Remark':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
+    'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'Remark':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -11883,11 +11886,11 @@ function renderOrders(){
 
   if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' container'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
-    body.innerHTML='<tr><td colspan="24" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="27" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   if(!flat.length){
-    body.innerHTML='<tr><td colspan="24" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
+    body.innerHTML='<tr><td colspan="27" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
     return;
   }
   const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box';
@@ -11961,6 +11964,9 @@ function renderOrders(){
       <td>${(()=>`<input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€/day" onchange="noSet(${o._id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px"/>`)()}</td>
       <td style="white-space:nowrap;font-size:11.5px">${fee?`<span style="color:#b91c1c;font-weight:800">€${fee.fee}</span> <span style="color:#94a3b8;font-size:10px">(${fee.byDays}d×€${fee.ppd})</span>`:'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:right;font-weight:700;color:#0369a1">${tinp(o,'Price','€',70)}</td>
+      <td style="text-align:right">${(()=>`<input type="text" value="${_noEsc(o['CC'])}" placeholder="€" onchange="noSet(${o._id},'CC',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px;text-align:right"/>`)()}</td>
+      <td style="text-align:right;font-weight:700;color:#0f766e;white-space:nowrap">€${_noContainerAmount(o,cn)}</td>
+      <td style="text-align:right">${isFirst?`<span style="font-weight:800;color:#0369a1;background:#e0f2fe;border-radius:6px;padding:3px 8px;white-space:nowrap">€${_noOrderTotal(o)}</span>`:''}</td>
       <td>${surchargeEditor}</td>
       <td>${(()=>`<select onchange="noSet(${o._id},'Payment Status',this.value)" style="${_inpCss};min-width:110px">
           ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
@@ -12029,6 +12035,28 @@ function _noStorageFee(o,cn){
   return {byDays:st.byDays, ppd, fee:Math.round(st.byDays*ppd*100)/100};
 }
 function _noOrderStorageExceeded(o){ return _noContainers(o).some(cn=>{ const s=_noStorageInfo(o,cn); return s&&s.exceeded; }); }
+// Sum of this container's own surcharge tags (storage, waiting fee, customs clearance, etc.)
+function _noCtnSurchargeSum(o,cn){ return _noSurcharges(o,cn).reduce((s,x)=>s+(parseFloat(x.fee)||0),0); }
+// Per-container amount: this container's even share of Freight+CC, plus its own storage fee and surcharges
+function _noContainerAmount(o,cn){
+  const cs=_noContainers(o); const n=cs.length||1;
+  const freight=parseFloat(o['Price'])||0, cc=parseFloat(o['CC'])||0;
+  const share=(freight+cc)/n;
+  const sf=cn?_noStorageFee(o,cn):null;
+  const total=share+(sf?sf.fee:0)+(cn?_noCtnSurchargeSum(o,cn):_noCtnSurchargeSum(o,null));
+  return Math.round(total*100)/100;
+}
+// Whole-order total: Freight + CC + every container's storage fee and surcharges combined
+function _noOrderTotal(o){
+  const cs=_noContainers(o);
+  const freight=parseFloat(o['Price'])||0, cc=parseFloat(o['CC'])||0;
+  let extra=0;
+  (cs.length?cs:[null]).forEach(cn=>{
+    if(cn){ const sf=_noStorageFee(o,cn); if(sf) extra+=sf.fee; extra+=_noCtnSurchargeSum(o,cn); }
+    else extra+=_noCtnSurchargeSum(o,null);
+  });
+  return Math.round((freight+cc+extra)*100)/100;
+}
 function _noRenderStorageAlerts(rows){
   const el=document.getElementById('no-storage-alerts'); if(!el) return;
   const bad=rows.filter(_noOrderStorageExceeded);
