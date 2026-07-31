@@ -2092,8 +2092,7 @@ tbody tr:hover{background:#fafbfc}
         <th style="text-align:center" title="T1 customs transit document issued?">T1</th>
         <th>Delivery Date</th>
         <th>ATA</th>
-        <th>Free Storage</th>
-        <th title="Days of free storage before charges start">Free Days</th>
+        <th title="Days of free storage before charges start — Delivery Date turns red once it's exceeded">Free Days</th>
         <th>Trucker</th>
         <th style="text-align:right">Price</th>
         <th style="min-width:160px" title="Extra fees — can have multiple reasons">Surcharge</th>
@@ -11668,7 +11667,7 @@ function renderOrders(){
   const totalCtns=rows.reduce((n,o)=>n+Math.max(1,_noContainers(o).length),0);
   if(badge) badge.textContent=rows.length+' order'+(rows.length!==1?'s':'')+' · '+totalCtns+' container'+(totalCtns!==1?'s':'')+(filt?' ('+filt+')':'')+(q?' · filtered':'');
   if(!rows.length){
-    body.innerHTML='<tr><td colspan="22" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="21" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box';
@@ -11738,9 +11737,8 @@ function renderOrders(){
         <td>${cn?`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/>`:'<span style="color:#cbd5e1">—</span>'}</td>
         <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
         <td style="text-align:center"><input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}" style="width:16px;height:16px;accent-color:#1d4ed8;cursor:pointer"/></td>
-        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
+        <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s) — free until '+st.expiry:''}" style="${_inpCss};min-width:95px${st&&st.exceeded?';background:#fee2e2;border-color:#fca5a5;color:#b91c1c;font-weight:700':''}"/></td>
         <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
-        <td style="white-space:nowrap;font-size:11.5px">${st?(st.exceeded?`<span style="color:#b91c1c;font-weight:800">⚠ +${st.byDays}d</span>`:`<span style="color:#0f766e;font-weight:600">until ${st.expiry}</span>`):'<span style="color:#cbd5e1">—</span>'}</td>
         <td>${(()=>`<input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days" onchange="noSet(${o._id},'Free Storage (Days)',this.value)" style="${_inpCss};min-width:64px"/>`)()}</td>
         <td>${tinp(o,'Trucker','',100)}</td>
         <td style="text-align:right;font-weight:700;color:#0369a1">${tinp(o,'Price','€',70)}</td>
