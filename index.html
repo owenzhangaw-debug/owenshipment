@@ -11840,10 +11840,12 @@ function renderOrders(){
     sf.innerHTML='<option value="">All Statuses</option>'+opts.map(v=>`<option value="${_noEsc(v)}"${v===cur?' selected':''}>${_noEsc(v)}</option>`).join('');
   }
   const filt=document.getElementById('no-status-filter')?.value||'';
-  // Same tokenizing as the container tracker's search (getCTRows/#f-search): split on whitespace/comma/semicolon
-  // so pasting several container numbers or search terms at once works, matching if ANY token is found.
+  // Split only on comma/semicolon (NOT whitespace) — Order No. values here often contain spaces
+  // as part of a single identifier (e.g. "ZNNEPRF26060023 C4"), so splitting on space would break
+  // exact matches and bleed into every sibling order sharing the same prefix. Pasting several
+  // full values separated by commas still works (e.g. "ORD-1, ORD-2").
   const qRaw=(document.getElementById('no-search')?.value||'');
-  const qTokens=qRaw.split(/[\s,;]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const qTokens=qRaw.split(/[,;]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
   const badge=document.getElementById('no-count-badge');
 
   // Flatten to one entry per container FIRST (same unit CT's tracker filters on), then filter —
