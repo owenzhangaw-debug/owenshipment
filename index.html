@@ -2104,7 +2104,7 @@ tbody tr:hover{background:#fafbfc}
         <th title="Calculated: (days over free storage) × price/day">Storage Fee</th>
         <th style="text-align:right">Freight</th>
         <th style="text-align:right" title="Customs Clearance price">CC</th>
-        <th style="text-align:right;min-width:100px" title="This container's share of Freight+CC, plus its own storage fee and surcharges (storage, waiting fee, customs clearance, etc.)">Container Amt</th>
+        <th style="text-align:right;min-width:100px" title="Storage fee + Freight + CC + this container's own surcharges (storage, waiting fee, customs clearance, etc.)">Container Amt</th>
         <th style="text-align:right;min-width:100px" title="Whole order: Freight + CC + all containers' storage fees and surcharges">Order Total</th>
         <th style="min-width:160px" title="Extra fees — can have multiple reasons (e.g. storage, waiting fee, customs clearance)">Surcharge</th>
         <th>Payment Status</th>
@@ -12037,13 +12037,11 @@ function _noStorageFee(o,cn){
 function _noOrderStorageExceeded(o){ return _noContainers(o).some(cn=>{ const s=_noStorageInfo(o,cn); return s&&s.exceeded; }); }
 // Sum of this container's own surcharge tags (storage, waiting fee, customs clearance, etc.)
 function _noCtnSurchargeSum(o,cn){ return _noSurcharges(o,cn).reduce((s,x)=>s+(parseFloat(x.fee)||0),0); }
-// Per-container amount: this container's even share of Freight+CC, plus its own storage fee and surcharges
+// Per-container amount: Freight + CC + this container's own storage fee + this container's own surcharges
 function _noContainerAmount(o,cn){
-  const cs=_noContainers(o); const n=cs.length||1;
   const freight=parseFloat(o['Price'])||0, cc=parseFloat(o['CC'])||0;
-  const share=(freight+cc)/n;
   const sf=cn?_noStorageFee(o,cn):null;
-  const total=share+(sf?sf.fee:0)+(cn?_noCtnSurchargeSum(o,cn):_noCtnSurchargeSum(o,null));
+  const total=freight+cc+(sf?sf.fee:0)+(cn?_noCtnSurchargeSum(o,cn):_noCtnSurchargeSum(o,null));
   return Math.round(total*100)/100;
 }
 // Whole-order total: Freight + CC + every container's storage fee and surcharges combined
