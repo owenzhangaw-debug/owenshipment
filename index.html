@@ -2055,6 +2055,7 @@ tbody tr:hover{background:#fafbfc}
 <div id="page-orders" class="page">
   <div id="page-notice-orders"></div>
   <div id="page-rem-orders"></div>
+  <div id="no-batch-progress" style="margin:0 0 12px"></div>
   <div class="chart-card" style="padding:14px 16px;margin:0 0 12px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <h3 style="margin:0">📦 Container Orders <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:6px">normal orders — separate from TEMU</span></h3>
@@ -11766,7 +11767,71 @@ function applyNoBulkEdit(){
   if(ok){ ok.textContent='✓ Updated '+count+' order'+(count!==1?'s':'')+'.'; ok.style.display='block'; }
   setTimeout(()=>{ closeNoBE(); noClearSel(); },900);
 }
+// ── Order progress cards (same look/behavior as the container tracker's batch progress bars) ──
+function renderNoBatchProgress(){
+  const el=document.getElementById('no-batch-progress'); if(!el) return;
+  if(!NO.length){ el.innerHTML=''; return; }
+  const groups=NO.map(o=>{
+    const cs=_noContainers(o);
+    const total=cs.length||1;
+    let arrived=0, t1Count=0;
+    if(cs.length){
+      cs.forEach(cn=>{
+        const pc=_noPc(o,cn);
+        if(!!(pc['ATA']||o['ATA'])||_noHasSt(o,'Delivered')) arrived++;
+        if(pc['T1']||o['T1']) t1Count++;
+      });
+    } else if(_noHasSt(o,'Delivered')) arrived=1;
+    return {o,total,arrived,t1Count};
+  });
+  const _moAbbr=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDt=v=>{ const d=_noParseDate(v); return d?d.getDate()+' '+_moAbbr[d.getMonth()]:''; };
+  const active=groups.filter(g=>g.arrived<g.total).sort((a,b)=>{
+    const da=_noParseDate(a.o['ETA']), db=_noParseDate(b.o['ETA']);
+    if(da&&db) return da-db;
+    if(da) return -1; if(db) return 1;
+    return 0;
+  });
+  const done=groups.filter(g=>g.arrived===g.total);
+  const _curSearch=(document.getElementById('no-search')?.value||'').trim().toLowerCase();
+  const renderCard=(g)=>{
+    const {o,total,arrived,t1Count}=g;
+    const pct=Math.round(arrived/total*100);
+    const allDone=pct===100;
+    const fillColor=allDone?'#16a34a':pct===0?'#e53935':pct>=60?'#22c55e':'#f59e0b';
+    const name=o['Order No.']||('Order #'+o._id);
+    const nameEsc=String(name).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const isActive=_curSearch&&_curSearch===String(name).toLowerCase();
+    const hubStr=o['Hub']?_noEsc(o['Hub']):'';
+    const etaStr=fmtDt(o['ETA']);
+    const datesHtml=[hubStr?`<span>🏗️ ${hubStr}${etaStr?' '+etaStr:''}</span>`:'',t1Count?`<span>✅ T1: ${t1Count}</span>`:''].filter(Boolean).join('');
+    return `<div class="ct-bp-card${isActive?' bp-active':''}" onclick="noBpCardClick('${nameEsc}')" title="Click to filter by this order · click again to clear">
+      <div class="ct-bp-hdr">
+        <span class="ct-bp-name">${_noEsc(name)}</span>
+        <span class="ct-bp-sub">${arrived}/${total} arrived</span>
+      </div>
+      <div class="ct-bp-pctbig" style="color:${fillColor}">${pct}%</div>
+      <div class="ct-bp-track"><div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+      ${datesHtml?`<div class="ct-bp-dates">${datesHtml}</div>`:''}
+      <div class="ct-bp-cnt">📦 ${total}</div>
+    </div>`;
+  };
+  el.innerHTML=`<div class="ct-bp-row">${[...active,...done].map(renderCard).join('')}</div>`;
+}
+function noBpCardClick(orderName){
+  const box=document.getElementById('no-search'); if(!box) return;
+  if(box.value.trim().toLowerCase()===orderName.toLowerCase()){ box.value=''; }
+  else { box.value=orderName; }
+  renderOrders();
+  if(box.value){
+    requestAnimationFrame(()=>{
+      const tbl=document.getElementById('no-body');
+      if(tbl) tbl.closest('.chart-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  }
+}
 function renderOrders(){
+  renderNoBatchProgress();
   const body=document.getElementById('no-body'); if(!body) return;
   // status filter options follow whatever statuses exist in the data (free-typed included)
   const sf=document.getElementById('no-status-filter');
