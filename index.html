@@ -2108,6 +2108,7 @@ tbody tr:hover{background:#fafbfc}
         <th style="text-align:right;min-width:100px" title="Sum of every container's own amount (Storage Fee + Freight + CC + Surcharge) across the whole order">Order Total</th>
         <th style="min-width:160px" title="Extra fees — can have multiple reasons (e.g. storage, waiting fee, customs clearance)">Surcharge</th>
         <th>Payment Status</th>
+        <th style="text-align:center" title="Proof of Delivery — checking this marks the container delivered">POD</th>
         <th style="min-width:150px">Service</th>
         <th style="text-align:center;min-width:150px">Status</th>
         <th style="min-width:220px">Remark</th>
@@ -11590,7 +11591,7 @@ function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
-    'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'Remark':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
+    'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'POD':false,'Remark':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -11797,7 +11798,7 @@ function renderNoBatchProgress(){
     if(cs.length){
       cs.forEach(cn=>{
         const pc=_noPc(o,cn);
-        if(!!(pc['ATA']||o['ATA'])||_noHasSt(o,'Delivered')) arrived++;
+        if(!!(pc['ATA']||o['ATA'])||!!pc['POD']||_noHasSt(o,'Delivered')) arrived++;
         if(pc['T1']||o['T1']) t1Count++;
       });
     } else if(_noHasSt(o,'Delivered')) arrived=1;
@@ -11834,7 +11835,7 @@ function renderNoBatchProgress(){
       <div class="ct-bp-track"><div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
       ${datesHtml?`<div class="ct-bp-dates">${datesHtml}</div>`:''}
       <div class="ct-bp-cnt">📦 ${total}</div>
-      ${remarkTxt?`<div style="font-size:10.5px;color:#94a3b8;margin-top:4px;padding-top:4px;border-top:1px dashed #e5e7eb;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;line-height:1.35" title="${_noEsc(remarkTxt)}">📝 ${_noEsc(remarkTxt)}</div>`:''}
+      ${remarkTxt?`<div style="font-size:10.5px;color:#94a3b8;margin-top:4px;padding-top:4px;border-top:1px dashed #e5e7eb;white-space:pre-line;line-height:1.35">📝 ${_noEsc(remarkTxt)}</div>`:''}
     </div>`;
   };
   el.innerHTML=`<div class="ct-bp-row">${[...active,...done].map(renderCard).join('')}</div>`;
@@ -11888,11 +11889,11 @@ function renderOrders(){
 
   if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' container'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
-    body.innerHTML='<tr><td colspan="27" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="28" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   if(!flat.length){
-    body.innerHTML='<tr><td colspan="27" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
+    body.innerHTML='<tr><td colspan="28" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
     return;
   }
   const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box';
@@ -11973,6 +11974,11 @@ function renderOrders(){
       <td>${(()=>`<select onchange="noSet(${o._id},'Payment Status',this.value)" style="${_inpCss};min-width:110px">
           ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
         </select>`)()}</td>
+      <td style="text-align:center">${(()=>{
+        const podChecked=cn?!!pc['POD']:!!o['POD'];
+        const podOnchange=cn?`noSetCtn(${o._id},'${ce}','POD',this.checked)`:`noSet(${o._id},'POD',this.checked)`;
+        return `<input type="checkbox" ${podChecked?'checked':''} onchange="${podOnchange}" title="Proof of Delivery ${podChecked?'— delivered':'— not delivered yet'}" style="width:16px;height:16px;accent-color:#15803d;cursor:pointer"/>`;
+      })()}</td>
       <td>${svcTagsEditor}</td>
       <td style="text-align:center">${stTagsEditor}</td>
       <td style="min-width:200px"><textarea rows="1" class="no-autogrow" placeholder="Remark…" onchange="noSet(${o._id},'Remark',this.value)" oninput="_noAutoGrow(this)" style="${_taCss}">${_noEsc(o['Remark'])}</textarea></td>
@@ -12069,7 +12075,7 @@ function noDispatchRows(){
     const cs=_noContainers(o);
     (cs.length?cs:[o['Order No.']||'Order']).forEach((cn,i)=>{
       const pc=_noPc(o,cn);
-      const pcDelivered=/delivered/i.test(pc['Status']||'');
+      const pcDelivered=!!pc['POD']||/delivered/i.test(pc['Status']||'');
       out.push({
         'Container No.':'🧾 '+cn+(o['Order No.']?' · '+o['Order No.']:''),
         'Consignee':o['Consignee']||'(no consignee)',
@@ -12092,7 +12098,7 @@ function _ordersAsCtRows(){
     const cs=_noContainers(o); const list=cs.length?cs:[o['Order No.']||'Order'];
     list.forEach((cn,i)=>{
       const pc=_noPc(o,cn);
-      const pcDelivered=/delivered/i.test(pc['Status']||'');
+      const pcDelivered=!!pc['POD']||/delivered/i.test(pc['Status']||'');
       out.push({
         'Batch / Train':'🧾 Orders',
         'Container No.':cn,
