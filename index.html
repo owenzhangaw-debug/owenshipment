@@ -11824,6 +11824,7 @@ function renderNoBatchProgress(){
     const hubStr=o['Hub']?_noEsc(o['Hub']):'';
     const etaStr=fmtDt(o['ETA']);
     const datesHtml=[hubStr?`<span>🏗️ ${hubStr}${etaStr?' '+etaStr:''}</span>`:'',t1Count?`<span>✅ T1: ${t1Count}</span>`:''].filter(Boolean).join('');
+    const remarkTxt=(o['Remark']||'').trim();
     return `<div class="ct-bp-card${isActive?' bp-active':''}" onclick="noBpCardClick('${nameEsc}')" title="Click to filter by this order · click again to clear">
       <div class="ct-bp-hdr">
         <span class="ct-bp-name">${_noEsc(name)}</span>
@@ -11833,6 +11834,7 @@ function renderNoBatchProgress(){
       <div class="ct-bp-track"><div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
       ${datesHtml?`<div class="ct-bp-dates">${datesHtml}</div>`:''}
       <div class="ct-bp-cnt">📦 ${total}</div>
+      ${remarkTxt?`<div style="font-size:10.5px;color:#94a3b8;margin-top:4px;padding-top:4px;border-top:1px dashed #e5e7eb;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;line-height:1.35" title="${_noEsc(remarkTxt)}">📝 ${_noEsc(remarkTxt)}</div>`:''}
     </div>`;
   };
   el.innerHTML=`<div class="ct-bp-row">${[...active,...done].map(renderCard).join('')}</div>`;
