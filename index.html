@@ -1435,6 +1435,42 @@ tbody tr:hover{background:#fafbfc}
 
   <!-- Notices & Reminders moved to dedicated Notices page -->
 
+  <!-- ══ Container Orders — dedicated logistics overview (separate from TEMU) ══ -->
+  <div class="bel-route-card" style="margin-bottom:18px;margin-top:0">
+    <div class="bel-card-top" style="margin-bottom:12px">
+      <div class="bel-card-top-left">
+        <span style="font-size:22px">🧾</span>
+        <h3 style="margin:0">Container Orders — Logistics Overview</h3>
+        <span style="font-size:10px;font-weight:700;background:#e0f2fe;color:#0369a1;border-radius:20px;padding:3px 10px">normal orders — separate from TEMU</span>
+      </div>
+    </div>
+    <div class="kpi-row" style="grid-template-columns:repeat(5,1fr)" id="no-dash-kpi-row"></div>
+    <div class="charts-row" style="margin-top:4px;grid-template-columns:1fr 1fr">
+      <div class="chart-card">
+        <h3 onclick="toggleChart(this)">Orders by Status<span class="ch-toggle">▼</span></h3>
+        <p class="chart-subtitle">Container Orders grouped by current status</p>
+        <div class="chart-wrap" style="height:230px"><canvas id="orders-status-chart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3 onclick="toggleChart(this)">Orders by Payment Status<span class="ch-toggle">▼</span></h3>
+        <p class="chart-subtitle">Container Orders grouped by payment status</p>
+        <div class="chart-wrap" style="height:230px"><canvas id="orders-payment-chart"></canvas></div>
+      </div>
+    </div>
+    <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
+      <div class="chart-card">
+        <h3 onclick="toggleChart(this)">Total Order Amount by Consignee<span class="ch-toggle">▼</span></h3>
+        <p class="chart-subtitle">Sum of Order Total (Freight + CC + storage + surcharges) per consignee</p>
+        <div class="chart-wrap" style="height:260px"><canvas id="orders-amount-consignee-chart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3 onclick="toggleChart(this)">Containers by Order Destination<span class="ch-toggle">▼</span></h3>
+        <p class="chart-subtitle">Container count per destination across all Container Orders</p>
+        <div class="chart-wrap" style="height:260px"><canvas id="orders-destination-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
   <div class="dash-split">
 
     <!-- ════ LEFT: CONTAINER SECTION ════ -->
@@ -1472,7 +1508,6 @@ tbody tr:hover{background:#fafbfc}
         <button class="dash-cat-tab" onclick="switchDashCat('price',this)">💰 Price</button>
         <button class="dash-cat-tab" onclick="switchDashCat('qty',this)">📦 Quantity</button>
         <button class="dash-cat-tab" onclick="switchDashCat('delays',this)">⚠️ Delays</button>
-        <button class="dash-cat-tab" onclick="switchDashCat('orders',this)">🧾 Orders</button>
       </div>
 
       <!-- ── TIME ── -->
@@ -1546,36 +1581,6 @@ tbody tr:hover{background:#fafbfc}
       <!-- ── DELAYS ── -->
       <div id="dash-cat-delays" class="dash-cat-section">
         <div id="delay-kpi-row" class="kpi-row" style="margin-bottom:16px"></div>
-      </div>
-
-      <!-- ── ORDERS ── -->
-      <div id="dash-cat-orders" class="dash-cat-section">
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Orders by Status<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Container Orders grouped by current status</p>
-            <div class="chart-wrap" style="height:260px"><canvas id="orders-status-chart"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Orders by Payment Status<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Container Orders grouped by payment status</p>
-            <div class="chart-wrap" style="height:260px"><canvas id="orders-payment-chart"></canvas></div>
-          </div>
-        </div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Total Order Amount by Consignee<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Sum of Order Total (Freight + CC + storage + surcharges) per consignee</p>
-            <div class="chart-wrap" style="height:320px"><canvas id="orders-amount-consignee-chart"></canvas></div>
-          </div>
-        </div>
-        <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
-          <div class="chart-card">
-            <h3 onclick="toggleChart(this)">Containers by Order Destination<span class="ch-toggle">▼</span></h3>
-            <p class="chart-subtitle">Container count per destination across all Container Orders</p>
-            <div class="chart-wrap" style="height:320px"><canvas id="orders-destination-chart"></canvas></div>
-          </div>
-        </div>
       </div>
 
       <!-- Invalid Slots (T1 Rule) — belongs to Containers -->
@@ -5224,6 +5229,61 @@ function renderDashboard(){
   // ── ORDERS CHARTS (Container Orders — separate from TEMU) ────────────
   (function(){
     const _noAll = (typeof NO!=='undefined')?NO:[];
+    const _noActive = _noAll.filter(o=>!(typeof _noHasSt==='function'&&_noHasSt(o,'Cancelled')));
+
+    // ── KPI row: quantity, value, lead time, and other logistics-useful metrics ──
+    (function(){
+      const kpiEl=document.getElementById('no-dash-kpi-row');
+      if(!kpiEl) return;
+      let totalContainers=0, totalValue=0, unpaidValue=0, storageExceeded=0;
+      let leadSum=0, leadCount=0, ageSum=0, ageCount=0;
+      const today=new Date();
+      _noActive.forEach(o=>{
+        const cs=(typeof _noContainers==='function')?_noContainers(o):[];
+        const list=cs.length?cs:[null];
+        const orderVal=(typeof _noOrderTotal==='function')?_noOrderTotal(o):0;
+        totalValue+=orderVal;
+        if((o['Payment Status']||'')!=='Paid') unpaidValue+=orderVal;
+        const etaD=(typeof _noParseDate==='function')?_noParseDate(o['ETA']):null;
+        list.forEach(cn=>{
+          totalContainers++;
+          const pc=(cn&&typeof _noPc==='function')?_noPc(o,cn):{};
+          const delivered=!!(pc['ATA']||o['ATA']||pc['POD']||(typeof _noHasSt==='function'&&_noHasSt(o,'Delivered')));
+          const delivDateRaw=pc['ATA']||o['ATA']||pc['Delivery Date']||o['Delivery Date'];
+          const delivD=(typeof _noParseDate==='function')?_noParseDate(delivDateRaw):null;
+          if(etaD&&delivered&&delivD){
+            const d=(delivD-etaD)/864e5;
+            if(d>=0&&d<120){ leadSum+=d; leadCount++; }
+          } else if(etaD&&!delivered){
+            const d=(today-etaD)/864e5;
+            if(d>=0&&d<365){ ageSum+=d; ageCount++; }
+          }
+          if(cn&&typeof _noStorageInfo==='function'){
+            const si=_noStorageInfo(o,cn);
+            if(si&&si.exceeded) storageExceeded++;
+          }
+        });
+      });
+      const avgLead=leadCount?(leadSum/leadCount).toFixed(1):null;
+      const avgAge=ageCount?(ageSum/ageCount).toFixed(1):null;
+      const fmtN=v=>v.toLocaleString('en-US',{maximumFractionDigits:0});
+      kpiEl.innerHTML=`
+        <div class="kpi" style="border-color:#0369a1;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Orders</div><div class="kv" style="color:#0369a1">${_noActive.length}</div><div class="ks">${totalContainers} container${totalContainers!==1?'s':''}</div>
+        </div>
+        <div class="kpi" style="border-color:#0f766e;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Total Value</div><div class="kv" style="color:#0f766e">${fmtN(totalValue)}</div><div class="ks">Freight + CC + storage + surcharge</div>
+        </div>
+        <div class="kpi" style="border-color:#b45309;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Unpaid</div><div class="kv" style="color:#b45309">${fmtN(unpaidValue)}</div><div class="ks">orders not marked Paid</div>
+        </div>
+        <div class="kpi" style="border-color:#7c3aed">
+          <div class="kl">Avg Lead Time</div><div class="kv" style="color:#7c3aed">${avgLead!==null?avgLead+'d':'—'}</div><div class="ks">${avgLead!==null?'ETA → delivered':(avgAge!==null?'avg '+avgAge+'d since ETA, pending':'no data yet')}</div>
+        </div>
+        <div class="kpi" style="border-color:#dc2626;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Storage Exceeded</div><div class="kv" style="color:#dc2626">${storageExceeded}</div><div class="ks">containers over free days</div>
+        </div>`;
+    })();
 
     // Orders by Status
     const stCounts={};
@@ -12002,7 +12062,7 @@ function renderNoBatchProgress(){
       <div class="ct-bp-track"><div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
       ${datesHtml?`<div class="ct-bp-dates">${datesHtml}</div>`:''}
       <div class="ct-bp-cnt">📦 ${total}</div>
-      ${remarkTxt?`<div style="font-size:10.5px;color:#94a3b8;margin-top:4px;padding-top:4px;border-top:1px dashed #e5e7eb;white-space:pre-line;line-height:1.35">📝 ${_noEsc(remarkTxt)}</div>`:''}
+      ${remarkTxt?`<div title="${_noEsc(remarkTxt)}" style="font-size:10.5px;color:#94a3b8;margin-top:4px;padding-top:4px;border-top:1px dashed #e5e7eb;white-space:pre-line;line-height:1.35;max-height:38px;overflow-y:auto">📝 ${_noEsc(remarkTxt)}</div>`:''}
     </div>`;
   };
   el.innerHTML=`<div class="ct-bp-row">${[...active,...done].map(renderCard).join('')}</div>`;
