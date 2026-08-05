@@ -12062,7 +12062,7 @@ function renderNoBatchProgress(){
       <div class="ct-bp-track"><div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
       ${datesHtml?`<div class="ct-bp-dates">${datesHtml}</div>`:''}
       <div class="ct-bp-cnt">📦 ${total}</div>
-      ${remarkTxt?`<div title="${_noEsc(remarkTxt)}" style="font-size:10.5px;color:#94a3b8;margin-top:4px;padding-top:4px;border-top:1px dashed #e5e7eb;white-space:pre-line;line-height:1.35;max-height:38px;overflow-y:auto">📝 ${_noEsc(remarkTxt)}</div>`:''}
+      ${remarkTxt?`<div title="${_noEsc(remarkTxt)}" style="font-size:10.5px;color:#94a3b8;margin-top:5px;padding-top:5px;padding-right:2px;border-top:1px dashed #e5e7eb;white-space:pre-line;line-height:1.5;max-height:92px;overflow-y:auto">📝 ${_noEsc(remarkTxt)}</div>`:''}
     </div>`;
   };
   el.innerHTML=`<div class="ct-bp-row">${[...active,...done].map(renderCard).join('')}</div>`;
