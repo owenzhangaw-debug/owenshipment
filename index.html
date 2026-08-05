@@ -10236,10 +10236,11 @@ async function connectSync(){
     let binId=binInput;
     if(!binId){
       // Create new bin
+      if(typeof rpLoad==='function') rpLoad();
       const res=await fetch(JBIN,{
         method:'POST',
         headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'Owen Zhang'},
-        body:JSON.stringify({CT,VT,NOTICES,REMINDERS,NO:(typeof NO!=='undefined'?NO:[])})
+        body:JSON.stringify({CT,VT,NOTICES,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),REPORTS:(typeof REPORTS!=='undefined'?REPORTS:[])})
       });
       if(!res.ok) throw new Error('Failed to create bin (HTTP '+res.status+'). Check your Master Key.');
       const data=await res.json();
@@ -10269,11 +10270,15 @@ async function pushToCloud(manual=false){
     return;
   }
   setSyncDot('busy','Pushing…');
+  // Make sure the in-memory REPORTS reflects whatever's in localStorage — the Daily Report
+  // page only loads it lazily (rpLoad()) when visited, so without this a push from a session
+  // that never opened the Reports page would silently wipe reports on the other device.
+  if(typeof rpLoad==='function') rpLoad();
   try{
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),_dlReasons,_bpTrainDates,_ts:Date.now()})
+      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),REPORTS:(typeof REPORTS!=='undefined'?REPORTS:[]),_dlReasons,_bpTrainDates,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
@@ -10332,6 +10337,7 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     if(rec&&Array.isArray(rec.REMINDERS)){ REMINDERS=rec.REMINDERS; _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); if(typeof remRender==='function') remRender(); }
+    if(rec&&Array.isArray(rec.REPORTS)){ REPORTS=rec.REPORTS; localStorage.setItem(LS_REPORTS,JSON.stringify(REPORTS)); if(typeof rpRenderHistory==='function') rpRenderHistory(); }
     if(rec&&rec._dlReasons){ _dlReasons=rec._dlReasons; localStorage.setItem(_DL_REASON_KEY,JSON.stringify(_dlReasons)); }
     if(rec&&rec._bpTrainDates){ _bpTrainDates=rec._bpTrainDates; localStorage.setItem(_bpTrainKey,JSON.stringify(_bpTrainDates)); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
