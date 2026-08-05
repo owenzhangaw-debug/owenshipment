@@ -1447,18 +1447,6 @@ tbody tr:hover{background:#fafbfc}
     <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))" id="no-dash-kpi-row"></div>
     <div class="charts-row" style="margin-top:4px;grid-template-columns:1fr 1fr">
       <div class="chart-card">
-        <h3 onclick="toggleChart(this)">Orders by Status<span class="ch-toggle">▼</span></h3>
-        <p class="chart-subtitle">Container Orders grouped by current status</p>
-        <div class="chart-wrap" style="height:230px"><canvas id="orders-status-chart"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h3 onclick="toggleChart(this)">Orders by Payment Status<span class="ch-toggle">▼</span></h3>
-        <p class="chart-subtitle">Container Orders grouped by payment status</p>
-        <div class="chart-wrap" style="height:230px"><canvas id="orders-payment-chart"></canvas></div>
-      </div>
-    </div>
-    <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
-      <div class="chart-card">
         <h3 onclick="toggleChart(this)">Total Order Amount by Consignee<span class="ch-toggle">▼</span></h3>
         <p class="chart-subtitle">Sum of Order Total (Freight + CC + storage + surcharges) per consignee</p>
         <div class="chart-wrap" style="height:260px"><canvas id="orders-amount-consignee-chart"></canvas></div>
@@ -1471,8 +1459,8 @@ tbody tr:hover{background:#fafbfc}
     </div>
     <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
       <div class="chart-card">
-        <h3 onclick="toggleChart(this)">Order Amount by Month<span class="ch-toggle">▼</span></h3>
-        <p class="chart-subtitle">Total order value (Freight + CC + storage + surcharges) per month</p>
+        <h3 onclick="toggleChart(this)">Containers by Month<span class="ch-toggle">▼</span></h3>
+        <p class="chart-subtitle">Container quantity per month (by ETA, falls back to Delivery Date/ATA)</p>
         <div class="chart-wrap" style="height:260px"><canvas id="orders-value-month-chart"></canvas></div>
       </div>
       <div class="chart-card">
@@ -5310,46 +5298,6 @@ function renderDashboard(){
         </div>`;
     })();
 
-    // Orders by Status
-    const stCounts={};
-    _noAll.forEach(o=>{ const s=o['Status']||'New'; stCounts[s]=(stCounts[s]||0)+1; });
-    const stKeys=Object.keys(stCounts);
-    const stColors={'New':'#94a3b8','Booked':'#3b82f6','Picked Up':'#f59e0b','In Transit':'#8b5cf6','Delivered':'#10b981','Cancelled':'#ef4444'};
-    if(window.ordersStatusChart) window.ordersStatusChart.destroy();
-    const _osEl=document.getElementById('orders-status-chart');
-    if(_osEl && stKeys.length){
-      window.ordersStatusChart=new Chart(_osEl,{
-        type:'doughnut',
-        data:{labels:stKeys,datasets:[{data:stKeys.map(k=>stCounts[k]),backgroundColor:stKeys.map(k=>stColors[k]||'#64748b'),borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
-        options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
-          plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10,boxWidth:12}},
-            datalabels:{display:true,formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((v/t)*100).toFixed(0);return p>5?p+'%':'';},color:'#fff',font:{size:12,weight:'700'}},
-            tooltip:{callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((ctx.raw/t)*100).toFixed(1);return` ${ctx.label}: ${ctx.raw} order${ctx.raw!==1?'s':''} (${p}%)`;}}}
-          }
-        }
-      });
-    }
-
-    // Orders by Payment Status
-    const payCounts={};
-    _noAll.forEach(o=>{ const p=o['Payment Status']||'(unset)'; payCounts[p]=(payCounts[p]||0)+1; });
-    const payKeys=Object.keys(payCounts);
-    const payColors={'Paid':'#10b981','Pending invoice':'#f59e0b','Requested':'#3b82f6','(unset)':'#94a3b8'};
-    if(window.ordersPaymentChart) window.ordersPaymentChart.destroy();
-    const _opEl=document.getElementById('orders-payment-chart');
-    if(_opEl && payKeys.length){
-      window.ordersPaymentChart=new Chart(_opEl,{
-        type:'doughnut',
-        data:{labels:payKeys,datasets:[{data:payKeys.map(k=>payCounts[k]),backgroundColor:payKeys.map(k=>payColors[k]||'#64748b'),borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
-        options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
-          plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10,boxWidth:12}},
-            datalabels:{display:true,formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((v/t)*100).toFixed(0);return p>5?p+'%':'';},color:'#fff',font:{size:12,weight:'700'}},
-            tooltip:{callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=((ctx.raw/t)*100).toFixed(1);return` ${ctx.label}: ${ctx.raw} order${ctx.raw!==1?'s':''} (${p}%)`;}}}
-          }
-        }
-      });
-    }
-
     // Total Order Amount by Consignee
     const amtByCons={};
     _noAll.forEach(o=>{
@@ -5398,29 +5346,30 @@ function renderDashboard(){
       });
     }
 
-    // Order Amount by Month (sum of _noOrderTotal per order, bucketed by ETA — falls back to Delivery Date/ATA)
+    // Containers by Month (quantity, bucketed by ETA — falls back to Delivery Date/ATA)
     const _moAbbr3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const valByMonth={};
+    const cntByMonth={};
     _noActive.forEach(o=>{
       const d=(typeof _noParseDate==='function')?(_noParseDate(o['ETA'])||_noParseDate(o['Delivery Date'])||_noParseDate(o['ATA'])):null;
       if(!d) return;
       const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-      valByMonth[key]=(valByMonth[key]||0)+(typeof _noOrderTotal==='function'?_noOrderTotal(o):0);
+      const cs=(typeof _noContainers==='function'?_noContainers(o):[]);
+      cntByMonth[key]=(cntByMonth[key]||0)+(cs.length||1);
     });
-    const moKeys=Object.keys(valByMonth).sort();
+    const moKeys=Object.keys(cntByMonth).sort();
     const moLabels=moKeys.map(k=>{ const [y,m]=k.split('-'); return _moAbbr3[+m-1]+' '+y.slice(2); });
     if(window.ordersValueMonthChart) window.ordersValueMonthChart.destroy();
     const _ovmEl=document.getElementById('orders-value-month-chart');
     if(_ovmEl && moKeys.length){
       window.ordersValueMonthChart=new Chart(_ovmEl,{
         type:'bar',
-        data:{labels:moLabels,datasets:[{label:'Order Amount',data:moKeys.map(k=>+valByMonth[k].toFixed(2)),backgroundColor:'#0f766e',borderRadius:5}]},
+        data:{labels:moLabels,datasets:[{label:'Containers',data:moKeys.map(k=>cntByMonth[k]),backgroundColor:'#0f766e',borderRadius:5}]},
         options:{responsive:true,maintainAspectRatio:false,
           plugins:{legend:{display:false},
-            datalabels:{display:true,anchor:'end',align:'end',font:{size:10,weight:'700'},color:'#374151',formatter:v=>v.toLocaleString('en-US',{maximumFractionDigits:0})},
-            tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toLocaleString('en-US',{maximumFractionDigits:2})}`}}
+            datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151'},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.raw} container${ctx.raw!==1?'s':''}`}}
           },
-          scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true}}
+          scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true,ticks:{precision:0}}}
         }
       });
     }
