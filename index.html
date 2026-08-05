@@ -1444,7 +1444,7 @@ tbody tr:hover{background:#fafbfc}
         <span style="font-size:10px;font-weight:700;background:#e0f2fe;color:#0369a1;border-radius:20px;padding:3px 10px">normal orders — separate from TEMU</span>
       </div>
     </div>
-    <div class="kpi-row" style="grid-template-columns:repeat(5,1fr)" id="no-dash-kpi-row"></div>
+    <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))" id="no-dash-kpi-row"></div>
     <div class="charts-row" style="margin-top:4px;grid-template-columns:1fr 1fr">
       <div class="chart-card">
         <h3 onclick="toggleChart(this)">Orders by Status<span class="ch-toggle">▼</span></h3>
@@ -1467,6 +1467,25 @@ tbody tr:hover{background:#fafbfc}
         <h3 onclick="toggleChart(this)">Containers by Order Destination<span class="ch-toggle">▼</span></h3>
         <p class="chart-subtitle">Container count per destination across all Container Orders</p>
         <div class="chart-wrap" style="height:260px"><canvas id="orders-destination-chart"></canvas></div>
+      </div>
+    </div>
+    <div class="charts-row" style="margin-top:0;grid-template-columns:1fr 1fr">
+      <div class="chart-card">
+        <h3 onclick="toggleChart(this)">Order Amount by Month<span class="ch-toggle">▼</span></h3>
+        <p class="chart-subtitle">Total order value (Freight + CC + storage + surcharges) per month</p>
+        <div class="chart-wrap" style="height:260px"><canvas id="orders-value-month-chart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3 onclick="toggleChart(this)">Containers by Trucker<span class="ch-toggle">▼</span></h3>
+        <p class="chart-subtitle">Container count per trucker across all Container Orders</p>
+        <div class="chart-wrap" style="height:260px"><canvas id="orders-trucker-chart"></canvas></div>
+      </div>
+    </div>
+    <div class="charts-row" style="margin-top:0;grid-template-columns:1fr">
+      <div class="chart-card">
+        <h3 onclick="toggleChart(this)">Surcharges by Reason<span class="ch-toggle">▼</span></h3>
+        <p class="chart-subtitle">Total surcharge amount grouped by reason tag (storage, waiting fee, customs, etc.)</p>
+        <div class="chart-wrap" style="height:260px"><canvas id="orders-surcharge-reason-chart"></canvas></div>
       </div>
     </div>
   </div>
@@ -5235,7 +5254,7 @@ function renderDashboard(){
     (function(){
       const kpiEl=document.getElementById('no-dash-kpi-row');
       if(!kpiEl) return;
-      let totalContainers=0, totalValue=0, unpaidValue=0, storageExceeded=0;
+      let totalContainers=0, totalValue=0, unpaidValue=0, storageExceeded=0, surchargeTotal=0;
       let leadSum=0, leadCount=0, ageSum=0, ageCount=0;
       const today=new Date();
       _noActive.forEach(o=>{
@@ -5262,6 +5281,9 @@ function renderDashboard(){
             const si=_noStorageInfo(o,cn);
             if(si&&si.exceeded) storageExceeded++;
           }
+          if(typeof _noSurcharges==='function'){
+            surchargeTotal+=_noSurcharges(o,cn).reduce((s,x)=>s+(parseFloat(x.fee)||0),0);
+          }
         });
       });
       const avgLead=leadCount?(leadSum/leadCount).toFixed(1):null;
@@ -5282,6 +5304,9 @@ function renderDashboard(){
         </div>
         <div class="kpi" style="border-color:#dc2626;cursor:pointer" onclick="showPage('orders')">
           <div class="kl">Storage Exceeded</div><div class="kv" style="color:#dc2626">${storageExceeded}</div><div class="ks">containers over free days</div>
+        </div>
+        <div class="kpi" style="border-color:#c2410c;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Total Surcharges</div><div class="kv" style="color:#c2410c">${fmtN(surchargeTotal)}</div><div class="ks">storage, waiting fee, customs, etc.</div>
         </div>`;
     })();
 
@@ -5369,6 +5394,89 @@ function renderDashboard(){
             tooltip:{callbacks:{label:ctx=>` ${ctx.raw} container${ctx.raw!==1?'s':''}`}}
           },
           scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true,ticks:{precision:0}}}
+        }
+      });
+    }
+
+    // Order Amount by Month (sum of _noOrderTotal per order, bucketed by ETA — falls back to Delivery Date/ATA)
+    const _moAbbr3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const valByMonth={};
+    _noActive.forEach(o=>{
+      const d=(typeof _noParseDate==='function')?(_noParseDate(o['ETA'])||_noParseDate(o['Delivery Date'])||_noParseDate(o['ATA'])):null;
+      if(!d) return;
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      valByMonth[key]=(valByMonth[key]||0)+(typeof _noOrderTotal==='function'?_noOrderTotal(o):0);
+    });
+    const moKeys=Object.keys(valByMonth).sort();
+    const moLabels=moKeys.map(k=>{ const [y,m]=k.split('-'); return _moAbbr3[+m-1]+' '+y.slice(2); });
+    if(window.ordersValueMonthChart) window.ordersValueMonthChart.destroy();
+    const _ovmEl=document.getElementById('orders-value-month-chart');
+    if(_ovmEl && moKeys.length){
+      window.ordersValueMonthChart=new Chart(_ovmEl,{
+        type:'bar',
+        data:{labels:moLabels,datasets:[{label:'Order Amount',data:moKeys.map(k=>+valByMonth[k].toFixed(2)),backgroundColor:'#0f766e',borderRadius:5}]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false},
+            datalabels:{display:true,anchor:'end',align:'end',font:{size:10,weight:'700'},color:'#374151',formatter:v=>v.toLocaleString('en-US',{maximumFractionDigits:0})},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toLocaleString('en-US',{maximumFractionDigits:2})}`}}
+          },
+          scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true}}
+        }
+      });
+    }
+
+    // Containers by Trucker
+    const cntByTrucker={};
+    _noActive.forEach(o=>{
+      const t=o['Trucker']||'(unassigned)';
+      const cs=(typeof _noContainers==='function'?_noContainers(o):[]);
+      cntByTrucker[t]=(cntByTrucker[t]||0)+(cs.length||1);
+    });
+    const trKeys=Object.keys(cntByTrucker).sort((a,b)=>cntByTrucker[b]-cntByTrucker[a]);
+    if(window.ordersTruckerChart) window.ordersTruckerChart.destroy();
+    const _otEl=document.getElementById('orders-trucker-chart');
+    if(_otEl && trKeys.length){
+      window.ordersTruckerChart=new Chart(_otEl,{
+        type:'bar',
+        data:{labels:trKeys,datasets:[{label:'Containers',data:trKeys.map(k=>cntByTrucker[k]),backgroundColor:'#3b82f6',borderRadius:5}]},
+        options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+          layout:{padding:{right:30}},
+          plugins:{legend:{display:false},
+            datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151'},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.raw} container${ctx.raw!==1?'s':''}`}}
+          },
+          scales:{x:{grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}
+        }
+      });
+    }
+
+    // Surcharges by Reason
+    const surByReason={};
+    _noActive.forEach(o=>{
+      const cs=(typeof _noContainers==='function'?_noContainers(o):[]);
+      const list=cs.length?cs:[null];
+      list.forEach(cn=>{
+        if(typeof _noSurcharges!=='function') return;
+        _noSurcharges(o,cn).forEach(x=>{
+          const reason=(x.reason||'(other)').trim()||'(other)';
+          surByReason[reason]=(surByReason[reason]||0)+(parseFloat(x.fee)||0);
+        });
+      });
+    });
+    const surKeys=Object.keys(surByReason).sort((a,b)=>surByReason[b]-surByReason[a]);
+    if(window.ordersSurchargeReasonChart) window.ordersSurchargeReasonChart.destroy();
+    const _osrEl=document.getElementById('orders-surcharge-reason-chart');
+    if(_osrEl && surKeys.length){
+      window.ordersSurchargeReasonChart=new Chart(_osrEl,{
+        type:'bar',
+        data:{labels:surKeys,datasets:[{label:'Surcharge Amount',data:surKeys.map(k=>+surByReason[k].toFixed(2)),backgroundColor:'#c2410c',borderRadius:5}]},
+        options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+          layout:{padding:{right:55}},
+          plugins:{legend:{display:false},
+            datalabels:{display:true,anchor:'end',align:'end',font:{size:10,weight:'700'},color:'#374151',formatter:v=>v.toLocaleString('en-US',{maximumFractionDigits:0})},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toLocaleString('en-US',{maximumFractionDigits:2})}`}}
+          },
+          scales:{x:{grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true},y:{grid:{display:false}}}
         }
       });
     }
@@ -12062,7 +12170,7 @@ function renderNoBatchProgress(){
       <div class="ct-bp-track"><div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
       ${datesHtml?`<div class="ct-bp-dates">${datesHtml}</div>`:''}
       <div class="ct-bp-cnt">📦 ${total}</div>
-      ${remarkTxt?`<div title="${_noEsc(remarkTxt)}" style="font-size:10.5px;color:#94a3b8;margin-top:5px;padding-top:5px;padding-right:2px;border-top:1px dashed #e5e7eb;white-space:pre-line;line-height:1.5;max-height:92px;overflow-y:auto">📝 ${_noEsc(remarkTxt)}</div>`:''}
+      ${remarkTxt?`<div title="${_noEsc(remarkTxt)}" style="font-size:10.5px;color:#94a3b8;margin-top:5px;padding-top:5px;padding-right:2px;border-top:1px dashed #e5e7eb;white-space:pre-line;line-height:1.5;max-height:160px;overflow-y:auto">📝 ${_noEsc(remarkTxt)}</div>`:''}
     </div>`;
   };
   el.innerHTML=`<div class="ct-bp-row">${[...active,...done].map(renderCard).join('')}</div>`;
