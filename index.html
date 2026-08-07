@@ -2143,6 +2143,7 @@ tbody tr:hover{background:#fafbfc}
         <th style="text-align:center" title="T1 customs transit document issued?">T1</th>
         <th>Delivery Date</th>
         <th>ATA</th>
+        <th style="text-align:center" title="Demurrage — checked automatically when ATA is later than Delivery Date; can be overridden manually">Demurrage</th>
         <th title="Days of free storage before charges start — Delivery Date turns red once it's exceeded">Free Days</th>
         <th title="Storage fee charged per day once free days are exceeded">Price/Day</th>
         <th title="Calculated: (days over free storage) × price/day">Storage Fee</th>
@@ -12084,15 +12085,21 @@ function renderNoBatchProgress(){
   const groups=NO.map(o=>{
     const cs=_noContainers(o);
     const total=cs.length||1;
-    let arrived=0, t1Count=0;
+    let arrived=0, t1Count=0, demurCount=0, demurMaxDays=0;
     if(cs.length){
       cs.forEach(cn=>{
         const pc=_noPc(o,cn);
         if(!!(pc['ATA']||o['ATA'])||!!pc['POD']||_noHasSt(o,'Delivered')) arrived++;
         if(pc['T1']||o['T1']) t1Count++;
+        const dd=_noDemurrageDays(o,cn);
+        if(dd){ demurCount++; if(dd>demurMaxDays) demurMaxDays=dd; }
       });
-    } else if(_noHasSt(o,'Delivered')) arrived=1;
-    return {o,total,arrived,t1Count};
+    } else {
+      if(_noHasSt(o,'Delivered')) arrived=1;
+      const dd=_noDemurrageDays(o,null);
+      if(dd){ demurCount=1; demurMaxDays=dd; }
+    }
+    return {o,total,arrived,t1Count,demurCount,demurMaxDays};
   });
   const _moAbbr=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const fmtDt=v=>{ const d=_noParseDate(v); return d?d.getDate()+' '+_moAbbr[d.getMonth()]:''; };
@@ -12105,7 +12112,7 @@ function renderNoBatchProgress(){
   const done=groups.filter(g=>g.arrived===g.total);
   const _curSearch=(document.getElementById('no-search')?.value||'').trim().toLowerCase();
   const renderCard=(g)=>{
-    const {o,total,arrived,t1Count}=g;
+    const {o,total,arrived,t1Count,demurCount,demurMaxDays}=g;
     const pct=Math.round(arrived/total*100);
     const allDone=pct===100;
     const fillColor=allDone?'#16a34a':pct===0?'#e53935':pct>=60?'#22c55e':'#f59e0b';
@@ -12115,6 +12122,7 @@ function renderNoBatchProgress(){
     const hubStr=o['Hub']?_noEsc(o['Hub']):'';
     const etaStr=fmtDt(o['ETA']);
     const datesHtml=[hubStr?`<span>🏗️ ${hubStr}${etaStr?' '+etaStr:''}</span>`:'',t1Count?`<span>✅ T1: ${t1Count}</span>`:''].filter(Boolean).join('');
+    const demurHtml=demurCount?`<div style="font-size:10.5px;color:#dc2626;font-weight:700;margin-top:3px">⏱ Demurrage: ${demurCount} container${demurCount!==1?'s':''}, up to ${demurMaxDays}d late</div>`:'';
     const remarkTxt=(o['Remark']||'').trim();
     return `<div class="ct-bp-card${isActive?' bp-active':''}" onclick="noBpCardClick('${nameEsc}')" title="Click to filter by this order · click again to clear">
       <div class="ct-bp-hdr">
@@ -12125,6 +12133,7 @@ function renderNoBatchProgress(){
       <div class="ct-bp-track"><div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
       ${datesHtml?`<div class="ct-bp-dates">${datesHtml}</div>`:''}
       <div class="ct-bp-cnt">📦 ${total}</div>
+      ${demurHtml}
       ${remarkTxt?`<div title="${_noEsc(remarkTxt)}" style="font-size:10.5px;color:#94a3b8;margin-top:5px;padding-top:5px;padding-right:2px;border-top:1px dashed #e5e7eb;white-space:pre-line;line-height:1.5;max-height:160px;overflow-y:auto">📝 ${_noEsc(remarkTxt)}</div>`:''}
     </div>`;
   };
@@ -12179,11 +12188,11 @@ function renderOrders(){
 
   if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' container'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
-    body.innerHTML='<tr><td colspan="28" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="29" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   if(!flat.length){
-    body.innerHTML='<tr><td colspan="28" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
+    body.innerHTML='<tr><td colspan="29" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
     return;
   }
   const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box';
@@ -12253,6 +12262,14 @@ function renderOrders(){
       <td style="text-align:center"><input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}" style="width:16px;height:16px;accent-color:#1d4ed8;cursor:pointer"/></td>
       <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s) — free until '+st.expiry:''}" style="${_inpCss};min-width:95px${st&&st.exceeded?';background:#fee2e2;border-color:#fca5a5;color:#b91c1c;font-weight:700':''}"/></td>
       <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
+      <td style="text-align:center">${(()=>{
+        const autoDemur=_noDemurrageDays(o,cn);
+        const demField=cn?pc['Demurrage']:o['Demurrage'];
+        const demurChecked=demField!==undefined?!!demField:!!autoDemur;
+        const demurOnchange=cn?`noSetCtn(${o._id},'${ce}','Demurrage',this.checked)`:`noSet(${o._id},'Demurrage',this.checked)`;
+        const demurTitle=autoDemur?`Demurrage — ATA is ${autoDemur}d after Delivery Date`:'Demurrage — check to flag manually';
+        return `<input type="checkbox" ${demurChecked?'checked':''} onchange="${demurOnchange}" title="${demurTitle}" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer"/>`;
+      })()}</td>
       <td>${(()=>`<input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days" onchange="noSet(${o._id},'Free Storage (Days)',this.value)" style="${_inpCss};min-width:64px"/>`)()}</td>
       <td>${(()=>`<input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€/day" onchange="noSet(${o._id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px"/>`)()}</td>
       <td style="white-space:nowrap;font-size:11.5px">${fee?`<span style="color:#b91c1c;font-weight:800">€${fee.fee}</span> <span style="color:#94a3b8;font-size:10px">(${fee.byDays}d×€${fee.ppd})</span>`:'<span style="color:#cbd5e1">—</span>'}</td>
@@ -12309,6 +12326,16 @@ function _noParseDate(v){
   return isNaN(d.getTime())?null:d;
 }
 function _noFmtDate(d){ return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0'); }
+// Demurrage: ATA later than Delivery Date. Returns days late (>0) or null if not applicable/not enough data.
+function _noDemurrageDays(o,cn){
+  const pc=cn?_noPc(o,cn):{};
+  const ataRaw=cn?(pc['ATA']||o['ATA']):o['ATA'];
+  const delivRaw=cn?(pc['Delivery Date']||o['Delivery Date']):o['Delivery Date'];
+  const ata=_noParseDate(ataRaw), deliv=_noParseDate(delivRaw);
+  if(!ata||!deliv) return null;
+  const days=Math.round((ata-deliv)/86400000);
+  return days>0?days:null;
+}
 // Computes free-storage status for one container of an order.
 // Free days count from "At Hub Date"; alert if Delivery Date (or, once at hub, today if no delivery date yet) is past the expiry.
 // Falls back to the order's Hub ETA when At Hub Date hasn't been filled in yet, so the calc still works with just Free Days + Price/Day + ETA + Delivery Date.
