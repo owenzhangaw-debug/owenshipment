@@ -12082,6 +12082,9 @@ function _noTokenizeSearch(qRaw){
 function renderNoBatchProgress(){
   const el=document.getElementById('no-batch-progress'); if(!el) return;
   if(!NO.length){ el.innerHTML=''; return; }
+  // Preserve horizontal scroll position across re-renders (e.g. clicking a card to filter
+  // rebuilds this row's HTML — without this the scroll snaps back to the leftmost card).
+  const _prevScrollLeft=el.querySelector('.ct-bp-row')?.scrollLeft||0;
   const groups=NO.map(o=>{
     const cs=_noContainers(o);
     const total=cs.length||1;
@@ -12144,6 +12147,8 @@ function renderNoBatchProgress(){
   };
   el.innerHTML=`<div class="ct-bp-row">${[...active,...done].map(renderCard).join('')}</div>`;
   el.querySelectorAll('textarea.no-autogrow').forEach(_noAutoGrow);
+  const _newRow=el.querySelector('.ct-bp-row');
+  if(_newRow&&_prevScrollLeft) _newRow.scrollLeft=_prevScrollLeft;
 }
 function noBpCardClick(orderName){
   const box=document.getElementById('no-search'); if(!box) return;
