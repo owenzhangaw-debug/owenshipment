@@ -11882,7 +11882,7 @@ function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
-    'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'POD':false,'Remark':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
+    'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'POD':false,'Remark':'','Today Status':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -12124,6 +12124,7 @@ function renderNoBatchProgress(){
     const datesHtml=[hubStr?`<span>🏗️ ${hubStr}${etaStr?' '+etaStr:''}</span>`:'',t1Count?`<span>✅ T1: ${t1Count}</span>`:''].filter(Boolean).join('');
     const demurHtml=demurCount?`<div style="font-size:10.5px;color:#dc2626;font-weight:700;margin-top:3px">⏱ Demurrage: ${demurCount} container${demurCount!==1?'s':''}, up to ${demurMaxDays}d late</div>`:'';
     const remarkTxt=(o['Remark']||'').trim();
+    const todayStatusVal=_noEsc(o['Today Status']);
     return `<div class="ct-bp-card${isActive?' bp-active':''}" onclick="noBpCardClick('${nameEsc}')" title="Click to filter by this order · click again to clear">
       <div class="ct-bp-hdr">
         <span class="ct-bp-name">${_noEsc(name)}</span>
@@ -12134,10 +12135,15 @@ function renderNoBatchProgress(){
       ${datesHtml?`<div class="ct-bp-dates">${datesHtml}</div>`:''}
       <div class="ct-bp-cnt">📦 ${total}</div>
       ${demurHtml}
+      <div style="margin-top:5px;padding-top:5px;border-top:1px dashed #e5e7eb" onclick="event.stopPropagation()">
+        <div style="font-size:9.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">🗓️ Today's Status</div>
+        <textarea rows="1" class="no-autogrow" placeholder="Type today's status…" onchange="noSet(${o._id},'Today Status',this.value)" oninput="_noAutoGrow(this)" onclick="event.stopPropagation()" onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();this.blur();}" style="font-size:10.5px;color:#334155;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:break-word;overflow:hidden;resize:vertical;font-family:inherit;line-height:1.4;display:block;max-height:100px">${todayStatusVal}</textarea>
+      </div>
       ${remarkTxt?`<div title="${_noEsc(remarkTxt)}" style="font-size:10.5px;color:#94a3b8;margin-top:5px;padding-top:5px;padding-right:2px;border-top:1px dashed #e5e7eb;white-space:pre-line;line-height:1.5;max-height:160px;overflow-y:auto">📝 ${_noEsc(remarkTxt)}</div>`:''}
     </div>`;
   };
   el.innerHTML=`<div class="ct-bp-row">${[...active,...done].map(renderCard).join('')}</div>`;
+  el.querySelectorAll('textarea.no-autogrow').forEach(_noAutoGrow);
 }
 function noBpCardClick(orderName){
   const box=document.getElementById('no-search'); if(!box) return;
