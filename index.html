@@ -11926,7 +11926,10 @@ function noToggle(id){ _noOpen.has(id)?_noOpen.delete(id):_noOpen.add(id); rende
 function noSet(id,field,val){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
   NO[i][field]=val; saveNO();
-  if(field==='Status') renderOrders(); // status changes the badge + filter
+  // Re-render so the progress cards (and everything else on this page reading the field) pick up the
+  // change immediately — previously this only happened for 'Status', so an order-level edit (e.g. ETA
+  // on an order with no container yet) could look "stuck" on its old value until something else forced a redraw.
+  renderOrders();
   const dp=document.getElementById('page-dispatch');
   if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
 }
