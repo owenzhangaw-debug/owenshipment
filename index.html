@@ -12218,6 +12218,23 @@ function renderOrders(){
   // wrapping, auto-growing text field — content is never clipped, the box grows to fit (drag the corner to resize further)
   const tinp=(o,f,ph,w)=>`<textarea rows="1" class="no-autogrow" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" oninput="_noAutoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:${w||90}px">${_noEsc(o[f])}</textarea>`;
   const dinp=(o,f,w)=>`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(o[f])}" placeholder="YYYY/MM/DD" onblur="noSet(${o._id},'${f}',this.value.trim())" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:${w||100}px"/>`;
+  // Per-container variants — same look as tinp/dinp, but each container row carries its own value once edited
+  // (falls back to the order-level legacy value until a container's own override is set, so old single-container
+  // orders keep working unchanged). Used for fields that no longer need to stay synced across sibling containers.
+  const tinpC=(o,cn,f,ph,w)=>{
+    const pc=cn?_noPc(o,cn):{};
+    const v=cn?(pc[f]!==undefined?pc[f]:(o[f]||'')):(o[f]||'');
+    const esc=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
+    const onchange=cn?`noSetCtn(${o._id},'${esc}','${f}',this.value)`:`noSet(${o._id},'${f}',this.value)`;
+    return `<textarea rows="1" class="no-autogrow" placeholder="${ph||''}" onchange="${onchange}" oninput="_noAutoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:${w||90}px">${_noEsc(v)}</textarea>`;
+  };
+  const dinpC=(o,cn,f,w)=>{
+    const pc=cn?_noPc(o,cn):{};
+    const v=cn?(pc[f]!==undefined?pc[f]:(o[f]||'')):(o[f]||'');
+    const esc=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
+    const onchange=cn?`noSetCtn(${o._id},'${esc}','${f}',this.value.trim())`:`noSet(${o._id},'${f}',this.value.trim())`;
+    return `<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(v)}" placeholder="YYYY/MM/DD" onblur="${onchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:${w||100}px"/>`;
+  };
 
   // ── one row per (order, container) — all fields directly editable — no fold, just like the TEMU container tracker ──
   body.innerHTML=flat.map(({o,cn,isFirst})=>{
@@ -12269,12 +12286,21 @@ function renderOrders(){
         ${isFirst?`<button type="button" title="Add another container to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px;flex-shrink:0">+</button>`:''}
         </div>
       </td>
-      <td class="fc-3">${tinp(o,'Consignee','',130)}</td>
-      <td>${tinp(o,'Destination','country / city',110)}</td>
-      <td style="text-align:center"><input type="checkbox" ${o['Customs Office']?'checked':''} onchange="noSet(${o._id},'Customs Office',this.checked)" title="Customs office ${o['Customs Office']?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/></td>
-      <td>${tinp(o,'Trucker','',100)}</td>
-      <td>${(()=>`<input type="text" list="dl-hub-o" value="${_noEsc(o['Hub'])}" placeholder="Duisburg / Tilburg…" onchange="noSet(${o._id},'Hub',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:110px"/>`)()}</td>
-      <td>${dinp(o,'ETA',95)}</td>
+      <td class="fc-3">${tinpC(o,cn,'Consignee','',130)}</td>
+      <td>${tinpC(o,cn,'Destination','country / city',110)}</td>
+      <td style="text-align:center">${(()=>{
+        const coField=cn?pc['Customs Office']:undefined;
+        const coChecked=coField!==undefined?!!coField:!!o['Customs Office'];
+        const coOnchange=cn?`noSetCtn(${o._id},'${ce}','Customs Office',this.checked)`:`noSet(${o._id},'Customs Office',this.checked)`;
+        return `<input type="checkbox" ${coChecked?'checked':''} onchange="${coOnchange}" title="Customs office ${coChecked?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/>`;
+      })()}</td>
+      <td>${tinpC(o,cn,'Trucker','',100)}</td>
+      <td>${(()=>{
+        const hubVal=cn?(pc['Hub']!==undefined?pc['Hub']:(o['Hub']||'')):(o['Hub']||'');
+        const hubOnchange=cn?`noSetCtn(${o._id},'${ce}','Hub',this.value)`:`noSet(${o._id},'Hub',this.value)`;
+        return `<input type="text" list="dl-hub-o" value="${_noEsc(hubVal)}" placeholder="Duisburg / Tilburg…" onchange="${hubOnchange}" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:110px"/>`;
+      })()}</td>
+      <td>${dinpC(o,cn,'ETA',95)}</td>
       <td>${cn?`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/>`:'<span style="color:#cbd5e1">—</span>'}</td>
       <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
       <td style="text-align:center"><input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}" style="width:16px;height:16px;accent-color:#1d4ed8;cursor:pointer"/></td>
@@ -12291,14 +12317,22 @@ function renderOrders(){
       <td>${(()=>`<input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days" onchange="noSet(${o._id},'Free Storage (Days)',this.value)" style="${_inpCss};min-width:64px"/>`)()}</td>
       <td>${(()=>`<input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€/day" onchange="noSet(${o._id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px"/>`)()}</td>
       <td style="white-space:nowrap;font-size:11.5px">${fee?`<span style="color:#b91c1c;font-weight:800">€${fee.fee}</span> <span style="color:#94a3b8;font-size:10px">(${fee.byDays}d×€${fee.ppd})</span>`:'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="text-align:right;font-weight:700;color:#0369a1">${tinp(o,'Price','€',70)}</td>
-      <td style="text-align:right">${(()=>`<input type="text" value="${_noEsc(o['CC'])}" placeholder="€" onchange="noSet(${o._id},'CC',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px;text-align:right"/>`)()}</td>
+      <td style="text-align:right;font-weight:700;color:#0369a1">${tinpC(o,cn,'Price','€',70)}</td>
+      <td style="text-align:right">${(()=>{
+        const ccVal=cn?(pc['CC']!==undefined?pc['CC']:(o['CC']||'')):(o['CC']||'');
+        const ccOnchange=cn?`noSetCtn(${o._id},'${ce}','CC',this.value)`:`noSet(${o._id},'CC',this.value)`;
+        return `<input type="text" value="${_noEsc(ccVal)}" placeholder="€" onchange="${ccOnchange}" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px;text-align:right"/>`;
+      })()}</td>
       <td style="text-align:right;font-weight:700;color:#0f766e;white-space:nowrap">€${_noContainerAmount(o,cn)}</td>
       <td style="text-align:right">${isFirst?`<span style="font-weight:800;color:#0369a1;background:#e0f2fe;border-radius:6px;padding:3px 8px;white-space:nowrap">€${_noOrderTotal(o)}</span>`:''}</td>
       <td>${surchargeEditor}</td>
-      <td>${(()=>`<select onchange="noSet(${o._id},'Payment Status',this.value)" style="${_inpCss};min-width:110px">
-          ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${((o['Payment Status']||'')===v)?'selected':''}>${v||'—'}</option>`).join('')}
-        </select>`)()}</td>
+      <td>${(()=>{
+        const psVal=cn?(pc['Payment Status']!==undefined?pc['Payment Status']:(o['Payment Status']||'')):(o['Payment Status']||'');
+        const psOnchange=cn?`noSetCtn(${o._id},'${ce}','Payment Status',this.value)`:`noSet(${o._id},'Payment Status',this.value)`;
+        return `<select onchange="${psOnchange}" style="${_inpCss};min-width:110px">
+          ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${(psVal===v)?'selected':''}>${v||'—'}</option>`).join('')}
+        </select>`;
+      })()}</td>
       <td style="text-align:center">${(()=>{
         const podChecked=cn?!!pc['POD']:!!o['POD'];
         const podOnchange=cn?`noSetCtn(${o._id},'${ce}','POD',this.checked)`:`noSet(${o._id},'POD',this.checked)`;
@@ -12306,7 +12340,11 @@ function renderOrders(){
       })()}</td>
       <td>${svcTagsEditor}</td>
       <td style="text-align:center">${stTagsEditor}</td>
-      <td style="min-width:200px"><textarea rows="1" class="no-autogrow" placeholder="Remark…" onchange="noSet(${o._id},'Remark',this.value)" oninput="_noAutoGrow(this)" style="${_taCss}">${_noEsc(o['Remark'])}</textarea></td>
+      <td style="min-width:200px">${(()=>{
+        const rmVal=cn?(pc['Remark']!==undefined?pc['Remark']:(o['Remark']||'')):(o['Remark']||'');
+        const rmOnchange=cn?`noSetCtn(${o._id},'${ce}','Remark',this.value)`:`noSet(${o._id},'Remark',this.value)`;
+        return `<textarea rows="1" class="no-autogrow" placeholder="Remark…" onchange="${rmOnchange}" oninput="_noAutoGrow(this)" style="${_taCss}">${_noEsc(rmVal)}</textarea>`;
+      })()}</td>
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
       <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
     </tr>`;
@@ -12382,7 +12420,9 @@ function _noOrderStorageExceeded(o){ return _noContainers(o).some(cn=>{ const s=
 function _noCtnSurchargeSum(o,cn){ return _noSurcharges(o,cn).reduce((s,x)=>s+(parseFloat(x.fee)||0),0); }
 // Per-container amount: Freight + CC + this container's own storage fee + this container's own surcharges
 function _noContainerAmount(o,cn){
-  const freight=parseFloat(o['Price'])||0, cc=parseFloat(o['CC'])||0;
+  const pc=cn?_noPc(o,cn):{};
+  const freight=parseFloat(cn?(pc['Price']!==undefined?pc['Price']:o['Price']):o['Price'])||0;
+  const cc=parseFloat(cn?(pc['CC']!==undefined?pc['CC']:o['CC']):o['CC'])||0;
   const sf=cn?_noStorageFee(o,cn):null;
   const total=freight+cc+(sf?sf.fee:0)+(cn?_noCtnSurchargeSum(o,cn):_noCtnSurchargeSum(o,null));
   return Math.round(total*100)/100;
