@@ -12079,6 +12079,38 @@ function _noTokenizeSearch(qRaw){
   return tokens.filter(Boolean);
 }
 // ── Order progress cards (same look/behavior as the container tracker's batch progress bars) ──
+// ETA/Hub can now be overridden per container — these pick the value that should represent
+// the whole order on the progress card: soonest ETA across containers, and the Hub(s) in use.
+function _noEffectiveEta(o){
+  const cs=_noContainers(o);
+  if(!cs.length) return o['ETA']||'';
+  let best=null, bestD=null;
+  cs.forEach(cn=>{
+    const pc=_noPc(o,cn);
+    const v=(pc['ETA']!==undefined&&pc['ETA']!=='')?pc['ETA']:o['ETA'];
+    const d=_noParseDate(v);
+    if(d&&(!bestD||d<bestD)){ bestD=d; best=v; }
+  });
+  return best||o['ETA']||'';
+}
+// All distinct ETA values across an order's containers (each may have its own override), raw (unparsed) strings.
+function _noEtaListRaw(o){
+  const cs=_noContainers(o);
+  if(!cs.length) return o['ETA']?[o['ETA']]:[];
+  return cs.map(cn=>{
+    const pc=_noPc(o,cn);
+    return (pc['ETA']!==undefined&&pc['ETA']!=='')?pc['ETA']:o['ETA'];
+  }).filter(Boolean);
+}
+function _noEffectiveHub(o){
+  const cs=_noContainers(o);
+  if(!cs.length) return o['Hub']||'';
+  const hubs=[...new Set(cs.map(cn=>{
+    const pc=_noPc(o,cn);
+    return (pc['Hub']!==undefined&&pc['Hub']!=='')?pc['Hub']:o['Hub'];
+  }).filter(Boolean))];
+  return hubs.length?hubs.join(' / '):(o['Hub']||'');
+}
 function renderNoBatchProgress(){
   const el=document.getElementById('no-batch-progress'); if(!el) return;
   if(!NO.length){ el.innerHTML=''; return; }
@@ -12108,7 +12140,7 @@ function renderNoBatchProgress(){
   const _moAbbr=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const fmtDt=v=>{ const d=_noParseDate(v); return d?d.getDate()+' '+_moAbbr[d.getMonth()]:''; };
   const active=groups.filter(g=>g.arrived<g.total).sort((a,b)=>{
-    const da=_noParseDate(a.o['ETA']), db=_noParseDate(b.o['ETA']);
+    const da=_noParseDate(_noEffectiveEta(a.o)), db=_noParseDate(_noEffectiveEta(b.o));
     if(da&&db) return da-db;
     if(da) return -1; if(db) return 1;
     return 0;
@@ -12123,8 +12155,19 @@ function renderNoBatchProgress(){
     const name=o['Order No.']||('Order #'+o._id);
     const nameEsc=String(name).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const isActive=_curSearch&&_curSearch===String(name).toLowerCase();
-    const hubStr=o['Hub']?_noEsc(o['Hub']):'';
-    const etaStr=fmtDt(o['ETA']);
+    const hubStr=_noEffectiveHub(o)?_noEsc(_noEffectiveHub(o)):'';
+    const etaDistinct=[...new Set(_noEtaListRaw(o))].map(v=>({v,d:_noParseDate(v)})).filter(x=>x.d).sort((a,b)=>a.d-b.d);
+    // If containers disagree on ETA, pair each date with its container number so it's clear which is which.
+    // If they all match (or there's just one container), just show the plain date(s) — no need to name the container.
+    const _cs=_noContainers(o);
+    const etaStr=(etaDistinct.length>1&&_cs.length>1)
+      ? _cs.map(cn=>{
+          const pc=_noPc(o,cn);
+          const v=(pc['ETA']!==undefined&&pc['ETA']!=='')?pc['ETA']:o['ETA'];
+          const d=_noParseDate(v);
+          return d?{cn,v,d}:null;
+        }).filter(Boolean).sort((a,b)=>a.d-b.d).map(x=>`${_noEsc(x.cn)} ${fmtDt(x.v)}`).join(', ')
+      : etaDistinct.map(x=>fmtDt(x.v)).join(', ');
     const datesHtml=[hubStr?`<span>🏗️ ${hubStr}${etaStr?' '+etaStr:''}</span>`:'',t1Count?`<span>✅ T1: ${t1Count}</span>`:''].filter(Boolean).join('');
     const demurHtml=demurCount?`<div style="font-size:10.5px;color:#dc2626;font-weight:700;margin-top:3px">⏱ Demurrage: ${demurCount} container${demurCount!==1?'s':''}, up to ${demurMaxDays}d late</div>`:'';
     const remarkTxt=(o['Remark']||'').trim();
