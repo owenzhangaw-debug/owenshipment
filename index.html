@@ -1412,35 +1412,6 @@ tbody tr:hover{background:#fafbfc}
 
 
 
-  <!-- ══ Route Timeline — unified single calculator ══ -->
-  <div class="bel-route-card" style="margin-bottom:18px;margin-top:0">
-    <div class="bel-card-top" style="margin-bottom:0">
-      <div class="bel-card-top-left">
-        <span style="font-size:22px">🚂</span>
-        <h3 id="rt-title">Route — Stage-by-Stage Timing</h3>
-        <span id="rt-badge" style="font-size:10px;font-weight:700;background:#E8F5E9;color:#2E7D32;border-radius:20px;padding:3px 10px">🇧🇪 BELGG · 133 tracked shipments</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;color:#94a3b8">Destination:</span>
-        <select id="rt-dest-sel" onchange="rtSwitchDest(this.value)"
-          style="font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#1e293b">
-          <option value="be">🇧🇪 BELGG — Belgium</option>
-          <option value="nl">🇳🇱 NLAMS — Netherlands</option>
-          <option value="it">🇮🇹 ITMXP — Italy</option>
-          <option value="mala">🏭 Malaszewicze only</option>
-        </select>
-        <span style="font-size:10px;color:#94a3b8;margin-left:8px">Days from China terminal departure</span>
-      </div>
-    </div>
-    <div class="bel-input-row" style="margin-top:12px">
-      <label>📅 Enter a date at any stage below to project the full timeline</label>
-      <span id="bel-anchor-badge" class="bel-anchor-badge" style="display:none"></span>
-      <button class="bel-clear-btn" onclick="rtClearAll()">✕ Clear</button>
-    </div>
-    <div id="bel-timeline-body">
-      <div class="bel-placeholder"><div class="bel-ph-icon">🗺️</div><div>Enter a date at any stage to project the full route timeline</div></div>
-    </div>
-  </div>
 
 
   <!-- Notices & Reminders moved to dedicated Notices page -->
@@ -12859,7 +12830,7 @@ tr:hover td.vt-customs-td{background:rgba(168,85,247,.10)!important}
 
 /* ── VT Multi-fee panel ── */
 .vt-fee-panel-wrap{padding:8px 12px 6px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
-.vfp-wrapper{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vfp-wrapper{display:grid;grid-template-columns:1fr;gap:6px}
 .vfp-section{background:#fff;border-radius:8px;padding:8px 10px;border:1px solid #e2e8f0;min-width:0}
 .vfp-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;flex-wrap:wrap}
 .vfp-total{margin-left:auto;font-weight:800;font-size:12px}
