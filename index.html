@@ -94,16 +94,20 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 
 /* SMART INSIGHTS PANEL */
 /* SURCHARGE SUMMARY TABLE */
-.sur-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.sur-tbl th{background:#004D4C;color:#fff;padding:7px 10px;font-size:11px;font-weight:600;text-align:left;letter-spacing:.3px}
-.sur-tbl td{padding:7px 10px;border-bottom:1px solid var(--border)}
-.sur-tbl tbody tr:hover td{background:#F8FAFC}
+.sur-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.sur-tbl th{background:#004D4C;color:#fff;padding:4px 7px;font-size:10px;font-weight:600;text-align:left;letter-spacing:.3px;white-space:nowrap;height:24px}
+.sur-tbl td{padding:0;border-bottom:1px solid #DEDEDE;border-right:1px solid #EBEBEB;vertical-align:middle}
+.sur-tbl tbody tr:hover td{background:#EFF7F7}
+.sur-tbl tbody tr:nth-child(even) td{background:#F5FAF9}
+.sur-tbl tbody tr:nth-child(even):hover td{background:#EFF7F7}
 .sur-amt{font-weight:800;color:#DB2777}
 /* UNDELIVERED BATCH TABLE */
-.ud-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.ud-tbl th{background:#004D4C;color:#fff;padding:7px 12px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap;letter-spacing:.3px}
-.ud-tbl td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
-.ud-tbl tbody tr:hover td{background:#F8FAFC;cursor:pointer}
+.ud-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.ud-tbl th{background:#004D4C;color:#fff;padding:4px 8px;text-align:left;font-weight:600;font-size:10px;white-space:nowrap;letter-spacing:.3px;height:24px}
+.ud-tbl td{padding:3px 8px;border-bottom:1px solid #DEDEDE;border-right:1px solid #EBEBEB;vertical-align:middle}
+.ud-tbl tbody tr:hover td{background:#EFF7F7;cursor:pointer}
+.ud-tbl tbody tr:nth-child(even) td{background:#F5FAF9}
+.ud-tbl tbody tr:nth-child(even):hover td{background:#EFF7F7}
 .ud-bar-wrap{display:flex;align-items:center;gap:8px;min-width:160px}
 .ud-bar-bg{flex:1;background:#E2E8F0;border-radius:4px;height:6px;overflow:hidden}
 .ud-bar-fill{height:6px;border-radius:4px;transition:width .3s}
@@ -198,15 +202,18 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,77
 .tbl-top h3{font-size:13px;font-weight:700;letter-spacing:-.1px}
 #ct-count,#vt-count{font-size:11px;color:var(--muted);font-weight:500}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table{width:100%;border-collapse:collapse;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:11px}
 thead tr{background:#004D4C;color:#fff}
-thead th{padding:9px 10px;text-align:left;font-weight:600;font-size:11px;
-  letter-spacing:.4px;white-space:nowrap;user-select:none;cursor:pointer}
+thead th{padding:4px 8px;text-align:left;font-weight:600;font-size:10px;
+  letter-spacing:.3px;white-space:nowrap;user-select:none;cursor:pointer;height:26px}
 thead th:hover{background:#005857}
 thead th.no-sort{cursor:default}
 thead th.no-sort:hover{background:#004D4C}
-tbody tr{border-bottom:1px solid var(--border)}
-tbody tr:hover td{background:#F8FAFC}
+tbody tr{border-bottom:1px solid #DEDEDE}
+tbody tr:hover td{background:#EFF7F7}
+tbody tr:nth-child(even) td{background:#F5FAF9}
+tbody tr:nth-child(even):hover td{background:#EFF7F7}
+tbody td{border-right:1px solid #EBEBEB}
 tbody tr.hi-missing{background:var(--hi)}
 tbody tr.hi-missing:hover td{background:#FFF3C4}
 tbody tr.hi-late-arr{background:#fff1f2}
@@ -242,9 +249,11 @@ tbody td{padding:0;vertical-align:middle;position:relative}
 th.fc-1,td.fc-1,th.fc-2,td.fc-2,th.fc-3,td.fc-3,th.fc-4,td.fc-4{position:sticky;z-index:3}
 thead th.fc-1,thead th.fc-2,thead th.fc-3,thead th.fc-4{z-index:20;top:0;background:#004D4C}
 td.fc-1,td.fc-2,td.fc-3,td.fc-4{background:#fff}
+tbody tr:nth-child(even) td.fc-1,tbody tr:nth-child(even) td.fc-2,tbody tr:nth-child(even) td.fc-3,tbody tr:nth-child(even) td.fc-4{background:#F5FAF9}
+tbody tr:nth-child(even):hover td.fc-1,tbody tr:nth-child(even):hover td.fc-2,tbody tr:nth-child(even):hover td.fc-3,tbody tr:nth-child(even):hover td.fc-4{background:#EFF7F7}
 /* Master B/L column wraps to keep table narrow */
 th.fc-3,td.fc-3{max-width:170px}
-td.fc-3 .cell-view{white-space:normal;flex-direction:column;align-items:flex-start;gap:2px;padding-top:6px;padding-bottom:6px}
+td.fc-3 .cell-view{white-space:normal;flex-direction:column;align-items:flex-start;gap:1px;padding-top:3px;padding-bottom:3px}
 tbody tr:hover td.fc-1,tbody tr:hover td.fc-2,tbody tr:hover td.fc-3,tbody tr:hover td.fc-4{background:#F8FAFC}
 tbody tr.hi-missing td.fc-1,tbody tr.hi-missing td.fc-2,
 tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
@@ -261,8 +270,8 @@ tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
 .broker-self{display:inline-block;background:#ECFDF5;color:#065F46;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 
 /* INLINE EDIT CELLS */
-.cell-view{padding:7px 10px;min-height:32px;display:flex;align-items:center;white-space:nowrap;cursor:pointer;min-width:60px}
-.cell-view:hover{background:rgba(79,70,229,.06);border-radius:5px}
+.cell-view{padding:3px 7px;min-height:22px;display:flex;align-items:center;white-space:nowrap;cursor:pointer;min-width:40px;font-size:11px}
+.cell-view:hover{background:rgba(0,77,76,.08);border-radius:3px}
 .cell-edit{display:none;padding:2px 4px}
 .cell-edit input,.cell-edit select{width:100%;border:2px solid var(--blue);border-radius:5px;
   padding:4px 6px;font-size:12px;background:#fff;outline:none}
@@ -613,7 +622,7 @@ td.editing .cell-edit{display:block}
   .form-grid{grid-template-columns:1fr}
   .form-group.full{grid-column:1}
   .confirm-inner{width:92vw;border-radius:14px}
-  .be-tabs .be-tab{padding:7px 12px;font-size:12px}
+  .be-tabs .be-tab{padding:2px 7px;font-size:12px}
 
   /* ── Selection bar ── */
   .sel-bar{left:10px;right:10px;transform:none;bottom:14px;
@@ -662,7 +671,7 @@ td.editing .cell-edit{display:block}
   #dv-toolbar > div:last-child{margin-left:0 !important;display:grid !important;grid-template-columns:1fr 1fr;gap:6px !important;width:100%}
   #dv-toolbar input[type=date]{width:100%;font-size:12px}
   #dv-toolbar select{width:100%;font-size:12px}
-  #dv-toolbar button{font-size:11px;padding:6px 8px !important;text-align:center}
+  #dv-toolbar button{font-size:11px;padding:2px 6px !important;text-align:center}
   #dv-content{padding:10px 8px !important}
 
   /* Today's Deliveries on mobile: full width cards */
@@ -691,7 +700,7 @@ td.editing .cell-edit{display:block}
   .bel-card-top > div:last-child{flex-wrap:wrap;gap:4px;width:100%}
   .bel-card-top > div:last-child span:last-child{display:none}
   #rt-dest-sel{font-size:12px;max-width:calc(100vw - 130px)}
-  .bel-timeline-body .bel-stage{padding:6px 8px !important;font-size:11px !important}
+  .bel-timeline-body .bel-stage{padding:2px 6px !important;font-size:11px !important}
 
   /* Today's Deliveries: bigger tap areas */
   #today-deliveries-widget div[style*="display:flex;align-items:center;gap:6px;padding:4px 0"]{
@@ -1178,13 +1187,14 @@ thead tr {
   background: linear-gradient(180deg, #005C5B 0%, #004D4C 100%);
 }
 thead th {
-  padding: 10px 11px;
-  font-size: 11px;
-  letter-spacing: .5px;
+  padding: 4px 8px;
+  font-size: 10px;
+  letter-spacing: .3px;
+  height: 26px;
 }
-tbody tr { border-bottom: 1px solid #EFF1F5; }
-tbody tr:hover td { background: #F5F7FB; }
-.cell-view { padding: 8px 11px; min-height: 34px; }
+tbody tr { border-bottom: 1px solid #DEDEDE; }
+tbody tr:hover td { background: #EFF7F7; }
+.cell-view { padding: 3px 7px; min-height: 22px; font-size: 11px; }
 
 /* ── Inputs & selects ── */
 select, input[type=text] {
@@ -5476,7 +5486,7 @@ function renderDelayTable(){
 
   const sorted = [...rows].sort((a,b)=>b.daysLate!==undefined?b.daysLate-a.daysLate:b.over-a.over);
   const th = (t,w='') => `<th style="padding:6px 10px;font-size:11px;white-space:nowrap;${w}">${t}</th>`;
-  const td = (t,s='') => `<td style="padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;${s}">${t}</td>`;
+  const td = (t,s='') => `<td style="padding:2px 7px;border-bottom:1px solid #DEDEDE;font-size:12px;${s}">${t}</td>`;
   const hdrs = mode==='late'
     ? [th('Container'),th('Batch'),th('Trucker'),th('Slot'),th('Actual'),th('Days Late')]
     : [th('Container'),th('Batch'),th('Consignee'),th('Deadline'),th('Arrived / Status'),th('Days Over')];
@@ -6943,14 +6953,14 @@ function renderCT(){
 
     return `<tr class="${rowCls}" id="row-${r._id}">
       <td class="fc-1" style="padding:4px 6px;white-space:nowrap"><button class="ct-exp-btn" onclick="ctToggleExpand(${r._id})" title="${ctIsOpen?'Collapse':'Expand'}">${ctIsOpen?'▼':'▶'}</button>${r['Batch / Train']||''}${slotBadge}</td>
-      <td class="fc-2" style="padding:7px 10px;white-space:nowrap"><strong>${r['Container No.']||''}</strong>${_isTemu?' <span title="Temu project (Master B/L filled)" style="font-size:8px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:middle">TEMU</span>':''}</td>
+      <td class="fc-2" style="padding:2px 7px;white-space:nowrap"><strong>${r['Container No.']||''}</strong>${_isTemu?' <span title="Temu project (Master B/L filled)" style="font-size:8px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:middle">TEMU</span>':''}</td>
       ${blC}
       ${conC}
       ${destCell}
       ${truckCell}
       ${trkConfCell}
       ${brokerCell}
-      <td style="padding:4px 6px;text-align:center">${(()=>{
+      <td style="padding:1px 4px;text-align:center">${(()=>{
         const lv=r['Emergency Level']||'';
         const lvMap={
           '':{bg:'transparent',color:'#94a3b8',label:'—'},
@@ -6976,7 +6986,7 @@ function renderCT(){
       ${slotCell}
       ${arrC}
       ${dlC}
-      <td style="padding:7px 10px;white-space:nowrap" class="${daysClass(dl)}">${dlStr}</td>
+      <td style="padding:2px 7px;white-space:nowrap" class="${daysClass(dl)}">${dlStr}</td>
       <td style="text-align:center;padding:4px 10px">
         <input type="checkbox" class="cmr-cb" ${cmrChecked?'checked':''} onchange="toggleCMR(${r._id},this.checked)"/>
       </td>
@@ -7047,7 +7057,7 @@ function renderCT(){
         })()}
       </td>
       ${rmkCell}
-      <td style="padding:4px 6px;text-align:center">
+      <td style="padding:1px 4px;text-align:center">
         <button class="btn-del-row" onclick="openDel(${r._id})" title="Delete">✕</button>
       </td>
       <td style="text-align:center;padding:4px 6px">
@@ -7306,7 +7316,7 @@ function vtFeePayCell(r, cat){
   const arr=r.fees[cat]||[];
   const pay=vtFeeOverallPay(arr);
   const bg=cat==='ocean'?'vt-ocean-td':cat==='booking'?'vt-booking-td':'vt-customs-td';
-  return `<td class="${bg}" style="text-align:center;padding:6px 8px">${_vtPayBadge(pay)}</td>`;
+  return `<td class="${bg}" style="text-align:center;padding:2px 6px">${_vtPayBadge(pay)}</td>`;
 }
 
 // ── Fee management: add / remove / update ─────────────────────────
@@ -7886,7 +7896,7 @@ function renderVT(){
     const tagsHtml=cnCount?`<div class="vt-cn-tags">${tags}</div>`:`<div class="vt-cn-tags"><span class="vt-cn-empty">No containers linked yet</span></div>`;
 
     return `<tr class="${cls}" id="vrow-${r._id}" style="--vpct:${Math.round(_vpPct*100)}%" onmouseenter="(function(){const c=document.querySelector('.vt-voyage-card[data-vtid=\\'${r._id}\\']');if(c){c.classList.remove('vt-pop');void c.offsetWidth;c.classList.add('vt-pop');}})()">
-      <td class="vt-fc-expand" style="padding:4px 6px;text-align:center;white-space:nowrap">
+      <td class="vt-fc-expand" style="padding:1px 4px;text-align:center;white-space:nowrap">
         <button class="vt-expand-btn" onclick="vtToggleExpand(${r._id})" title="${isOpen?'Collapse':'Expand'}">${isOpen?'▼':'▶'}</button>
         ${cnCount?`<span style="font-size:10px;color:var(--blue);font-weight:700">${cnCount}</span>`:''}
       </td>
@@ -7901,9 +7911,9 @@ function renderVT(){
       ${vtCell(r,'ETA (Arrival)')}
       ${vtCell(r,'Port Cut-Off')}
       ${vtCell(r,'Barge Date')}
-      <td style="padding:7px 10px;text-align:center;font-weight:700;color:${r['Status']==='Discharged'?'#6b7280':_daysColor};white-space:nowrap">${_daysDisp}</td>
+      <td style="padding:2px 7px;text-align:center;font-weight:700;color:${r['Status']==='Discharged'?'#6b7280':_daysColor};white-space:nowrap">${_daysDisp}</td>
       <td style="text-align:center;padding:6px"><input type="checkbox" title="VGM" ${r['VGM']?'checked':''} onchange="vtToggleFlag(${r._id},'VGM',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--blue)"/></td>
-      <td style="text-align:center;padding:6px;white-space:nowrap"><input type="checkbox" title="Custom" ${r['Custom']?'checked':''} onchange="vtToggleFlag(${r._id},'Custom',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#8B4513;vertical-align:middle"/><button title="Email custom clearance request (export@wispex.nl)" onclick="event.stopPropagation();customEmail(${r._id})" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0;margin-left:5px;vertical-align:middle">✉️</button></td>
+      <td style="text-align:center;padding:2px 4px;white-space:nowrap"><input type="checkbox" title="Custom" ${r['Custom']?'checked':''} onchange="vtToggleFlag(${r._id},'Custom',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#8B4513;vertical-align:middle"/><button title="Email custom clearance request (export@wispex.nl)" onclick="event.stopPropagation();customEmail(${r._id})" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0;margin-left:5px;vertical-align:middle">✉️</button></td>
       ${vtCell(r,'Status',{select:STATUS_OPTS})}
       ${vtCell(r,'Order No.')}
       ${vtFeeCell(r,'ocean')}
@@ -7914,8 +7924,8 @@ function renderVT(){
       ${vtFeePayCell(r,'customs')}
       ${vtCell(r,'Broker')}
       ${vtCell(r,'Remark')}
-      <td style="padding:7px 10px;text-align:center;white-space:nowrap">${r._addedAt?(()=>{const _d=new Date(r._addedAt);return`<span style="font-size:11px;color:#64748b">${String(_d.getMonth()+1).padStart(2,'0')}/${String(_d.getDate()).padStart(2,'0')}/${String(_d.getFullYear()).slice(2)}</span>`;})():'<span style="color:#ccc">—</span>'}</td>
-      <td style="padding:4px 6px;text-align:center">
+      <td style="padding:2px 7px;text-align:center;white-space:nowrap">${r._addedAt?(()=>{const _d=new Date(r._addedAt);return`<span style="font-size:11px;color:#64748b">${String(_d.getMonth()+1).padStart(2,'0')}/${String(_d.getDate()).padStart(2,'0')}/${String(_d.getFullYear()).slice(2)}</span>`;})():'<span style="color:#ccc">—</span>'}</td>
+      <td style="padding:1px 4px;text-align:center">
         <button class="btn-del-row" onclick="openDelVessel(${r._id})" title="Delete">✕</button>
       </td>
       <td style="text-align:center;padding:4px 6px">
@@ -11766,7 +11776,7 @@ function _buildFoldableNotices(el, notes, storageKey){
   if(!notes.length){ el.innerHTML=''; return; }
   const collapsed=localStorage.getItem(storageKey)==='1';
   el.innerHTML=`<div id="pn-wrap-${storageKey}" style="margin:0 0 10px;border:1px solid #fde68a;border-radius:10px;background:#fffbeb;overflow:hidden">
-    <div onclick="_togglePageNotice('${storageKey}')" style="display:flex;align-items:center;gap:6px;padding:7px 12px;cursor:pointer;user-select:none;font-size:12px;font-weight:700;color:#92400e">
+    <div onclick="_togglePageNotice('${storageKey}')" style="display:flex;align-items:center;gap:6px;padding:2px 7px;cursor:pointer;user-select:none;font-size:12px;font-weight:700;color:#92400e">
       <span class="pn-ic">${collapsed?'▸':'▾'}</span>
       <span>🔔 Notices (${notes.length})</span>
     </div>
@@ -12312,7 +12322,7 @@ function renderOrders(){
     return;
   }
   const _inpCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box';
-  const _taCss='font-size:12px;font-weight:500;color:#1e293b;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;width:100%;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:break-word;overflow:hidden;resize:vertical;font-family:inherit;line-height:1.35;display:block';
+  const _taCss='font-size:11px;font-weight:500;color:#1e293b;padding:2px 5px;border:1px solid #c8d4d3;border-radius:4px;width:100%;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:break-word;overflow:hidden;resize:none;font-family:inherit;line-height:1.3;display:block;background:#fff';
   // wrapping, auto-growing text field — content is never clipped, the box grows to fit (drag the corner to resize further)
   const tinp=(o,f,ph,w)=>`<textarea rows="1" class="no-autogrow" placeholder="${ph||''}" onchange="noSet(${o._id},'${f}',this.value)" oninput="_noAutoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:${w||90}px">${_noEsc(o[f])}</textarea>`;
   const dinp=(o,f,w)=>`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(o[f])}" placeholder="YYYY/MM/DD" onblur="noSet(${o._id},'${f}',this.value.trim())" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:${w||100}px"/>`;
@@ -12652,8 +12662,8 @@ try{ renderDashboard(); }catch(e){ console.error('Initial dashboard render faile
     </div>
   </div>
   <div style="display:flex;gap:8px;margin-top:12px">
-    <button onclick="applyColDF()" style="flex:1;padding:6px;background:#004D4C;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Apply</button>
-    <button onclick="clearColDF()" style="flex:1;padding:6px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Clear</button>
+    <button onclick="applyColDF()" style="flex:1;padding:2px 4px;background:#004D4C;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Apply</button>
+    <button onclick="clearColDF()" style="flex:1;padding:2px 4px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Clear</button>
   </div>
 </div>
 
@@ -12753,7 +12763,7 @@ header { padding-top: max(8px, env(safe-area-inset-top)); }
 .rp-sec-hdr{display:flex;align-items:center;gap:8px;padding:9px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap}
 .rp-sec-num{width:22px;height:22px;border-radius:50%;background:#003534;color:#5DD8D0;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .rp-sec-title{font-size:12px;font-weight:700;color:#1e293b}
-.rp-add-row-btn{margin-left:auto;padding:3px 11px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:12px;cursor:pointer}
+.rp-add-row-btn{margin-left:auto;padding:3px 11px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:12px;cursor:pointer;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Inter','Segoe UI',Arial,sans-serif}
 .rp-add-row-btn:hover{background:#dcfce7}
 .rp-sec-body{padding:8px 10px}
 /* Row inputs */
