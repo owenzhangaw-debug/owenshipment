@@ -9026,7 +9026,32 @@ function exportAllData(){
   };
   addSheet('Containers (TEMU)',CT);
   addSheet('Vessels',VT);
-  addSheet('Orders',(typeof NO!=='undefined')?NO:[]);
+  // Orders: expand per-container rows so ATA, Delivery Date, Status etc. from perCtn are visible
+  if(typeof NO!=='undefined'&&NO.length){
+    const noExpanded=[];
+    const _splitCns=v=>(v||'').split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+    NO.forEach(o=>{
+      const cns=_splitCns(o['Container No.']);
+      if(cns.length<=1){
+        // Single or no container — merge perCtn into the row if present
+        const pc=(o.perCtn&&cns.length&&o.perCtn[cns[0]])||{};
+        const row={...o};
+        delete row.perCtn;
+        ['ATA','Delivery Date','Status','At Hub','Ready to be Picked'].forEach(f=>{ if(pc[f]!==undefined&&pc[f]!=='') row[f]=pc[f]; });
+        noExpanded.push(row);
+      } else {
+        // Multiple containers — one row per container
+        cns.forEach(cn=>{
+          const pc=(o.perCtn&&o.perCtn[cn])||{};
+          const row={...o,'Container No.':cn};
+          delete row.perCtn;
+          ['ATA','Delivery Date','Status','At Hub','Ready to be Picked'].forEach(f=>{ if(pc[f]!==undefined&&pc[f]!=='') row[f]=pc[f]; else if(row[f]===undefined) row[f]=''; });
+          noExpanded.push(row);
+        });
+      }
+    });
+    addSheet('Orders',noExpanded);
+  }
   if(typeof NOTICES!=='undefined') addSheet('Notices',NOTICES);
   if(typeof REMINDERS!=='undefined') addSheet('Reminders',REMINDERS);
   const meta=[
