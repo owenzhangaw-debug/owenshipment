@@ -7234,6 +7234,8 @@ function toggleCMR(id, checked){
 // ── VT column currency formatters (fixed per column) ──────────────
 const _fmtUSD = v => { const n=parseFloat(v); if(!v&&v!==0||isNaN(n)) return '—'; return '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}); };
 const _fmtEUR = v => { const n=parseFloat(v); if(!v&&v!==0||isNaN(n)) return '—'; return '€'+n.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2}); };
+const _fmtCNY = v => { const n=parseFloat(v); if(!v&&v!==0||isNaN(n)) return '—'; return '¥'+n.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2}); };
+const _fmtByCur = (v,cur) => cur==='USD'?_fmtUSD(v):cur==='CNY'?_fmtCNY(v):_fmtEUR(v);
 const _VT_USD_COLS   = new Set(['Price','Surcharge']);
 const _VT_EUR_COLS   = new Set(['Booking Fee','Custom Clearance Fee']);
 const _VT_PAY_COLS   = new Set(['Payment Status','Booking Fee Payment','CC Fee Payment']);
@@ -7269,6 +7271,15 @@ function vtFeeOverallPay(arr){
   return statuses[0]||'';
 }
 function vtFeeCurrency(cat){ return cat==='ocean'?'USD':'EUR'; }
+function vtGetFeeCurrency(r,cat){ return (r.feeCurrency&&r.feeCurrency[cat])||vtFeeCurrency(cat); }
+function vtSetFeeCurrency(vid,cat,cur){
+  const i=VT.findIndex(r=>r._id===vid); if(i<0) return;
+  VT[i].feeCurrency=VT[i].feeCurrency||{};
+  VT[i].feeCurrency[cat]=cur;
+  saveVT(); renderVT();
+  const exp=document.getElementById('vexp-'+vid);
+  if(exp) exp.classList.add('open');
+}
 function vtFeeCell(r, cat){
   vtMigrateFees(r);
   const arr=r.fees[cat]||[];
@@ -7295,7 +7306,7 @@ function vtAddFee(vid, cat){
   const i=VT.findIndex(r=>r._id===vid); if(i<0) return;
   vtMigrateFees(VT[i]);
   const newId=Date.now();
-  VT[i].fees[cat].push({id:newId,amount:'',desc:'',invoiceNo:'',payStatus:'',currency:vtFeeCurrency(cat)});
+  VT[i].fees[cat].push({id:newId,amount:'',desc:'',invoiceNo:'',payStatus:'',currency:vtGetFeeCurrency(VT[i],cat)});
   saveVT(); renderVT();
   // keep row open
   const exp=document.getElementById('vexp-'+vid);
@@ -7334,7 +7345,7 @@ function vtFeePanel(r){
   const vid=r._id;
   function renderCat(cat, label, icon, clr, bg){
     const arr=r.fees[cat]||[];
-    const cur=vtFeeCurrency(cat);
+    const cur=vtGetFeeCurrency(r,cat);
     const rows=arr.map(f=>`
       <div class="vfp-row" id="vfp-row-${vid}-${cat}-${f.id}">
         <input class="vfp-amt" id="vf-amt-${vid}-${cat}-${f.id}" type="text" value="${f.amount||''}" placeholder="${cur}"
@@ -7354,10 +7365,12 @@ function vtFeePanel(r){
         </select>
       </div>`).join('');
     const total=arr.reduce((s,f)=>s+(parseFloat(f.amount)||0),0);
-    const totalStr=total?(cur==='USD'?_fmtUSD(total):_fmtEUR(total)):'';
+    const totalStr=total?_fmtByCur(total,cur):'';
+    const curSel=['USD','CNY','EUR'].map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
     return `<div class="vfp-section" style="border-left:3px solid ${clr}">
       <div class="vfp-header" style="color:${clr}">
         ${icon} <strong style="font-size:11px">${label}</strong>
+        <select class="vfp-cur-sel" title="Currency" onchange="vtSetFeeCurrency(${vid},'${cat}',this.value)" style="font-size:10px;font-weight:700;padding:1px 4px;border:1px solid ${clr}33;border-radius:5px;background:#fff;color:${clr};cursor:pointer;margin-left:4px">${curSel}</select>
         ${totalStr?`<span class="vfp-total" style="color:${clr}">${totalStr}</span>`:''}
         <button class="vfp-add" onclick="vtAddFee(${vid},'${cat}')" style="border-color:${clr};color:${clr}">+ Add</button>
       </div>
