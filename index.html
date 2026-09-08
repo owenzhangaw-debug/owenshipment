@@ -7306,7 +7306,7 @@ function vtAddFee(vid, cat){
   const i=VT.findIndex(r=>r._id===vid); if(i<0) return;
   vtMigrateFees(VT[i]);
   const newId=Date.now();
-  VT[i].fees[cat].push({id:newId,amount:'',desc:'',invoiceNo:'',payStatus:'',currency:vtGetFeeCurrency(VT[i],cat)});
+  VT[i].fees[cat].push({id:newId,amount:'',desc:'',invoiceNo:'',payStatus:'',currency:vtFeeCurrency(cat)});
   saveVT(); renderVT();
   // keep row open
   const exp=document.getElementById('vexp-'+vid);
@@ -7346,9 +7346,13 @@ function vtFeePanel(r){
   function renderCat(cat, label, icon, clr, bg){
     const arr=r.fees[cat]||[];
     const cur=vtGetFeeCurrency(r,cat);
-    const rows=arr.map(f=>`
+    const rows=arr.map(f=>{
+      const fCur=f.currency||cur;
+      const fCurSel=['USD','CNY','EUR'].map(c=>`<option value="${c}" ${fCur===c?'selected':''}>${c}</option>`).join('');
+      return `
       <div class="vfp-row" id="vfp-row-${vid}-${cat}-${f.id}">
-        <input class="vfp-amt" id="vf-amt-${vid}-${cat}-${f.id}" type="text" value="${f.amount||''}" placeholder="${cur}"
+        <select class="vfp-row-cur" onchange="vtUpdateFeeField(${vid},'${cat}',${f.id},'currency',this.value)" style="height:22px;padding:0 2px;border:1px solid #e2e8f0;border-radius:4px;font-size:10px;font-weight:700;background:#f8fafc;cursor:pointer;flex-shrink:0;width:52px">${fCurSel}</select>
+        <input class="vfp-amt" id="vf-amt-${vid}-${cat}-${f.id}" type="text" value="${f.amount||''}" placeholder="0"
           onblur="vtUpdateFeeField(${vid},'${cat}',${f.id},'amount',this.value)"
           onkeydown="if(event.key==='Enter')this.blur()"/>
         <input class="vfp-desc" type="text" value="${(f.desc||'').replace(/"/g,'&quot;')}" placeholder="Description"
@@ -7363,18 +7367,18 @@ function vtFeePanel(r){
         <select class="vfp-pay" onchange="vtUpdateFeeField(${vid},'${cat}',${f.id},'payStatus',this.value)">
           ${_FEE_PAY_OPTS.map(o=>`<option ${f.payStatus===o?'selected':''}>${o}</option>`).join('')}
         </select>
-      </div>`).join('');
-    const total=arr.reduce((s,f)=>s+(parseFloat(f.amount)||0),0);
-    const totalStr=total?_fmtByCur(total,cur):'';
-    const curSel=['USD','CNY','EUR'].map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
+      </div>`;}).join('');
+    // Total grouped by currency
+    const totByCur={};
+    arr.forEach(f=>{ const c=f.currency||cur; totByCur[c]=(totByCur[c]||0)+(parseFloat(f.amount)||0); });
+    const totalStr=Object.entries(totByCur).filter(([,v])=>v).map(([c,v])=>`<span style="color:${clr};font-weight:800;font-size:12px;margin-left:4px">${_fmtByCur(v,c)}</span>`).join('<span style="color:#94a3b8;font-size:10px;margin:0 1px">+</span>');
     return `<div class="vfp-section" style="border-left:3px solid ${clr}">
       <div class="vfp-header" style="color:${clr}">
         ${icon} <strong style="font-size:11px">${label}</strong>
-        <select class="vfp-cur-sel" title="Currency" onchange="vtSetFeeCurrency(${vid},'${cat}',this.value)" style="font-size:10px;font-weight:700;padding:1px 4px;border:1px solid ${clr}33;border-radius:5px;background:#fff;color:${clr};cursor:pointer;margin-left:4px">${curSel}</select>
-        ${totalStr?`<span class="vfp-total" style="color:${clr}">${totalStr}</span>`:''}
+        ${totalStr||''}
         <button class="vfp-add" onclick="vtAddFee(${vid},'${cat}')" style="border-color:${clr};color:${clr}">+ Add</button>
       </div>
-      <div class="vfp-cols-hdr"><span>Amt (${cur})</span><span>Desc</span><span></span></div>
+      <div class="vfp-cols-hdr" style="grid-template-columns:52px 70px 1fr 22px"><span>Cur</span><span>Amt</span><span>Desc</span><span></span></div>
       ${rows||'<div class="vfp-empty">No fees — click + Add</div>'}
     </div>`;
   }
@@ -12849,9 +12853,8 @@ tr:hover td.vt-customs-td{background:rgba(168,85,247,.10)!important}
 .vfp-total{font-weight:800;font-size:12px;margin-left:6px}
 .vfp-add{margin-left:auto;padding:1px 8px;font-size:10px;font-weight:700;border:1.5px solid;border-radius:12px;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .vfp-add:hover{opacity:.75}
-.vfp-cols-hdr{display:grid;grid-template-columns:70px 1fr 22px;gap:4px;font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.3px;padding:0 2px 3px;border-bottom:1px solid #f1f5f9;margin-bottom:3px}
-.vfp-cols-hdr-full{grid-template-columns:70px 1fr 22px}
-.vfp-row{display:grid;grid-template-columns:70px 1fr 22px;gap:4px;align-items:center;padding:2px 2px}
+.vfp-cols-hdr{display:grid;grid-template-columns:52px 70px 1fr 22px;gap:4px;font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.3px;padding:0 2px 3px;border-bottom:1px solid #f1f5f9;margin-bottom:3px}
+.vfp-row{display:grid;grid-template-columns:52px 70px 1fr 22px;gap:4px;align-items:center;padding:2px 2px}
 .vfp-row+.vfp-row{border-top:1px solid #f8fafc}
 .vfp-row-sub{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:1px 2px 3px;margin-top:2px}
 .vfp-amt,.vfp-desc,.vfp-inv{height:22px;padding:0 5px;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;width:100%;box-sizing:border-box}
