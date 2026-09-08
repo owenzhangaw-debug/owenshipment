@@ -96,10 +96,13 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 /* SURCHARGE SUMMARY TABLE */
 .sur-tbl{width:100%;border-collapse:collapse;font-size:11px}
 .sur-tbl th{background:#004D4C;color:#fff;padding:4px 7px;font-size:10px;font-weight:600;text-align:left;letter-spacing:.3px;white-space:nowrap;height:24px}
-.sur-tbl td{padding:0;border-bottom:1px solid #DEDEDE;border-right:1px solid #EBEBEB;vertical-align:middle}
+.sur-tbl td{padding:0;border-bottom:1px solid #D8D8D8;border-right:1px solid #EBEBEB;vertical-align:middle}
 .sur-tbl tbody tr:hover td{background:#EFF7F7}
-.sur-tbl tbody tr:nth-child(even) td{background:#F5FAF9}
-.sur-tbl tbody tr:nth-child(even):hover td{background:#EFF7F7}
+/* order-based alternating via JS class instead of nth-child */
+.sur-tbl tr.no-odd-order td{background:#F5FAF9}
+.sur-tbl tr.no-odd-order:hover td{background:#EFF7F7}
+.sur-tbl tr.no-odd-order td.fc-1,.sur-tbl tr.no-odd-order td.fc-2,.sur-tbl tr.no-odd-order td.fc-3{background:#F5FAF9}
+.sur-tbl tr.no-odd-order:hover td.fc-1,.sur-tbl tr.no-odd-order:hover td.fc-2,.sur-tbl tr.no-odd-order:hover td.fc-3{background:#EFF7F7}
 .sur-amt{font-weight:800;color:#DB2777}
 /* UNDELIVERED BATCH TABLE */
 .ud-tbl{width:100%;border-collapse:collapse;font-size:11px}
@@ -209,7 +212,7 @@ thead th{padding:4px 8px;text-align:left;font-weight:600;font-size:10px;
 thead th:hover{background:#005857}
 thead th.no-sort{cursor:default}
 thead th.no-sort:hover{background:#004D4C}
-tbody tr{border-bottom:1px solid #DEDEDE}
+tbody tr{border-bottom:1px solid #D8D8D8}
 tbody tr:hover td{background:#EFF7F7}
 tbody tr:nth-child(even) td{background:#F5FAF9}
 tbody tr:nth-child(even):hover td{background:#EFF7F7}
@@ -1740,7 +1743,7 @@ tbody tr:hover{background:#fafbfc}
           <th class="no-sort">Broker</th>
           <th class="no-sort" style="min-width:80px;text-align:center">🚦 Level</th>
           <th onclick="ctSort('ETA in Mala')" title="ETA at Port of Malaysia">ETA in Mala ↕<span class="cdf-btn" id="cdf-ct-btn-ETA in Mala" onclick="openColDF('ct','ETA in Mala',this,event)" title="Filter by date">▾</span></th>
-          <th onclick="ctSort('Hub')" title="Temu routing — hub (T1 issued there) or direct from Małaszewicze">Hub ↕</th>
+          <th onclick="ctSort('Hub')" title="Temu routing — hub (T1 issued there) or direct from Małaszewicze" style="min-width:70px">Hub ↕</th>
           <th onclick="ctSort('ETA at Hub')">ETA at Hub ↕<span class="cdf-btn" id="cdf-ct-btn-ETA at Hub" onclick="openColDF('ct','ETA at Hub',this,event)" title="Filter by date">▾</span></th>
           <th onclick="ctSort('T1 Date')" title="Date when T1 customs cleared at Duisburg">T1 ↕<span class="cdf-btn" id="cdf-ct-btn-T1 Date" onclick="openColDF('ct','T1 Date',this,event)" title="Filter by date">▾</span></th>
           <th onclick="ctSort('Scheduled Slot')">Scheduled Slot ↕<span class="cdf-btn" id="cdf-ct-btn-Scheduled Slot" onclick="openColDF('ct','Scheduled Slot',this,event)" title="Filter by date">▾</span></th>
@@ -2144,9 +2147,9 @@ tbody tr:hover{background:#fafbfc}
         <th>Destination</th>
         <th style="text-align:center" title="Customs office provided?">Customs Office</th>
         <th>Trucker</th>
-        <th>Hub</th>
+        <th style="min-width:70px">Hub</th>
         <th>ETA</th>
-        <th>At Hub Date</th>
+        <th style='min-width:90px'>At Hub Date</th>
         <th style="text-align:center" title="Arrived at hub — ready to be picked up">Ready to be Picked</th>
         <th style="text-align:center" title="T1 customs transit document issued?">T1</th>
         <th>Delivery Date</th>
@@ -12338,7 +12341,9 @@ function renderOrders(){
     const ce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
     const st=cn?_noStorageInfo(o,cn):null;
     const fee=cn?_noStorageFee(o,cn):null;
-    const groupBorder=isFirst?'border-top:2px solid #dbeafe':'';
+    const orderIdx=uniqueOrders.findIndex(ord=>ord._id===o._id);
+    const noOrderClass=(orderIdx%2===1)?'no-odd-order':'';
+    const groupBorder=isFirst?'border-top:2px solid #94a3b8;':'';
     const svcTagsEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
         ${_noSvcList(o).map(svc=>{
           const esc=svc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
@@ -12369,11 +12374,11 @@ function renderOrders(){
     // Delivery Date / ATA: per-container, falling back to the order-level value (legacy single-container orders)
     const delivVal=cn?(pc['Delivery Date']||o['Delivery Date']||''):(o['Delivery Date']||'');
     const ataVal=cn?(pc['ATA']||o['ATA']||''):(o['ATA']||'');
-    const atHubDateVal=cn?(pc['At Hub Date']||''):'';
+    const atHubDateVal=cn?(pc['At Hub Date']||''):(o['At Hub Date']||'');
     const delivOnchange=cn?`noSetCtn(${o._id},'${ce}','Delivery Date',this.value.trim())`:`noSet(${o._id},'Delivery Date',this.value.trim())`;
     const ataOnchange=cn?`noSetCtn(${o._id},'${ce}','ATA',this.value.trim())`:`noSet(${o._id},'ATA',this.value.trim())`;
-    const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:'';
-    return `<tr data-no-order="${o._id}" style="${groupBorder}">
+    const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:`noSet(${o._id},'At Hub Date',this.value.trim())`;
+    return `<tr class="${noOrderClass}" data-no-order="${o._id}" style="${groupBorder}">
       <td class="fc-1" style="font-weight:700;color:var(--navy)">${isFirst?tinp(o,'Order No.','ORD-001',90):''}</td>
       <td class="fc-2" style="font-family:monospace;font-weight:600;font-size:12px">
         <div style="display:flex;align-items:flex-start;gap:2px">
@@ -12397,7 +12402,7 @@ function renderOrders(){
         return `<input type="text" list="dl-hub-o" value="${_noEsc(hubVal)}" placeholder="Duisburg / Tilburg…" onchange="${hubOnchange}" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:110px"/>`;
       })()}</td>
       <td>${dinpC(o,cn,'ETA',95)}</td>
-      <td>${cn?`<input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/>`:'<span style="color:#cbd5e1">—</span>'}</td>
+      <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
       <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
       <td style="text-align:center"><input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}" style="width:16px;height:16px;accent-color:#1d4ed8;cursor:pointer"/></td>
       <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s) — free until '+st.expiry:''}" style="${_inpCss};min-width:95px${st&&st.exceeded?';background:#fee2e2;border-color:#fca5a5;color:#b91c1c;font-weight:700':''}"/></td>
@@ -12799,7 +12804,9 @@ th.vt-fc,td.vt-fc{position:sticky;z-index:3;background:#fff}
 thead th.vt-fc{z-index:20;top:0;background:#004D4C}
 td.vt-fc-expand{position:sticky;left:0;z-index:3;background:#fff}
 thead th.vt-fc-expand{position:sticky;left:0;z-index:20;top:0;background:#004D4C}
-tbody tr:hover td.vt-fc,tbody tr:hover td.vt-fc-expand{background:#F8FAFC}
+tbody tr:nth-child(even) td.vt-fc,tbody tr:nth-child(even) td.vt-fc-expand{background:#F5FAF9}
+tbody tr:nth-child(even):hover td.vt-fc,tbody tr:nth-child(even):hover td.vt-fc-expand{background:#EFF7F7}
+tbody tr:hover td.vt-fc,tbody tr:hover td.vt-fc-expand{background:#EFF7F7}
 
 /* ── VT Group headers ── */
 .vt-group-hdr th{font-size:11px;font-weight:700;text-align:center;padding:4px 6px;letter-spacing:.5px;border-bottom:2px solid rgba(255,255,255,.15);position:sticky;top:0;z-index:15;height:26px}
