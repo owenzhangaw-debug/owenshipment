@@ -2539,9 +2539,9 @@ tbody tr:hover{background:#fafbfc}
       <input type="date" id="gantt-ct-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('ct')">
       <label style="font-size:11px;color:#64748b;font-weight:600">To</label>
       <input type="date" id="gantt-ct-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('ct')">
-      <button onclick="ganttSetRange('ct','thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-      <button onclick="ganttSetRange('ct','next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-      <button onclick="ganttSetRange('ct','all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
+      <button onclick="ganttSetRange('ct','thisweek')" title="Mon–Sun of the current week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+      <button onclick="ganttSetRange('ct','next2w')" title="2 full Mon–Sun weeks: this week + next week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+      <button onclick="ganttSetRange('ct','all')" title="No date filter" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
       <select id="gantt-ct-trucker" onchange="renderGanttFor('ct')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Truckers</option></select>
       <select id="gantt-ct-consignee" onchange="renderGanttFor('ct')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Consignees</option></select>
     </div>
@@ -2556,9 +2556,9 @@ tbody tr:hover{background:#fafbfc}
       <input type="date" id="gantt-order-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('order')">
       <label style="font-size:11px;color:#64748b;font-weight:600">To</label>
       <input type="date" id="gantt-order-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('order')">
-      <button onclick="ganttSetRange('order','thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-      <button onclick="ganttSetRange('order','next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-      <button onclick="ganttSetRange('order','all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
+      <button onclick="ganttSetRange('order','thisweek')" title="Mon–Sun of the current week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+      <button onclick="ganttSetRange('order','next2w')" title="2 full Mon–Sun weeks: this week + next week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+      <button onclick="ganttSetRange('order','all')" title="No date filter" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
       <select id="gantt-order-consignee" onchange="renderGanttFor('order')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Consignees</option></select>
     </div>
     <div id="gantt-order-content"></div>
@@ -2572,10 +2572,10 @@ tbody tr:hover{background:#fafbfc}
       <input type="date" id="gantt-vt-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('vt')">
       <label style="font-size:11px;color:#64748b;font-weight:600">To</label>
       <input type="date" id="gantt-vt-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('vt')">
-      <button onclick="ganttSetRange('vt','thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-      <button onclick="ganttSetRange('vt','next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-      <button onclick="ganttSetRange('vt','next4w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">Next 4 Wks</button>
-      <button onclick="ganttSetRange('vt','all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
+      <button onclick="ganttSetRange('vt','thisweek')" title="Mon–Sun of the current week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+      <button onclick="ganttSetRange('vt','next2w')" title="2 full Mon–Sun weeks: this week + next week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+      <button onclick="ganttSetRange('vt','next4w')" title="4 full Mon–Sun weeks from this Monday" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">Next 4 Wks</button>
+      <button onclick="ganttSetRange('vt','all')" title="No date filter" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
       <select id="gantt-vt-status" onchange="renderGanttFor('vt')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
         <option value="">All Statuses</option>
         <option value="Scheduled">Scheduled</option>
@@ -10959,7 +10959,7 @@ function rpRenderHistory(){
   const items=REPORTS.filter(r=>{
     if(q&&!JSON.stringify(r).toLowerCase().includes(q)) return false;
     const d=new Date(r.date);
-    if(flt==='week'){ const sw=new Date(now); sw.setDate(now.getDate()-now.getDay()); if(d<sw) return false; }
+    if(flt==='week'){ const sw=new Date(now); sw.setDate(now.getDate()-((now.getDay()+6)%7)); sw.setHours(0,0,0,0); if(d<sw) return false; }
     if(flt==='month'){ if(d.getMonth()!==now.getMonth()||d.getFullYear()!==now.getFullYear()) return false; }
     return true;
   });
@@ -11487,14 +11487,22 @@ function renderVesselDispatch(){
   content.innerHTML=dateBlocks+noDateBlock||'<div style="padding:40px;text-align:center;color:#94a3b8">No data.</div>';
 }
 
+// Monday of the calendar week containing `iso`
+function ganttWeekStart(iso){
+  const dow=new Date(iso+'T00:00:00').getDay();  // 0=Sun … 6=Sat
+  return dvAddDays(iso,-((dow+6)%7));            // days back to Monday
+}
+
+// Ranges snap to whole calendar weeks (Mon–Sun) so a delivery on
+// Monday counts as NEXT week, not "this week".
 function ganttSetRange(type,key){
-  const today=dvTodayISO();
+  const mon=ganttWeekStart(dvTodayISO());
   const fEl=document.getElementById('gantt-'+type+'-from');
   const tEl=document.getElementById('gantt-'+type+'-to');
   let fr='',to='';
-  if(key==='thisweek'){fr=today;to=dvAddDays(today,6);}
-  else if(key==='next2w'){fr=today;to=dvAddDays(today,13);}
-  else if(key==='next4w'){fr=today;to=dvAddDays(today,27);}
+  if(key==='thisweek'){fr=mon;to=dvAddDays(mon,6);}        // Mon–Sun, 1 week
+  else if(key==='next2w'){fr=mon;to=dvAddDays(mon,13);}    // 2 whole weeks
+  else if(key==='next4w'){fr=mon;to=dvAddDays(mon,27);}    // 4 whole weeks
   if(fEl) fEl.value=fr;
   if(tEl) tEl.value=to;
   renderGanttFor(type);
