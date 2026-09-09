@@ -11506,63 +11506,74 @@ function renderGanttFor(type){
   const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const fromISO=document.getElementById('gantt-'+type+'-from')?.value||'';
   const toISO=document.getElementById('gantt-'+type+'-to')?.value||'';
+  const P=dvParseSlot;
 
-  // Build container→vessel ETS lookup
-  const ctnVEts={};
-  if(typeof VT!=='undefined') VT.forEach(r=>{
-    const ets=dvParseSlot(r['ETS (Departure)']||''); if(!ets) return;
-    (r.containers||[]).forEach(cn=>{ if(cn) ctnVEts[cn.trim()]=ets; });
-  });
+  // Milestone palette
+  const C={mala:'#1d4ed8',hub:'#0f766e',slot:'#ea580c',eta:'#7c3aed',del:'#ea580c',ets:'#0369a1',arr:'#0891b2'};
 
-  let items=[], color1='#1d4ed8', color2='#0f766e';
+  let items=[];
 
   if(type==='ct'){
-    color1='#1d4ed8'; color2='#0f766e';
     const trF=document.getElementById('gantt-ct-trucker')?.value||'';
     const coF=document.getElementById('gantt-ct-consignee')?.value||'';
-    const raw=(typeof CT!=='undefined'?CT:[]).filter(r=>r['Tracking']!=='Arrived'&&!(r['Actual Arrival']&&r['Actual Arrival'].toString().trim()));
-    // Populate filters
+    // FINISHED = Actual Arrival filled (or Tracking already 'Arrived')
+    const raw=(typeof CT!=='undefined'?CT:[]).filter(r=>{
+      if(r['Actual Arrival']&&r['Actual Arrival'].toString().trim()) return false;
+      if((r['Tracking']||'').toLowerCase()==='arrived') return false;
+      return true;
+    });
     const allTr=[...new Set(raw.map(r=>r['Trucker']||'').filter(Boolean))].sort();
     const allCo=[...new Set(raw.map(r=>r['Consignee']||'').filter(Boolean))].sort();
     const trEl=document.getElementById('gantt-ct-trucker'); if(trEl){const p=trEl.value;trEl.innerHTML='<option value="">All Truckers</option>'+allTr.map(t=>`<option value="${t}"${t===p?' selected':''}>${t}</option>`).join('');}
     const coEl=document.getElementById('gantt-ct-consignee'); if(coEl){const p=coEl.value;coEl.innerHTML='<option value="">All Consignees</option>'+allCo.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
     raw.filter(r=>(!trF||(r['Trucker']||'')===trF)&&(!coF||(r['Consignee']||'')===coF)).forEach(r=>{
-      const dep=ctnVEts[r['Container No.']]||null;
-      const hub=dvParseSlot(r['ETA at Hub']||'');
-      const del=dvParseSlot(r['Scheduled Slot']||'')||dvParseSlot(r['Deadline']||'');
-      if(!dep&&!hub&&!del) return;
-      const fd=del||hub||dep;
-      if(fromISO&&fd&&fd<fromISO) return;
-      if(toISO&&fd&&fd>toISO) return;
-      items.push({label:r['Container No.']||'?',sub:[r['Consignee']||'',r['Trucker']||''].filter(Boolean).join(' · '),s1s:dep||(hub||del),s1e:hub||(del||dep||hub),s2s:hub,s2e:del||hub,mid:hub});
+      const mala=P(r['ETA in Mala']||'');
+      const hub =P(r['ETA at Hub']||'');
+      const slot=P(r['Scheduled Slot']||'')||P(r['Deadline']||'');
+      if(!mala&&!hub&&!slot) return;
+      const segs=[];
+      if(mala&&hub)        segs.push({s:mala,e:hub, c:C.mala,t:'ETA Mala → ETA Hub'});
+      if(hub&&slot)        segs.push({s:hub, e:slot,c:C.hub, t:'ETA Hub → Scheduled Slot'});
+      if(mala&&!hub&&slot) segs.push({s:mala,e:slot,c:C.mala,t:'ETA Mala → Scheduled Slot'});
+      const marks=[];
+      if(mala) marks.push({d:mala,c:C.mala,t:'ETA Mala: '+mala});
+      if(hub)  marks.push({d:hub, c:C.hub, t:'ETA Hub: '+hub});
+      if(slot) marks.push({d:slot,c:C.slot,t:'Scheduled Slot: '+slot});
+      items.push({label:r['Container No.']||'?',sub:[r['Consignee']||'',r['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
+                  first:mala||hub||slot,last:slot||hub||mala});
     });
     const b=document.getElementById('gantt-ct-badge'); if(b) b.textContent=items.length+' container'+(items.length!==1?'s':'');
 
   } else if(type==='order'){
-    color1='#7c3aed'; color2='#0f766e';
     const coF=document.getElementById('gantt-order-consignee')?.value||'';
-    const raw=(typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled')&&!_noHasSt(o,'Delivered'));
+    const raw=(typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled'));
     const allCo=[...new Set(raw.map(o=>o['Consignee']||'').filter(Boolean))].sort();
     const coEl=document.getElementById('gantt-order-consignee'); if(coEl){const p=coEl.value;coEl.innerHTML='<option value="">All Consignees</option>'+allCo.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
     raw.filter(o=>!coF||(o['Consignee']||'')===coF).forEach(o=>{
+      // FINISHED at order level = ATA filled / marked Delivered
+      if(o['ATA']&&o['ATA'].toString().trim()) return;
+      if(_noHasSt(o,'Delivered')) return;
       const cs=_noContainers(o);
       (cs.length?cs:[null]).forEach(cn=>{
         const pc=cn?_noPc(o,cn):{};
-        if(pc['ATA']||!!pc['POD']) return;
-        const eta=dvParseSlot(pc['ETA']||o['ETA']||'');
-        const hub=dvParseSlot(pc['At Hub Date']||'');
-        const del=dvParseSlot(pc['Delivery Date']||o['Delivery Date']||'');
-        if(!eta&&!hub&&!del) return;
-        const fd=del||hub||eta;
-        if(fromISO&&fd&&fd<fromISO) return;
-        if(toISO&&fd&&fd>toISO) return;
-        items.push({label:cn||(o['Order No.']||'(order)'),sub:[o['Consignee']||'',o['Trucker']||''].filter(Boolean).join(' · '),s1s:eta||(hub||del),s1e:hub||(del||eta||hub),s2s:hub,s2e:del||hub,mid:hub});
+        // FINISHED per container = ATA filled (or POD received)
+        if(pc['ATA']&&pc['ATA'].toString().trim()) return;
+        if(pc['POD']&&pc['POD'].toString().trim()) return;
+        const eta=P(pc['ETA']||o['ETA']||'');
+        const del=P(pc['Delivery Date']||o['Delivery Date']||'');
+        if(!eta&&!del) return;
+        const segs=[];
+        if(eta&&del) segs.push({s:eta,e:del,c:C.eta,t:'ETA → Delivery Date'});
+        const marks=[];
+        if(eta) marks.push({d:eta,c:C.eta,t:'ETA: '+eta});
+        if(del) marks.push({d:del,c:C.del,t:'Delivery Date: '+del});
+        items.push({label:cn||(o['Order No.']||'(order)'),sub:[o['Consignee']||'',o['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
+                    first:eta||del,last:del||eta});
       });
     });
     const b=document.getElementById('gantt-order-badge'); if(b) b.textContent=items.length+' order'+(items.length!==1?'s':'');
 
   } else if(type==='vt'){
-    color1='#0369a1'; color2=null;
     const stF=document.getElementById('gantt-vt-status')?.value||'';
     const cyF=document.getElementById('gantt-vt-cy')?.value||'';
     const caF=document.getElementById('gantt-vt-carrier')?.value||'';
@@ -11574,41 +11585,48 @@ function renderGanttFor(type){
     raw.filter(r=>r['Status']!=='Discharged').filter(r=>
       (!stF||((r['Status']||'TBD')===stF||(!r['Status']&&stF==='TBD')))&&(!cyF||(r['CY']||'')===cyF)&&(!caF||(r['Carrier']||'')===caF)
     ).forEach(r=>{
-      const s=dvParseSlot(r['ETS (Departure)']||''), e=dvParseSlot(r['ETA (Arrival)']||'');
+      const s=P(r['ETS (Departure)']||''), e=P(r['ETA (Arrival)']||'');
       if(!s&&!e) return;
-      const fd=s||e;
-      if(fromISO&&fd&&fd<fromISO) return;
-      if(toISO&&fd&&fd>toISO) return;
-      items.push({
-        label:r['Vessel Name']||(r['Booking / BC No.']||'(vessel)'),
+      const segs=[]; if(s&&e) segs.push({s,e,c:C.ets,t:'ETS → ETA'});
+      const marks=[];
+      if(s) marks.push({d:s,c:C.ets,t:'ETS: '+s});
+      if(e) marks.push({d:e,c:C.arr,t:'ETA: '+e});
+      items.push({label:r['Vessel Name']||(r['Booking / BC No.']||'(vessel)'),
         sub:[r['CY']||'',r['Carrier']||'',[r['Port'],r['POD']].filter(Boolean).join('→')].filter(Boolean).join(' · '),
-        s1s:s||e,s1e:e||s,s2s:null,s2e:null,mid:null
-      });
+        segs,marks,first:s||e,last:e||s});
     });
     const b=document.getElementById('gantt-vt-badge'); if(b) b.textContent=items.length+' vessel'+(items.length!==1?'s':'');
   }
 
+  // Date-range filter: keep items whose span OVERLAPS the window
+  if(fromISO||toISO){
+    items=items.filter(it=>{
+      if(toISO   && it.first && it.first>toISO)   return false;
+      if(fromISO && it.last  && it.last <fromISO) return false;
+      return true;
+    });
+  }
+  const badge=document.getElementById('gantt-'+type+'-badge');
+  if(badge) badge.textContent=items.length+' '+(type==='ct'?'container':type==='order'?'order':'vessel')+(items.length!==1?'s':'');
+
   if(!items.length){
-    el.innerHTML='<div style="padding:48px;text-align:center;color:#94a3b8;font-size:14px">No items with date ranges for the selected filters.</div>';
+    el.innerHTML='<div style="padding:48px;text-align:center;color:#94a3b8;font-size:14px">No ongoing items for the selected filters.</div>';
     return;
   }
 
-  // Sort by start date
-  items.sort((a,b)=>(a.s1s||'zzz')>(b.s1s||'zzz')?1:-1);
+  items.sort((a,b)=>(a.first||'zzzz')>(b.first||'zzzz')?1:-1);
 
-  // Date range
-  const allD=items.flatMap(it=>[it.s1s,it.s1e,it.s2s,it.s2e,it.mid]).filter(Boolean);
+  const allD=items.flatMap(it=>it.marks.map(m=>m.d)).filter(Boolean);
   const minD=allD.reduce((a,b)=>a<b?a:b);
   const maxD=allD.reduce((a,b)=>a>b?a:b);
-  const cs=dvAddDays(minD,-3), ce=dvAddDays(maxD,7);
+  const cs=dvAddDays(minD,-2), ce=dvAddDays(maxD,3);
   const days=[]; let dd=cs; while(dd<=ce){days.push(dd);dd=dvAddDays(dd,1);}
 
   const PPD=40,RH=34,LW=220,HH=50;
   const TW=days.length*PPD;
-  function dOff(iso){if(!iso)return null;return Math.round((new Date(iso+'T00:00:00')-new Date(cs+'T00:00:00'))/864e5)*PPD;}
+  const dOff=iso=>iso?Math.round((new Date(iso+'T00:00:00')-new Date(cs+'T00:00:00'))/864e5)*PPD:null;
   const todX=dOff(today);
 
-  // Month row
   const moS=[]; let pm=null;
   days.forEach((d,i)=>{
     const m=d.slice(0,7);
@@ -11623,45 +11641,48 @@ function renderGanttFor(type){
     return `<div style="width:${PPD}px;flex-shrink:0;text-align:center;font-size:9px;padding:2px 0;box-sizing:border-box;border-left:1px solid ${iT?'#fca5a5':'#f1f5f9'};background:${iT?'#fff7f7':iW?'#f9fafb':'#fff'};color:${iT?'#dc2626':iW?'#94a3b8':'#64748b'};font-weight:${iT?900:400}"><div style="font-size:8px;opacity:.55">${['Su','Mo','Tu','We','Th','Fr','Sa'][dow]}</div><div>${dom}</div></div>`;
   }).join('');
 
-  function stripe(){return todX!==null?`<div style="position:absolute;left:${todX}px;top:0;width:2px;height:100%;background:rgba(220,38,38,.3);pointer-events:none;z-index:2"></div>`:''}
+  const stripe=todX!==null?`<div style="position:absolute;left:${todX}px;top:0;width:2px;height:100%;background:rgba(220,38,38,.35);pointer-events:none;z-index:2"></div>`:'';
 
   const rowsHtml=items.map((it,ri)=>{
-    const x1s=dOff(it.s1s),x1e=dOff(it.s1e);
-    const x2s=dOff(it.s2s),x2e=dOff(it.s2e);
-    const mx=dOff(it.mid);
     const bg=ri%2===0?'#fff':'#f9fbfa';
-    let bars='';
-    if(x1s!==null){
-      const w=Math.max((x1e||x1s)-x1s,4);
-      const noS2=(!it.s2s||x2s===null||x2s<=x1s);
-      bars+=`<div title="${it.label}: ${it.s1s||'?'}→${it.s1e||'?'}" style="position:absolute;left:${x1s}px;width:${w}px;top:7px;height:20px;border-radius:${noS2?'4px':'4px 0 0 4px'};background:${color1};display:flex;align-items:center;padding:0 6px;box-sizing:border-box;overflow:hidden;z-index:3"><span style="font-size:9px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${Math.max(w-12,0)}px">${w>55?it.label:''}</span></div>`;
-    }
-    if(it.s2s&&color2&&x2s!==null&&x2e!==null&&x2e>x2s){
-      const w2=Math.max(x2e-x2s,4);
-      bars+=`<div title="${it.label}: Hub→Delivery" style="position:absolute;left:${x2s}px;width:${w2}px;top:7px;height:20px;border-radius:0 4px 4px 0;background:${color2};opacity:.9;z-index:3"></div>`;
-    }
-    if(mx!==null&&it.mid){
-      bars+=`<div title="Hub: ${it.mid}" style="position:absolute;left:${mx-6}px;top:5px;width:12px;height:12px;background:#fff;border:2.5px solid #0f766e;border-radius:2px;transform:rotate(45deg);z-index:4"></div>`;
+    let inner='';
+    // Bars (inclusive of the end day)
+    it.segs.forEach((sg,si)=>{
+      const x=dOff(sg.s), xe=dOff(sg.e);
+      if(x===null||xe===null) return;
+      const w=Math.max(xe+PPD-x,PPD);
+      const first=si===0, last=si===it.segs.length-1;
+      const rad=(first&&last)?'4px':first?'4px 0 0 4px':last?'0 4px 4px 0':'0';
+      inner+=`<div title="${it.label} — ${sg.t}: ${sg.s} → ${sg.e}" style="position:absolute;left:${x}px;width:${w}px;top:8px;height:18px;border-radius:${rad};background:${sg.c};display:flex;align-items:center;padding:0 6px;box-sizing:border-box;overflow:hidden;z-index:3"><span style="font-size:9px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(first&&w>70)?it.label:''}</span></div>`;
+    });
+    // Milestone diamonds, centred on their day
+    it.marks.forEach(mk=>{
+      const x=dOff(mk.d); if(x===null) return;
+      inner+=`<div title="${it.label} — ${mk.t}" style="position:absolute;left:${x+PPD/2-5}px;top:12px;width:10px;height:10px;background:#fff;border:2.5px solid ${mk.c};border-radius:2px;transform:rotate(45deg);z-index:5;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)"></div>`;
+    });
+    // No bar at all (single date only) → show the label beside the diamond
+    if(!it.segs.length&&it.marks.length){
+      const x=dOff(it.marks[0].d);
+      if(x!==null) inner+=`<div style="position:absolute;left:${x+PPD/2+10}px;top:11px;font-size:9px;font-weight:700;color:#64748b;white-space:nowrap;z-index:4">${it.label}</div>`;
     }
     return `<div style="display:flex;height:${RH}px;border-bottom:1px solid #f0f4f4">
-      <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:5;background:${bg};border-right:1.5px solid #e2e8f0;padding:0 10px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box">
+      <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:6;background:${bg};border-right:1.5px solid #e2e8f0;padding:0 10px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box">
         <div style="font-size:10px;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.label}">${it.label}</div>
         ${it.sub?`<div style="font-size:9px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.sub}</div>`:''}
       </div>
-      <div style="position:relative;flex:1;min-width:${TW}px;height:${RH}px;background:${bg}">
-        ${stripe()}${bars}
-      </div>
+      <div style="position:relative;flex:1;min-width:${TW}px;height:${RH}px;background:${bg}">${stripe}${inner}</div>
     </div>`;
   }).join('');
 
   const legendDefs={
-    ct:[['#1d4ed8','Departure→Hub'],['#0f766e','Hub→Delivery'],['◇','Hub date']],
-    order:[['#7c3aed','ETA→Hub'],['#0f766e','Hub→Delivery'],['◇','Hub date']],
-    vt:[['#0369a1','ETS→ETA']],
+    ct:[['bar',C.mala,'ETA Mala → ETA Hub'],['bar',C.hub,'ETA Hub → Scheduled Slot'],
+        ['dia',C.mala,'ETA Mala'],['dia',C.hub,'ETA Hub'],['dia',C.slot,'Scheduled Slot']],
+    order:[['bar',C.eta,'ETA → Delivery Date'],['dia',C.eta,'ETA'],['dia',C.del,'Delivery Date']],
+    vt:[['bar',C.ets,'ETS → ETA'],['dia',C.ets,'ETS'],['dia',C.arr,'ETA']],
   };
   const legend='<div style="display:flex;gap:12px;padding:7px 14px;font-size:10px;font-weight:600;color:#475569;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;align-items:center">'
-    +(legendDefs[type]||[]).map(([c,l])=>c==='◇'
-      ?`<span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:#fff;border:2px solid #0f766e;border-radius:1px;transform:rotate(45deg)"></span>${l}</span>`
+    +(legendDefs[type]||[]).map(([k,c,l])=>k==='dia'
+      ?`<span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:9px;height:9px;background:#fff;border:2px solid ${c};border-radius:1px;transform:rotate(45deg)"></span>${l}</span>`
       :`<span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:18px;height:10px;background:${c};border-radius:2px"></span>${l}</span>`
     ).join('')
     +`<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:2px;height:14px;background:#dc2626;opacity:.8"></span>Today</span>`
