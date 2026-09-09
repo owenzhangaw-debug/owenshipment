@@ -11698,7 +11698,7 @@ function renderGanttFor(type){
     +`<span style="margin-left:auto;font-weight:400;color:#94a3b8">${items.length} item${items.length!==1?'s':''} · ${days.length}d window</span>`
     +'</div>';
 
-  el.innerHTML=legend+`<div style="overflow:auto;max-height:calc(100vh - 185px)"><div style="min-width:${LW+TW}px">
+  el.innerHTML=legend+`<div id="gantt-scroll-${type}" style="overflow:auto;max-height:calc(100vh - 185px)"><div style="min-width:${LW+TW}px">
     <div style="display:flex;flex-direction:column;position:sticky;top:0;z-index:12;background:#fff;border-bottom:2px solid #cbd5e1;height:${HH}px">
       <div style="display:flex;height:22px;border-bottom:1px solid #e2e8f0">
         <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:15;background:#f8fafc;border-right:1.5px solid #cbd5e1;padding:0 10px;display:flex;align-items:center;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;box-sizing:border-box">ITEM</div>
@@ -11711,6 +11711,18 @@ function renderGanttFor(type){
     </div>
     ${rowsHtml}
   </div></div>`;
+
+  // Long spans (e.g. vessels sailing 80+ days) push today far off-screen.
+  // Open the chart at today rather than at the earliest date.
+  if(todX!==null){
+    const sc=document.getElementById('gantt-scroll-'+type);
+    if(sc){
+      const target=Math.max(0,todX-3*PPD);   // keep ~3 days of lead-in visible
+      const go=()=>{ sc.scrollLeft=target; };
+      go();
+      if(typeof requestAnimationFrame==='function') requestAnimationFrame(go);
+    }
+  }
 }
 
 function renderDispatch(){
