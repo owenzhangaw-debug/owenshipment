@@ -12197,12 +12197,12 @@ const NO_ST_STYLE={
   'Picked Up':'background:#b45309;color:#fff','In Transit':'background:#0e7490;color:#fff',
   'Delivered':'background:#15803d;color:#fff','Cancelled':'background:#b91c1c;color:#fff'
 };
-function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.parse(s); noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; } }catch(e){ NO=[]; } }
+function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.parse(s); noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; if(typeof _noNormalizeDelivered==='function'&&_noNormalizeDelivered()) saveNO(); } }catch(e){ NO=[]; } }
 function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
-    'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'CC Cleared':false,'POD':false,'Remark':'','Today Status':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
+    'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'','Customs Office':false,'T1':false,'CC Cleared':false,'POD':false,'Remark':'','Today Status':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -12256,7 +12256,9 @@ function noSet(id,field,val){
 }
 function _noEsc(v){ return (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 function _noSvcList(o){ return ((o&&o['Service Type'])||'').split(/\s*[,;+]\s*/).map(s=>s.trim()).filter(Boolean); }
-function _noStList(o){ const l=((o&&o['Status'])||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean); return l.length?l:['New']; }
+// No implicit default: a container with no status shows no tag at all.
+// 'New' is still selectable from the dropdown if you want to set it yourself.
+function _noStList(o){ return ((o&&o['Status'])||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean); }
 function _noHasSt(o,s){ return _noStList(o).some(x=>x.toLowerCase()===String(s).toLowerCase()); }
 
 // ── Service Type / Status are PER CONTAINER ────────────────────────────────
@@ -12274,10 +12276,8 @@ function _noSvcListFor(o,cn){
 function _noStListFor(o,cn){
   if(cn){
     const pc=_noPc(o,cn);
-    if(pc['Status']!==undefined){
-      const l=String(pc['Status']||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean);
-      return l.length?l:['New'];
-    }
+    if(pc['Status']!==undefined)
+      return String(pc['Status']||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean);
   }
   return _noStList(o);
 }
@@ -12358,29 +12358,63 @@ function _noAutoGrow(el){ if(!el) return; el.style.height='auto'; el.style.heigh
 function _noContainers(o){ return (o['Container No.']||'').split(/[\s,;\n]+/).map(s=>s.trim()).filter(Boolean); }
 // Per-container overrides: order.perCtn = { 'CONTAINERNO': {'Delivery Date','ATA','Status','At Hub'} }
 function _noPc(o,cn){ return ((o&&o.perCtn)||{})[cn]||{}; }
+// Stages a shipment passes THROUGH. Once it's delivered these no longer
+// apply, so an ATA replaces them rather than stacking beside them —
+// the row should read simply "Delivered", not "New, Delivered".
+const NO_PROGRESS_ST=['new','booked','picked up','in transit'];
+
+// Resolve the status list implied by an ATA. Any tag that isn't a progress
+// stage (custom tags the user added) is preserved either way.
+function _noStatusForAta(list,filled){
+  const has=list.some(s=>s.toLowerCase()==='delivered');
+  if(filled){
+    if(has && !list.some(s=>NO_PROGRESS_ST.includes(s.toLowerCase()))) return null; // already correct
+    return [...list.filter(s=>!NO_PROGRESS_ST.includes(s.toLowerCase())
+                             && s.toLowerCase()!=='delivered'), 'Delivered'];
+  }
+  if(!has) return null;                                    // nothing to undo
+  return list.filter(s=>s.toLowerCase()!=='delivered');    // may end up blank
+}
+
 // Setting an ATA means the box physically arrived, so its status follows
 // automatically. Clearing the ATA takes 'Delivered' back off, otherwise a
 // mistyped date would leave the row permanently marked delivered.
 function _noSyncDeliveredCtn(i,cn){
   const o=NO[i];
   const filled=!!(((o.perCtn&&o.perCtn[cn]&&o.perCtn[cn]['ATA'])||'').toString().trim());
-  let list=_noStListFor(o,cn);
-  const has=list.some(s=>s.toLowerCase()==='delivered');
-  if(filled&&!has) list=[...list,'Delivered'];
-  else if(!filled&&has) list=list.filter(s=>s.toLowerCase()!=='delivered');
-  else return;
-  if(!list.length) list=['New'];
-  o.perCtn[cn]['Status']=list.join(', ');
+  const next=_noStatusForAta(_noStListFor(o,cn),filled);
+  if(next) o.perCtn[cn]['Status']=next.join(', ');
 }
 function _noSyncDeliveredOrder(i){
   const o=NO[i];
   const filled=!!((o['ATA']||'').toString().trim());
-  let list=_noStList(o);
-  const has=list.some(s=>s.toLowerCase()==='delivered');
-  if(filled&&!has) list=[...list,'Delivered'];
-  else if(!filled&&has) list=list.filter(s=>s.toLowerCase()!=='delivered');
-  else return;
-  o['Status']=(list.length?list:['New']).join(', ');
+  const next=_noStatusForAta(_noStList(o),filled);
+  if(next) o['Status']=next.join(', ');
+}
+
+// One-off tidy-up for rows already saved as "New, Delivered": whenever an ATA
+// is present, drop the leftover progress stage. Idempotent and only touches
+// rows that are genuinely inconsistent.
+function _noNormalizeDelivered(){
+  let touched=false;
+  const fix=(cur,filled,set)=>{
+    const list=String(cur||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean);
+    let out=list;
+    // An ATA means Delivered, replacing whatever stage it was at.
+    if(filled) out=_noStatusForAta(list,true)||list;
+    // Drop the legacy auto-applied 'New' everywhere else.
+    else out=list.filter(s=>s.toLowerCase()!=='new');
+    if(out.join(', ')!==list.join(', ')){ set(out.join(', ')); touched=true; }
+  };
+  (NO||[]).forEach(o=>{
+    fix(o['Status'], !!(o['ATA']||'').toString().trim(), v=>o['Status']=v);
+    Object.keys(o.perCtn||{}).forEach(cn=>{
+      const pc=o.perCtn[cn];
+      if(pc['Status']===undefined) return;
+      fix(pc['Status'], !!((pc['ATA']||o['ATA']||'')).toString().trim(), v=>pc['Status']=v);
+    });
+  });
+  return touched;
 }
 function noSetCtn(id,cn,field,val){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
