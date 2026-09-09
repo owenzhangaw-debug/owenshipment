@@ -11541,7 +11541,7 @@ function renderGanttFor(type){
       if(slot) marks.push({d:slot,c:C.slot,t:'Scheduled Slot: '+slot});
       items.push({label:r['Container No.']||'?',proj:r['Batch / Train']||'',
                   sub:[r['Consignee']||'',r['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
-                  first:mala||hub||slot,last:slot||hub||mala});
+                  key:slot,first:mala||hub||slot,last:slot||hub||mala});
     });
     const b=document.getElementById('gantt-ct-badge'); if(b) b.textContent=items.length+' container'+(items.length!==1?'s':'');
 
@@ -11570,7 +11570,7 @@ function renderGanttFor(type){
         if(del) marks.push({d:del,c:C.del,t:'Delivery Date: '+del});
         items.push({label:cn||(o['Order No.']||'(order)'),proj:o['Order No.']||'',
                     sub:[o['Consignee']||'',o['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
-                    first:eta||del,last:del||eta});
+                    key:del,first:eta||del,last:del||eta});
       });
     });
     const b=document.getElementById('gantt-order-badge'); if(b) b.textContent=items.length+' order'+(items.length!==1?'s':'');
@@ -11595,16 +11595,19 @@ function renderGanttFor(type){
       if(e) marks.push({d:e,c:C.arr,t:'ETA: '+e});
       items.push({label:r['Vessel Name']||(r['Booking / BC No.']||'(vessel)'),proj:r['Booking / BC No.']||'',
         sub:[r['CY']||'',r['Carrier']||'',[r['Port'],r['POD']].filter(Boolean).join('→')].filter(Boolean).join(' · '),
-        segs,marks,first:s||e,last:e||s});
+        segs,marks,key:e,first:s||e,last:e||s});
     });
     const b=document.getElementById('gantt-vt-badge'); if(b) b.textContent=items.length+' vessel'+(items.length!==1?'s':'');
   }
 
-  // Date-range filter: keep items whose span OVERLAPS the window
+  // Date-range filter: anchored on the delivery milestone
+  // (Containers = Scheduled Slot, Orders = Delivery Date, Vessels = ETA).
+  // An item with no such date can't fall inside the window, so it's dropped.
   if(fromISO||toISO){
     items=items.filter(it=>{
-      if(toISO   && it.first && it.first>toISO)   return false;
-      if(fromISO && it.last  && it.last <fromISO) return false;
+      if(!it.key) return false;
+      if(fromISO && it.key<fromISO) return false;
+      if(toISO   && it.key>toISO)   return false;
       return true;
     });
   }
