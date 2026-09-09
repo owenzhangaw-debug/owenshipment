@@ -2524,72 +2524,71 @@ tbody tr:hover{background:#fafbfc}
      DISPATCH PAGE (Container + Vessel tabs)
 ══════════════════════════════════════════════════════════ -->
 <div id="page-dispatch" class="page">
-  <!-- Tab switcher -->
+  <!-- Tab switcher: 3 Gantt tabs -->
   <div style="display:flex;background:#003534;padding:8px 16px 0;gap:6px">
-    <button id="dispatch-tab-ct" onclick="switchDispatchTab('ct')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:#fff;color:#003534;transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:none">📦</span> Container Dispatch</button>
-    <button id="dispatch-tab-vt" onclick="switchDispatchTab('vt')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:grayscale(.4) brightness(1.3)">🚢</span> Vessel Dispatch</button>
-    <button id="dispatch-tab-gantt" onclick="switchDispatchTab('gantt')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:grayscale(.4) brightness(1.3)">📊</span> Gantt</button>
+    <button id="dispatch-tab-ct" onclick="switchDispatchTab('ct')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:#fff;color:#003534;transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:none">📦</span> Containers</button>
+    <button id="dispatch-tab-order" onclick="switchDispatchTab('order')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:grayscale(.4) brightness(1.3)">🧾</span> Orders</button>
+    <button id="dispatch-tab-vt" onclick="switchDispatchTab('vt')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:grayscale(.4) brightness(1.3)">🚢</span> Vessels</button>
   </div>
 
-  <!-- Container Dispatch panel -->
+  <!-- ── Containers Gantt ── -->
   <div id="dispatch-panel-ct">
-    <div id="dv-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
-      <span id="dv-count-badge" style="font-size:11px;background:#f0fdf4;color:#15803d;border-radius:10px;padding:2px 10px;font-weight:700"></span>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
-        <input type="date" id="dv-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderDispatch()">
-        <label style="font-size:12px;color:#64748b;font-weight:600">To</label>
-        <input type="date" id="dv-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderDispatch()">
-        <button onclick="dvSetRange('thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-        <button onclick="dvSetRange('next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-        <button onclick="dvSetRange('all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All Pending</button>
-        <select id="dv-trucker-filter" onchange="renderDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-          <option value="">All Truckers</option>
-        </select>
-        <select id="dv-consignee-filter" onchange="renderDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-          <option value="">All Consignees</option>
-        </select>
-      </div>
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
+      <span id="gantt-ct-badge" style="font-size:11px;background:#eff6ff;color:#1d4ed8;border-radius:10px;padding:2px 10px;font-weight:700"></span>
+      <label style="font-size:11px;color:#64748b;font-weight:600">From</label>
+      <input type="date" id="gantt-ct-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('ct')">
+      <label style="font-size:11px;color:#64748b;font-weight:600">To</label>
+      <input type="date" id="gantt-ct-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('ct')">
+      <button onclick="ganttSetRange('ct','thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+      <button onclick="ganttSetRange('ct','next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+      <button onclick="ganttSetRange('ct','all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
+      <select id="gantt-ct-trucker" onchange="renderGanttFor('ct')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Truckers</option></select>
+      <select id="gantt-ct-consignee" onchange="renderGanttFor('ct')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Consignees</option></select>
     </div>
-    <div id="dv-content" style="padding:16px;max-width:1300px;margin:0 auto"></div>
+    <div id="gantt-ct-content"></div>
   </div>
 
-  <!-- Vessel Dispatch panel -->
+  <!-- ── Orders Gantt ── -->
+  <div id="dispatch-panel-order" style="display:none">
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
+      <span id="gantt-order-badge" style="font-size:11px;background:#f5f3ff;color:#7c3aed;border-radius:10px;padding:2px 10px;font-weight:700"></span>
+      <label style="font-size:11px;color:#64748b;font-weight:600">From</label>
+      <input type="date" id="gantt-order-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('order')">
+      <label style="font-size:11px;color:#64748b;font-weight:600">To</label>
+      <input type="date" id="gantt-order-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('order')">
+      <button onclick="ganttSetRange('order','thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+      <button onclick="ganttSetRange('order','next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+      <button onclick="ganttSetRange('order','all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
+      <select id="gantt-order-consignee" onchange="renderGanttFor('order')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Consignees</option></select>
+    </div>
+    <div id="gantt-order-content"></div>
+  </div>
+
+  <!-- ── Vessels Gantt ── -->
   <div id="dispatch-panel-vt" style="display:none">
-    <div id="vd-toolbar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
-      <span id="vd-count-badge" style="font-size:11px;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:2px 10px;font-weight:700"></span>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <label style="font-size:12px;color:#64748b;font-weight:600">From</label>
-        <input type="date" id="vd-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderVesselDispatch()">
-        <label style="font-size:12px;color:#64748b;font-weight:600">To</label>
-        <input type="date" id="vd-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderVesselDispatch()">
-        <button onclick="vdSetRange('thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-        <button onclick="vdSetRange('next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-        <button onclick="vdSetRange('next4w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">Next 4 Wks</button>
-        <button onclick="vdSetRange('all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All Active</button>
-        <select id="vd-status-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-          <option value="">All Statuses</option>
-          <option value="Scheduled">Scheduled</option>
-          <option value="Cut-Off Soon">Cut-Off Soon</option>
-          <option value="Cut-Off Passed">Cut-Off Passed</option>
-          <option value="Departed">Departed</option>
-          <option value="Discharged">Discharged</option>
-          <option value="TBD">TBD</option>
-        </select>
-        <select id="vd-cy-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-          <option value="">All CYs</option>
-        </select>
-        <select id="vd-carrier-filter" onchange="renderVesselDispatch()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-          <option value="">All Carriers</option>
-        </select>
-      </div>
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
+      <span id="gantt-vt-badge" style="font-size:11px;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:2px 10px;font-weight:700"></span>
+      <label style="font-size:11px;color:#64748b;font-weight:600">From</label>
+      <input type="date" id="gantt-vt-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('vt')">
+      <label style="font-size:11px;color:#64748b;font-weight:600">To</label>
+      <input type="date" id="gantt-vt-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('vt')">
+      <button onclick="ganttSetRange('vt','thisweek')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
+      <button onclick="ganttSetRange('vt','next2w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
+      <button onclick="ganttSetRange('vt','next4w')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">Next 4 Wks</button>
+      <button onclick="ganttSetRange('vt','all')" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
+      <select id="gantt-vt-status" onchange="renderGanttFor('vt')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
+        <option value="">All Statuses</option>
+        <option value="Scheduled">Scheduled</option>
+        <option value="Cut-Off Soon">Cut-Off Soon</option>
+        <option value="Cut-Off Passed">Cut-Off Passed</option>
+        <option value="Departed">Departed</option>
+        <option value="Discharged">Discharged</option>
+        <option value="TBD">TBD</option>
+      </select>
+      <select id="gantt-vt-cy" onchange="renderGanttFor('vt')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All CYs</option></select>
+      <select id="gantt-vt-carrier" onchange="renderGanttFor('vt')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Carriers</option></select>
     </div>
-    <div id="vd-content" style="padding:16px;max-width:1400px;margin:0 auto"></div>
-  </div>
-
-  <!-- Gantt panel -->
-  <div id="dispatch-panel-gantt" style="display:none">
-    <div id="gantt-content" style="padding:0"></div>
+    <div id="gantt-vt-content"></div>
   </div>
 </div>
 
@@ -11297,8 +11296,8 @@ function vdCarrierStyle(c){
 let _activeDispatchTab='ct';
 function switchDispatchTab(tab){
   _activeDispatchTab=tab;
-  const panels={ct:'dispatch-panel-ct',vt:'dispatch-panel-vt',gantt:'dispatch-panel-gantt'};
-  const tabs={ct:'dispatch-tab-ct',vt:'dispatch-tab-vt',gantt:'dispatch-tab-gantt'};
+  const panels={ct:'dispatch-panel-ct',order:'dispatch-panel-order',vt:'dispatch-panel-vt'};
+  const tabs={ct:'dispatch-tab-ct',order:'dispatch-tab-order',vt:'dispatch-tab-vt'};
   Object.entries(panels).forEach(([k,id])=>{
     const el=document.getElementById(id); if(el) el.style.display=k===tab?'':'none';
   });
@@ -11307,9 +11306,7 @@ function switchDispatchTab(tab){
   Object.entries(tabs).forEach(([k,id])=>{
     const el=document.getElementById(id); if(el) (k===tab?_tabOn:_tabOff)(el);
   });
-  if(tab==='ct') renderDispatch();
-  else if(tab==='vt') renderVesselDispatch();
-  else if(tab==='gantt') renderGantt();
+  renderGanttFor(tab);
 }
 
 function renderVesselDispatch(){
@@ -11490,201 +11487,200 @@ function renderVesselDispatch(){
   content.innerHTML=dateBlocks+noDateBlock||'<div style="padding:40px;text-align:center;color:#94a3b8">No data.</div>';
 }
 
-function renderGantt(){
-  const el=document.getElementById('gantt-content'); if(!el) return;
+function ganttSetRange(type,key){
+  const today=dvTodayISO();
+  const fEl=document.getElementById('gantt-'+type+'-from');
+  const tEl=document.getElementById('gantt-'+type+'-to');
+  let fr='',to='';
+  if(key==='thisweek'){fr=today;to=dvAddDays(today,6);}
+  else if(key==='next2w'){fr=today;to=dvAddDays(today,13);}
+  else if(key==='next4w'){fr=today;to=dvAddDays(today,27);}
+  if(fEl) fEl.value=fr;
+  if(tEl) tEl.value=to;
+  renderGanttFor(type);
+}
+
+function renderGanttFor(type){
+  const el=document.getElementById('gantt-'+type+'-content'); if(!el) return;
   const today=dvTodayISO();
   const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fromISO=document.getElementById('gantt-'+type+'-from')?.value||'';
+  const toISO=document.getElementById('gantt-'+type+'-to')?.value||'';
 
-  // Build container → vessel ETS lookup (VT stores linked container numbers in r.containers)
-  const ctnVesselEts={};
+  // Build container→vessel ETS lookup
+  const ctnVEts={};
   if(typeof VT!=='undefined') VT.forEach(r=>{
     const ets=dvParseSlot(r['ETS (Departure)']||''); if(!ets) return;
-    (r.containers||[]).forEach(cn=>{ if(cn) ctnVesselEts[cn.trim()]=ets; });
+    (r.containers||[]).forEach(cn=>{ if(cn) ctnVEts[cn.trim()]=ets; });
   });
 
-  // Collect items
-  const groups=[
-    {key:'vessel',label:'🚢 Vessels',color1:'#0369a1',color2:null,items:[]},
-    {key:'container',label:'📦 Containers',color1:'#1d4ed8',color2:'#0f766e',items:[]},
-    {key:'order',label:'🧾 Orders',color1:'#7c3aed',color2:'#0f766e',items:[]},
-  ];
-  const gMap=Object.fromEntries(groups.map(g=>[g.key,g]));
+  let items=[], color1='#1d4ed8', color2='#0f766e';
 
-  // VT Vessels (not Discharged)
-  if(typeof VT!=='undefined') VT.filter(r=>r['Status']!=='Discharged').forEach(r=>{
-    const s=dvParseSlot(r['ETS (Departure)']||''), e=dvParseSlot(r['ETA (Arrival)']||'');
-    if(!s&&!e) return;
-    gMap.vessel.items.push({
-      label:r['Vessel Name']||(r['Booking / BC No.']||'(vessel)'),
-      sub:[r['CY'],r['Port']&&r['POD']?r['Port']+' → '+r['POD']:r['Port']||r['POD']||''].filter(Boolean).join(' '),
-      s1s:s||e, s1e:e||s, s2s:null, s2e:null, mid:null,
+  if(type==='ct'){
+    color1='#1d4ed8'; color2='#0f766e';
+    const trF=document.getElementById('gantt-ct-trucker')?.value||'';
+    const coF=document.getElementById('gantt-ct-consignee')?.value||'';
+    const raw=(typeof CT!=='undefined'?CT:[]).filter(r=>r['Tracking']!=='Arrived'&&!(r['Actual Arrival']&&r['Actual Arrival'].toString().trim()));
+    // Populate filters
+    const allTr=[...new Set(raw.map(r=>r['Trucker']||'').filter(Boolean))].sort();
+    const allCo=[...new Set(raw.map(r=>r['Consignee']||'').filter(Boolean))].sort();
+    const trEl=document.getElementById('gantt-ct-trucker'); if(trEl){const p=trEl.value;trEl.innerHTML='<option value="">All Truckers</option>'+allTr.map(t=>`<option value="${t}"${t===p?' selected':''}>${t}</option>`).join('');}
+    const coEl=document.getElementById('gantt-ct-consignee'); if(coEl){const p=coEl.value;coEl.innerHTML='<option value="">All Consignees</option>'+allCo.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
+    raw.filter(r=>(!trF||(r['Trucker']||'')===trF)&&(!coF||(r['Consignee']||'')===coF)).forEach(r=>{
+      const dep=ctnVEts[r['Container No.']]||null;
+      const hub=dvParseSlot(r['ETA at Hub']||'');
+      const del=dvParseSlot(r['Scheduled Slot']||'')||dvParseSlot(r['Deadline']||'');
+      if(!dep&&!hub&&!del) return;
+      const fd=del||hub||dep;
+      if(fromISO&&fd&&fd<fromISO) return;
+      if(toISO&&fd&&fd>toISO) return;
+      items.push({label:r['Container No.']||'?',sub:[r['Consignee']||'',r['Trucker']||''].filter(Boolean).join(' · '),s1s:dep||(hub||del),s1e:hub||(del||dep||hub),s2s:hub,s2e:del||hub,mid:hub});
     });
-  });
+    const b=document.getElementById('gantt-ct-badge'); if(b) b.textContent=items.length+' container'+(items.length!==1?'s':'');
 
-  // CT Containers (not arrived)
-  if(typeof CT!=='undefined') CT.filter(r=>r['Tracking']!=='Arrived'&&!(r['Actual Arrival']&&r['Actual Arrival'].toString().trim())).forEach(r=>{
-    const dep=ctnVesselEts[r['Container No.']]||null;
-    const hub=dvParseSlot(r['ETA at Hub']||'');
-    const del=dvParseSlot(r['Scheduled Slot']||'')||dvParseSlot(r['Deadline']||'');
-    if(!dep&&!hub&&!del) return;
-    gMap.container.items.push({
-      label:r['Container No.']||(r['Master B/L']||'?'),
-      sub:r['Consignee']||'',
-      s1s:dep||(hub||del), s1e:hub||(del||dep||hub),
-      s2s:hub, s2e:del||hub,
-      mid:hub,
-    });
-  });
-
-  // NO Orders (not delivered/cancelled, has dates)
-  const _noArr=typeof NO!=='undefined'?NO:[];
-  _noArr.filter(o=>!_noHasSt(o,'Cancelled')&&!_noHasSt(o,'Delivered')).forEach(o=>{
-    const cs=_noContainers(o);
-    (cs.length?cs:[null]).forEach(cn=>{
-      const pc=cn?_noPc(o,cn):{};
-      if(pc['ATA']||!!pc['POD']) return;
-      const eta=dvParseSlot(pc['ETA']||o['ETA']||'');
-      const hub=dvParseSlot(pc['At Hub Date']||'');
-      const del=dvParseSlot(pc['Delivery Date']||o['Delivery Date']||'');
-      if(!eta&&!hub&&!del) return;
-      gMap.order.items.push({
-        label:cn||(o['Order No.']||'(order)'),
-        sub:o['Consignee']||'',
-        s1s:eta||(hub||del), s1e:hub||(del||eta||hub),
-        s2s:hub, s2e:del||hub,
-        mid:hub,
+  } else if(type==='order'){
+    color1='#7c3aed'; color2='#0f766e';
+    const coF=document.getElementById('gantt-order-consignee')?.value||'';
+    const raw=(typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled')&&!_noHasSt(o,'Delivered'));
+    const allCo=[...new Set(raw.map(o=>o['Consignee']||'').filter(Boolean))].sort();
+    const coEl=document.getElementById('gantt-order-consignee'); if(coEl){const p=coEl.value;coEl.innerHTML='<option value="">All Consignees</option>'+allCo.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
+    raw.filter(o=>!coF||(o['Consignee']||'')===coF).forEach(o=>{
+      const cs=_noContainers(o);
+      (cs.length?cs:[null]).forEach(cn=>{
+        const pc=cn?_noPc(o,cn):{};
+        if(pc['ATA']||!!pc['POD']) return;
+        const eta=dvParseSlot(pc['ETA']||o['ETA']||'');
+        const hub=dvParseSlot(pc['At Hub Date']||'');
+        const del=dvParseSlot(pc['Delivery Date']||o['Delivery Date']||'');
+        if(!eta&&!hub&&!del) return;
+        const fd=del||hub||eta;
+        if(fromISO&&fd&&fd<fromISO) return;
+        if(toISO&&fd&&fd>toISO) return;
+        items.push({label:cn||(o['Order No.']||'(order)'),sub:[o['Consignee']||'',o['Trucker']||''].filter(Boolean).join(' · '),s1s:eta||(hub||del),s1e:hub||(del||eta||hub),s2s:hub,s2e:del||hub,mid:hub});
       });
     });
-  });
+    const b=document.getElementById('gantt-order-badge'); if(b) b.textContent=items.length+' order'+(items.length!==1?'s':'');
 
-  const allItems=groups.flatMap(g=>g.items);
-  if(!allItems.length){
-    el.innerHTML='<div style="padding:48px;text-align:center;color:#94a3b8;font-size:14px">No ongoing items with date ranges to display.</div>';
+  } else if(type==='vt'){
+    color1='#0369a1'; color2=null;
+    const stF=document.getElementById('gantt-vt-status')?.value||'';
+    const cyF=document.getElementById('gantt-vt-cy')?.value||'';
+    const caF=document.getElementById('gantt-vt-carrier')?.value||'';
+    const raw=(typeof VT!=='undefined'?VT:[]);
+    const allCY=[...new Set(raw.map(r=>r['CY']||'').filter(Boolean))].sort();
+    const allCA=[...new Set(raw.map(r=>r['Carrier']||'').filter(Boolean))].sort();
+    const cyEl=document.getElementById('gantt-vt-cy'); if(cyEl){const p=cyEl.value;cyEl.innerHTML='<option value="">All CYs</option>'+allCY.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
+    const caEl=document.getElementById('gantt-vt-carrier'); if(caEl){const p=caEl.value;caEl.innerHTML='<option value="">All Carriers</option>'+allCA.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
+    raw.filter(r=>r['Status']!=='Discharged').filter(r=>
+      (!stF||((r['Status']||'TBD')===stF||(!r['Status']&&stF==='TBD')))&&(!cyF||(r['CY']||'')===cyF)&&(!caF||(r['Carrier']||'')===caF)
+    ).forEach(r=>{
+      const s=dvParseSlot(r['ETS (Departure)']||''), e=dvParseSlot(r['ETA (Arrival)']||'');
+      if(!s&&!e) return;
+      const fd=s||e;
+      if(fromISO&&fd&&fd<fromISO) return;
+      if(toISO&&fd&&fd>toISO) return;
+      items.push({
+        label:r['Vessel Name']||(r['Booking / BC No.']||'(vessel)'),
+        sub:[r['CY']||'',r['Carrier']||'',[r['Port'],r['POD']].filter(Boolean).join('→')].filter(Boolean).join(' · '),
+        s1s:s||e,s1e:e||s,s2s:null,s2e:null,mid:null
+      });
+    });
+    const b=document.getElementById('gantt-vt-badge'); if(b) b.textContent=items.length+' vessel'+(items.length!==1?'s':'');
+  }
+
+  if(!items.length){
+    el.innerHTML='<div style="padding:48px;text-align:center;color:#94a3b8;font-size:14px">No items with date ranges for the selected filters.</div>';
     return;
   }
 
+  // Sort by start date
+  items.sort((a,b)=>(a.s1s||'zzz')>(b.s1s||'zzz')?1:-1);
+
   // Date range
-  const allDates=allItems.flatMap(it=>[it.s1s,it.s1e,it.s2s,it.s2e,it.mid]).filter(Boolean);
-  const minD=allDates.reduce((a,b)=>a<b?a:b);
-  const maxD=allDates.reduce((a,b)=>a>b?a:b);
-  const chartStart=dvAddDays(minD,-3);
-  const chartEnd=dvAddDays(maxD,7);
-  const days=[]; let dd=chartStart;
-  while(dd<=chartEnd){ days.push(dd); dd=dvAddDays(dd,1); }
+  const allD=items.flatMap(it=>[it.s1s,it.s1e,it.s2s,it.s2e,it.mid]).filter(Boolean);
+  const minD=allD.reduce((a,b)=>a<b?a:b);
+  const maxD=allD.reduce((a,b)=>a>b?a:b);
+  const cs=dvAddDays(minD,-3), ce=dvAddDays(maxD,7);
+  const days=[]; let dd=cs; while(dd<=ce){days.push(dd);dd=dvAddDays(dd,1);}
 
-  const PPD=40, ROW_H=36, LABEL_W=210, HEADER_H=50;
-  const totalW=days.length*PPD;
+  const PPD=40,RH=34,LW=220,HH=50;
+  const TW=days.length*PPD;
+  function dOff(iso){if(!iso)return null;return Math.round((new Date(iso+'T00:00:00')-new Date(cs+'T00:00:00'))/864e5)*PPD;}
+  const todX=dOff(today);
 
-  function dayOff(iso){ if(!iso) return null;
-    return Math.round((new Date(iso+'T00:00:00')-new Date(chartStart+'T00:00:00'))/864e5)*PPD; }
-
-  const todayX=dayOff(today);
-
-  // Month spans for header top row
-  const moSpans=[]; let prevM=null,moStart=0;
+  // Month row
+  const moS=[]; let pm=null;
   days.forEach((d,i)=>{
     const m=d.slice(0,7);
-    if(m!==prevM){
-      if(prevM!==null) moSpans[moSpans.length-1].w=(i-moSpans[moSpans.length-1].i)*PPD;
-      moSpans.push({label:MO[parseInt(m.slice(5))-1]+' '+m.slice(2,4),i,w:0});
-      moStart=i; prevM=m;
-    }
+    if(m!==pm){if(pm!==null)moS[moS.length-1].w=(i-moS[moS.length-1].i)*PPD;moS.push({l:MO[parseInt(m.slice(5))-1]+' '+m.slice(2,4),i,w:0});pm=m;}
   });
-  if(moSpans.length) moSpans[moSpans.length-1].w=(days.length-moSpans[moSpans.length-1].i)*PPD;
+  if(moS.length)moS[moS.length-1].w=(days.length-moS[moS.length-1].i)*PPD;
+  const moRow=moS.map(m=>`<div style="width:${m.w}px;flex-shrink:0;font-size:9px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;padding:4px 6px;box-sizing:border-box;border-left:1px solid #e2e8f0;overflow:hidden;white-space:nowrap">${m.l}</div>`).join('');
 
-  const moRowHtml=moSpans.map(m=>`<div style="width:${m.w}px;flex-shrink:0;font-size:9px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.6px;padding:4px 6px;box-sizing:border-box;border-left:1px solid #e2e8f0;overflow:hidden;white-space:nowrap">${m.label}</div>`).join('');
-
-  const dayRowHtml=days.map(d=>{
-    const dom=parseInt(d.slice(8));
-    const dow=new Date(d+'T00:00:00').getDay();
-    const isTod=d===today, isWk=dow===0||dow===6;
-    return `<div style="width:${PPD}px;flex-shrink:0;text-align:center;font-size:9px;padding:2px 0;box-sizing:border-box;border-left:1px solid ${isTod?'#fca5a5':'#f1f5f9'};background:${isTod?'#fff7f7':isWk?'#f9fafb':'#fff'};color:${isTod?'#dc2626':isWk?'#94a3b8':'#64748b'};font-weight:${isTod?900:400}">
-      <div style="font-size:8px;opacity:.55">${['Su','Mo','Tu','We','Th','Fr','Sa'][dow]}</div>
-      <div>${dom}</div>
-    </div>`;
+  const dayRow=days.map(d=>{
+    const dom=parseInt(d.slice(8)),dow=new Date(d+'T00:00:00').getDay();
+    const iT=d===today,iW=dow===0||dow===6;
+    return `<div style="width:${PPD}px;flex-shrink:0;text-align:center;font-size:9px;padding:2px 0;box-sizing:border-box;border-left:1px solid ${iT?'#fca5a5':'#f1f5f9'};background:${iT?'#fff7f7':iW?'#f9fafb':'#fff'};color:${iT?'#dc2626':iW?'#94a3b8':'#64748b'};font-weight:${iT?900:400}"><div style="font-size:8px;opacity:.55">${['Su','Mo','Tu','We','Th','Fr','Sa'][dow]}</div><div>${dom}</div></div>`;
   }).join('');
 
-  // Today vertical stripe (spans full height as a pseudo-element via background on each row)
-  function todayStripe(){
-    return todayX!==null?`<div style="position:absolute;left:${todayX}px;top:0;width:2px;height:100%;background:rgba(220,38,38,.35);pointer-events:none;z-index:2"></div>`:'';
-  }
+  function stripe(){return todX!==null?`<div style="position:absolute;left:${todX}px;top:0;width:2px;height:100%;background:rgba(220,38,38,.3);pointer-events:none;z-index:2"></div>`:''}
 
-  function barRow(it,g,rowIdx){
-    const x1s=dayOff(it.s1s), x1e=dayOff(it.s1e);
-    const x2s=dayOff(it.s2s), x2e=dayOff(it.s2e);
-    const midX=dayOff(it.mid);
-    const bg=rowIdx%2===0?'#fff':'#f9fbfa';
-
-    let barsHtml='';
-    // Segment 1 bar
+  const rowsHtml=items.map((it,ri)=>{
+    const x1s=dOff(it.s1s),x1e=dOff(it.s1e);
+    const x2s=dOff(it.s2s),x2e=dOff(it.s2e);
+    const mx=dOff(it.mid);
+    const bg=ri%2===0?'#fff':'#f9fbfa';
+    let bars='';
     if(x1s!==null){
-      const w=Math.max((x1e||x1s)-x1s,3);
-      const roundR=(!it.s2s||x2s===null||x2s<=x1s)?'4px':'0 0 0 0';
-      barsHtml+=`<div title="${it.label}: ${it.s1s||'?'}→${it.s1e||'?'}" style="position:absolute;left:${x1s}px;width:${w}px;top:8px;height:20px;border-radius:4px ${roundR};background:${g.color1};display:flex;align-items:center;padding:0 5px;box-sizing:border-box;overflow:hidden;z-index:3">
-        <span style="font-size:9px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${w-10}px">${w>50?it.label:''}</span>
-      </div>`;
+      const w=Math.max((x1e||x1s)-x1s,4);
+      const noS2=(!it.s2s||x2s===null||x2s<=x1s);
+      bars+=`<div title="${it.label}: ${it.s1s||'?'}→${it.s1e||'?'}" style="position:absolute;left:${x1s}px;width:${w}px;top:7px;height:20px;border-radius:${noS2?'4px':'4px 0 0 4px'};background:${color1};display:flex;align-items:center;padding:0 6px;box-sizing:border-box;overflow:hidden;z-index:3"><span style="font-size:9px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${Math.max(w-12,0)}px">${w>55?it.label:''}</span></div>`;
     }
-    // Segment 2 bar (hub → delivery)
-    if(it.s2s&&g.color2&&x2s!==null&&x2e!==null&&x2e>x2s){
-      const w2=Math.max(x2e-x2s,3);
-      barsHtml+=`<div title="${it.label}: Hub→Delivery ${it.s2s}→${it.s2e}" style="position:absolute;left:${x2s}px;width:${w2}px;top:8px;height:20px;border-radius:0 4px 4px 0;background:${g.color2};opacity:.9;z-index:3"></div>`;
+    if(it.s2s&&color2&&x2s!==null&&x2e!==null&&x2e>x2s){
+      const w2=Math.max(x2e-x2s,4);
+      bars+=`<div title="${it.label}: Hub→Delivery" style="position:absolute;left:${x2s}px;width:${w2}px;top:7px;height:20px;border-radius:0 4px 4px 0;background:${color2};opacity:.9;z-index:3"></div>`;
     }
-    // Hub milestone diamond
-    if(midX!==null&&it.mid){
-      barsHtml+=`<div title="Hub: ${it.mid}" style="position:absolute;left:${midX-6}px;top:6px;width:12px;height:12px;background:#fff;border:2.5px solid #0f766e;border-radius:2px;transform:rotate(45deg);z-index:4"></div>`;
+    if(mx!==null&&it.mid){
+      bars+=`<div title="Hub: ${it.mid}" style="position:absolute;left:${mx-6}px;top:5px;width:12px;height:12px;background:#fff;border:2.5px solid #0f766e;border-radius:2px;transform:rotate(45deg);z-index:4"></div>`;
     }
-
-    return `<div style="display:flex;min-height:${ROW_H}px;border-bottom:1px solid #f0f4f4">
-      <div style="width:${LABEL_W}px;flex-shrink:0;position:sticky;left:0;z-index:5;background:${bg};border-right:1.5px solid #e2e8f0;padding:0 10px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box">
+    return `<div style="display:flex;height:${RH}px;border-bottom:1px solid #f0f4f4">
+      <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:5;background:${bg};border-right:1.5px solid #e2e8f0;padding:0 10px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box">
         <div style="font-size:10px;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.label}">${it.label}</div>
         ${it.sub?`<div style="font-size:9px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.sub}</div>`:''}
       </div>
-      <div style="position:relative;flex:1;min-width:${totalW}px;height:${ROW_H}px;background:${bg}">
-        ${todayStripe()}
-        ${barsHtml}
+      <div style="position:relative;flex:1;min-width:${TW}px;height:${RH}px;background:${bg}">
+        ${stripe()}${bars}
       </div>
     </div>`;
-  }
+  }).join('');
 
-  const groupsHtml=groups.filter(g=>g.items.length).map(g=>`
-    <div>
-      <div style="display:flex;height:26px;background:#eef2f7;border-bottom:1px solid #dde3eb;position:sticky;top:${HEADER_H}px;z-index:9">
-        <div style="width:${LABEL_W}px;flex-shrink:0;position:sticky;left:0;z-index:10;background:#eef2f7;border-right:1.5px solid #e2e8f0;padding:0 10px;display:flex;align-items:center;font-size:10px;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:.5px">
-          ${g.label} <span style="font-weight:400;opacity:.5;margin-left:4px">${g.items.length}</span>
-        </div>
-        <div style="flex:1;min-width:${totalW}px;position:relative">${todayStripe()}</div>
+  const legendDefs={
+    ct:[['#1d4ed8','Departure→Hub'],['#0f766e','Hub→Delivery'],['◇','Hub date']],
+    order:[['#7c3aed','ETA→Hub'],['#0f766e','Hub→Delivery'],['◇','Hub date']],
+    vt:[['#0369a1','ETS→ETA']],
+  };
+  const legend='<div style="display:flex;gap:12px;padding:7px 14px;font-size:10px;font-weight:600;color:#475569;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;align-items:center">'
+    +(legendDefs[type]||[]).map(([c,l])=>c==='◇'
+      ?`<span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:#fff;border:2px solid #0f766e;border-radius:1px;transform:rotate(45deg)"></span>${l}</span>`
+      :`<span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:18px;height:10px;background:${c};border-radius:2px"></span>${l}</span>`
+    ).join('')
+    +`<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:2px;height:14px;background:#dc2626;opacity:.8"></span>Today</span>`
+    +`<span style="margin-left:auto;font-weight:400;color:#94a3b8">${items.length} item${items.length!==1?'s':''} · ${days.length}d window</span>`
+    +'</div>';
+
+  el.innerHTML=legend+`<div style="overflow:auto;max-height:calc(100vh - 185px)"><div style="min-width:${LW+TW}px">
+    <div style="display:flex;flex-direction:column;position:sticky;top:0;z-index:12;background:#fff;border-bottom:2px solid #cbd5e1;height:${HH}px">
+      <div style="display:flex;height:22px;border-bottom:1px solid #e2e8f0">
+        <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:15;background:#f8fafc;border-right:1.5px solid #cbd5e1;padding:0 10px;display:flex;align-items:center;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;box-sizing:border-box">ITEM</div>
+        <div style="display:flex;flex:1">${moRow}</div>
       </div>
-      ${g.items.map((it,i)=>barRow(it,g,i)).join('')}
-    </div>`).join('');
-
-  // Legend
-  const legendHtml=`<div style="display:flex;gap:14px;padding:8px 14px;font-size:10px;font-weight:600;color:#475569;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;align-items:center">
-    <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:20px;height:10px;background:#0369a1;border-radius:2px"></span>Vessel voyage</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:20px;height:10px;background:#1d4ed8;border-radius:2px"></span>Ctn: Departure→Hub</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:20px;height:10px;background:#7c3aed;border-radius:2px"></span>Order: ETA→Hub</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:20px;height:10px;background:#0f766e;border-radius:2px"></span>Hub→Delivery</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;background:#fff;border:2px solid #0f766e;border-radius:1px;transform:rotate(45deg)"></span>&nbsp;Hub date</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:2px;height:14px;background:#dc2626;opacity:.8"></span>Today</span>
-    <span style="margin-left:auto;font-weight:400;color:#94a3b8">${allItems.length} items · ${days.length} day window</span>
-  </div>`;
-
-  el.innerHTML=legendHtml+`
-    <div style="overflow:auto;max-height:calc(100vh - 185px)">
-      <div style="min-width:${LABEL_W+totalW}px">
-        <!-- Sticky header -->
-        <div style="display:flex;flex-direction:column;position:sticky;top:0;z-index:12;background:#fff;border-bottom:2px solid #cbd5e1;height:${HEADER_H}px">
-          <div style="display:flex;height:22px;border-bottom:1px solid #e2e8f0">
-            <div style="width:${LABEL_W}px;flex-shrink:0;position:sticky;left:0;z-index:15;background:#f8fafc;border-right:1.5px solid #cbd5e1;padding:0 10px;display:flex;align-items:center;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;box-sizing:border-box">ITEM</div>
-            <div style="display:flex;flex:1">${moRowHtml}</div>
-          </div>
-          <div style="display:flex;height:${HEADER_H-22}px">
-            <div style="width:${LABEL_W}px;flex-shrink:0;position:sticky;left:0;z-index:15;background:#f8fafc;border-right:1.5px solid #cbd5e1;box-sizing:border-box"></div>
-            <div style="display:flex;flex:1">${dayRowHtml}</div>
-          </div>
-        </div>
-        ${groupsHtml}
+      <div style="display:flex;height:${HH-22}px">
+        <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:15;background:#f8fafc;border-right:1.5px solid #cbd5e1;box-sizing:border-box"></div>
+        <div style="display:flex;flex:1">${dayRow}</div>
       </div>
-    </div>`;
+    </div>
+    ${rowsHtml}
+  </div></div>`;
 }
 
 function renderDispatch(){
@@ -12163,7 +12159,7 @@ function noDelCtn(id,cn){
   if(NO[i].perCtn) delete NO[i].perCtn[cn];
   saveNO(); renderOrders();
   const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 // Rename a container in-place (row is directly editable — no expand panel anymore)
 function noRenameCtn(id,oldCn,newCn){
@@ -12177,7 +12173,7 @@ function noRenameCtn(id,oldCn,newCn){
   if(NO[i].perCtn&&NO[i].perCtn[oldCn]){ NO[i].perCtn[newCn]=NO[i].perCtn[oldCn]; delete NO[i].perCtn[oldCn]; }
   saveNO(); renderOrders();
   const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 // Add another container row to an existing order
 function noAddCtnPrompt(id){
@@ -12198,7 +12194,7 @@ function noSet(id,field,val){
   // on an order with no container yet) could look "stuck" on its old value until something else forced a redraw.
   renderOrders();
   const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 function _noEsc(v){ return (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 function _noSvcList(o){ return ((o&&o['Service Type'])||'').split(/\s*[,;+]\s*/).map(s=>s.trim()).filter(Boolean); }
@@ -12213,7 +12209,7 @@ function noToggleStatus(id,st){
   NO[i]['Status']=list.join(', ');
   saveNO(); renderOrders();
   const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 function noToggleService(id,svc){
   svc=(svc||'').trim(); if(!svc) return;
@@ -12265,7 +12261,7 @@ function noSetCtn(id,cn,field,val){
   NO[i].perCtn[cn][field]=val;
   saveNO(); renderOrders();
   const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 
 // ── BULK EDIT — select orders (checkbox appears per container row, but selection is by order) ──
@@ -12327,7 +12323,7 @@ function applyNoBulkEdit(){
   }
   saveNO(); renderOrders();
   const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderDispatch==='function') renderDispatch();
+  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
   const ok=document.getElementById('no-be-ok');
   if(ok){ ok.textContent='✓ Updated '+count+' order'+(count!==1?'s':'')+'.'; ok.style.display='block'; }
   setTimeout(()=>{ closeNoBE(); noClearSel(); },900);
