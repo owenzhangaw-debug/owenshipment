@@ -11539,7 +11539,8 @@ function renderGanttFor(type){
       if(mala) marks.push({d:mala,c:C.mala,t:'ETA Mala: '+mala});
       if(hub)  marks.push({d:hub, c:C.hub, t:'ETA Hub: '+hub});
       if(slot) marks.push({d:slot,c:C.slot,t:'Scheduled Slot: '+slot});
-      items.push({label:r['Container No.']||'?',sub:[r['Consignee']||'',r['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
+      items.push({label:r['Container No.']||'?',proj:r['Batch / Train']||'',
+                  sub:[r['Consignee']||'',r['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
                   first:mala||hub||slot,last:slot||hub||mala});
     });
     const b=document.getElementById('gantt-ct-badge'); if(b) b.textContent=items.length+' container'+(items.length!==1?'s':'');
@@ -11567,7 +11568,8 @@ function renderGanttFor(type){
         const marks=[];
         if(eta) marks.push({d:eta,c:C.eta,t:'ETA: '+eta});
         if(del) marks.push({d:del,c:C.del,t:'Delivery Date: '+del});
-        items.push({label:cn||(o['Order No.']||'(order)'),sub:[o['Consignee']||'',o['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
+        items.push({label:cn||(o['Order No.']||'(order)'),proj:o['Order No.']||'',
+                    sub:[o['Consignee']||'',o['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
                     first:eta||del,last:del||eta});
       });
     });
@@ -11591,7 +11593,7 @@ function renderGanttFor(type){
       const marks=[];
       if(s) marks.push({d:s,c:C.ets,t:'ETS: '+s});
       if(e) marks.push({d:e,c:C.arr,t:'ETA: '+e});
-      items.push({label:r['Vessel Name']||(r['Booking / BC No.']||'(vessel)'),
+      items.push({label:r['Vessel Name']||(r['Booking / BC No.']||'(vessel)'),proj:r['Booking / BC No.']||'',
         sub:[r['CY']||'',r['Carrier']||'',[r['Port'],r['POD']].filter(Boolean).join('→')].filter(Boolean).join(' · '),
         segs,marks,first:s||e,last:e||s});
     });
@@ -11622,7 +11624,7 @@ function renderGanttFor(type){
   const cs=dvAddDays(minD,-2), ce=dvAddDays(maxD,3);
   const days=[]; let dd=cs; while(dd<=ce){days.push(dd);dd=dvAddDays(dd,1);}
 
-  const PPD=40,RH=34,LW=220,HH=50;
+  const PPD=40,RH=44,LW=270,HH=50;
   const TW=days.length*PPD;
   const dOff=iso=>iso?Math.round((new Date(iso+'T00:00:00')-new Date(cs+'T00:00:00'))/864e5)*PPD:null;
   const todX=dOff(today);
@@ -11653,22 +11655,18 @@ function renderGanttFor(type){
       const w=Math.max(xe+PPD-x,PPD);
       const first=si===0, last=si===it.segs.length-1;
       const rad=(first&&last)?'4px':first?'4px 0 0 4px':last?'0 4px 4px 0':'0';
-      inner+=`<div title="${it.label} — ${sg.t}: ${sg.s} → ${sg.e}" style="position:absolute;left:${x}px;width:${w}px;top:8px;height:18px;border-radius:${rad};background:${sg.c};display:flex;align-items:center;padding:0 6px;box-sizing:border-box;overflow:hidden;z-index:3"><span style="font-size:9px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(first&&w>70)?it.label:''}</span></div>`;
+      inner+=`<div title="${it.label} — ${sg.t}: ${sg.s} → ${sg.e}" style="position:absolute;left:${x}px;width:${w}px;top:13px;height:18px;border-radius:${rad};background:${sg.c};box-sizing:border-box;z-index:3"></div>`;
     });
     // Milestone diamonds, centred on their day
     it.marks.forEach(mk=>{
       const x=dOff(mk.d); if(x===null) return;
-      inner+=`<div title="${it.label} — ${mk.t}" style="position:absolute;left:${x+PPD/2-5}px;top:12px;width:10px;height:10px;background:#fff;border:2.5px solid ${mk.c};border-radius:2px;transform:rotate(45deg);z-index:5;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)"></div>`;
+      inner+=`<div title="${it.label} — ${mk.t}" style="position:absolute;left:${x+PPD/2-5}px;top:17px;width:10px;height:10px;background:#fff;border:2.5px solid ${mk.c};border-radius:2px;transform:rotate(45deg);z-index:5;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)"></div>`;
     });
-    // No bar at all (single date only) → show the label beside the diamond
-    if(!it.segs.length&&it.marks.length){
-      const x=dOff(it.marks[0].d);
-      if(x!==null) inner+=`<div style="position:absolute;left:${x+PPD/2+10}px;top:11px;font-size:9px;font-weight:700;color:#64748b;white-space:nowrap;z-index:4">${it.label}</div>`;
-    }
     return `<div style="display:flex;height:${RH}px;border-bottom:1px solid #f0f4f4">
-      <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:6;background:${bg};border-right:1.5px solid #e2e8f0;padding:0 10px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box">
-        <div style="font-size:10px;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.label}">${it.label}</div>
-        ${it.sub?`<div style="font-size:9px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.sub}</div>`:''}
+      <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:6;background:${bg};border-right:1.5px solid #e2e8f0;padding:0 10px;display:flex;flex-direction:column;justify-content:center;gap:1px;box-sizing:border-box">
+        <div style="font-size:10.5px;font-weight:700;color:#1e293b;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.label}">${it.label}</div>
+        ${it.proj?`<div style="font-size:8.5px;font-weight:700;color:#475569;background:#eef2f7;border-radius:3px;padding:1px 5px;align-self:flex-start;max-width:100%;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.proj}">${it.proj}</div>`:''}
+        ${it.sub?`<div style="font-size:9px;color:#94a3b8;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.sub}">${it.sub}</div>`:''}
       </div>
       <div style="position:relative;flex:1;min-width:${TW}px;height:${RH}px;background:${bg}">${stripe}${inner}</div>
     </div>`;
