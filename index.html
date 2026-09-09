@@ -2815,58 +2815,6 @@ tbody tr:hover{background:#fafbfc}
   </div>
 </div>
 
-<!-- ══ DOCUMENT VAULT MODAL ══ -->
-<div class="overlay" id="docs-overlay">
-  <div class="modal" style="width:720px;max-width:96vw">
-    <h2 style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">📎 Documents
-      <span style="font-size:12px;font-weight:700;color:#64748b;background:#f1f5f9;border-radius:10px;padding:2px 10px">
-        <span id="docs-scope-label">Order</span>: <span id="docs-ref-label"></span></span>
-      <button onclick="openDocCfg()" title="Cloud storage settings" style="margin-left:auto;border:none;background:#f1f5f9;color:#475569;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">☁ Storage</button>
-    </h2>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0 12px;border-bottom:1px solid #e2e8f0;margin-bottom:12px">
-      <select id="docs-type" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:700">
-        <option>B/L</option><option>Waybill</option><option>Invoice</option><option>ATB</option>
-        <option>T1</option><option>Customs</option><option>Packing List</option><option>Other</option>
-      </select>
-      <input type="file" id="docs-file" multiple onchange="docAddFiles(this)"
-        accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.xlsx,.xls,.csv,.doc,.docx"
-        style="font-size:12px;flex:1;min-width:190px"/>
-      <span style="font-size:11px;color:#94a3b8">Invoices are scanned automatically</span>
-    </div>
-    <div id="docs-status" style="display:none;font-size:11.5px;font-weight:600;margin-bottom:9px"></div>
-    <div id="docs-list" style="max-height:52vh;overflow:auto"></div>
-    <div class="modal-btns"><button class="mbtn-cancel" onclick="closeDocs()">Close</button></div>
-  </div>
-</div>
-
-<!-- ══ CLOUD STORAGE SETTINGS ══ -->
-<div class="overlay" id="doccfg-overlay">
-  <div class="modal" style="width:600px;max-width:96vw">
-    <h2>☁ Document Cloud Storage</h2>
-    <p style="font-size:12px;color:#64748b;margin-bottom:6px;line-height:1.55">
-      Files upload straight from this browser to <b>your own</b> S3-compatible bucket — AWS S3,
-      Cloudflare R2, Backblaze B2 or MinIO. Credentials stay in this browser and are never sent anywhere else.
-      Your JSONBin sync only carries the file <i>list</i>, never the files.</p>
-    <p style="font-size:11.5px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.5">
-      Two setup steps on the bucket side: create a key limited to this one bucket, and add a
-      <b>CORS rule</b> allowing <code>PUT, GET, DELETE</code> from this app's address — browsers block the upload otherwise.</p>
-    <div class="form-grid">
-      <div class="form-group" style="grid-column:1/-1"><label>Endpoint URL</label>
-        <input type="text" id="dcfg-endpoint" placeholder="https://&lt;account&gt;.r2.cloudflarestorage.com"/></div>
-      <div class="form-group"><label>Bucket</label><input type="text" id="dcfg-bucket" placeholder="logistics-docs"/></div>
-      <div class="form-group"><label>Region</label><input type="text" id="dcfg-region" placeholder="auto"/></div>
-      <div class="form-group"><label>Access Key ID</label><input type="text" id="dcfg-accessKey" autocomplete="off"/></div>
-      <div class="form-group"><label>Secret Access Key</label><input type="password" id="dcfg-secretKey" autocomplete="new-password"/></div>
-    </div>
-    <div id="dcfg-msg" style="display:none;font-size:12px;font-weight:600;margin-top:10px"></div>
-    <div class="modal-btns">
-      <button class="mbtn-cancel" onclick="closeDocCfg()">Cancel</button>
-      <button onclick="testDocCfg()" style="background:#f1f5f9;color:#475569;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer">Test connection</button>
-      <button class="mbtn-save" onclick="saveDocCfg()">💾 Save</button>
-    </div>
-  </div>
-</div>
-
 <!-- CLOUD SYNC MODAL -->
 <div class="overlay" id="sync-overlay">
   <div class="modal" style="width:520px">
@@ -6983,8 +6931,8 @@ function renderCT(){
     </div>`;
 
     return `<tr class="${rowCls}" id="row-${r._id}">
-      <td class="fc-1" style="padding:4px 6px;white-space:nowrap"><button class="ct-exp-btn" onclick="ctToggleExpand(${r._id})" title="${ctIsOpen?'Collapse':'Expand'}">${ctIsOpen?'▼':'▶'}</button>${r['Batch / Train']||''}${slotBadge}${r['Batch / Train']?' '+docBtn('project',r['Batch / Train'],'Project '+r['Batch / Train']):''}</td>
-      <td class="fc-2" style="padding:2px 7px;white-space:nowrap"><strong>${r['Container No.']||''}</strong>${r['Container No.']?' '+docBtn('container',r['Container No.'],'Container '+r['Container No.']):''}${_isTemu?' <span title="Temu project (Master B/L filled)" style="font-size:8px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:middle">TEMU</span>':''}</td>
+      <td class="fc-1" style="padding:4px 6px;white-space:nowrap"><button class="ct-exp-btn" onclick="ctToggleExpand(${r._id})" title="${ctIsOpen?'Collapse':'Expand'}">${ctIsOpen?'▼':'▶'}</button>${r['Batch / Train']||''}${slotBadge}</td>
+      <td class="fc-2" style="padding:2px 7px;white-space:nowrap"><strong>${r['Container No.']||''}</strong>${_isTemu?' <span title="Temu project (Master B/L filled)" style="font-size:8px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:middle">TEMU</span>':''}</td>
       ${blC}
       ${conC}
       ${destCell}
@@ -7952,12 +7900,7 @@ function renderVT(){
       ${vtCell(r,'Port',{extraClass:'vt-fc'})}
       ${vtCell(r,'POD',{extraClass:'vt-fc'})}
       ${vtCell(r,'Carrier',{extraClass:'vt-fc'})}
-      ${(()=>{ const c=vtCell(r,'Booking / BC No.',{extraClass:'vt-fc'});
-          const ref=r['Booking / BC No.']||r['Vessel Name'];
-          if(!ref) return c;
-          const btn=docBtn('vessel',ref,'Vessel '+(r['Vessel Name']||ref));
-          return c.replace(/<\/td>\s*$/,'<div style="margin-top:2px">'+btn+'</div></td>');
-        })()}
+      ${vtCell(r,'Booking / BC No.',{extraClass:'vt-fc'})}
       ${vtCell(r,'Container Qty',{extraClass:'vt-fc'})}
       ${vtCell(r,'Vessel Name',{extraClass:'vt-fc'})}
       ${vtCell(r,'ETS (Departure)')}
@@ -10394,7 +10337,7 @@ async function pushToCloud(manual=false){
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),REPORTS:(typeof REPORTS!=='undefined'?REPORTS:[]),DOCS:(typeof DOCS!=='undefined'?DOCS:[]),_dlReasons,_bpTrainDates,_ts:Date.now()})
+      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),REPORTS:(typeof REPORTS!=='undefined'?REPORTS:[]),_dlReasons,_bpTrainDates,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
@@ -10454,7 +10397,6 @@ async function pullFromCloud(manual=false){
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     if(rec&&Array.isArray(rec.REMINDERS)){ REMINDERS=rec.REMINDERS; _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); if(typeof remRender==='function') remRender(); }
     if(rec&&Array.isArray(rec.REPORTS)){ REPORTS=rec.REPORTS; localStorage.setItem(LS_REPORTS,JSON.stringify(REPORTS)); if(typeof rpRenderHistory==='function') rpRenderHistory(); }
-    if(rec&&Array.isArray(rec.DOCS)){ DOCS=rec.DOCS; docNextId=Math.max(0,...DOCS.map(d=>d.id||0))+1; localStorage.setItem(LS_DOCS,JSON.stringify(DOCS)); }
     if(rec&&rec._dlReasons){ _dlReasons=rec._dlReasons; localStorage.setItem(_DL_REASON_KEY,JSON.stringify(_dlReasons)); }
     if(rec&&rec._bpTrainDates){ _bpTrainDates=rec._bpTrainDates; localStorage.setItem(_bpTrainKey,JSON.stringify(_bpTrainDates)); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
@@ -10471,519 +10413,6 @@ async function pullFromCloud(manual=false){
   } catch(e){
     setSyncDot('err','Load failed: '+e.message);
   }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  DOCUMENT VAULT — per Order / Container / Project / Vessel
-//  Files go to the user's own S3-compatible bucket (AWS S3, Cloudflare R2,
-//  Backblaze B2, MinIO). Only lightweight METADATA lives in JSONBin, because
-//  that bin is a small JSON document and binary would blow its size limit.
-//  Every blob is also cached in IndexedDB for instant preview and offline use.
-// ═══════════════════════════════════════════════════════════════════════════
-const LS_DOCS='owenz_docs_v1';
-const DOC_CFG_KEY='owenz_doccloud_v1';
-let DOCS=[];
-let docNextId=1;
-
-const DOC_TYPES=['B/L','Waybill','Invoice','ATB','T1','Customs','Packing List','Other'];
-const DOC_TYPE_STYLE={
-  'B/L':'background:#1d4ed8;color:#fff', 'Waybill':'background:#0369a1;color:#fff',
-  'Invoice':'background:#c2410c;color:#fff','ATB':'background:#7c3aed;color:#fff',
-  'T1':'background:#0f766e;color:#fff',   'Customs':'background:#b45309;color:#fff',
-  'Packing List':'background:#4d7c0f;color:#fff','Other':'background:#64748b;color:#fff'
-};
-
-function loadDOCS(){ try{ const s=localStorage.getItem(LS_DOCS); if(s){ DOCS=JSON.parse(s)||[]; docNextId=Math.max(0,...DOCS.map(d=>d.id||0))+1; } }catch(e){ DOCS=[]; } }
-function saveDOCS(){ try{ localStorage.setItem(LS_DOCS,JSON.stringify(DOCS)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
-function docCfg(){ try{ return JSON.parse(localStorage.getItem(DOC_CFG_KEY)||'{}'); }catch(e){ return {}; } }
-function docCfgSave(c){ try{ localStorage.setItem(DOC_CFG_KEY,JSON.stringify(c)); }catch(e){} }
-function docCloudReady(){ const c=docCfg(); return !!(c.endpoint&&c.bucket&&c.accessKey&&c.secretKey); }
-
-// Documents attached to one entity. Scope is one of order|container|project|vessel.
-function docsFor(scope,ref){
-  const r=String(ref||'').trim().toLowerCase();
-  if(!r) return [];
-  return DOCS.filter(d=>d.scope===scope && String(d.ref||'').trim().toLowerCase()===r);
-}
-function docCount(scope,ref){ return docsFor(scope,ref).length; }
-
-// ── IndexedDB blob cache ───────────────────────────────────────────────────
-const DOC_DB='owenz_docs_db', DOC_STORE='blobs';
-function docDB(){
-  return new Promise((res,rej)=>{
-    const rq=indexedDB.open(DOC_DB,1);
-    rq.onupgradeneeded=()=>{ const db=rq.result; if(!db.objectStoreNames.contains(DOC_STORE)) db.createObjectStore(DOC_STORE); };
-    rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);
-  });
-}
-async function docBlobPut(id,blob){
-  try{ const db=await docDB(); return await new Promise((res,rej)=>{
-    const tx=db.transaction(DOC_STORE,'readwrite'); tx.objectStore(DOC_STORE).put(blob,String(id));
-    tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error); }); }catch(e){ return false; }
-}
-async function docBlobGet(id){
-  try{ const db=await docDB(); return await new Promise((res,rej)=>{
-    const tx=db.transaction(DOC_STORE,'readonly'); const rq=tx.objectStore(DOC_STORE).get(String(id));
-    rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>rej(rq.error); }); }catch(e){ return null; }
-}
-async function docBlobDel(id){
-  try{ const db=await docDB(); return await new Promise((res)=>{
-    const tx=db.transaction(DOC_STORE,'readwrite'); tx.objectStore(DOC_STORE).delete(String(id));
-    tx.oncomplete=()=>res(true); tx.onerror=()=>res(false); }); }catch(e){ return false; }
-}
-
-// ── AWS Signature V4 (SubtleCrypto) ────────────────────────────────────────
-// Signs a direct PUT so the browser can upload straight to the bucket without
-// a backend. Implemented to the AWS spec and checked against AWS's published
-// test vectors in the self-test below.
-function _hex(buf){ return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
-async function _sha256(data){
-  const b = typeof data==='string' ? new TextEncoder().encode(data) : data;
-  return _hex(await crypto.subtle.digest('SHA-256',b));
-}
-async function _hmac(key,msg){
-  const k = typeof key==='string' ? new TextEncoder().encode(key) : key;
-  const ck = await crypto.subtle.importKey('raw',k,{name:'HMAC',hash:'SHA-256'},false,['sign']);
-  return await crypto.subtle.sign('HMAC',ck,new TextEncoder().encode(msg));
-}
-function _amzDate(d){
-  const p=n=>String(n).padStart(2,'0');
-  return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+'T'+p(d.getUTCHours())+p(d.getUTCMinutes())+p(d.getUTCSeconds())+'Z';
-}
-// RFC3986 escaping; S3 keys keep their slashes as path separators.
-function _uriEncode(str,encodeSlash){
-  return String(str).split('').map(c=>{
-    if(/[A-Za-z0-9_.~-]/.test(c)) return c;
-    if(c==='/') return encodeSlash?'%2F':'/';
-    return [...new TextEncoder().encode(c)].map(b=>'%'+b.toString(16).toUpperCase().padStart(2,'0')).join('');
-  }).join('');
-}
-async function _sigV4Headers({method,host,path,region,service,accessKey,secretKey,payloadHash,contentType,date,extraHeaders,signContentSha,query}){
-  const amzdate=_amzDate(date), datestamp=amzdate.slice(0,8);
-  const headers=Object.assign({'host':host}, extraHeaders||{});
-  // S3 requires x-amz-content-sha256; the flag exists so the signer can be
-  // checked against AWS's published test vectors, which omit that header.
-  if(signContentSha!==false) headers['x-amz-content-sha256']=payloadHash;
-  headers['x-amz-date']=amzdate;
-  if(contentType) headers['content-type']=contentType;
-  const signedKeys=Object.keys(headers).map(k=>k.toLowerCase()).sort();
-  const canonicalHeaders=signedKeys.map(k=>k+':'+String(headers[k]).trim().replace(/\s+/g,' ')+'\n').join('');
-  const signedHeaders=signedKeys.join(';');
-  const canonicalRequest=[method,path,query||'',canonicalHeaders,signedHeaders,payloadHash].join('\n');
-  const scope=[datestamp,region,service,'aws4_request'].join('/');
-  const stringToSign=['AWS4-HMAC-SHA256',amzdate,scope,await _sha256(canonicalRequest)].join('\n');
-  let k=await _hmac('AWS4'+secretKey,datestamp);
-  k=await _hmac(k,region); k=await _hmac(k,service); k=await _hmac(k,'aws4_request');
-  const signature=_hex(await _hmac(k,stringToSign));
-  headers['Authorization']=`AWS4-HMAC-SHA256 Credential=${accessKey}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-  return headers;
-}
-
-// ── Upload / fetch / delete against the configured bucket ──────────────────
-function _docObjectKey(doc){
-  const safe=String(doc.name||'file').replace(/[^\w.\-]+/g,'_').slice(-80);
-  return `${doc.scope}/${String(doc.ref||'misc').replace(/[^\w.\-]+/g,'_')}/${doc.id}_${safe}`;
-}
-async function docUpload(doc,blob){
-  const c=docCfg();
-  if(!docCloudReady()) throw new Error('Cloud storage is not configured yet');
-  const base=c.endpoint.replace(/\/+$/,'');
-  const u=new URL(base);
-  // Path-style addressing works across S3, R2, B2 and MinIO alike.
-  const path='/'+_uriEncode(c.bucket,true)+'/'+_uriEncode(doc.key,false);
-  const payloadHash=await _sha256(await blob.arrayBuffer());
-  const headers=await _sigV4Headers({
-    method:'PUT', host:u.host, path, region:c.region||'auto', service:'s3',
-    accessKey:c.accessKey, secretKey:c.secretKey, payloadHash,
-    contentType:blob.type||'application/octet-stream', date:new Date()
-  });
-  delete headers.host;   // the browser sets Host itself
-  const res=await fetch(u.origin+path,{method:'PUT',headers,body:blob});
-  if(!res.ok) throw new Error('Upload failed — HTTP '+res.status+' '+(await res.text()).slice(0,180));
-  return u.origin+path;
-}
-async function docCloudFetch(doc){
-  const c=docCfg();
-  if(!docCloudReady()) return null;
-  const base=c.endpoint.replace(/\/+$/,''); const u=new URL(base);
-  const path='/'+_uriEncode(c.bucket,true)+'/'+_uriEncode(doc.key,false);
-  const payloadHash=await _sha256('');
-  const headers=await _sigV4Headers({method:'GET',host:u.host,path,region:c.region||'auto',service:'s3',
-    accessKey:c.accessKey,secretKey:c.secretKey,payloadHash,date:new Date()});
-  delete headers.host;
-  const res=await fetch(u.origin+path,{method:'GET',headers});
-  if(!res.ok) return null;
-  return await res.blob();
-}
-async function docCloudDelete(doc){
-  const c=docCfg();
-  if(!docCloudReady()||!doc.key) return false;
-  const base=c.endpoint.replace(/\/+$/,''); const u=new URL(base);
-  const path='/'+_uriEncode(c.bucket,true)+'/'+_uriEncode(doc.key,false);
-  const payloadHash=await _sha256('');
-  const headers=await _sigV4Headers({method:'DELETE',host:u.host,path,region:c.region||'auto',service:'s3',
-    accessKey:c.accessKey,secretKey:c.secretKey,payloadHash,date:new Date()});
-  delete headers.host;
-  try{ const res=await fetch(u.origin+path,{method:'DELETE',headers}); return res.ok; }catch(e){ return false; }
-}
-
-// Anything that failed to upload (offline, or cloud not configured yet) stays
-// pending in IndexedDB and is retried on demand.
-async function docRetryPending(){
-  const pend=DOCS.filter(d=>d.status==='pending');
-  if(!pend.length||!docCloudReady()) return 0;
-  let ok=0;
-  for(const d of pend){
-    const blob=await docBlobGet(d.id);
-    if(!blob) continue;
-    try{ d.url=await docUpload(d,blob); d.status='cloud'; d.error=''; ok++; }
-    catch(e){ d.error=e.message; }
-  }
-  if(ok){ saveDOCS(); if(typeof docRenderList==='function') docRenderList(); }
-  return ok;
-}
-
-// ── INVOICE OCR ────────────────────────────────────────────────────────────
-// Tesseract reads photos and scans. PDFs have no pixels to read, so pdf.js
-// rasterises page 1 to a canvas first and that image goes to Tesseract.
-// Both libraries load on first use only, so they never slow the normal app.
-const DOC_CDN_TESS='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js';
-const DOC_CDN_PDF ='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-const DOC_CDN_PDFW='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-function _loadScript(src){
-  return new Promise((res,rej)=>{
-    if([...document.scripts].some(s=>s.src===src)) return res();
-    const s=document.createElement('script'); s.src=src;
-    s.onload=()=>res(); s.onerror=()=>rej(new Error('Could not load '+src));
-    document.head.appendChild(s);
-  });
-}
-async function _pdfFirstPageToCanvas(blob,scale){
-  await _loadScript(DOC_CDN_PDF);
-  const lib=window.pdfjsLib; if(!lib) throw new Error('pdf.js unavailable');
-  lib.GlobalWorkerOptions.workerSrc=DOC_CDN_PDFW;
-  const pdf=await lib.getDocument({data:await blob.arrayBuffer()}).promise;
-  const page=await pdf.getPage(1);
-  const vp=page.getViewport({scale:scale||2});   // 2x helps OCR accuracy
-  const cv=document.createElement('canvas');
-  cv.width=vp.width; cv.height=vp.height;
-  await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-  return cv;
-}
-async function docOcr(blob,onProgress){
-  await _loadScript(DOC_CDN_TESS);
-  const T=window.Tesseract; if(!T) throw new Error('Tesseract unavailable');
-  let input=blob;
-  if((blob.type||'').includes('pdf')){
-    if(onProgress) onProgress('Rendering PDF page…',0.05);
-    input=await _pdfFirstPageToCanvas(blob,2);
-  }
-  const res=await T.recognize(input,'eng',{
-    logger:m=>{ if(onProgress&&m.status==='recognizing text') onProgress('Reading text…',0.1+m.progress*0.9); }
-  });
-  return (res&&res.data&&res.data.text)||'';
-}
-
-// ── Pull invoice fields out of the OCR text ────────────────────────────────
-// Deliberately conservative: it returns only what it is reasonably sure of and
-// leaves the rest blank, because a wrong auto-filled amount is worse than an
-// empty one. Everything is shown for review before saving.
-const _CUR={'EUR':'EUR','€':'EUR','USD':'USD','$':'USD','GBP':'GBP','£':'GBP',
-            'PLN':'PLN','ZŁ':'PLN','RON':'RON','LEI':'RON','CNY':'CNY','RMB':'CNY','¥':'CNY'};
-function _docNum(s){
-  if(s==null) return null;
-  let t=String(s).replace(/[^\d.,-]/g,'');
-  if(!t) return null;
-  const lc=t.lastIndexOf(','), ld=t.lastIndexOf('.');
-  if(lc>-1&&ld>-1){                       // both separators present
-    if(lc>ld) t=t.replace(/\./g,'').replace(',','.');   // 1.234,56
-    else      t=t.replace(/,/g,'');                     // 1,234.56
-  } else if(lc>-1){
-    // a lone comma is a decimal comma only when exactly 2 digits follow
-    t=/,\d{2}$/.test(t) ? t.replace(',','.') : t.replace(/,/g,'');
-  }
-  const n=parseFloat(t);
-  return isNaN(n)?null:n;
-}
-function docParseInvoice(text){
-  const out={invoiceNo:'',date:'',amount:'',currency:'',supplier:''};
-  if(!text) return out;
-  const raw=String(text).replace(/\r/g,'');
-  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
-
-  // Invoice number. A real one always contains a digit, which rules out
-  // headings like "FAKTURA VAT" where the label is followed by another word.
-  const _BADNO=/^(date|no|number|nr|vat|tax|total|due|invoice|faktura|rechnung|of|to|for)$/i;
-  const _okNo=s=>s&&/\d/.test(s)&&!_BADNO.test(s)&&s.length>=3;
-  let m=null;
-  for(const mm of raw.matchAll(/(?:invoice|inv\.?|faktura|rechnung|facture|fattura)\s*(?:no|nr|number|num|#|№)?\s*[:#.\-]?\s*([A-Z0-9][A-Z0-9\/\-_.]{2,})/gi)){
-    const cand=mm[1].replace(/[.,;:]+$/,'');
-    if(_okNo(cand)){ out.invoiceNo=cand; break; }
-  }
-  if(!out.invoiceNo){
-    m=raw.match(/\b((?:INV|FV|FA|RE)[\/\-_]?[A-Z0-9][A-Z0-9\/\-_]{2,})\b/i);
-    if(m&&_okNo(m[1])) out.invoiceNo=m[1];
-  }
-
-  // Date. new Date() can't read European DD.MM.YYYY, so parse explicitly.
-  // Separator disambiguates the common cases: a dot is day-first (16.08.2026),
-  // a slash is month-first (09/12/2026) unless the first number exceeds 12.
-  const _MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-  const _iso=(y,mo,d)=>(y<100?2000+y:y)+'/'+String(mo).padStart(2,'0')+'/'+String(d).padStart(2,'0');
-  function _parseDateTok(t){
-    let x=t.match(/^(\d{4})[.\/\-](\d{1,2})[.\/\-](\d{1,2})$/);
-    if(x) return _iso(+x[1],+x[2],+x[3]);
-    x=t.match(/^(\d{1,2})([.\/\-])(\d{1,2})\2(\d{2,4})$/);
-    if(x){
-      let a=+x[1],b=+x[3];
-      const dayFirst = x[2]==='.' || a>12;
-      if(dayFirst && b>12) return null;
-      return dayFirst ? _iso(+x[4],b,a) : _iso(+x[4],a,b);
-    }
-    x=t.match(/^(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})$/);
-    if(x&&_MON[x[2].slice(0,3).toLowerCase()]) return _iso(+x[3],_MON[x[2].slice(0,3).toLowerCase()],+x[1]);
-    x=t.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})$/);
-    if(x&&_MON[x[1].slice(0,3).toLowerCase()]) return _iso(+x[3],_MON[x[1].slice(0,3).toLowerCase()],+x[2]);
-    return null;
-  }
-  const DATE=String.raw`(\d{1,2}[.\/\-]\d{1,2}[.\/\-]\d{2,4}|\d{4}[.\/\-]\d{1,2}[.\/\-]\d{1,2}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})`;
-  // Reject a hit that is really a fragment of a longer token — the date-like
-  // run inside an invoice number such as FV/2026/08/0142 must not win.
-  const _standalone=(s,i,len)=>{
-    const before=i>0?s[i-1]:' ', after=(i+len)<s.length?s[i+len]:' ';
-    return !/[\d\/.\-]/.test(before) && !/[\d\/.\-]/.test(after);
-  };
-  let dateTok='';
-  const lm=raw.match(new RegExp(String.raw`(?:invoice\s*date|date\s*of\s*issue|issue\s*date|data\s*wystawienia|datum|data|date)\s*[^\n:]{0,14}?[:.\-]?\s*`+DATE,'i'));
-  if(lm) dateTok=lm[1];
-  if(!dateTok){
-    for(const mm of raw.matchAll(new RegExp(DATE,'g'))){
-      if(_standalone(raw,mm.index,mm[0].length)){ dateTok=mm[1]; break; }
-    }
-  }
-  if(dateTok) out.date=_parseDateTok(dateTok)||dateTok;
-
-  // Currency — an explicit code or symbol anywhere in the document
-  const cm=raw.match(/\b(EUR|USD|GBP|PLN|RON|CNY|RMB)\b/i) || raw.match(/[€$£¥]|zł/i);
-  if(cm) out.currency=_CUR[cm[0].toUpperCase()]||cm[0].toUpperCase();
-
-  // Amount — strongest label wins; "total" alone is the weakest signal
-  const LBL=[/(?:grand\s*total|total\s*due|amount\s*due|balance\s*due|total\s*amount|zu\s*zahlen|do\s*zapłaty)/i,
-             /(?:total\s*(?:incl|inc)[^\n]{0,12})/i, /\btotal\b/i, /\bsuma\b/i, /\bbetrag\b/i];
-  for(const lbl of LBL){
-    for(const line of lines){
-      if(!lbl.test(line)) continue;
-      const nums=line.match(/-?[\d][\d.,\s]{0,15}\d|\d/g);
-      if(!nums) continue;
-      const v=_docNum(nums[nums.length-1]);
-      if(v!==null&&v>0){ out.amount=String(v); break; }
-    }
-    if(out.amount) break;
-  }
-
-  // Supplier — first meaningful line that isn't just the word "invoice"
-  for(const l of lines.slice(0,6)){
-    if(/^(invoice|faktura|rechnung|facture|tax\s*invoice)\b/i.test(l)) continue;
-    if(l.length<3||/^[\d\W]+$/.test(l)) continue;
-    out.supplier=l.slice(0,60); break;
-  }
-  return out;
-}
-
-// ── DOCUMENT VAULT UI ──────────────────────────────────────────────────────
-let _docScope='order', _docRef='', _docTitle='', _docBusy=false;
-const _docEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-function _docSize(n){
-  if(!n&&n!==0) return '';
-  if(n<1024) return n+' B';
-  if(n<1048576) return (n/1024).toFixed(0)+' KB';
-  return (n/1048576).toFixed(1)+' MB';
-}
-function _docIcon(mime,name){
-  const n=(name||'').toLowerCase();
-  if((mime||'').includes('pdf')||n.endsWith('.pdf')) return '📕';
-  if((mime||'').startsWith('image/')||/\.(png|jpe?g|gif|webp|heic)$/.test(n)) return '🖼️';
-  if(/\.(xlsx?|csv)$/.test(n)) return '📊';
-  if(/\.(docx?)$/.test(n)) return '📝';
-  return '📄';
-}
-
-// Open the vault for one entity. title is just what's shown in the header.
-function openDocs(scope,ref,title){
-  if(!ref){ alert('Save this record first, then attach documents to it.'); return; }
-  _docScope=scope; _docRef=String(ref); _docTitle=title||String(ref);
-  const ov=document.getElementById('docs-overlay'); if(!ov) return;
-  document.getElementById('docs-scope-label').textContent=
-    ({order:'Order',container:'Container',project:'Project',vessel:'Vessel'}[scope]||scope);
-  document.getElementById('docs-ref-label').textContent=_docTitle;
-  document.getElementById('docs-file').value='';
-  docRenderList();
-  ov.classList.add('open');
-  if(docCloudReady()) docRetryPending();
-}
-function closeDocs(){ const ov=document.getElementById('docs-overlay'); if(ov) ov.classList.remove('open'); }
-
-function docRenderList(){
-  const el=document.getElementById('docs-list'); if(!el) return;
-  const list=docsFor(_docScope,_docRef).slice().sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
-  const cfgOk=docCloudReady();
-  const banner=cfgOk?'':`<div style="padding:9px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:11.5px;color:#92400e;margin-bottom:10px">
-      ⚠️ Cloud storage isn't set up yet — files are kept in this browser only and marked <b>Pending</b>.
-      <button onclick="openDocCfg()" style="margin-left:6px;padding:2px 9px;font-size:11px;font-weight:700;background:#b45309;color:#fff;border:none;border-radius:6px;cursor:pointer">Set up</button></div>`;
-  if(!list.length){
-    el.innerHTML=banner+'<div style="padding:34px;text-align:center;color:#94a3b8;font-size:13px">No documents yet.<br><span style="font-size:11.5px">Upload a B/L, waybill, invoice, ATB, T1, customs paper or packing list.</span></div>';
-    return;
-  }
-  el.innerHTML=banner+list.map(d=>{
-    const badge=DOC_TYPE_STYLE[d.type]||DOC_TYPE_STYLE['Other'];
-    const stat=d.status==='cloud'
-      ? '<span style="font-size:10px;font-weight:700;color:#15803d">☁ Stored</span>'
-      : `<span style="font-size:10px;font-weight:700;color:#b45309" title="${_docEsc(d.error||'Waiting to upload')}">⏳ Pending</span>`;
-    const ocr=d.ocr&&(d.ocr.invoiceNo||d.ocr.amount||d.ocr.date)
-      ? `<div style="margin-top:6px;padding:6px 9px;background:#f8fafc;border-left:3px solid #c2410c;border-radius:0 6px 6px 0;font-size:11px;color:#334155;display:flex;flex-wrap:wrap;gap:10px">
-           ${d.ocr.invoiceNo?`<span><b>Invoice</b> ${_docEsc(d.ocr.invoiceNo)}</span>`:''}
-           ${d.ocr.date?`<span><b>Date</b> ${_docEsc(d.ocr.date)}</span>`:''}
-           ${d.ocr.amount?`<span><b>Amount</b> ${_docEsc(d.ocr.currency||'')} ${_docEsc(d.ocr.amount)}</span>`:''}
-           ${d.ocr.supplier?`<span><b>From</b> ${_docEsc(d.ocr.supplier)}</span>`:''}
-         </div>`:'';
-    return `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff">
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <div style="font-size:20px;line-height:1.1">${_docIcon(d.mime,d.name)}</div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-            <span style="font-size:12.5px;font-weight:700;color:#1e293b;word-break:break-all">${_docEsc(d.name)}</span>
-            <span style="font-size:10px;font-weight:700;border-radius:10px;padding:2px 8px;${badge}">${_docEsc(d.type)}</span>
-            ${stat}
-          </div>
-          <div style="font-size:10.5px;color:#94a3b8;margin-top:2px">${_docSize(d.size)} · ${_docEsc((d.uploadedAt||'').slice(0,16).replace('T',' '))}</div>
-          ${ocr}
-        </div>
-        <div style="display:flex;gap:4px;flex-shrink:0">
-          <button onclick="docOpen(${d.id})" title="Open" style="border:none;background:#eff6ff;color:#1d4ed8;border-radius:7px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer">Open</button>
-          ${/invoice/i.test(d.type)?`<button onclick="docScan(${d.id})" title="Read invoice details" style="border:none;background:#fff7ed;color:#c2410c;border-radius:7px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer">Scan</button>`:''}
-          <button onclick="docDelete(${d.id})" title="Delete" style="border:none;background:#fef2f2;color:#dc2626;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">🗑</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function docStatus(msg,kind){
-  const el=document.getElementById('docs-status'); if(!el) return;
-  el.textContent=msg||'';
-  el.style.display=msg?'block':'none';
-  el.style.color = kind==='err'?'#dc2626' : kind==='ok'?'#15803d' : '#64748b';
-}
-
-async function docAddFiles(input){
-  const files=[...(input.files||[])]; if(!files.length) return;
-  const type=document.getElementById('docs-type').value||'Other';
-  _docBusy=true;
-  for(const f of files){
-    const doc={id:docNextId++,scope:_docScope,ref:_docRef,name:f.name,type,
-      size:f.size,mime:f.type||'',uploadedAt:new Date().toISOString(),status:'pending',key:'',url:'',error:'',ocr:null};
-    doc.key=_docObjectKey(doc);
-    await docBlobPut(doc.id,f);            // cache locally first, so nothing is lost
-    DOCS.push(doc); saveDOCS(); docRenderList();
-    if(docCloudReady()){
-      docStatus('Uploading '+f.name+'…');
-      try{ doc.url=await docUpload(doc,f); doc.status='cloud'; doc.error=''; docStatus('Uploaded '+f.name,'ok'); }
-      catch(e){ doc.error=e.message; docStatus('Kept locally — '+e.message,'err'); }
-      saveDOCS(); docRenderList();
-    } else {
-      docStatus('Saved in this browser. Set up cloud storage to sync it.','err');
-    }
-    // Invoices get read automatically — that's the whole point of scanning.
-    if(/invoice/i.test(type)){ try{ await docScan(doc.id,f); }catch(e){} }
-  }
-  _docBusy=false; input.value='';
-}
-
-async function docBlobFor(id){
-  const d=DOCS.find(x=>x.id===id); if(!d) return null;
-  let b=await docBlobGet(id);
-  if(!b && d.status==='cloud'){ docStatus('Fetching from cloud…'); b=await docCloudFetch(d); if(b) await docBlobPut(id,b); }
-  return b;
-}
-async function docOpen(id){
-  const b=await docBlobFor(id);
-  if(!b){ docStatus('File unavailable — it may not have finished uploading.','err'); return; }
-  const url=URL.createObjectURL(b);
-  window.open(url,'_blank');
-  setTimeout(()=>URL.revokeObjectURL(url),60000);
-  docStatus('');
-}
-async function docScan(id,blobIn){
-  const d=DOCS.find(x=>x.id===id); if(!d) return;
-  const b=blobIn||await docBlobFor(id);
-  if(!b){ docStatus('File unavailable to scan.','err'); return; }
-  docStatus('Scanning invoice… first run downloads the OCR model (~10 MB).');
-  try{
-    const text=await docOcr(b,(msg,p)=>docStatus(msg+' '+Math.round((p||0)*100)+'%'));
-    const f=docParseInvoice(text);
-    d.ocr=Object.assign({},f,{raw:String(text).slice(0,4000)});
-    saveDOCS(); docRenderList();
-    const got=['invoiceNo','date','amount'].filter(k=>f[k]).length;
-    docStatus(got?('Read '+got+' field'+(got>1?'s':'')+' — check them below.'):'Nothing readable found. Text may be too blurry.', got?'ok':'err');
-  }catch(e){ docStatus('Scan failed: '+e.message,'err'); }
-}
-async function docDelete(id){
-  const d=DOCS.find(x=>x.id===id); if(!d) return;
-  if(!confirm('Delete "'+d.name+'"? This also removes it from cloud storage.')) return;
-  if(d.status==='cloud') await docCloudDelete(d);
-  await docBlobDel(id);
-  DOCS=DOCS.filter(x=>x.id!==id);
-  saveDOCS(); docRenderList(); docStatus('Deleted.','ok');
-  if(typeof renderOrders==='function') renderOrders();
-}
-
-// ── Cloud storage settings ─────────────────────────────────────────────────
-function openDocCfg(){
-  const c=docCfg();
-  ['endpoint','bucket','region','accessKey','secretKey'].forEach(k=>{
-    const el=document.getElementById('dcfg-'+k); if(el) el.value=c[k]||'';
-  });
-  document.getElementById('dcfg-msg').style.display='none';
-  document.getElementById('doccfg-overlay').classList.add('open');
-}
-function closeDocCfg(){ document.getElementById('doccfg-overlay').classList.remove('open'); }
-function saveDocCfg(){
-  const c={};
-  ['endpoint','bucket','region','accessKey','secretKey'].forEach(k=>{
-    c[k]=(document.getElementById('dcfg-'+k).value||'').trim();
-  });
-  docCfgSave(c);
-  const m=document.getElementById('dcfg-msg');
-  m.style.display='block';
-  if(docCloudReady()){ m.style.color='#15803d'; m.textContent='✓ Saved. Retrying any pending uploads…'; docRetryPending().then(n=>{ if(n) m.textContent='✓ Saved. '+n+' pending file(s) uploaded.'; }); }
-  else { m.style.color='#b45309'; m.textContent='Endpoint, bucket, key and secret are all required.'; }
-}
-async function testDocCfg(){
-  const m=document.getElementById('dcfg-msg'); m.style.display='block'; m.style.color='#64748b'; m.textContent='Testing…';
-  const c={}; ['endpoint','bucket','region','accessKey','secretKey'].forEach(k=>{ c[k]=(document.getElementById('dcfg-'+k).value||'').trim(); });
-  const prev=docCfg(); docCfgSave(c);
-  try{
-    const probe={id:'__test',scope:'test',ref:'probe',name:'connection-test.txt'};
-    probe.key='_connection_test.txt';
-    await docUpload(probe,new Blob(['ok'],{type:'text/plain'}));
-    await docCloudDelete(probe);
-    m.style.color='#15803d'; m.textContent='✓ Connected — a test file uploaded and deleted successfully.';
-  }catch(e){
-    docCfgSave(prev);
-    m.style.color='#dc2626';
-    m.textContent='✗ '+e.message+(/CORS|Failed to fetch/i.test(e.message)?'  — check the bucket\'s CORS policy allows PUT from this origin.':'');
-  }
-}
-
-// Small paperclip button with a count, for embedding in table cells.
-function docBtn(scope,ref,title){
-  if(!ref) return '';
-  const n=docCount(scope,ref);
-  const t=String(title||ref).replace(/'/g,"\\'").replace(/"/g,'&quot;');
-  const r=String(ref).replace(/'/g,"\\'").replace(/"/g,'&quot;');
-  return `<button type="button" onclick="event.stopPropagation();openDocs('${scope}','${r}','${t}')"
-    title="${n?n+' document'+(n>1?'s':''):'Attach documents'}"
-    style="border:none;background:${n?'#e0f2fe':'none'};color:${n?'#0369a1':'#94a3b8'};border-radius:6px;padding:1px 5px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">📎${n?' '+n:''}</button>`;
 }
 
 // ── SELECTION ─────────────────────────────────────────────────────
@@ -12768,7 +12197,6 @@ const NO_ST_STYLE={
   'Picked Up':'background:#b45309;color:#fff','In Transit':'background:#0e7490;color:#fff',
   'Delivered':'background:#15803d;color:#fff','Cancelled':'background:#b91c1c;color:#fff'
 };
-loadDOCS();
 function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.parse(s); noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; if(typeof _noNormalizeDelivered==='function'&&_noNormalizeDelivered()) saveNO(); } }catch(e){ NO=[]; } }
 function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 function noAdd(){
@@ -13356,13 +12784,12 @@ function renderOrders(){
     const ataOnchange=cn?`noSetCtn(${o._id},'${ce}','ATA',this.value.trim())`:`noSet(${o._id},'ATA',this.value.trim())`;
     const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:`noSet(${o._id},'At Hub Date',this.value.trim())`;
     return `<tr class="${noOrderClass}" data-no-order="${o._id}" style="${groupBorder}">
-      <td class="fc-1" style="font-weight:700;color:var(--navy)">${isFirst?tinp(o,'Order No.','ORD-001',90)+`<div style="display:flex;gap:3px;margin-top:3px">${docBtn('order',o['Order No.']||('#'+o._id),'Order '+(o['Order No.']||o._id))}${o['Batch / Train']?docBtn('project',o['Batch / Train'],'Project '+o['Batch / Train']):''}</div>`:''}</td>
+      <td class="fc-1" style="font-weight:700;color:var(--navy)">${isFirst?tinp(o,'Order No.','ORD-001',90):''}</td>
       <td class="fc-2" style="font-family:monospace;font-weight:600;font-size:12px">
         <div style="display:flex;align-items:flex-start;gap:2px">
         ${cn?`<textarea rows="1" class="no-autogrow" oninput="_noAutoGrow(this)" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:110px;font-family:monospace">${_noEsc(cn)}</textarea>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no container yet</span>'}
         ${cn?`<button type="button" title="Remove this container" onclick="noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:2px;flex-shrink:0">✕</button>`:''}
         ${isFirst?`<button type="button" title="Add another container to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px;flex-shrink:0">+</button>`:''}
-        ${cn?docBtn('container',cn,'Container '+cn):''}
         </div>
       </td>
       <td class="fc-3">${tinpC(o,cn,'Consignee','',130)}</td>
