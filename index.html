@@ -2151,7 +2151,7 @@ tbody tr:hover{background:#fafbfc}
         <th>ETA</th>
         <th style='min-width:90px'>At Hub Date</th>
         <th style="text-align:center" title="Arrived at hub — ready to be picked up">Ready to be Picked</th>
-        <th style="text-align:center" title="T1 customs transit document issued?">T1</th>
+        <th style="text-align:center;min-width:104px" title="Customs handling — T1 transit document and/or CC customs clearance">Custom</th>
         <th>Delivery Date</th>
         <th>ATA</th>
         <th style="text-align:center" title="Demurrage — checked automatically when ATA is later than Delivery Date; can be overridden manually">Demurrage</th>
@@ -12202,7 +12202,7 @@ function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
-    'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'POD':false,'Remark':'','Today Status':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
+    'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'New','Customs Office':false,'T1':false,'CC Cleared':false,'POD':false,'Remark':'','Today Status':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -12245,7 +12245,8 @@ function noAddCtnPrompt(id){
 function noToggle(id){ _noOpen.has(id)?_noOpen.delete(id):_noOpen.add(id); renderOrders(); }
 function noSet(id,field,val){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
-  NO[i][field]=val; saveNO();
+  NO[i][field]=val; if(field==='ATA') _noSyncDeliveredOrder(i);
+  saveNO();
   // Re-render so the progress cards (and everything else on this page reading the field) pick up the
   // change immediately — previously this only happened for 'Status', so an order-level edit (e.g. ETA
   // on an order with no container yet) could look "stuck" on its old value until something else forced a redraw.
@@ -12357,11 +12358,36 @@ function _noAutoGrow(el){ if(!el) return; el.style.height='auto'; el.style.heigh
 function _noContainers(o){ return (o['Container No.']||'').split(/[\s,;\n]+/).map(s=>s.trim()).filter(Boolean); }
 // Per-container overrides: order.perCtn = { 'CONTAINERNO': {'Delivery Date','ATA','Status','At Hub'} }
 function _noPc(o,cn){ return ((o&&o.perCtn)||{})[cn]||{}; }
+// Setting an ATA means the box physically arrived, so its status follows
+// automatically. Clearing the ATA takes 'Delivered' back off, otherwise a
+// mistyped date would leave the row permanently marked delivered.
+function _noSyncDeliveredCtn(i,cn){
+  const o=NO[i];
+  const filled=!!(((o.perCtn&&o.perCtn[cn]&&o.perCtn[cn]['ATA'])||'').toString().trim());
+  let list=_noStListFor(o,cn);
+  const has=list.some(s=>s.toLowerCase()==='delivered');
+  if(filled&&!has) list=[...list,'Delivered'];
+  else if(!filled&&has) list=list.filter(s=>s.toLowerCase()!=='delivered');
+  else return;
+  if(!list.length) list=['New'];
+  o.perCtn[cn]['Status']=list.join(', ');
+}
+function _noSyncDeliveredOrder(i){
+  const o=NO[i];
+  const filled=!!((o['ATA']||'').toString().trim());
+  let list=_noStList(o);
+  const has=list.some(s=>s.toLowerCase()==='delivered');
+  if(filled&&!has) list=[...list,'Delivered'];
+  else if(!filled&&has) list=list.filter(s=>s.toLowerCase()!=='delivered');
+  else return;
+  o['Status']=(list.length?list:['New']).join(', ');
+}
 function noSetCtn(id,cn,field,val){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
   NO[i].perCtn=NO[i].perCtn||{};
   NO[i].perCtn[cn]=NO[i].perCtn[cn]||{};
   NO[i].perCtn[cn][field]=val;
+  if(field==='ATA') _noSyncDeliveredCtn(i,cn);
   saveNO(); renderOrders();
   const dp=document.getElementById('page-dispatch');
   if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
@@ -12615,6 +12641,10 @@ function renderOrders(){
   const seenOrder=new Set();
   flat=flat.map(r=>{ const isFirst=!seenOrder.has(r.o._id); seenOrder.add(r.o._id); return {...r,isFirst}; });
   const uniqueOrders=[...new Map(flat.map(r=>[r.o._id,r.o])).values()];
+  // Rows per order in the FILTERED set — drives the rowspan on order-level
+  // cells (Order Total), so the figure spans its containers instead of
+  // sitting on the first row with blanks underneath.
+  const noGroupSize={}; flat.forEach(r=>{ noGroupSize[r.o._id]=(noGroupSize[r.o._id]||0)+1; });
 
   if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' container'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
@@ -12684,6 +12714,16 @@ function renderOrders(){
     // T1: per-container when a container exists, else order-level fallback
     const t1Checked=cn?!!pc['T1']:!!o['T1'];
     const t1Onchange=cn?`noSetCtn(${o._id},'${ce}','T1',this.checked)`:`noSet(${o._id},'T1',this.checked)`;
+    // CC = customs clearance flag. Stored as 'CC Cleared' because the plain
+    // 'CC' key already holds the customs-clearance PRICE.
+    const ccChecked=cn?!!pc['CC Cleared']:!!o['CC Cleared'];
+    const ccOnchange=cn?`noSetCtn(${o._id},'${ce}','CC Cleared',this.checked)`:`noSet(${o._id},'CC Cleared',this.checked)`;
+    const customCell=`<div style="display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding-left:6px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:${t1Checked?'#1d4ed8':'#94a3b8'};cursor:pointer;white-space:nowrap" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}">
+          <input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" style="width:14px;height:14px;accent-color:#1d4ed8;cursor:pointer;margin:0"/>T1</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:${ccChecked?'#0f766e':'#94a3b8'};cursor:pointer;white-space:nowrap" title="CC customs clearance ${ccChecked?'done':'not done yet'}">
+          <input type="checkbox" ${ccChecked?'checked':''} onchange="${ccOnchange}" style="width:14px;height:14px;accent-color:#0f766e;cursor:pointer;margin:0"/>CC</label>
+      </div>`;
     // Delivery Date / ATA: per-container, falling back to the order-level value (legacy single-container orders)
     const delivVal=cn?(pc['Delivery Date']||o['Delivery Date']||''):(o['Delivery Date']||'');
     const ataVal=cn?(pc['ATA']||o['ATA']||''):(o['ATA']||'');
@@ -12717,7 +12757,7 @@ function renderOrders(){
       <td>${dinpC(o,cn,'ETA',95)}</td>
       <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
       <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
-      <td style="text-align:center"><input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}" style="width:16px;height:16px;accent-color:#1d4ed8;cursor:pointer"/></td>
+      <td>${customCell}</td>
       <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s) — free until '+st.expiry:''}" style="${_inpCss};min-width:95px${st&&st.exceeded?';background:#fee2e2;border-color:#fca5a5;color:#b91c1c;font-weight:700':''}"/></td>
       <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
       <td style="text-align:center">${(()=>{
@@ -12738,7 +12778,7 @@ function renderOrders(){
         return `<input type="text" value="${_noEsc(ccVal)}" placeholder="€" onchange="${ccOnchange}" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px;text-align:right"/>`;
       })()}</td>
       <td style="text-align:right;font-weight:700;color:#0f766e;white-space:nowrap">€${_noContainerAmount(o,cn)}</td>
-      <td style="text-align:right">${isFirst?`<span style="font-weight:800;color:#0369a1;background:#e0f2fe;border-radius:6px;padding:3px 8px;white-space:nowrap">€${_noOrderTotal(o)}</span>`:''}</td>
+      ${isFirst?`<td rowspan="${noGroupSize[o._id]||1}" style="text-align:right;vertical-align:middle"><span style="font-weight:800;color:#0369a1;background:#e0f2fe;border-radius:6px;padding:3px 8px;white-space:nowrap">€${_noOrderTotal(o)}</span></td>`:''}
       <td>${surchargeEditor}</td>
       <td>${(()=>{
         const psVal=cn?(pc['Payment Status']!==undefined?pc['Payment Status']:(o['Payment Status']||'')):(o['Payment Status']||'');
