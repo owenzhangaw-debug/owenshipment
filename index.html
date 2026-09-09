@@ -1318,23 +1318,36 @@ select:focus, input:focus {
    ══════════════════════════════════════════════════════════════════════════ */
 :root{ --rad:2px; }
 
-/* 1) 衬线字体（中英文各有回退），营造老式报表感 */
+/* 1) 数字回到默认字体
+   Georgia 用的是旧式数字(oldstyle figures)——0/1/2 高低不齐还带下伸，
+   放在提单号、日期、箱号里很难看。用 unicode-range 只把 0-9 映射到
+   系统默认无衬线字体，其余文字仍走衬线。 */
+@font-face{
+  font-family:'AppNum';
+  src:local('Arial'),local('Helvetica Neue'),local('Helvetica'),
+      local('Segoe UI'),local('Roboto'),local('DejaVu Sans');
+  unicode-range:U+0030-0039;   /* 只作用于数字 0-9 */
+}
+
+/* 2) 衬线字体（中英文各有回退），营造老式报表感；数字由 AppNum 接管 */
 body,button,input,select,textarea,table,th,td,
 .brand,nav button,.modal,.rp-notes-area,.ms-btn,.ms-menu label{
-  font-family:Georgia,'Times New Roman','Songti SC','Noto Serif CJK SC','宋体',SimSun,serif;
+  font-family:'AppNum',Georgia,'Times New Roman','Songti SC','Noto Serif CJK SC','宋体',SimSun,serif;
 }
+/* 表格里的数字等宽对齐，列看起来更整齐 */
+td,th,input,select{font-variant-numeric:lining-nums tabular-nums}
 /* 需要等宽的地方（提单号、粘贴框）保持等宽 */
 [style*="monospace"],code,pre,.se-pre,
 #bulk-pickup-text,#b_nos,.sync-key-wrap input{
   font-family:'Courier New',Courier,monospace !important;
 }
 
-/* 2) 直角：复古单据没有大圆角。行内写死的圆形（小 ✕ 按钮、圆点）保留 */
+/* 3) 直角：复古单据没有大圆角。行内写死的圆形（小 ✕ 按钮、圆点）保留 */
 *{border-radius:2px !important}
 [style*="border-radius:50%"],[style*="border-radius: 50%"],
 input[type=radio]{border-radius:50% !important}
 
-/* 3) 卡片：去掉投影，改成一条细线 —— 更像印刷出来的表格 */
+/* 4) 卡片：去掉投影，改成一条细线 —— 更像印刷出来的表格 */
 .kpi,.tbl-card,.card,.rp-card,.rp-section,.modal,.chart-card,.rp-hdr-bar,.tbl-scroll{
   box-shadow:none !important;
 }
@@ -1342,19 +1355,19 @@ input[type=radio]{border-radius:50% !important}
   border:1px solid var(--border);
 }
 
-/* 4) 标题与标签：大写 + 字距，老式表头的味道（中文不受 uppercase 影响） */
+/* 5) 标题与标签：大写 + 字距，老式表头的味道（中文不受 uppercase 影响） */
 h2,h3,.tbl-top h3,.rp-sec-title,.rp-card-title,.rp-hdr-title,
-.chart-title,.ms-label,.rp-sec-num{
+.chart-title,.ms-label{
   text-transform:uppercase;
   letter-spacing:.07em;
   font-weight:700;
 }
 .tbl-top h3{letter-spacing:.07em}
 
-/* 5) 表头：保留原色，只加字距让它更工整 */
+/* 6) 表头：保留原色，只加字距让它更工整 */
 thead th{letter-spacing:.03em}
 
-/* 6) 导航：去掉胶囊感，改成下划线式的老派页签 */
+/* 7) 导航：去掉胶囊感，改成下划线式的老派页签 */
 nav button{letter-spacing:.06em;text-transform:uppercase}
 </style>
 
@@ -1766,6 +1779,7 @@ tbody tr:hover{background:#fafbfc}
     <div id="ct-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px 8px 0 0;padding:9px 16px;font-size:13px;font-weight:600">
       <span id="ct-inline-sel-count">0 selected</span>
       <button onclick="openBulkEdit()" style="background:#fff;color:#004D4C;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
+      <button onclick="openTemuGen()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="用勾选的柜子生成 TEMU 头程轨迹维护表">TEMU 轨迹表</button>
       <button onclick="clearAllSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
     </div>
     <div class="tbl-top">
@@ -2400,7 +2414,6 @@ tbody tr:hover{background:#fafbfc}
       <!-- Module 一: Containers — Temu -->
       <div class="rp-section">
         <div class="rp-sec-hdr">
-          <span class="rp-sec-num">一</span>
           <span class="rp-sec-title">Containers — Temu</span>
         </div>
         <textarea id="rp-m1" class="rp-notes-area" placeholder="TEMU 班列 / 柜子跟进…" rows="7"></textarea>
@@ -2409,7 +2422,6 @@ tbody tr:hover{background:#fafbfc}
       <!-- Module 二: Orders — 散单派送 -->
       <div class="rp-section">
         <div class="rp-sec-hdr">
-          <span class="rp-sec-num">二</span>
           <span class="rp-sec-title">Orders — 散单派送</span>
         </div>
         <textarea id="rp-m2" class="rp-notes-area" placeholder="散单派送跟进…" rows="7"></textarea>
@@ -2418,7 +2430,6 @@ tbody tr:hover{background:#fafbfc}
       <!-- Module 三: Vessels — 空箱返程进口 -->
       <div class="rp-section">
         <div class="rp-sec-hdr">
-          <span class="rp-sec-num">三</span>
           <span class="rp-sec-title">Vessels — 空箱返程进口</span>
         </div>
         <textarea id="rp-m3" class="rp-notes-area" placeholder="空箱返程 / 进口订舱跟进…" rows="7"></textarea>
@@ -2427,7 +2438,6 @@ tbody tr:hover{background:#fafbfc}
       <!-- Weekly generator -->
       <div class="rp-section">
         <div class="rp-sec-hdr">
-          <span class="rp-sec-num">周</span>
           <span class="rp-sec-title">周报生成 Weekly Report</span>
           <select id="rp-week-sel" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;background:#fff;color:#1e293b"></select>
           <button class="rp-add-row-btn" onclick="rpGenerateWeekly()">⚡ 生成</button>
@@ -2846,6 +2856,7 @@ tbody tr:hover{background:#fafbfc}
     <p style="font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.55">
       勾选需要生成的柜子，每个提单号(Master B/L)生成自己的一行；选多个事件则每个事件各一行。
       <b>操作时间不自动生成</b>，留空由你在 Excel 中填写。格式与官方模板完全一致。</p>
+    <div id="temu-src" style="display:none;font-size:11.5px;font-weight:700;margin-bottom:10px"></div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
       <label style="font-size:12px;font-weight:700;color:#475569">事件</label>
       <select id="temu-preset" onchange="temuPresetChange()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;min-width:230px"></select>
@@ -2921,6 +2932,7 @@ tbody tr:hover{background:#fafbfc}
   <span>Selected: </span>
   <span class="sel-bar-count" id="sel-bar-count">0</span>
   <button class="btn-be" onclick="openBulkEdit()">✏️ Bulk Edit</button>
+  <button class="btn-be" onclick="openTemuGen()" title="用勾选的柜子生成 TEMU 头程轨迹维护表">TEMU 轨迹表</button>
   <button class="btn-be-clear" onclick="clearAllSel()">✕ Clear</button>
 </div>
 
@@ -10688,12 +10700,14 @@ function temuBuildRows(bls,events,place,country){
 
 // ── TEMU 轨迹表 生成界面 ────────────────────────────────────────────────────
 let _temuSel=new Set();
+let _temuFromSel=false;
 function openTemuGen(){
   const ov=document.getElementById('temu-overlay'); if(!ov) return;
-  // 默认勾选：容器列表中已选中的柜子；若未选，则全部带提单号的柜子
+  // 直接用列表里勾选的柜子；没勾选才退回「全部带提单号的柜子」
   const withBl=(typeof CT!=='undefined'?CT:[]).filter(r=>(r['Master B/L']||'').toString().trim());
-  const preSel=(typeof ctSel!=='undefined'&&ctSel.size)?withBl.filter(r=>ctSel.has(r._id)):[];
-  _temuSel=new Set((preSel.length?preSel:withBl).map(r=>r._id));
+  const picked=(typeof ctSel!=='undefined'&&ctSel.size)?withBl.filter(r=>ctSel.has(r._id)):[];
+  _temuFromSel=picked.length>0;
+  _temuSel=new Set((_temuFromSel?picked:withBl).map(r=>r._id));
   const sel=document.getElementById('temu-preset');
   if(sel&&!sel.options.length){
     sel.innerHTML=Object.entries(TEMU_PRESETS).map(([k,p])=>`<option value="${k}">${p.label}</option>`).join('')
@@ -10762,7 +10776,17 @@ function temuSelAll(on){
 }
 function temuRenderList(){
   const el=document.getElementById('temu-list'); if(!el) return;
-  const rows=(typeof CT!=='undefined'?CT:[]).filter(r=>(r['Master B/L']||'').toString().trim());
+  const withBl=(typeof CT!=='undefined'?CT:[]).filter(r=>(r['Master B/L']||'').toString().trim());
+  // 勾选了就只列勾选的那几个；没勾选才列全部
+  const rows=_temuFromSel?withBl.filter(r=>_temuSel.has(r._id)):withBl;
+  const src=document.getElementById('temu-src');
+  if(src){
+    src.style.display='';
+    src.innerHTML=_temuFromSel
+      ? `来自列表勾选的 <b>${rows.length}</b> 个柜子`
+      : `列表未勾选，显示全部 <b>${rows.length}</b> 个带提单号的柜子 —— 也可以先在 Container List 勾选再打开`;
+    src.style.color=_temuFromSel?'#15803d':'#b45309';
+  }
   if(!rows.length){ el.innerHTML='<div style="padding:26px;text-align:center;color:#94a3b8;font-size:13px">没有带提单号(Master B/L)的柜子。</div>'; return; }
   el.innerHTML=rows.map(r=>{
     const on=_temuSel.has(r._id);
