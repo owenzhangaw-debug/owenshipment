@@ -5272,7 +5272,7 @@ function renderDashboard(){
         list.forEach(cn=>{
           totalContainers++;
           const pc=(cn&&typeof _noPc==='function')?_noPc(o,cn):{};
-          const delivered=!!(pc['ATA']||o['ATA']||pc['POD']||(typeof _noHasSt==='function'&&_noHasSt(o,'Delivered')));
+          const delivered=!!(pc['ATA']||o['ATA']||pc['POD']||(typeof _noHasStFor==='function'&&_noHasStFor(o,cn,'Delivered')));
           const delivDateRaw=pc['ATA']||o['ATA']||pc['Delivery Date']||o['Delivery Date'];
           const delivD=(typeof _noParseDate==='function')?_noParseDate(delivDateRaw):null;
           if(etaD&&delivered&&delivD){
@@ -11559,15 +11559,18 @@ function renderGanttFor(type){
     const allCo=[...new Set(raw.map(o=>o['Consignee']||'').filter(Boolean))].sort();
     const coEl=document.getElementById('gantt-order-consignee'); if(coEl){const p=coEl.value;coEl.innerHTML='<option value="">All Consignees</option>'+allCo.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
     raw.filter(o=>!coF||(o['Consignee']||'')===coF).forEach(o=>{
-      // FINISHED at order level = ATA filled / marked Delivered
-      if(o['ATA']&&o['ATA'].toString().trim()) return;
-      if(_noHasSt(o,'Delivered')) return;
+      if(o['ATA']&&o['ATA'].toString().trim()) return;   // whole order closed out
       const cs=_noContainers(o);
       (cs.length?cs:[null]).forEach(cn=>{
         const pc=cn?_noPc(o,cn):{};
-        // FINISHED per container = ATA filled (or POD received)
+        // FINISHED is judged PER CONTAINER: its own ATA / POD / status.
+        // _noHasStFor falls back to the order status when this container has
+        // no status of its own, so one delivered box drops out on its own
+        // without taking its siblings with it.
         if(pc['ATA']&&pc['ATA'].toString().trim()) return;
         if(pc['POD']&&pc['POD'].toString().trim()) return;
+        if(_noHasStFor(o,cn,'Delivered')) return;
+        if(_noHasStFor(o,cn,'Cancelled')) return;
         const eta=P(pc['ETA']||o['ETA']||'');
         const hub=P(pc['At Hub Date']||o['At Hub Date']||'');
         const del=P(pc['Delivery Date']||o['Delivery Date']||'');
@@ -12254,6 +12257,52 @@ function _noEsc(v){ return (v==null?'':String(v)).replace(/&/g,'&amp;').replace(
 function _noSvcList(o){ return ((o&&o['Service Type'])||'').split(/\s*[,;+]\s*/).map(s=>s.trim()).filter(Boolean); }
 function _noStList(o){ const l=((o&&o['Status'])||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean); return l.length?l:['New']; }
 function _noHasSt(o,s){ return _noStList(o).some(x=>x.toLowerCase()===String(s).toLowerCase()); }
+
+// ── Service Type / Status are PER CONTAINER ────────────────────────────────
+// Two containers on one order can sit at different stages, so each keeps its
+// own tags. Until a container is edited it has no stored value and inherits
+// the order-level one, which keeps legacy single-container orders intact.
+function _noSvcListFor(o,cn){
+  if(cn){
+    const pc=_noPc(o,cn);
+    if(pc['Service Type']!==undefined)
+      return String(pc['Service Type']||'').split(/\s*[,;+]\s*/).map(s=>s.trim()).filter(Boolean);
+  }
+  return _noSvcList(o);
+}
+function _noStListFor(o,cn){
+  if(cn){
+    const pc=_noPc(o,cn);
+    if(pc['Status']!==undefined){
+      const l=String(pc['Status']||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean);
+      return l.length?l:['New'];
+    }
+  }
+  return _noStList(o);
+}
+function _noHasStFor(o,cn,s){ return _noStListFor(o,cn).some(x=>x.toLowerCase()===String(s).toLowerCase()); }
+
+// Toggling from a container row writes to that container only. The effective
+// list is resolved first, so removing an inherited tag detaches just this
+// container instead of stripping the tag from its siblings.
+function noToggleServiceCtn(id,cn,svc){
+  svc=(svc||'').trim(); if(!svc) return;
+  if(!cn) return noToggleService(id,svc);
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  let list=_noSvcListFor(NO[i],cn);
+  if(list.some(s=>s.toLowerCase()===svc.toLowerCase())) list=list.filter(s=>s.toLowerCase()!==svc.toLowerCase());
+  else list=[...list,svc];
+  noSetCtn(id,cn,'Service Type',list.join(', '));
+}
+function noToggleStatusCtn(id,cn,st){
+  st=(st||'').trim(); if(!st) return;
+  if(!cn) return noToggleStatus(id,st);
+  const i=NO.findIndex(r=>r._id===id); if(i<0) return;
+  let list=_noStListFor(NO[i],cn);
+  if(list.some(s=>s.toLowerCase()===st.toLowerCase())) list=list.filter(s=>s.toLowerCase()!==st.toLowerCase());
+  else list=[...list,st];
+  noSetCtn(id,cn,'Status',list.join(', '));
+}
 function noToggleStatus(id,st){
   st=(st||'').trim(); if(!st) return;
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
@@ -12445,7 +12494,7 @@ function renderNoBatchProgress(){
     if(cs.length){
       cs.forEach(cn=>{
         const pc=_noPc(o,cn);
-        if(!!(pc['ATA']||o['ATA'])||!!pc['POD']||_noHasSt(o,'Delivered')) arrived++;
+        if(!!(pc['ATA']||o['ATA'])||!!pc['POD']||_noHasStFor(o,cn,'Delivered')) arrived++;
         if(pc['T1']||o['T1']) t1Count++;
         const dd=_noDemurrageDays(o,cn);
         if(dd){ demurCount++; if(dd>demurMaxDays) demurMaxDays=dd; }
@@ -12609,18 +12658,18 @@ function renderOrders(){
     const noOrderClass=(orderIdx%2===1)?'no-odd-order':'';
     const groupBorder=isFirst?'border-top:2px solid #94a3b8;':'';
     const svcTagsEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
-        ${_noSvcList(o).map(svc=>{
+        ${_noSvcListFor(o,cn).map(svc=>{
           const esc=svc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-          return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#5b21b6;color:#fff;white-space:nowrap">${_noEsc(svc)}<button type="button" onclick="noToggleService(${o._id},'${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`;
+          return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#5b21b6;color:#fff;white-space:nowrap">${_noEsc(svc)}<button type="button" onclick="noToggleServiceCtn(${o._id},'${ce}','${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`;
         }).join('')}
-        <input type="text" list="dl-service-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleService(${o._id},this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
+        <input type="text" list="dl-service-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleServiceCtn(${o._id},'${ce}',this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
       </div>`;
     const stTagsEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center">
-        ${_noStList(o).map(sv=>{
+        ${_noStListFor(o,cn).map(sv=>{
           const esc=sv.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-          return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'};white-space:nowrap">${_noEsc(sv)}<button type="button" onclick="noToggleStatus(${o._id},'${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`;
+          return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'};white-space:nowrap">${_noEsc(sv)}<button type="button" onclick="noToggleStatusCtn(${o._id},'${ce}','${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`;
         }).join('')}
-        <input type="text" list="dl-status-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleStatus(${o._id},this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
+        <input type="text" list="dl-status-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleStatusCtn(${o._id},'${ce}',this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
       </div>`;
     // Surcharge — per CONTAINER: each entry is a tag (reason) + price, stack as many as needed for this container
     const _sce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
