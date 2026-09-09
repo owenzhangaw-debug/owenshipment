@@ -12245,7 +12245,7 @@ function noAddCtnPrompt(id){
 function noToggle(id){ _noOpen.has(id)?_noOpen.delete(id):_noOpen.add(id); renderOrders(); }
 function noSet(id,field,val){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
-  NO[i][field]=val; if(field==='ATA') _noSyncDeliveredOrder(i);
+  NO[i][field]=val; if(field==='ATA'||field==='POD') _noSyncDeliveredOrder(i);
   saveNO();
   // Re-render so the progress cards (and everything else on this page reading the field) pick up the
   // change immediately — previously this only happened for 'Status', so an order-level edit (e.g. ETA
@@ -12379,16 +12379,24 @@ function _noStatusForAta(list,filled){
 // Setting an ATA means the box physically arrived, so its status follows
 // automatically. Clearing the ATA takes 'Delivered' back off, otherwise a
 // mistyped date would leave the row permanently marked delivered.
+// A container counts as delivered once it has an ATA *or* a ticked POD —
+// the POD checkbox is itself proof of delivery, so either one is enough.
+function _noIsDeliveredCtn(o,cn){
+  const pc=(o&&o.perCtn&&o.perCtn[cn])||{};
+  if(((pc['ATA']||o['ATA']||'')).toString().trim()) return true;
+  return !!pc['POD'];
+}
+function _noIsDeliveredOrder(o){
+  return !!((o['ATA']||'').toString().trim()) || !!o['POD'];
+}
 function _noSyncDeliveredCtn(i,cn){
   const o=NO[i];
-  const filled=!!(((o.perCtn&&o.perCtn[cn]&&o.perCtn[cn]['ATA'])||'').toString().trim());
-  const next=_noStatusForAta(_noStListFor(o,cn),filled);
+  const next=_noStatusForAta(_noStListFor(o,cn),_noIsDeliveredCtn(o,cn));
   if(next) o.perCtn[cn]['Status']=next.join(', ');
 }
 function _noSyncDeliveredOrder(i){
   const o=NO[i];
-  const filled=!!((o['ATA']||'').toString().trim());
-  const next=_noStatusForAta(_noStList(o),filled);
+  const next=_noStatusForAta(_noStList(o),_noIsDeliveredOrder(o));
   if(next) o['Status']=next.join(', ');
 }
 
@@ -12407,11 +12415,21 @@ function _noNormalizeDelivered(){
     if(out.join(', ')!==list.join(', ')){ set(out.join(', ')); touched=true; }
   };
   (NO||[]).forEach(o=>{
-    fix(o['Status'], !!(o['ATA']||'').toString().trim(), v=>o['Status']=v);
+    fix(o['Status'], _noIsDeliveredOrder(o), v=>o['Status']=v);
+    // Every listed container, not just ones that already have a perCtn entry —
+    // a delivered container with no stored status still needs the tag.
+    (typeof _noContainers==='function'?_noContainers(o):[]).forEach(cn=>{
+      if(!_noIsDeliveredCtn(o,cn)) return;
+      const cur=(o.perCtn&&o.perCtn[cn]&&o.perCtn[cn]['Status']!==undefined)
+        ? o.perCtn[cn]['Status'] : (o['Status']||'');
+      fix(cur, true, v=>{
+        o.perCtn=o.perCtn||{}; o.perCtn[cn]=o.perCtn[cn]||{}; o.perCtn[cn]['Status']=v;
+      });
+    });
     Object.keys(o.perCtn||{}).forEach(cn=>{
       const pc=o.perCtn[cn];
       if(pc['Status']===undefined) return;
-      fix(pc['Status'], !!((pc['ATA']||o['ATA']||'')).toString().trim(), v=>pc['Status']=v);
+      fix(pc['Status'], _noIsDeliveredCtn(o,cn), v=>pc['Status']=v);
     });
   });
   return touched;
@@ -12421,7 +12439,7 @@ function noSetCtn(id,cn,field,val){
   NO[i].perCtn=NO[i].perCtn||{};
   NO[i].perCtn[cn]=NO[i].perCtn[cn]||{};
   NO[i].perCtn[cn][field]=val;
-  if(field==='ATA') _noSyncDeliveredCtn(i,cn);
+  if(field==='ATA'||field==='POD') _noSyncDeliveredCtn(i,cn);
   saveNO(); renderOrders();
   const dp=document.getElementById('page-dispatch');
   if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
