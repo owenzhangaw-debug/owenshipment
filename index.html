@@ -1310,6 +1310,52 @@ select:focus, input:focus {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RETRO / 复古排版
+   只改「版式」：字体、直角、细线、字距。
+   配色完全沿用原有 CSS 变量与各处内联色，一个颜色都没动。
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{ --rad:2px; }
+
+/* 1) 衬线字体（中英文各有回退），营造老式报表感 */
+body,button,input,select,textarea,table,th,td,
+.brand,nav button,.modal,.rp-notes-area,.ms-btn,.ms-menu label{
+  font-family:Georgia,'Times New Roman','Songti SC','Noto Serif CJK SC','宋体',SimSun,serif;
+}
+/* 需要等宽的地方（提单号、粘贴框）保持等宽 */
+[style*="monospace"],code,pre,.se-pre,
+#bulk-pickup-text,#b_nos,.sync-key-wrap input{
+  font-family:'Courier New',Courier,monospace !important;
+}
+
+/* 2) 直角：复古单据没有大圆角。行内写死的圆形（小 ✕ 按钮、圆点）保留 */
+*{border-radius:2px !important}
+[style*="border-radius:50%"],[style*="border-radius: 50%"],
+input[type=radio]{border-radius:50% !important}
+
+/* 3) 卡片：去掉投影，改成一条细线 —— 更像印刷出来的表格 */
+.kpi,.tbl-card,.card,.rp-card,.rp-section,.modal,.chart-card,.rp-hdr-bar,.tbl-scroll{
+  box-shadow:none !important;
+}
+.tbl-card,.card,.rp-card,.rp-section,.chart-card{
+  border:1px solid var(--border);
+}
+
+/* 4) 标题与标签：大写 + 字距，老式表头的味道（中文不受 uppercase 影响） */
+h2,h3,.tbl-top h3,.rp-sec-title,.rp-card-title,.rp-hdr-title,
+.chart-title,.ms-label,.rp-sec-num{
+  text-transform:uppercase;
+  letter-spacing:.07em;
+  font-weight:700;
+}
+.tbl-top h3{letter-spacing:.07em}
+
+/* 5) 表头：保留原色，只加字距让它更工整 */
+thead th{letter-spacing:.03em}
+
+/* 6) 导航：去掉胶囊感，改成下划线式的老派页签 */
+nav button{letter-spacing:.06em;text-transform:uppercase}
 </style>
 
 <!-- ══ MINIMAL THEME — Apple/Google-inspired flat design layer ══ -->
@@ -1725,9 +1771,9 @@ tbody tr:hover{background:#fafbfc}
     <div class="tbl-top">
       <h3>Container List</h3><span id="ct-count"></span>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-<button onclick="openBulkEditDirect()" style="padding:4px 11px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer" title="Bulk edit selected containers (or select all visible if none ticked)">✏️ Bulk Edit</button>
-        <button onclick="openBulkPickup()" style="padding:4px 11px;font-size:11px;font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer" title="Bulk update Pickup Refs from Excel data">📥 Bulk Pickup Ref</button>
-        <button onclick="openSlotPaste()" style="padding:4px 11px;font-size:11px;font-weight:600;background:#fef9c3;color:#854d0e;border:1px solid #fde68a;border-radius:6px;cursor:pointer" title="Paste warehouse slot confirmations to update Scheduled Slot + Master B/L">📋 Paste Slots</button>
+<button onclick="openBulkPickup()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Bulk update Pickup Refs from Excel data">Bulk Pickup Ref</button>
+        <button onclick="openTemuGen()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="生成 TEMU 头程轨迹维护表（勾选柜子，一个提单号一行）">TEMU 轨迹表</button>
+        <button onclick="openSlotPaste()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Paste warehouse slot confirmations to update Scheduled Slot + Master B/L">Paste Slots</button>
       </div>
     </div>
     <div class="tbl-scroll">
@@ -2351,53 +2397,31 @@ tbody tr:hover{background:#fafbfc}
       </div>
       <div id="rp-msg"></div>
 
-      <!-- Section 1: TEMU Last-Mile -->
+      <!-- Module 一: Containers — Temu -->
       <div class="rp-section">
         <div class="rp-sec-hdr">
           <span class="rp-sec-num">一</span>
-          <span class="rp-sec-title">TEMU 比利时 / 荷兰 尾端派送</span>
-          <button class="rp-add-row-btn" onclick="rpAddRow('s1')">+ 添加班列</button>
+          <span class="rp-sec-title">Containers — Temu</span>
         </div>
-        <div class="rp-sec-body" id="rp-s1-rows"></div>
+        <textarea id="rp-m1" class="rp-notes-area" placeholder="TEMU 班列 / 柜子跟进…" rows="7"></textarea>
       </div>
 
-      <!-- Section 2: Empty Container Return -->
+      <!-- Module 二: Orders — 散单派送 -->
       <div class="rp-section">
         <div class="rp-sec-hdr">
           <span class="rp-sec-num">二</span>
-          <span class="rp-sec-title">空箱海运回程操作</span>
-          <button class="rp-add-row-btn" onclick="rpAddRow('s2')">+ 添加订舱</button>
+          <span class="rp-sec-title">Orders — 散单派送</span>
         </div>
-        <div class="rp-sec-body" id="rp-s2-rows"></div>
+        <textarea id="rp-m2" class="rp-notes-area" placeholder="散单派送跟进…" rows="7"></textarea>
       </div>
 
-      <!-- Section 3: NBS Billing -->
+      <!-- Module 三: Vessels — 空箱返程进口 -->
       <div class="rp-section">
         <div class="rp-sec-hdr">
           <span class="rp-sec-num">三</span>
-          <span class="rp-sec-title">NBS 账单对账请款</span>
-          <button class="rp-add-row-btn" onclick="rpAddRow('s3')">+ 添加账单</button>
+          <span class="rp-sec-title">Vessels — 空箱返程进口</span>
         </div>
-        <div class="rp-sec-body" id="rp-s3-rows"></div>
-      </div>
-
-      <!-- Section 4: Container Orders (normal, non-TEMU) -->
-      <div class="rp-section">
-        <div class="rp-sec-hdr">
-          <span class="rp-sec-num">四</span>
-          <span class="rp-sec-title">普通订单跟进 Container Orders</span>
-          <button class="rp-add-row-btn" onclick="rpAddRow('s4')">+ 添加订单</button>
-        </div>
-        <div class="rp-sec-body" id="rp-s4-rows"></div>
-      </div>
-
-      <!-- Extra notes -->
-      <div class="rp-section">
-        <div class="rp-sec-hdr">
-          <span class="rp-sec-num">其他</span>
-          <span class="rp-sec-title">备注 / Other Notes</span>
-        </div>
-        <textarea id="rp-notes" class="rp-notes-area" placeholder="其他跟进事项…" rows="3"></textarea>
+        <textarea id="rp-m3" class="rp-notes-area" placeholder="空箱返程 / 进口订舱跟进…" rows="7"></textarea>
       </div>
 
       <!-- Weekly generator -->
@@ -2811,6 +2835,38 @@ tbody tr:hover{background:#fafbfc}
     <div class="modal-btns">
       <button class="mbtn-cancel" onclick="closeImport()">Cancel</button>
       <button class="mbtn-save" id="imp-btn" style="display:none" onclick="confirmImport()">↑ Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TEMU 轨迹表生成 ══ -->
+<div class="overlay" id="temu-overlay">
+  <div class="modal" style="width:760px;max-width:96vw">
+    <h2>🚄 生成 TEMU 头程轨迹维护表</h2>
+    <p style="font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.55">
+      勾选需要生成的柜子，每个提单号(Master B/L)生成自己的一行；选多个事件则每个事件各一行。
+      <b>操作时间不自动生成</b>，留空由你在 Excel 中填写。格式与官方模板完全一致。</p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <label style="font-size:12px;font-weight:700;color:#475569">事件</label>
+      <select id="temu-preset" onchange="temuPresetChange()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;min-width:230px"></select>
+      <label style="font-size:12px;font-weight:700;color:#475569">操作地点</label>
+      <input type="text" id="temu-place" oninput="temuPlaceChanged()" style="padding:6px 9px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;width:105px"/>
+      <label style="font-size:12px;font-weight:700;color:#475569">国家</label>
+      <input type="text" id="temu-country" style="padding:6px 9px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;width:85px"/>
+    </div>
+    <div id="temu-custom-box" style="display:none;border:1px solid #e2e8f0;border-radius:9px;padding:9px;margin-bottom:10px"></div>
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px">
+      <span id="temu-count" style="font-size:11.5px;font-weight:700;color:#0369a1;background:#e0f2fe;border-radius:10px;padding:3px 11px"></span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button onclick="temuSelAll(true)" style="padding:3px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">全选</button>
+        <button onclick="temuSelAll(false)" style="padding:3px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">全不选</button>
+      </div>
+    </div>
+    <div id="temu-list" style="max-height:40vh;overflow:auto;border:1px solid #e2e8f0;border-radius:9px"></div>
+    <div id="temu-msg" style="display:none;font-size:12px;font-weight:600;margin-top:10px"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeTemuGen()">取消</button>
+      <button class="mbtn-save" onclick="temuGenerate()">⬇ 生成并下载</button>
     </div>
   </div>
 </div>
@@ -10415,6 +10471,335 @@ async function pullFromCloud(manual=false){
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  TEMU 头程轨迹维护表 生成器  (Zh-FirstMileTrackingMaintenance)
+//  一柜一提单号一行；操作时间(F列)留空，由人工填写。
+//  样式与官方模板完全一致：宋体/微软雅黑/Songti、必填列黄底红字、列宽。
+//  说明：SheetJS 社区版无法写入字体与填充，故此处直接生成 OOXML 并自带 ZIP 打包。
+// ═══════════════════════════════════════════════════════════════════════════
+const TEMU_HDR=['包裹号','包裹对应提单号','头程轨迹上传类型','包裹二级状态','轨迹描述','操作时间',
+                '时区','操作地点','地点经度','地点纬度','国家','机场三字码','机场类型','航空公司','航班号'];
+const TEMU_TYPE='陆铁头程轨迹';
+const TEMU_TZ='GMT+08:00';
+// 官方事件对照表（"Temu tracking events" 工作表原文）
+const TEMU_EVENTS=[
+ ['已起飞','飞机起飞','Departed from the Original Airport'],
+ ['到达中转机场','飞机在中转机场降落','Arrived at the Transit Airport'],
+ ['中转机场起飞','飞机在中转机场起飞','Departed from the Transit Airport'],
+ ['到达目的地机场','飞机到达目的地机场','Arrived at the Destination Airport'],
+ ['揽收','头程/专线服务商来我司仓库提货','Picked up in temu warehouse'],
+ ['服务商仓库入库','货物入服务商国内仓','Inbound by carrier'],
+ ['服务商仓库操作','服务商仓库承重、贴面单等操作','Warehouse process by carrier'],
+ ['服务商仓库出库','货物从服务商国内仓出库','Outbound by carrier'],
+ ['国内干线运输','国内段干线运输','In transit in china'],
+ ['入航司仓','航司仓库收运','Inbound by airline'],
+ ['国内运输异常','国内段异常节点','In transit in china-Exception'],
+ ['国内海关扣件','海关扣件','China Customs Detention'],
+ ['国内退件-服务商原因','乙方原因导致的国内退件','Return to sender in china-carrier'],
+ ['国内退件-非服务商原因','非乙方原因的国内退件','Return to sender in china'],
+ ['航司仓库操作','航司打板、配载等','Warehouse process by airline'],
+ ['非尾程服务商包裹信息传送','call label 信息预报','Manifest'],
+ ['出口报关完成','出口报关完成','Export Customs Clearance Success'],
+ ['通知清关行提货','发出提货通知','Notify the customs clearance company to pick-up'],
+ ['货站交付清关行','货站将货物交付给清关行','Cargo terminal deliver to customs clearance company'],
+ ['到达起运港口','货物到达起运港口','Inbound by port'],
+ ['海运装箱操作','海运装箱操作','Packing process by marine carrier'],
+ ['离开起运港','货船离开起运港','Departed from the Original port'],
+ ['到达目的港','货船到达目的港','Arrived at the Destination port'],
+ ['交付始发站台','交付给始发站台','Deliver to Departure Station'],
+ ['始发站台发出','从始发站台发出','Departed from Departure Station'],
+ ['到达目的站台','到达目的站台','Arrived at the Destination'],
+ ['国际转运中','国际段转运','International Transit-arrived in {place}'],
+ ['国际枢纽提货','下一段服务商将货物提走','International Gateway Pickup'],
+ ['到达枢纽中心','到达海关监管仓','Arrival HUB'],
+ ['离开枢纽中心','离开海关监管仓','Departure from HUB'],
+ ['通过入境口岸','边境关务检查完毕并通行','Through ports of entry,On the way to Customs clearance'],
+ ['出口报关查验','出口地海关检查','Export Customs Inspection'],
+ ['入境文件办理成功','入境文件办理成功','Entry documents obtained, entering the EU.'],
+ ['转关查验','封关运输时海关查验','Customs Inspection - Customs Transit'],
+ ['转关扣件','封关运输时被海关查扣','Customs Seizure - Customs Transit'],
+ ['转关完成','转关海关放行','Customs Release - Customs Transit'],
+ ['国际枢纽交付','国际枢纽交付下一承运商','International Gateway Handover'],
+ ['二程机场起飞','二程机场起飞','Departed from the Transit Airport-Customs Transit'],
+ ['到达二程机场目的地机场','到达二程目的地机场','Arrived at the Destination Airport-Customs Transit'],
+ ['空运装舱','协助航司装机','Air freight loading'],
+ ['海运卸船操作','海运柜从船上卸下','Container was discharged at Port of Destination'],
+ ['海运放单','提供提单正本用于目的港提货','Bill of Lading Release'],
+];
+// 常用场景：与上传的两份样表一致
+const TEMU_PRESETS={
+  t1:{label:'T1 入境文件办理成功（1 行/提单号）',place:'Germany',country:'德国',
+      events:['入境文件办理成功']},
+  arrive:{label:'到港流程（4 行/提单号）',place:'Belgium',country:'比利时',
+      events:['通过入境口岸','国际转运中','到达目的站台','货站交付清关行']},
+};
+
+// ── 极简 ZIP 打包（store 模式，无压缩）──────────────────────────────────────
+let _crcTab=null;
+function _crc32(buf){
+  if(!_crcTab){ _crcTab=new Uint32Array(256);
+    for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); _crcTab[n]=c>>>0; } }
+  let c=0xFFFFFFFF;
+  for(let i=0;i<buf.length;i++) c=_crcTab[(c^buf[i])&0xFF]^(c>>>8);
+  return (c^0xFFFFFFFF)>>>0;
+}
+function _zip(files){
+  const enc=new TextEncoder(), parts=[], central=[];
+  let offset=0;
+  const u16=n=>[n&255,(n>>8)&255], u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>24)&255];
+  files.forEach(f=>{
+    const name=enc.encode(f.name), data=typeof f.data==='string'?enc.encode(f.data):f.data;
+    const crc=_crc32(data);
+    const local=[...u32(0x04034b50),...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),
+      ...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),...u16(0)];
+    parts.push(new Uint8Array(local),name,data);
+    central.push([...u32(0x02014b50),...u16(20),...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),
+      ...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),
+      ...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(offset),...[...name]]);
+    offset+=local.length+name.length+data.length;
+  });
+  const cd=[]; central.forEach(c=>cd.push(...c));
+  const end=[...u32(0x06054b50),...u16(0),...u16(0),...u16(files.length),...u16(files.length),
+    ...u32(cd.length),...u32(offset),...u16(0)];
+  const total=offset+cd.length+end.length;
+  const out=new Uint8Array(total); let p=0;
+  parts.forEach(b=>{ out.set(b,p); p+=b.length; });
+  out.set(new Uint8Array(cd),p); p+=cd.length;
+  out.set(new Uint8Array(end),p);
+  return out;
+}
+
+// ── OOXML 片段 ─────────────────────────────────────────────────────────────
+const _xe=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function _colLetter(n){ let s=''; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=(n-m-1)/26; } return s; }
+
+// 样式表：完全对照官方模板
+//  0 默认 / 1 表头普通 / 2 表头黄底红字 / 3 数据A / 4 数据B(Songti12)
+//  5 数据居中文本 / 6 数据微软雅黑左对齐 / 7 数据红字居中
+const TEMU_STYLES_XML=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="0"/>
+<fonts count="6">
+<font><sz val="11"/><color theme="1"/><name val="宋体"/><charset val="134"/></font>
+<font><b/><sz val="11"/><color theme="1"/><name val="宋体"/><charset val="134"/></font>
+<font><b/><sz val="11"/><color rgb="FFFF0000"/><name val="宋体"/><charset val="134"/></font>
+<font><sz val="10"/><color theme="1"/><name val="微软雅黑"/><charset val="134"/></font>
+<font><sz val="12"/><color theme="1"/><name val="Songti"/><charset val="134"/></font>
+<font><sz val="11"/><color rgb="FFFF0000"/><name val="宋体"/><charset val="134"/></font>
+</fonts>
+<fills count="3">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="8">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="49" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="49" fontId="2" fillId="2" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+<xf numFmtId="49" fontId="5" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="常规" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+// 表头黄底红字的列（B/D/E/F/H/K），与官方模板一致
+const TEMU_HDR_YELLOW=[2,4,5,6,8,11];
+// 每列数据样式
+const TEMU_COL_STYLE={1:3,2:4,3:5,4:6,5:6,6:5,7:5,8:7,9:7,10:7,11:7,12:5,13:5,14:5,15:5};
+const TEMU_COL_W=[[1,1,8.6],[2,2,69],[3,3,20.7],[4,4,15.7],[5,5,49.2],[6,6,30.4],[7,7,15.9],
+                  [8,8,16.1],[9,9,10.8],[11,11,12.2],[12,12,13.2],[13,13,10.8],[15,15,8.6],[16,16,13]];
+
+function _sheetXml(rows){
+  const cols=TEMU_COL_W.map(([a,b,w])=>`<col min="${a}" max="${b}" width="${w}" customWidth="1"/>`).join('');
+  const body=rows.map((cells,ri)=>{
+    const r=ri+1;
+    const tds=cells.map((v,ci)=>{
+      const ref=_colLetter(ci+1)+r;
+      const s=r===1 ? (TEMU_HDR_YELLOW.includes(ci+1)?2:1) : (TEMU_COL_STYLE[ci+1]||0);
+      if(v===''||v==null) return `<c r="${ref}" s="${s}"/>`;
+      return `<c r="${ref}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${_xe(v)}</t></is></c>`;
+    }).join('');
+    return `<row r="${r}">${tds}</row>`;
+  }).join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols>${cols}</cols><sheetData>${body}</sheetData></worksheet>`;
+}
+function _refSheetXml(){
+  const rows=[['二级状态','对应事件含义','示例描述','适用上传类型']]
+    .concat(TEMU_EVENTS.map(e=>[e[0],e[1],e[2],TEMU_TYPE]));
+  const body=rows.map((cells,ri)=>{
+    const r=ri+1;
+    return `<row r="${r}">`+cells.map((v,ci)=>{
+      const ref=_colLetter(ci+1)+r, s=(r===1?1:5);
+      return `<c r="${ref}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${_xe(v)}</t></is></c>`;
+    }).join('')+`</row>`;
+  }).join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="1" width="24" customWidth="1"/><col min="2" max="2" width="42" customWidth="1"/><col min="3" max="3" width="52" customWidth="1"/><col min="4" max="4" width="22" customWidth="1"/></cols><sheetData>${body}</sheetData></worksheet>`;
+}
+function temuBuildXlsx(rows){
+  const files=[
+   {name:'[Content_Types].xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`},
+   {name:'_rels/.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+   {name:'xl/workbook.xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/><sheet name="Temu tracking events" sheetId="2" r:id="rId2"/></sheets></workbook>`},
+   {name:'xl/_rels/workbook.xml.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+   {name:'xl/styles.xml',data:TEMU_STYLES_XML},
+   {name:'xl/worksheets/sheet1.xml',data:_sheetXml(rows)},
+   {name:'xl/worksheets/sheet2.xml',data:_refSheetXml()},
+  ];
+  return _zip(files);
+}
+
+// 一个柜子的 Master B/L 里可能写了多个提单号（空格/逗号/换行分隔），
+// 每个提单号必须各自成为一行，不能挤在同一行里。
+function temuSplitBls(v){
+  return String(v==null?'':v).split(/[\s,;、\/]+/).map(s=>s.trim()).filter(Boolean);
+}
+// 部分事件的英文描述需要带上操作地点的国家名，
+// 例如 国际转运中 → International Transit-arrived in Netherlands
+function temuDesc(ev,place){
+  const e=TEMU_EVENTS.find(x=>x[0]===ev);
+  if(!e) return '';
+  return e[2].replace(/\{place\}/g,(place||'').trim());
+}
+
+// 由勾选的柜子 + 选定事件，生成数据行（一个提单号一行；多事件则每事件一行）
+function temuBuildRows(bls,events,place,country){
+  const rows=[TEMU_HDR.slice()];
+  // 传进来的可能是「一格多号」，先摊平成单个提单号
+  const flat=[].concat(...bls.map(temuSplitBls));
+  flat.forEach(bl=>{
+    events.forEach(ev=>{
+      rows.push(['',bl,TEMU_TYPE,ev,temuDesc(ev,place),'',TEMU_TZ,place,'','',country,'','','','']);
+      //                                               ↑ 操作时间留空，人工填写
+    });
+  });
+  return rows;
+}
+
+// ── TEMU 轨迹表 生成界面 ────────────────────────────────────────────────────
+let _temuSel=new Set();
+function openTemuGen(){
+  const ov=document.getElementById('temu-overlay'); if(!ov) return;
+  // 默认勾选：容器列表中已选中的柜子；若未选，则全部带提单号的柜子
+  const withBl=(typeof CT!=='undefined'?CT:[]).filter(r=>(r['Master B/L']||'').toString().trim());
+  const preSel=(typeof ctSel!=='undefined'&&ctSel.size)?withBl.filter(r=>ctSel.has(r._id)):[];
+  _temuSel=new Set((preSel.length?preSel:withBl).map(r=>r._id));
+  const sel=document.getElementById('temu-preset');
+  if(sel&&!sel.options.length){
+    sel.innerHTML=Object.entries(TEMU_PRESETS).map(([k,p])=>`<option value="${k}">${p.label}</option>`).join('')
+      +'<option value="custom">自定义事件…</option>';
+  }
+  temuPresetChange();
+  temuRenderList();
+  ov.classList.add('open');
+}
+function closeTemuGen(){ const o=document.getElementById('temu-overlay'); if(o) o.classList.remove('open'); }
+
+function temuPresetChange(){
+  const k=document.getElementById('temu-preset').value;
+  const box=document.getElementById('temu-custom-box');
+  if(k==='custom'){
+    box.style.display='';
+    if(!box.dataset.filled){
+      box.innerHTML='<div style="font-size:11px;color:#64748b;margin-bottom:6px">勾选需要生成的事件（按勾选顺序，每个提单号每个事件一行）</div>'
+        +'<div style="max-height:150px;overflow:auto;display:flex;flex-direction:column;gap:2px">'
+        +TEMU_EVENTS.map(e=>`<label style="display:flex;align-items:center;gap:7px;font-size:11.5px;cursor:pointer;padding:2px 4px">
+             <input type="checkbox" class="temu-ev" value="${e[0]}" onchange="temuUpdateCount()" style="width:14px;height:14px;cursor:pointer"/>
+             <b style="min-width:150px">${e[0]}</b><span style="color:#94a3b8">${temuDesc(e[0],(document.getElementById('temu-place')||{}).value||'')}</span></label>`).join('')
+        +'</div>';
+      box.dataset.filled='1';
+    }
+  } else {
+    box.style.display='none';
+    const p=TEMU_PRESETS[k];
+    document.getElementById('temu-place').value=p.place;
+    document.getElementById('temu-country').value=p.country;
+  }
+  temuUpdateCount();
+}
+// 操作地点改了，自定义事件里的英文描述要跟着更新
+function temuPlaceChanged(){
+  const box=document.getElementById('temu-custom-box');
+  if(box&&box.dataset.filled&&box.style.display!=='none'){
+    const keep=[...document.querySelectorAll('.temu-ev:checked')].map(c=>c.value);
+    box.dataset.filled=''; box.innerHTML='';
+    const sel=document.getElementById('temu-preset');
+    if(sel.value==='custom'){ temuPresetChange();
+      document.querySelectorAll('.temu-ev').forEach(c=>{ if(keep.includes(c.value)) c.checked=true; }); }
+  }
+  temuUpdateCount();
+}
+function temuEventsChosen(){
+  const k=document.getElementById('temu-preset').value;
+  if(k!=='custom') return TEMU_PRESETS[k].events.slice();
+  return [...document.querySelectorAll('.temu-ev:checked')].map(c=>c.value);
+}
+// 行数按「提单号」算 —— 一个柜子填了两个提单号就是两倍的行
+function temuSelectedBls(){
+  return [].concat(...(typeof CT!=='undefined'?CT:[])
+    .filter(r=>_temuSel.has(r._id))
+    .map(r=>temuSplitBls(r['Master B/L'])));
+}
+function temuUpdateCount(){
+  const c=_temuSel.size, n=temuSelectedBls().length, e=temuEventsChosen().length;
+  const el=document.getElementById('temu-count');
+  if(el) el.textContent=`已选 ${c} 个柜子 · ${n} 个提单号 × ${e} 个事件 = ${n*e} 行`;
+}
+function temuToggle(id,on){ if(on) _temuSel.add(id); else _temuSel.delete(id); temuUpdateCount(); }
+function temuSelAll(on){
+  document.querySelectorAll('.temu-ct').forEach(cb=>{ cb.checked=on; temuToggle(+cb.dataset.id,on); });
+  temuUpdateCount();
+}
+function temuRenderList(){
+  const el=document.getElementById('temu-list'); if(!el) return;
+  const rows=(typeof CT!=='undefined'?CT:[]).filter(r=>(r['Master B/L']||'').toString().trim());
+  if(!rows.length){ el.innerHTML='<div style="padding:26px;text-align:center;color:#94a3b8;font-size:13px">没有带提单号(Master B/L)的柜子。</div>'; return; }
+  el.innerHTML=rows.map(r=>{
+    const on=_temuSel.has(r._id);
+    return `<label style="display:flex;align-items:center;gap:9px;padding:5px 8px;border-bottom:1px solid #f1f5f9;cursor:pointer;font-size:12px">
+      <input type="checkbox" class="temu-ct" data-id="${r._id}" ${on?'checked':''} onchange="temuToggle(${r._id},this.checked)" style="width:15px;height:15px;cursor:pointer"/>
+      <span style="font-weight:700;color:#1e293b;min-width:120px">${r['Container No.']||'—'}</span>
+      <span style="font-family:monospace;font-weight:700;color:#0369a1;min-width:190px;display:flex;flex-direction:column;gap:1px">${
+        temuSplitBls(r['Master B/L']).map(b=>`<span>${b}</span>`).join('')}</span>
+      ${temuSplitBls(r['Master B/L']).length>1?`<span style="font-size:10px;font-weight:700;color:#c2410c;background:#fff7ed;border-radius:9px;padding:1px 7px;white-space:nowrap">${temuSplitBls(r['Master B/L']).length} 个提单号</span>`:''}
+      <span style="color:#94a3b8">${r['Batch / Train']||''}</span>
+    </label>`;
+  }).join('');
+  temuUpdateCount();
+}
+function temuGenerate(){
+  const events=temuEventsChosen();
+  if(!events.length){ alert('请至少选择一个事件。'); return; }
+  const bls=(typeof CT!=='undefined'?CT:[])
+    .filter(r=>_temuSel.has(r._id)&&(r['Master B/L']||'').toString().trim())
+    .map(r=>String(r['Master B/L']).trim());
+  if(!bls.length){ alert('请至少勾选一个柜子。'); return; }
+  const place=(document.getElementById('temu-place').value||'').trim();
+  const country=(document.getElementById('temu-country').value||'').trim();
+  const rows=temuBuildRows(bls,events,place,country);
+  const bytes=temuBuildXlsx(rows);
+  const blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`Zh-FirstMileTrackingMaintenance-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.xlsx`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(a.href),20000);
+  const m=document.getElementById('temu-msg');
+  m.style.display='block'; m.style.color='#15803d';
+  m.textContent=`✓ 已生成 ${rows.length-1} 行（${bls.length} 个提单号 × ${events.length} 个事件）。操作时间为空，请在 Excel 中填写。`;
+}
+
 // ── SELECTION ─────────────────────────────────────────────────────
 let ctSel=new Set(), vtSel=new Set();
 function ctSelChange(){
@@ -10901,12 +11286,12 @@ function rpCollectRows(sec){
 function rpSubmit(){
   const iso=document.getElementById('rp-date')?.value||'';
   if(!iso){ rpMsg('请选择日期 Please set a date.','#ef4444'); return; }
-  const s1=rpCollectRows('s1'), s2=rpCollectRows('s2'), s3=rpCollectRows('s3'), s4=rpCollectRows('s4');
-  const notes=document.getElementById('rp-notes')?.value.trim()||'';
-  if(!s1.length&&!s2.length&&!s3.length&&!s4.length&&!notes){ rpMsg('报告为空 Report is empty.','#b45309'); return; }
+  const _v=id=>(document.getElementById(id)?.value||'').trim();
+  const m1=_v('rp-m1'), m2=_v('rp-m2'), m3=_v('rp-m3');
+  if(!m1&&!m2&&!m3){ rpMsg('报告为空 Report is empty.','#b45309'); return; }
   rpLoad();
   const existing=REPORTS.findIndex(r=>r.date===iso);
-  const report={ id:existing>=0?REPORTS[existing].id:Date.now(), date:iso, week:rpWeekKey(iso), s1, s2, s3, s4, notes, savedAt:new Date().toISOString() };
+  const report={ id:existing>=0?REPORTS[existing].id:Date.now(), date:iso, week:rpWeekKey(iso), m1, m2, m3, savedAt:new Date().toISOString() };
   if(existing>=0) REPORTS[existing]=report; else REPORTS.unshift(report);
   rpSave();
   rpMsg((existing>=0?'更新成功 Updated ✓':'已保存 Saved ✓'),'#15803d');
@@ -10921,8 +11306,7 @@ function rpMsg(text,color){
 }
 
 function rpClearForm(){
-  ['rp-s1-rows','rp-s2-rows','rp-s3-rows','rp-s4-rows'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
-  const n=document.getElementById('rp-notes'); if(n) n.value='';
+  ['rp-m1','rp-m2','rp-m3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
 
 // ── Load a saved report into the form ─────────────────────────────
@@ -10932,12 +11316,25 @@ function rpLoadToForm(id){
   const dateEl=document.getElementById('rp-date');
   if(dateEl){ dateEl.value=r.date; rpUpdateDateLabel(); }
   rpClearForm();
-  (r.s1||[]).forEach(d=>rpAddRow('s1',d));
-  (r.s2||[]).forEach(d=>rpAddRow('s2',d));
-  (r.s3||[]).forEach(d=>rpAddRow('s3',d));
-  (r.s4||[]).forEach(d=>rpAddRow('s4',d));
-  const n=document.getElementById('rp-notes'); if(n) n.value=r.notes||'';
-  document.getElementById('page-reports')?.scrollIntoView({behavior:'smooth'});
+  // 旧报告存的是结构化行(s1..s4)，转成纯文本填进对应模块，历史不丢
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||''; };
+  if(r.m1!==undefined||r.m2!==undefined||r.m3!==undefined){
+    set('rp-m1',r.m1); set('rp-m2',r.m2); set('rp-m3',r.m3);
+  } else {
+    set('rp-m1',_rpLegacyText(r.s1));
+    set('rp-m2',_rpLegacyText(r.s4));
+    set('rp-m3',[_rpLegacyText(r.s2),_rpLegacyText(r.s3)].filter(Boolean).join('\n'));
+    const extra=(r.notes||'').trim();
+    if(extra){ const el=document.getElementById('rp-m1'); if(el) el.value=(el.value?el.value+'\n':'')+extra; }
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+// 旧结构化行 → 可读文本
+function _rpLegacyText(rows){
+  if(!Array.isArray(rows)||!rows.length) return '';
+  return rows.map(r=>Object.keys(r)
+      .filter(k=>r[k]!==''&&r[k]!=null)
+      .map(k=>String(r[k])).join(' · ')).join('\n');
 }
 
 function rpDeleteReport(id,e){
@@ -10967,6 +11364,18 @@ function rpRenderHistory(){
   if(!container) return;
   if(!items.length){ container.innerHTML='<div class="rp-empty">暂无报告<br>No reports yet.</div>'; return; }
 
+  // 取某个模块的文本；旧报告(s1..s4)自动折算，历史不丢
+  function _rpMod(r,key){
+    if(r[key]!==undefined) return String(r[key]||'').trim();
+    if(key==='m1') return [_rpLegacyText(r.s1),(r.notes||'').trim()].filter(Boolean).join('\n');
+    if(key==='m2') return _rpLegacyText(r.s4);
+    return [_rpLegacyText(r.s2),_rpLegacyText(r.s3)].filter(Boolean).join('\n');
+  }
+  function _rpModBlock(r,key,label){
+    const t=_rpMod(r,key); if(!t) return '';
+    return `<div class="rpd-sec-lbl">${label}</div><div class="rpd-item">${
+      t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`;
+  }
   function fmtSection(sec, rows){
     if(!rows||!rows.length) return '';
     let html=`<div class="rpd-sec-lbl">${sec}</div>`;
@@ -11005,19 +11414,16 @@ function rpRenderHistory(){
           <span class="rp-hist-day">${rpDayName(r.date)}</span>
         </div>
         <div class="rp-hist-tags">
-          ${r.s1?.length?`<span class="rpd-cnt-tag" style="background:#dbeafe;color:#1d4ed8">一 ×${r.s1.length}</span>`:''}
-          ${r.s2?.length?`<span class="rpd-cnt-tag" style="background:#fef9c3;color:#92400e">二 ×${r.s2.length}</span>`:''}
-          ${r.s3?.length?`<span class="rpd-cnt-tag" style="background:#dcfce7;color:#15803d">三 ×${r.s3.length}</span>`:''}
-          ${r.s4?.length?`<span class="rpd-cnt-tag" style="background:#e0f2fe;color:#0369a1">四 ×${r.s4.length}</span>`:''}
+          ${_rpMod(r,'m1')?`<span class="rpd-cnt-tag" style="background:#dbeafe;color:#1d4ed8">Containers</span>`:''}
+          ${_rpMod(r,'m2')?`<span class="rpd-cnt-tag" style="background:#e0f2fe;color:#0369a1">Orders</span>`:''}
+          ${_rpMod(r,'m3')?`<span class="rpd-cnt-tag" style="background:#dcfce7;color:#15803d">Vessels</span>`:''}
         </div>
         <button class="rp-hist-del" onclick="rpDeleteReport(${r.id},event)" title="Delete">✕</button>
       </div>
       <div class="rp-hist-body">
-        ${fmtSection('一  TEMU 末端派送', r.s1)}
-        ${fmtSection('二  空箱回程', r.s2)}
-        ${fmtSection('三  NBS账单', r.s3)}
-        ${fmtSection('四  普通订单', r.s4)}
-        ${r.notes?`<div class="rpd-sec-lbl">其他</div><div class="rpd-item">${r.notes.replace(/\n/g,'<br>')}</div>`:''}
+        ${_rpModBlock(r,'m1','一  Containers — Temu')}
+        ${_rpModBlock(r,'m2','二  Orders — 散单派送')}
+        ${_rpModBlock(r,'m3','三  Vessels — 空箱返程进口')}
         <button onclick="rpLoadToForm(${r.id})" style="margin-top:8px;padding:4px 12px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">✏ Edit</button>
       </div>
     </div>`).join('');
@@ -11056,29 +11462,26 @@ function rpGenerateWeekly(){
   const wEnd=new Date(wStart.getTime()+6*86400000);
   const fmtD=d=>['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();
   const wLabel=`Week ${wprt} · ${fmtD(wStart)}–${fmtD(wEnd)}, ${yr}`;
-  // Aggregate s2 bookings by booking no (fixed: push always inside same condition)
-  const s2Map={};
-  days.forEach(r=>(r.s2||[]).forEach(b=>{ if(b.bookingNo){ (s2Map[b.bookingNo]=s2Map[b.bookingNo]||[]).push(b); } }));
-
+  // 每天按三个模块输出；旧报告(s1..s4/notes)自动折算，历史周报仍可生成
+  function _rpwLegacy(rows){
+    if(!Array.isArray(rows)||!rows.length) return '';
+    return rows.map(r=>Object.keys(r).filter(k=>r[k]!==''&&r[k]!=null).map(k=>String(r[k])).join(' · ')).join('\n');
+  }
+  function _rpwMod(r,k){
+    if(r[k]!==undefined) return String(r[k]||'').trim();
+    if(k==='m1') return [_rpwLegacy(r.s1),(r.notes||'').trim()].filter(Boolean).join('\n');
+    if(k==='m2') return _rpwLegacy(r.s4);
+    return [_rpwLegacy(r.s2),_rpwLegacy(r.s3)].filter(Boolean).join('\n');
+  }
+  const RPW_MODS=[['m1','Containers — Temu'],['m2','Orders — 散单派送'],['m3','Vessels — 空箱返程进口']];
   function renderDayBlock(r){
+    const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
     const parts=[];
-    if(r.s1?.length){
-      parts.push('<div class="rpw-sec-lbl">一  TEMU 末端派送</div>');
-      r.s1.forEach((x,i)=>parts.push(`<div class="rpw-item">${i+1}. <b>${x.batch}${x.dest?' ('+x.dest+')':''}</b>  ${x.task}</div>`));
-    }
-    if(r.s2?.length){
-      parts.push('<div class="rpw-sec-lbl">二  空箱海运回程</div>');
-      r.s2.forEach((x,i)=>parts.push(`<div class="rpw-item">${x.bookingNo||''}${x.containers?' '+x.containers:''} ${x.route?x.route+' ':''}<br>→ ${x.task}</div>`));
-    }
-    if(r.s3?.length){
-      parts.push('<div class="rpw-sec-lbl">三  NBS账单对账</div>');
-      r.s3.forEach((x,i)=>parts.push(`<div class="rpw-item">${x.batch?'['+x.batch+'] ':''}${x.ref||''}${x.bookingNo?'  '+x.bookingNo:''}${x.containers?' '+x.containers:''} ${x.route||''}${x.payStatus?' 🚢['+x.payStatus+']':''}${x.t1PayStatus?' 🛂['+x.t1PayStatus+']':''}${x.truckerPayStatus?' 🚛['+x.truckerPayStatus+']':''}<br>→ ${x.task}</div>`));
-    }
-    if(r.s4?.length){
-      parts.push('<div class="rpw-sec-lbl">四  普通订单 Container Orders</div>');
-      r.s4.forEach((x,i)=>parts.push(`<div class="rpw-item">${x.orderNo||''}${x.consignee?' · '+x.consignee:''}${x.destination?' → '+x.destination:''}<br>→ ${x.task}</div>`));
-    }
-    if(r.notes) parts.push(`<div class="rpw-sec-lbl">其他</div><div class="rpw-item">${r.notes}</div>`);
+    RPW_MODS.forEach(([k,label])=>{
+      const t=_rpwMod(r,k);
+      if(!t) return;
+      parts.push(`<div class="rpw-sec-lbl">${label}</div><div class="rpw-item">${esc(t).replace(/\n/g,'<br>')}</div>`);
+    });
     return parts.join('');
   }
 
