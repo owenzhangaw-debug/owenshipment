@@ -1361,31 +1361,38 @@ thead th{letter-spacing:.03em}
 
 /* ── 列头筛选行（参考图：表头下方每列一个输入框）── */
 thead tr.cf-row td{
-  position:sticky;background:#004D4C;padding:2px 3px;z-index:19;
-  border-top:1px solid rgba(255,255,255,.18);
+  position:sticky;background:#004D4C;padding:3px 4px 4px;z-index:19;
+  border-top:1px solid rgba(255,255,255,.13);
 }
 thead tr.cf-row td.fc-1,thead tr.cf-row td.fc-2,
 thead tr.cf-row td.fc-3,thead tr.cf-row td.fc-4,
 thead tr.cf-row td.vt-fc,thead tr.cf-row td.vt-fc-expand{z-index:21}
+/* 输入框 + 箭头合成一个控件：边框只画在外层，中间不再有接缝 */
 .cf-input{
-  width:100%;box-sizing:border-box;min-width:34px;
-  padding:2px 5px;font-size:11px;font-weight:700;line-height:1.5;
-  border:1px solid #7FA8A6;background:#fff;color:#0F172A;outline:none;
+  flex:1;min-width:0;width:100%;box-sizing:border-box;
+  padding:0 6px;font-size:11px;font-weight:600;line-height:19px;
+  border:0;background:transparent;color:#0F172A;outline:none;
 }
-.cf-input::placeholder{color:#94A3B8;font-weight:400}
-.cf-input:focus{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
-.cf-input.on{background:#FFFBEB;border-color:#F59E0B}
+.cf-input::placeholder{color:#B6C2CF;font-weight:400}
 tr.cf-hidden{display:none}
 tr.no-fee-row{display:none}
 tr.no-fee-row.open{display:table-row}
-.cf-cell{display:flex;align-items:stretch;gap:0}
-.cf-cell .cf-input{flex:1;min-width:0;border-right:none}
-.cf-arrow{
-  flex:0 0 auto;width:16px;padding:0;cursor:pointer;
-  border:1px solid #7FA8A6;border-left:none;background:#fff;color:#004D4C;
-  font-size:9px;line-height:1;font-weight:700;
+.cf-cell{
+  display:flex;align-items:center;height:21px;overflow:hidden;
+  background:#fff;border:1px solid rgba(255,255,255,.30);
+  transition:border-color .12s,box-shadow .12s;
 }
-.cf-arrow:hover{background:#E0F2F1}
+.cf-cell:hover{border-color:rgba(255,255,255,.55)}
+.cf-cell:focus-within{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.20)}
+.cf-cell.on{background:#FFFBEB;border-color:#F0B429}
+.cf-arrow{
+  flex:0 0 auto;width:16px;align-self:stretch;padding:0;cursor:pointer;
+  border:0;border-left:1px solid #E6EBEF;background:transparent;
+  color:#94A3B8;font-size:8px;line-height:1;
+  transition:color .12s,background .12s;
+}
+.cf-arrow:hover{color:#004D4C;background:rgba(0,77,76,.07)}
+.cf-cell.on .cf-arrow{border-left-color:#F3DFA8}
 .cf-dd{
   position:fixed;z-index:9999;width:260px;background:#fff;
   border:1px solid #94A3B8;box-shadow:0 6px 20px rgba(0,0,0,.18);
@@ -10910,13 +10917,10 @@ function cfBuild(tableId){
       inp.dataset.col=col; inp.dataset.table=tableId;
       inp.title=label+' — filter. Multiple values: separate with commas.';
       inp.placeholder='';
-      inp.addEventListener('input',()=>{
-        inp.classList.toggle('on',!!inp.value.trim());
-        cfApply(tableId);
-      });
+      inp.addEventListener('input',()=>{ _cfMark(inp); cfApply(tableId); });
       inp.addEventListener('keydown',e=>{
         e.stopPropagation();
-        if(e.key==='Escape'){ inp.value=''; inp.classList.remove('on'); cfApply(tableId); }
+        if(e.key==='Escape'){ inp.value=''; _cfMark(inp); cfApply(tableId); }
       });
       const wrap=document.createElement('div');
       wrap.className='cf-cell';
@@ -10946,6 +10950,12 @@ function cfStick(tableId){
 }
 
 // 归一化：去首尾空白、压缩空白、转小写
+// 有内容时高亮外层控件（输入框本身是透明的）
+function _cfMark(inp){
+  const on=!!inp.value.trim();
+  inp.classList.toggle('on',on);
+  if(inp.parentElement) inp.parentElement.classList.toggle('on',on);
+}
 function _cfNorm(s){ return String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase(); }
 
 // 单元格文本。值可能在 .cell-view 里，也可能只存在于隐藏的 .cell-edit 输入框里，
@@ -11069,7 +11079,7 @@ function cfDropdown(tableId,col,inp,anchor){
 
   function commit(){
     inp.value=[...chosen.values()].length?vals.filter(v=>chosen.has(v.toLowerCase())).join(', '):'';
-    inp.classList.toggle('on',!!inp.value.trim());
+    _cfMark(inp);
     cfApply(tableId);
   }
   list.addEventListener('change',e=>{
@@ -11095,7 +11105,7 @@ function cfDropdown(tableId,col,inp,anchor){
 
 function cfClear(tableId){
   const table=document.getElementById(tableId); if(!table) return;
-  table.querySelectorAll('tr.cf-row .cf-input').forEach(i=>{ i.value=''; i.classList.remove('on'); });
+  table.querySelectorAll('tr.cf-row .cf-input').forEach(i=>{ i.value=''; _cfMark(i); });
   cfApply(tableId);
 }
 
@@ -11146,30 +11156,56 @@ function _noFld(o,cn,f){
 }
 function _noSetFld(id,cn,f,v){ if(cn) noSetCtn(id,cn,f,v); else noSet(id,f,v); }
 
-// 四个费用项，各自的应收/应付
-function _noFeeLines(o,cn){
+// ── 费用明细：动态行，下拉挑项目 ──────────────────────────────────────────
+const NO_CHARGE_ITEMS=['Freight','CC','T1','Storage','Waiting','Other'];
+
+// 没存过 Charges 的订单，从原有字段推出默认几行，历史数据不丢
+function _noDefaultCharges(o,cn){
+  const out=[];
+  const fr=_noN(_noFld(o,cn,'Price'));
+  const cc=_noN(_noFld(o,cn,'CC'));
   const sf=cn?_noStorageFee(o,cn):null;
-  const sur=cn?_noCtnSurchargeSum(o,cn):_noCtnSurchargeSum(o,null);
-  return [
-    {key:'Freight',   rf:'Price',   pf:'Price P',
-     r:_noN(_noFld(o,cn,'Price')), p:_noN(_noFld(o,cn,'Price P')), rEdit:true},
-    {key:'CC',        rf:'CC',      pf:'CC P',
-     r:_noN(_noFld(o,cn,'CC')),    p:_noN(_noFld(o,cn,'CC P')),   rEdit:true},
-    {key:'Storage',   rf:null,      pf:'Storage P',
-     r:sf?_noN(sf.fee):0,          p:_noN(_noFld(o,cn,'Storage P')), rEdit:false,
-     note:sf?`${sf.byDays}d × €${sf.ppd}`:''},
-    {key:'Surcharge', rf:null,      pf:'Surcharge P',
-     r:_noN(sur),                  p:_noN(_noFld(o,cn,'Surcharge P')), rEdit:false},
-  ];
+  const sur=(typeof _noSurcharges==='function')?_noSurcharges(o,cn):[];
+  if(fr) out.push({item:'Freight',r:fr,p:0,note:''});
+  if(cc) out.push({item:'CC',r:cc,p:0,note:''});
+  if(sf&&_noN(sf.fee)) out.push({item:'Storage',r:_noN(sf.fee),p:0,note:sf.byDays+'d x EUR'+sf.ppd});
+  (sur||[]).forEach(s=>{ if(_noN(s.fee)) out.push({item:'Other',r:_noN(s.fee),p:0,note:s.reason||''}); });
+  return out;
 }
-function _noReceivable(o,cn){ return _noR2(_noFeeLines(o,cn).reduce((s,l)=>s+l.r,0)); }
-function _noPayable(o,cn){    return _noR2(_noFeeLines(o,cn).reduce((s,l)=>s+l.p,0)); }
+function _noCharges(o,cn){
+  const v=_noFld(o,cn,'Charges');
+  return Array.isArray(v)?v:_noDefaultCharges(o,cn);
+}
+function _noSaveCharges(id,cn,arr){
+  const clean=arr.map(l=>({item:l.item||'Other',r:_noN(l.r),p:_noN(l.p),note:String(l.note||'')}));
+  _noSetFld(id,cn,'Charges',clean);
+}
+function noChargeAdd(id,cn,sel){
+  const item=sel.value; if(!item) return;
+  sel.value='';
+  const o=NO.find(x=>x._id===id); if(!o) return;
+  _noSaveCharges(id,cn,[..._noCharges(o,cn),{item,r:0,p:0,note:''}]);
+}
+function noChargeDel(id,cn,idx){
+  const o=NO.find(x=>x._id===id); if(!o) return;
+  const arr=_noCharges(o,cn).slice(); arr.splice(idx,1);
+  _noSaveCharges(id,cn,arr);
+}
+function noChargeSet(id,cn,idx,field,val){
+  const o=NO.find(x=>x._id===id); if(!o) return;
+  const arr=_noCharges(o,cn).map(l=>({...l}));
+  if(!arr[idx]) return;
+  arr[idx][field]=(field==='r'||field==='p')?_noN(val):val;
+  _noSaveCharges(id,cn,arr);
+}
+
+function _noReceivable(o,cn){ return _noR2(_noCharges(o,cn).reduce((s,l)=>s+_noN(l.r),0)); }
+function _noPayable(o,cn){    return _noR2(_noCharges(o,cn).reduce((s,l)=>s+_noN(l.p),0)); }
 function _noMargin(o,cn){     return _noR2(_noReceivable(o,cn)-_noPayable(o,cn)); }
 function _noMarginPct(o,cn){
   const r=_noReceivable(o,cn);
-  return r?_noR2((_noReceivable(o,cn)-_noPayable(o,cn))/r*100):0;
+  return r?_noR2(_noMargin(o,cn)/r*100):0;
 }
-// 整单合计
 function _noOrderRP(o){
   const cs=_noContainers(o), list=cs.length?cs:[null];
   const r=_noR2(list.reduce((s,cn)=>s+_noReceivable(o,cn),0));
@@ -11177,7 +11213,6 @@ function _noOrderRP(o){
   return {r,p,m:_noR2(r-p),pct:r?_noR2((r-p)/r*100):0};
 }
 
-// ── 折叠明细 ───────────────────────────────────────────────────────────────
 const _NO_FEE_OPEN=new Set();
 function noToggleFee(key){
   if(_NO_FEE_OPEN.has(key)) _NO_FEE_OPEN.delete(key); else _NO_FEE_OPEN.add(key);
@@ -11186,60 +11221,73 @@ function noToggleFee(key){
   if(row) row.classList.toggle('open',_NO_FEE_OPEN.has(key));
   if(btn) btn.textContent=_NO_FEE_OPEN.has(key)?'▼':'▶';
 }
-const _NO_FEE_INP='width:74px;text-align:right;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff';
+const _NO_CH_INP='width:82px;text-align:right;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff';
 
 function _noFeeFold(o,cn,ce,cols,surchargeEditor){
-  const key=o._id+'__'+(cn||'-');
-  const lines=_noFeeLines(o,cn);
+  const lines=_noCharges(o,cn);
   const R=_noReceivable(o,cn), P=_noPayable(o,cn), M=_noMargin(o,cn), pct=_noMarginPct(o,cn);
-  const mColor=M<0?'#dc2626':'#15803d';
-  const num=(val,fld)=>`<input type="text" value="${val?_noEsc(val):''}" placeholder="0.00"
-      onchange="_noSetFld(${o._id},'${ce}','${fld}',this.value)"
-      onkeydown="if(event.key==='Enter')this.blur()" style="${_NO_FEE_INP}"/>`;
-  const body=lines.map(l=>`
-    <tr>
-      <td style="padding:3px 10px;font-weight:700;color:#334155">${l.key}</td>
-      <td style="padding:3px 10px;text-align:right">${
-        l.rEdit?num(_noFld(o,cn,l.rf),l.rf)
-               :`<span style="font-weight:700;color:#0369a1">${_noEur(l.r)}</span>`}</td>
-      <td style="padding:3px 10px;text-align:right">${num(_noFld(o,cn,l.pf),l.pf)}</td>
-      <td style="padding:3px 10px;text-align:right;font-weight:700;color:${(l.r-l.p)<0?'#dc2626':'#0f766e'}">${_noEur(l.r-l.p)}</td>
-      <td style="padding:3px 10px;font-size:10.5px;color:#94a3b8">${l.note||''}</td>
-    </tr>`).join('');
+  const mc=m=>m<0?'#dc2626':'#0f766e';
+  const id=o._id;
+  const body=lines.length?lines.map((l,ix)=>{
+    const m=_noN(l.r)-_noN(l.p);
+    return `<tr>
+      <td style="padding:2px 8px">
+        <select onchange="noChargeSet(${id},'${ce}',${ix},'item',this.value)"
+          style="width:104px;padding:2px 4px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff">
+          ${NO_CHARGE_ITEMS.map(v=>`<option ${v===l.item?'selected':''}>${v}</option>`).join('')}
+        </select></td>
+      <td style="padding:2px 8px;text-align:right"><input type="text" value="${_noN(l.r)?_noN(l.r):''}" placeholder="0.00"
+        onchange="noChargeSet(${id},'${ce}',${ix},'r',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_NO_CH_INP}"/></td>
+      <td style="padding:2px 8px;text-align:right"><input type="text" value="${_noN(l.p)?_noN(l.p):''}" placeholder="0.00"
+        onchange="noChargeSet(${id},'${ce}',${ix},'p',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_NO_CH_INP}"/></td>
+      <td style="padding:2px 8px;text-align:right;font-weight:700;color:${mc(m)};white-space:nowrap">${_noEur(m)}</td>
+      <td style="padding:2px 8px"><input type="text" value="${_noEsc(l.note||'')}" placeholder="note…"
+        onchange="noChargeSet(${id},'${ce}',${ix},'note',this.value)" onkeydown="if(event.key==='Enter')this.blur()"
+        style="width:100%;min-width:130px;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff"/></td>
+      <td style="padding:2px 6px;text-align:center"><button type="button" onclick="noChargeDel(${id},'${ce}',${ix})"
+        title="Remove this line" style="border:none;background:none;color:#dc2626;cursor:pointer;font-size:12px;padding:0 3px">&times;</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" style="padding:10px;text-align:center;color:#94a3b8;font-size:11.5px">No charges yet — add one above.</td></tr>`;
+
+  // 折叠面板必须 sticky 在左边：外层 td 跨 25 列，非常宽，
+  // 不固定的话 Payable / Note 会被推到屏幕外，根本点不到。
   return `<td colspan="${cols}" style="padding:0;background:#F8FAFC;border-top:1px solid #e2e8f0">
-    <div style="padding:10px 16px 12px">
-      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">
+    <div style="position:sticky;left:0;width:760px;max-width:calc(100vw - 48px);padding:9px 14px 11px;box-sizing:border-box">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:7px">
         <span style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.06em">CHARGES — ${_noEsc(cn||o['Order No.']||'')}</span>
         <span style="font-size:11px;color:#64748b">Free days
           <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days"
-            onchange="noSet(${o._id},'Free Storage (Days)',this.value)"
-            style="width:56px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:4px"/></span>
+            onchange="noSet(${id},'Free Storage (Days)',this.value)"
+            style="width:52px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:3px"/></span>
         <span style="font-size:11px;color:#64748b">Price/day
           <input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€/day"
-            onchange="noSet(${o._id},'Price per Day',this.value)"
-            onkeydown="if(event.key==='Enter')this.blur()"
-            style="width:62px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:4px"/></span>
+            onchange="noSet(${id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()"
+            style="width:58px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:3px"/></span>
+        <select onchange="noChargeAdd(${id},'${ce}',this)" title="Add a charge line"
+          style="margin-left:auto;padding:2px 6px;font-size:11.5px;font-weight:700;border:1px solid #0f766e;background:#fff;color:#0f766e">
+          <option value="">+ Add item…</option>
+          ${NO_CHARGE_ITEMS.map(v=>`<option value="${v}">${v}</option>`).join('')}
+        </select>
       </div>
-      <table style="border-collapse:collapse;font-size:11.5px;background:#fff;border:1px solid #e2e8f0;min-width:520px">
+      <table style="border-collapse:collapse;font-size:11.5px;background:#fff;border:1px solid #e2e8f0;width:100%">
         <thead><tr style="background:#EEF2F6">
-          <th style="padding:4px 10px;text-align:left;font-size:10px;letter-spacing:.06em;color:#475569">ITEM</th>
-          <th style="padding:4px 10px;text-align:right;font-size:10px;letter-spacing:.06em;color:#0369a1">RECEIVABLE</th>
-          <th style="padding:4px 10px;text-align:right;font-size:10px;letter-spacing:.06em;color:#b45309">PAYABLE</th>
-          <th style="padding:4px 10px;text-align:right;font-size:10px;letter-spacing:.06em;color:#0f766e">MARGIN</th>
-          <th style="padding:4px 10px;text-align:left;font-size:10px;letter-spacing:.06em;color:#94a3b8">NOTE</th>
+          <th style="padding:3px 8px;text-align:left;font-size:10px;letter-spacing:.06em;color:#475569;width:112px">ITEM</th>
+          <th style="padding:3px 8px;text-align:right;font-size:10px;letter-spacing:.06em;color:#0369a1;width:96px">RECEIVABLE</th>
+          <th style="padding:3px 8px;text-align:right;font-size:10px;letter-spacing:.06em;color:#b45309;width:96px">PAYABLE</th>
+          <th style="padding:3px 8px;text-align:right;font-size:10px;letter-spacing:.06em;color:#0f766e;width:86px">MARGIN</th>
+          <th style="padding:3px 8px;text-align:left;font-size:10px;letter-spacing:.06em;color:#94a3b8">NOTE</th>
+          <th style="width:24px"></th>
         </tr></thead>
         <tbody>${body}</tbody>
         <tfoot><tr style="border-top:2px solid #cbd5e1;background:#F8FAFC">
-          <td style="padding:5px 10px;font-weight:800;color:#1e293b">TOTAL</td>
-          <td style="padding:5px 10px;text-align:right;font-weight:800;color:#0369a1">${_noEur(R)}</td>
-          <td style="padding:5px 10px;text-align:right;font-weight:800;color:#b45309">${_noEur(P)}</td>
-          <td style="padding:5px 10px;text-align:right;font-weight:800;color:${mColor}">${_noEur(M)}</td>
-          <td style="padding:5px 10px;font-weight:700;color:${mColor}">${pct.toFixed(1)}%</td>
+          <td style="padding:4px 8px;font-weight:800;color:#1e293b">TOTAL</td>
+          <td style="padding:4px 8px;text-align:right;font-weight:800;color:#0369a1">${_noEur(R)}</td>
+          <td style="padding:4px 8px;text-align:right;font-weight:800;color:#b45309">${_noEur(P)}</td>
+          <td style="padding:4px 8px;text-align:right;font-weight:800;color:${mc(M)}">${_noEur(M)}</td>
+          <td style="padding:4px 8px;font-weight:700;color:${mc(M)}">${pct.toFixed(1)}%</td>
+          <td></td>
         </tr></tfoot>
       </table>
-      ${surchargeEditor?`<div style="margin-top:9px">
-        <div style="font-size:10px;font-weight:800;color:#475569;letter-spacing:.06em;margin-bottom:4px">SURCHARGES (receivable)</div>
-        ${surchargeEditor}</div>`:''}
     </div></td>`;
 }
 
