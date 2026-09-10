@@ -1417,22 +1417,22 @@ nav button{letter-spacing:.06em;text-transform:uppercase}
 
 /* ── Orders 费用折叠面板（grid，独立于外层表格样式）── */
 td.nf-td{padding:0!important;background:#F7F9FA!important;border-top:1px solid #dbe3e8!important;position:relative;z-index:4}
-.nf-wrap{position:sticky;left:0;width:820px;max-width:calc(100vw - 40px);padding:10px 14px 12px;box-sizing:border-box}
+.nf-wrap{position:sticky;left:0;width:860px;max-width:calc(100vw - 40px);padding:10px 14px 12px;box-sizing:border-box}
 .nf-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:7px}
 .nf-title{font-size:11px;font-weight:800;color:#334155;letter-spacing:.06em}
 .nf-lbl{font-size:11px;color:#64748b}
 .nf-mini{width:56px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff;margin-left:3px}
 .nf-add{margin-left:auto;padding:3px 8px;font-size:11.5px;font-weight:700;border:1px solid #0f766e;background:#fff;color:#0f766e;cursor:pointer}
-.nf-grid{display:grid;grid-template-columns:118px 104px 104px 96px minmax(150px,1fr) 26px;background:#fff;border:1px solid #dbe3e8;align-items:stretch}
+.nf-grid{display:grid;grid-template-columns:112px 112px 112px 100px minmax(140px,1fr) 26px;background:#fff;border:1px solid #dbe3e8;align-items:stretch}
 .nf-h{background:#EDF2F5!important;color:#64748b!important;font-size:9.5px;font-weight:800;letter-spacing:.07em;padding:5px 8px;border-bottom:1px solid #dbe3e8;display:flex;align-items:center}
-.nf-c{padding:3px 8px;border-bottom:1px solid #F0F4F6;display:flex;align-items:center;min-height:26px}
+.nf-c{padding:3px 8px;border-bottom:1px solid #F0F4F6;display:flex;align-items:center;min-height:26px;min-width:0;overflow:hidden}
 .nf-r{justify-content:flex-end;text-align:right}
 .nf-x{justify-content:center;padding:0}
 .nf-x button{border:none;background:none;color:#dc2626;cursor:pointer;font-size:13px;line-height:1;padding:0 3px}
-.nf-num{width:100%;box-sizing:border-box;text-align:right;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1!important;background:#fff!important;color:#0F172A!important;outline:none}
+.nf-num{flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box;text-align:right;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1!important;background:#fff!important;color:#0F172A!important;outline:none}
 .nf-num:focus{border-color:#0f766e!important}
-.nf-note{width:100%;box-sizing:border-box;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1!important;background:#fff!important;color:#0F172A!important;outline:none}
-.nf-sel{width:100%;box-sizing:border-box;padding:2px 4px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff;color:#0F172A}
+.nf-note{flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1!important;background:#fff!important;color:#0F172A!important;outline:none}
+.nf-sel{flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box;padding:2px 4px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff;color:#0F172A}
 .nf-tot{background:#F7F9FA!important;border-top:2px solid #cbd5e1;border-bottom:none;font-weight:800;color:#1e293b;font-size:12px}
 .nf-empty{grid-column:1/-1;padding:10px;text-align:center;color:#94a3b8;font-size:11.5px}
 .nf-sur{margin-top:9px}
@@ -7280,6 +7280,11 @@ function updateFrozenOffsets(){
       const td=tr.children[i];
       if(td) td.style.left=left;
     });
+    // 表头下方的筛选行也要一起冻结，否则横向滚动时筛选框会跟表头错开
+    table.querySelectorAll('thead tr.cf-row').forEach(tr=>{
+      const td=tr.children[i];
+      if(td) td.style.left=left;
+    });
     offset+=th.offsetWidth;
   }
   // Apply separator shadow only on the 4th column (index 3) after layout
@@ -11133,7 +11138,14 @@ function cfClear(tableId){
 }
 
 // 每次表格重绘后重新套用筛选
-function cfRefresh(tableId){ try{ cfCloseDD(); cfBuild(tableId); cfApply(tableId); cfStick(tableId); }catch(e){} }
+function cfRefresh(tableId){
+  try{
+    cfCloseDD(); cfBuild(tableId); cfApply(tableId); cfStick(tableId);
+    // 筛选行是后加进 thead 的，重算一次冻结列的 left
+    if(tableId==='ct-table'&&typeof updateFrozenOffsets==='function') updateFrozenOffsets();
+    if(tableId==='no-table'&&typeof updateNoFrozenOffsets==='function') updateNoFrozenOffsets();
+  }catch(e){}
+}
 function cfRefreshAll(){ CF_TABLES.forEach(cfRefresh); }
 
 // 包住原有的 render 函数，重绘完自动重建 + 重新过滤
@@ -13782,6 +13794,7 @@ function updateNoFrozenOffsets(){
     const left=offset+'px';
     th.style.left=left;
     table.querySelectorAll('tbody tr').forEach(tr=>{ const td=tr.children[i]; if(td) td.style.left=left; });
+    table.querySelectorAll('thead tr.cf-row').forEach(tr=>{ const td=tr.children[i]; if(td) td.style.left=left; });
     offset+=th.offsetWidth;
   }
   const lastIdx=2;
