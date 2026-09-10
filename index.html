@@ -2282,7 +2282,7 @@ tbody tr:hover{background:#fafbfc}
         <th style="text-align:center;min-width:104px" title="Customs handling — T1 transit document and/or CC customs clearance">Custom</th>
         <th>Delivery Date</th>
         <th>ATA</th>
-        <th style="text-align:center" title="Demurrage — checked automatically when ATA is later than Delivery Date; can be overridden manually">Demurrage</th>
+        <th style="text-align:center;min-width:150px" title="Demurrage — auto-checked when ATA is later than Delivery Date. Free storage days and price per day drive the storage charge.">Demurrage · Free d · €/d</th>
         <th style="text-align:right;min-width:92px" title="What you invoice the customer — Freight + CC + Storage + Surcharge">Receivable</th>
         <th style="text-align:right;min-width:92px" title="What you owe suppliers — the payable side of each charge">Payable</th>
         <th style="text-align:right;min-width:88px" title="Receivable − Payable">Margin</th>
@@ -11281,12 +11281,6 @@ function _noFeeFold(o,cn,ce,cols,surchargeEditor){
     <div class="nf-wrap">
       <div class="nf-top">
         <span class="nf-title">CHARGES — ${_noEsc(cn||o['Order No.']||'')}</span>
-        <span class="nf-lbl">Free days
-          <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days"
-            onchange="noSet(${id},'Free Storage (Days)',this.value)" class="nf-mini"/></span>
-        <span class="nf-lbl">Price/day
-          <input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€/day"
-            onchange="noSet(${id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()" class="nf-mini"/></span>
         <select class="nf-add" onchange="noChargeAdd(${id},'${ce}',this)" title="Add a charge line">
           <option value="">+ Add item…</option>
           ${NO_CHARGE_ITEMS.map(v=>`<option value="${v}">${v}</option>`).join('')}
@@ -13732,7 +13726,17 @@ function renderOrders(){
         const demurChecked=demField!==undefined?!!demField:!!autoDemur;
         const demurOnchange=cn?`noSetCtn(${o._id},'${ce}','Demurrage',this.checked)`:`noSet(${o._id},'Demurrage',this.checked)`;
         const demurTitle=autoDemur?`Demurrage — ATA is ${autoDemur}d after Delivery Date`:'Demurrage — check to flag manually';
-        return `<input type="checkbox" ${demurChecked?'checked':''} onchange="${demurOnchange}" title="${demurTitle}" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer"/>`;
+        // Free days / Price per day 是算滞箱费的参数，放在 Demurrage 一起
+        return `<div style="display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap">
+          <input type="checkbox" ${demurChecked?'checked':''} onchange="${demurOnchange}" title="${demurTitle}" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer;flex:0 0 auto;margin:0"/>
+          <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="d" title="Free storage days"
+            onchange="noSet(${o._id},'Free Storage (Days)',this.value)"
+            style="width:34px;min-width:0;padding:2px 3px;font-size:11px;text-align:center;border:1px solid #e2e8f0;background:#fff"/>
+          <span style="font-size:10px;color:#94a3b8">d</span>
+          <input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€" title="Storage price per day"
+            onchange="noSet(${o._id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()"
+            style="width:42px;min-width:0;padding:2px 3px;font-size:11px;text-align:right;border:1px solid #e2e8f0;background:#fff"/>
+        </div>`;
       })()}</td>
       ${(()=>{
         const _k=o._id+'__'+(cn||'-');
