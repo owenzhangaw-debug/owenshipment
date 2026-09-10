@@ -11192,7 +11192,7 @@ function _noFld(o,cn,f){
 function _noSetFld(id,cn,f,v){ if(cn) noSetCtn(id,cn,f,v); else noSet(id,f,v); }
 
 // ── 费用明细：动态行，下拉挑项目 ──────────────────────────────────────────
-const NO_CHARGE_ITEMS=['Freight','CC','T1','Storage','Waiting','Other'];
+const NO_CHARGE_ITEMS=['Freight','CC','T1','Docs','Handling fee','Forklift','Airport fee','Storage','Waiting','Other'];
 
 // 没存过 Charges 的订单，从原有字段推出默认几行，历史数据不丢
 function _noDefaultCharges(o,cn){
@@ -11265,8 +11265,11 @@ function _noFeeFold(o,cn,ce,cols,surchargeEditor){
       onchange="noChargeSet(${id},'${ce}',${ix},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"/>`;
   const rows=lines.length?lines.map((l,ix)=>{
     const m=_noN(l.r)-_noN(l.p);
+    // 旧数据里若有列表外的项目名，临时补一个选项，
+    // 否则 select 会落到第一项，静默把已存的项目改掉
+    const opts=NO_CHARGE_ITEMS.includes(l.item)?NO_CHARGE_ITEMS:[l.item,...NO_CHARGE_ITEMS];
     return `<div class="nf-c"><select class="nf-sel" onchange="noChargeSet(${id},'${ce}',${ix},'item',this.value)">
-        ${NO_CHARGE_ITEMS.map(v=>`<option ${v===l.item?'selected':''}>${v}</option>`).join('')}</select></div>
+        ${opts.map(v=>`<option ${v===l.item?'selected':''}>${_noEsc(v)}</option>`).join('')}</select></div>
       <div class="nf-c nf-r">${money(l.r,ix,'r')}</div>
       <div class="nf-c nf-r">${money(l.p,ix,'p')}</div>
       <div class="nf-c nf-r"><b style="color:${mc(m)}">${_noEur(m)}</b></div>
