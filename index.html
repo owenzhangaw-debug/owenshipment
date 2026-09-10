@@ -1318,22 +1318,14 @@ select:focus, input:focus {
    ══════════════════════════════════════════════════════════════════════════ */
 :root{ --rad:2px; }
 
-/* 1) 数字回到默认字体
-   Georgia 用的是旧式数字(oldstyle figures)——0/1/2 高低不齐还带下伸，
-   放在提单号、日期、箱号里很难看。用 unicode-range 只把 0-9 映射到
-   系统默认无衬线字体，其余文字仍走衬线。 */
-@font-face{
-  font-family:'AppNum';
-  src:local('Arial'),local('Helvetica Neue'),local('Helvetica'),
-      local('Segoe UI'),local('Roboto'),local('DejaVu Sans');
-  unicode-range:U+0030-0039;   /* 只作用于数字 0-9 */
-}
-
-/* 2) 衬线字体（中英文各有回退），营造老式报表感；数字由 AppNum 接管 */
+/* 1) 字体：Arial / Helvetica（老式业务系统那种无衬线），中文回退到雅黑 */
 body,button,input,select,textarea,table,th,td,
-.brand,nav button,.modal,.rp-notes-area,.ms-btn,.ms-menu label{
-  font-family:'AppNum',Georgia,'Times New Roman','Songti SC','Noto Serif CJK SC','宋体',SimSun,serif;
+.brand,nav button,.modal,.rp-notes-area,.ms-btn,.ms-menu label,.cf-input{
+  font-family:Arial,Helvetica,'Helvetica Neue','Segoe UI',
+              '微软雅黑','Microsoft YaHei','PingFang SC','Hiragino Sans GB',sans-serif;
 }
+/* 表头加粗，贴近参考图 */
+thead th{font-weight:700}
 /* 表格里的数字等宽对齐，列看起来更整齐 */
 td,th,input,select{font-variant-numeric:lining-nums tabular-nums}
 /* 需要等宽的地方（提单号、粘贴框）保持等宽 */
@@ -1366,6 +1358,24 @@ h2,h3,.tbl-top h3,.rp-sec-title,.rp-card-title,.rp-hdr-title,
 
 /* 6) 表头：保留原色，只加字距让它更工整 */
 thead th{letter-spacing:.03em}
+
+/* ── 列头筛选行（参考图：表头下方每列一个输入框）── */
+thead tr.cf-row td{
+  position:sticky;background:#004D4C;padding:2px 3px;z-index:19;
+  border-top:1px solid rgba(255,255,255,.18);
+}
+thead tr.cf-row td.fc-1,thead tr.cf-row td.fc-2,
+thead tr.cf-row td.fc-3,thead tr.cf-row td.fc-4,
+thead tr.cf-row td.vt-fc,thead tr.cf-row td.vt-fc-expand{z-index:21}
+.cf-input{
+  width:100%;box-sizing:border-box;min-width:34px;
+  padding:2px 5px;font-size:11px;font-weight:700;line-height:1.5;
+  border:1px solid #7FA8A6;background:#fff;color:#0F172A;outline:none;
+}
+.cf-input::placeholder{color:#94A3B8;font-weight:400}
+.cf-input:focus{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.cf-input.on{background:#FFFBEB;border-color:#F59E0B}
+tr.cf-hidden{display:none}
 
 /* 7) 导航：去掉胶囊感，改成下划线式的老派页签 */
 nav button{letter-spacing:.06em;text-transform:uppercase}
@@ -1770,7 +1780,7 @@ tbody tr:hover{background:#fafbfc}
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
-  <div style="margin:0 0 8px">
+  <div style="margin:0 0 8px;display:none">
     <input type="text" id="f-search" placeholder="🔍  Search container, B/L, remark… paste multiple with commas" oninput="renderCT()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
   </div>
 
@@ -1779,14 +1789,14 @@ tbody tr:hover{background:#fafbfc}
     <div id="ct-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px 8px 0 0;padding:9px 16px;font-size:13px;font-weight:600">
       <span id="ct-inline-sel-count">0 selected</span>
       <button onclick="openBulkEdit()" style="background:#fff;color:#004D4C;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
-      <button onclick="openTemuGen()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="用勾选的柜子生成 TEMU 头程轨迹维护表">TEMU 轨迹表</button>
+      <button onclick="openTemuGen()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Generate the TEMU first-mile tracking sheet from the selected containers">TEMU Tracking</button>
       <button onclick="clearAllSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
     </div>
     <div class="tbl-top">
       <h3>Container List</h3><span id="ct-count"></span>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
 <button onclick="openBulkPickup()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Bulk update Pickup Refs from Excel data">Bulk Pickup Ref</button>
-        <button onclick="openTemuGen()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="生成 TEMU 头程轨迹维护表（勾选柜子，一个提单号一行）">TEMU 轨迹表</button>
+        <button onclick="openTemuGen()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Generate the TEMU first-mile tracking sheet — one row per Master B/L">TEMU Tracking</button>
         <button onclick="openSlotPaste()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Paste warehouse slot confirmations to update Scheduled Slot + Master B/L">Paste Slots</button>
       </div>
     </div>
@@ -2188,7 +2198,7 @@ tbody tr:hover{background:#fafbfc}
         <button onclick="noAdd()" style="padding:5px 14px;font-size:12px;font-weight:700;background:var(--navy,#004D4C);color:#fff;border:none;border-radius:7px;cursor:pointer">+ Add Order</button>
       </div>
     </div>
-    <div style="margin-top:10px">
+    <div data-cf-hidden="1" style="display:none;margin-top:10px">
       <input type="search" id="no-search" placeholder="🔍  Search order no., container, consignee, trucker, hub, remark… — a container number narrows to just that container" oninput="renderOrders()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
     </div>
     <div id="no-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;margin-top:10px">
@@ -2325,7 +2335,7 @@ tbody tr:hover{background:#fafbfc}
     <button class="btn btn-ghost" onclick="exportVesselXLSX()">↓ Export</button>
   </div>
 
-  <div style="margin:0 0 8px">
+  <div style="display:none;margin:0 0 8px">
     <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port, container no…" oninput="vtCombinedSearch(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
     <span id="vt-search-msg" class="vt-search-msg" style="display:block;margin-top:4px;padding-left:4px"></span>
   </div>
@@ -2340,7 +2350,7 @@ tbody tr:hover{background:#fafbfc}
       </div>
     </div>
     <div class="tbl-scroll">
-      <table>
+      <table id="vt-table">
         <thead>
           <!-- Group header row -->
           <tr class="vt-group-hdr">
@@ -2852,32 +2862,33 @@ tbody tr:hover{background:#fafbfc}
 <!-- ══ TEMU 轨迹表生成 ══ -->
 <div class="overlay" id="temu-overlay">
   <div class="modal" style="width:760px;max-width:96vw">
-    <h2>🚄 生成 TEMU 头程轨迹维护表</h2>
+    <h2>Generate TEMU First-Mile Tracking Sheet</h2>
     <p style="font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.55">
-      勾选需要生成的柜子，每个提单号(Master B/L)生成自己的一行；选多个事件则每个事件各一行。
-      <b>操作时间不自动生成</b>，留空由你在 Excel 中填写。格式与官方模板完全一致。</p>
+      Each Master B/L gets its own row; pick several events and each event gets a row too.
+      <b>Operation time is not auto-filled</b> — left blank for you to complete in Excel.
+      Formatting matches the official template exactly.</p>
     <div id="temu-src" style="display:none;font-size:11.5px;font-weight:700;margin-bottom:10px"></div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-      <label style="font-size:12px;font-weight:700;color:#475569">事件</label>
+      <label style="font-size:12px;font-weight:700;color:#475569">Event</label>
       <select id="temu-preset" onchange="temuPresetChange()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;min-width:230px"></select>
-      <label style="font-size:12px;font-weight:700;color:#475569">操作地点</label>
+      <label style="font-size:12px;font-weight:700;color:#475569">Location</label>
       <input type="text" id="temu-place" oninput="temuPlaceChanged()" style="padding:6px 9px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;width:105px"/>
-      <label style="font-size:12px;font-weight:700;color:#475569">国家</label>
+      <label style="font-size:12px;font-weight:700;color:#475569">Country</label>
       <input type="text" id="temu-country" style="padding:6px 9px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;width:85px"/>
     </div>
     <div id="temu-custom-box" style="display:none;border:1px solid #e2e8f0;border-radius:9px;padding:9px;margin-bottom:10px"></div>
     <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px">
       <span id="temu-count" style="font-size:11.5px;font-weight:700;color:#0369a1;background:#e0f2fe;border-radius:10px;padding:3px 11px"></span>
       <div style="margin-left:auto;display:flex;gap:6px">
-        <button onclick="temuSelAll(true)" style="padding:3px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">全选</button>
-        <button onclick="temuSelAll(false)" style="padding:3px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">全不选</button>
+        <button onclick="temuSelAll(true)" style="padding:3px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">Select all</button>
+        <button onclick="temuSelAll(false)" style="padding:3px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">None</button>
       </div>
     </div>
     <div id="temu-list" style="max-height:40vh;overflow:auto;border:1px solid #e2e8f0;border-radius:9px"></div>
     <div id="temu-msg" style="display:none;font-size:12px;font-weight:600;margin-top:10px"></div>
     <div class="modal-btns">
-      <button class="mbtn-cancel" onclick="closeTemuGen()">取消</button>
-      <button class="mbtn-save" onclick="temuGenerate()">⬇ 生成并下载</button>
+      <button class="mbtn-cancel" onclick="closeTemuGen()">Cancel</button>
+      <button class="mbtn-save" onclick="temuGenerate()">Generate &amp; Download</button>
     </div>
   </div>
 </div>
@@ -2932,7 +2943,7 @@ tbody tr:hover{background:#fafbfc}
   <span>Selected: </span>
   <span class="sel-bar-count" id="sel-bar-count">0</span>
   <button class="btn-be" onclick="openBulkEdit()">✏️ Bulk Edit</button>
-  <button class="btn-be" onclick="openTemuGen()" title="用勾选的柜子生成 TEMU 头程轨迹维护表">TEMU 轨迹表</button>
+  <button class="btn-be" onclick="openTemuGen()" title="Generate the TEMU first-mile tracking sheet from the selected containers">TEMU Tracking</button>
   <button class="btn-be-clear" onclick="clearAllSel()">✕ Clear</button>
 </div>
 
@@ -10540,9 +10551,9 @@ const TEMU_EVENTS=[
 ];
 // 常用场景：与上传的两份样表一致
 const TEMU_PRESETS={
-  t1:{label:'T1 入境文件办理成功（1 行/提单号）',place:'Germany',country:'德国',
+  t1:{label:'T1 — Entry documents obtained · 1 row per B/L',place:'Germany',country:'德国',
       events:['入境文件办理成功']},
-  arrive:{label:'到港流程（4 行/提单号）',place:'Belgium',country:'比利时',
+  arrive:{label:'Arrival sequence · 4 rows per B/L',place:'Belgium',country:'比利时',
       events:['通过入境口岸','国际转运中','到达目的站台','货站交付清关行']},
 };
 
@@ -10711,7 +10722,7 @@ function openTemuGen(){
   const sel=document.getElementById('temu-preset');
   if(sel&&!sel.options.length){
     sel.innerHTML=Object.entries(TEMU_PRESETS).map(([k,p])=>`<option value="${k}">${p.label}</option>`).join('')
-      +'<option value="custom">自定义事件…</option>';
+      +'<option value="custom">Custom events…</option>';
   }
   temuPresetChange();
   temuRenderList();
@@ -10725,7 +10736,7 @@ function temuPresetChange(){
   if(k==='custom'){
     box.style.display='';
     if(!box.dataset.filled){
-      box.innerHTML='<div style="font-size:11px;color:#64748b;margin-bottom:6px">勾选需要生成的事件（按勾选顺序，每个提单号每个事件一行）</div>'
+      box.innerHTML='<div style="font-size:11px;color:#64748b;margin-bottom:6px">Tick the events to generate — one row per B/L per event.</div>'
         +'<div style="max-height:150px;overflow:auto;display:flex;flex-direction:column;gap:2px">'
         +TEMU_EVENTS.map(e=>`<label style="display:flex;align-items:center;gap:7px;font-size:11.5px;cursor:pointer;padding:2px 4px">
              <input type="checkbox" class="temu-ev" value="${e[0]}" onchange="temuUpdateCount()" style="width:14px;height:14px;cursor:pointer"/>
@@ -10767,7 +10778,7 @@ function temuSelectedBls(){
 function temuUpdateCount(){
   const c=_temuSel.size, n=temuSelectedBls().length, e=temuEventsChosen().length;
   const el=document.getElementById('temu-count');
-  if(el) el.textContent=`已选 ${c} 个柜子 · ${n} 个提单号 × ${e} 个事件 = ${n*e} 行`;
+  if(el) el.textContent=`${c} container${c!==1?'s':''} · ${n} B/L${n!==1?'s':''} × ${e} event${e!==1?'s':''} = ${n*e} row${n*e!==1?'s':''}`;
 }
 function temuToggle(id,on){ if(on) _temuSel.add(id); else _temuSel.delete(id); temuUpdateCount(); }
 function temuSelAll(on){
@@ -10783,11 +10794,11 @@ function temuRenderList(){
   if(src){
     src.style.display='';
     src.innerHTML=_temuFromSel
-      ? `来自列表勾选的 <b>${rows.length}</b> 个柜子`
-      : `列表未勾选，显示全部 <b>${rows.length}</b> 个带提单号的柜子 —— 也可以先在 Container List 勾选再打开`;
+      ? `From your selection — <b>${rows.length}</b> container${rows.length>1?'s':''}`
+      : `Nothing selected — showing all <b>${rows.length}</b> containers with a Master B/L. Tick rows in the Container List first to narrow it down.`;
     src.style.color=_temuFromSel?'#15803d':'#b45309';
   }
-  if(!rows.length){ el.innerHTML='<div style="padding:26px;text-align:center;color:#94a3b8;font-size:13px">没有带提单号(Master B/L)的柜子。</div>'; return; }
+  if(!rows.length){ el.innerHTML='<div style="padding:26px;text-align:center;color:#94a3b8;font-size:13px">No containers have a Master B/L yet.</div>'; return; }
   el.innerHTML=rows.map(r=>{
     const on=_temuSel.has(r._id);
     return `<label style="display:flex;align-items:center;gap:9px;padding:5px 8px;border-bottom:1px solid #f1f5f9;cursor:pointer;font-size:12px">
@@ -10795,7 +10806,7 @@ function temuRenderList(){
       <span style="font-weight:700;color:#1e293b;min-width:120px">${r['Container No.']||'—'}</span>
       <span style="font-family:monospace;font-weight:700;color:#0369a1;min-width:190px;display:flex;flex-direction:column;gap:1px">${
         temuSplitBls(r['Master B/L']).map(b=>`<span>${b}</span>`).join('')}</span>
-      ${temuSplitBls(r['Master B/L']).length>1?`<span style="font-size:10px;font-weight:700;color:#c2410c;background:#fff7ed;border-radius:9px;padding:1px 7px;white-space:nowrap">${temuSplitBls(r['Master B/L']).length} 个提单号</span>`:''}
+      ${temuSplitBls(r['Master B/L']).length>1?`<span style="font-size:10px;font-weight:700;color:#c2410c;background:#fff7ed;border-radius:9px;padding:1px 7px;white-space:nowrap">${temuSplitBls(r['Master B/L']).length} B/Ls</span>`:''}
       <span style="color:#94a3b8">${r['Batch / Train']||''}</span>
     </label>`;
   }).join('');
@@ -10803,11 +10814,11 @@ function temuRenderList(){
 }
 function temuGenerate(){
   const events=temuEventsChosen();
-  if(!events.length){ alert('请至少选择一个事件。'); return; }
+  if(!events.length){ alert('Please choose at least one event.'); return; }
   const bls=(typeof CT!=='undefined'?CT:[])
     .filter(r=>_temuSel.has(r._id)&&(r['Master B/L']||'').toString().trim())
     .map(r=>String(r['Master B/L']).trim());
-  if(!bls.length){ alert('请至少勾选一个柜子。'); return; }
+  if(!bls.length){ alert('Please select at least one container.'); return; }
   const place=(document.getElementById('temu-place').value||'').trim();
   const country=(document.getElementById('temu-country').value||'').trim();
   const rows=temuBuildRows(bls,events,place,country);
@@ -10821,8 +10832,167 @@ function temuGenerate(){
   setTimeout(()=>URL.revokeObjectURL(a.href),20000);
   const m=document.getElementById('temu-msg');
   m.style.display='block'; m.style.color='#15803d';
-  m.textContent=`✓ 已生成 ${rows.length-1} 行（${bls.length} 个提单号 × ${events.length} 个事件）。操作时间为空，请在 Excel 中填写。`;
+  // 行数 ÷ 事件数 才是真正的提单号数量（一个柜子可能有多个提单号）
+  const blCount=[].concat(...bls.map(temuSplitBls)).length;
+  m.textContent=`Generated ${rows.length-1} row${rows.length-1!==1?'s':''} — ${blCount} B/L${blCount!==1?'s':''} × ${events.length} event${events.length!==1?'s':''}. Operation time is blank; fill it in Excel.`;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  COLUMN FILTERS — 表头下方每列一个输入框（取代顶部的大搜索栏）
+// ═══════════════════════════════════════════════════════════════════════════
+const CF_TABLES=['ct-table','no-table','vt-table'];
+
+// 行 → 视觉列 的映射。必须考虑 rowspan/colspan：
+// Orders 表的 Order Total 是合并单元格，同组第二行起 tr.cells[i] 会整体错位，
+// 直接用 cells[i] 会让该列之后的筛选全部对错列。
+function cfGrid(body){
+  const grid=[], carry=[];
+  [...body.rows].forEach(tr=>{
+    const row=[];
+    carry.forEach(c=>{ if(c.left>0){ row[c.col]=c.cell; c.left--; } });
+    let col=0;
+    [...tr.cells].forEach(cell=>{
+      while(row[col]!==undefined) col++;
+      const cs=cell.colSpan||1, rs=cell.rowSpan||1;
+      for(let k=0;k<cs;k++) row[col+k]=cell;
+      if(rs>1) carry.push({col,cell,left:rs-1});
+      col+=cs;
+    });
+    grid.push(row);
+    for(let i=carry.length-1;i>=0;i--) if(carry[i].left<=0) carry.splice(i,1);
+  });
+  return grid;
+}
+
+function cfBuild(tableId){
+  const table=document.getElementById(tableId); if(!table) return;
+  const thead=table.tHead; if(!thead||!thead.rows.length) return;
+  if(thead.querySelector('tr.cf-row')) return;            // 已经建过
+  const hdr=thead.rows[thead.rows.length-1];
+  const tr=document.createElement('tr');
+  tr.className='cf-row';
+  let col=0;
+  [...hdr.cells].forEach(th=>{
+    const cs=th.colSpan||1;
+    const td=document.createElement('td');
+    td.className=th.className;                             // 冻结列样式跟着走
+    if(cs>1) td.colSpan=cs;
+    const label=(th.textContent||'').replace(/[↕▾]/g,'').trim();
+    // 纯操作列（勾选框、删除按钮）不给筛选框
+    const skip=!label||th.querySelector('input[type=checkbox]');
+    if(!skip){
+      const inp=document.createElement('input');
+      inp.type='text'; inp.className='cf-input';
+      inp.dataset.col=col; inp.dataset.table=tableId;
+      inp.title='Filter by '+label;
+      inp.addEventListener('input',()=>{
+        inp.classList.toggle('on',!!inp.value.trim());
+        cfApply(tableId);
+      });
+      inp.addEventListener('keydown',e=>{
+        e.stopPropagation();
+        if(e.key==='Escape'){ inp.value=''; inp.classList.remove('on'); cfApply(tableId); }
+      });
+      td.appendChild(inp);
+    }
+    tr.appendChild(td);
+    col+=cs;
+  });
+  thead.appendChild(tr);
+  cfStick(tableId);
+}
+
+// 让筛选行吸附在表头行下方
+function cfStick(tableId){
+  const table=document.getElementById(tableId); if(!table) return;
+  const thead=table.tHead; if(!thead) return;
+  const row=thead.querySelector('tr.cf-row'); if(!row) return;
+  let top=0;
+  for(const r of thead.rows){ if(r===row) break; top+=r.offsetHeight; }
+  [...row.cells].forEach(td=>{ td.style.top=top+'px'; });
+}
+
+function cfApply(tableId){
+  const table=document.getElementById(tableId); if(!table) return;
+  const row=table.tHead&&table.tHead.querySelector('tr.cf-row'); if(!row) return;
+  const active=[...row.querySelectorAll('.cf-input')]
+    .map(i=>({col:+i.dataset.col,q:i.value.trim().toLowerCase()}))
+    .filter(x=>x.q);
+  const body=table.tBodies[0]; if(!body) return;
+  const grid=cfGrid(body);
+  let shown=0,total=0,lastOk=true;
+  [...body.rows].forEach((tr,ri)=>{
+    // 展开的明细行跟随它上面那条主行显示/隐藏
+    if(tr.classList.contains('ct-exp-row')){
+      tr.classList.toggle('cf-hidden',!lastOk);
+      return;
+    }
+    total++;
+    let ok=true;
+    for(const f of active){
+      const cell=grid[ri]&&grid[ri][f.col];
+      const txt=cell?(cell.innerText||cell.textContent||''):'';
+      // 输入框的内容在 value 里，textContent 取不到 —— 一并纳入匹配
+      let extra='';
+      if(cell) cell.querySelectorAll('input,textarea,select').forEach(el=>{ extra+=' '+(el.value||''); });
+      if(!((txt+extra).toLowerCase().includes(f.q))){ ok=false; break; }
+    }
+    lastOk=ok;
+    tr.classList.toggle('cf-hidden',!ok);
+    if(ok) shown++;
+  });
+  cfCount(tableId,shown,total,active.length>0);
+}
+
+// 在原有计数标签后面补一句「筛选后剩多少」
+function cfCount(tableId,shown,total,filtering){
+  const id={'ct-table':'cf-note-ct','no-table':'cf-note-no','vt-table':'cf-note-vt'}[tableId];
+  const anchor={'ct-table':'ct-count','no-table':'no-count','vt-table':'vt-count'}[tableId];
+  let el=document.getElementById(id);
+  if(!el){
+    const a=document.getElementById(anchor); if(!a) return;
+    el=document.createElement('span'); el.id=id;
+    el.style.cssText='font-size:11px;font-weight:700;color:#b45309;margin-left:8px';
+    a.parentNode.insertBefore(el,a.nextSibling);
+  }
+  el.textContent=filtering?`filtered: ${shown} of ${total}`:'';
+}
+
+function cfClear(tableId){
+  const table=document.getElementById(tableId); if(!table) return;
+  table.querySelectorAll('tr.cf-row .cf-input').forEach(i=>{ i.value=''; i.classList.remove('on'); });
+  cfApply(tableId);
+}
+
+// 每次表格重绘后重新套用筛选
+function cfRefresh(tableId){ try{ cfBuild(tableId); cfApply(tableId); cfStick(tableId); }catch(e){} }
+function cfRefreshAll(){ CF_TABLES.forEach(cfRefresh); }
+
+// 包住原有的 render 函数，重绘完自动重建 + 重新过滤
+function cfHook(fnName,tableId){
+  const orig=window[fnName];
+  if(typeof orig!=='function'||orig.__cf) return;
+  const wrapped=function(){
+    const r=orig.apply(this,arguments);
+    setTimeout(()=>cfRefresh(tableId),0);
+    return r;
+  };
+  wrapped.__cf=true;
+  try{ window[fnName]=wrapped; }catch(e){}
+}
+
+// 挂钩三个表的重绘函数；页面就绪后建好筛选行
+(function cfInit(){
+  function go(){
+    cfHook('renderCT','ct-table');
+    cfHook('renderOrders','no-table');
+    cfHook('renderVT','vt-table');
+    cfRefreshAll();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(go,0));
+  else setTimeout(go,0);
+  window.addEventListener('resize',()=>CF_TABLES.forEach(cfStick));
+})();
 
 // ── SELECTION ─────────────────────────────────────────────────────
 let ctSel=new Set(), vtSel=new Set();
