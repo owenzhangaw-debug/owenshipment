@@ -1414,6 +1414,29 @@ tr.no-fee-row.open{display:table-row}
 
 /* 7) 导航：去掉胶囊感，改成下划线式的老派页签 */
 nav button{letter-spacing:.06em;text-transform:uppercase}
+
+/* ── Orders 费用折叠面板（grid，独立于外层表格样式）── */
+td.nf-td{padding:0!important;background:#F7F9FA!important;border-top:1px solid #dbe3e8!important;position:relative;z-index:4}
+.nf-wrap{position:sticky;left:0;width:820px;max-width:calc(100vw - 40px);padding:10px 14px 12px;box-sizing:border-box}
+.nf-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:7px}
+.nf-title{font-size:11px;font-weight:800;color:#334155;letter-spacing:.06em}
+.nf-lbl{font-size:11px;color:#64748b}
+.nf-mini{width:56px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff;margin-left:3px}
+.nf-add{margin-left:auto;padding:3px 8px;font-size:11.5px;font-weight:700;border:1px solid #0f766e;background:#fff;color:#0f766e;cursor:pointer}
+.nf-grid{display:grid;grid-template-columns:118px 104px 104px 96px minmax(150px,1fr) 26px;background:#fff;border:1px solid #dbe3e8;align-items:stretch}
+.nf-h{background:#EDF2F5!important;color:#64748b!important;font-size:9.5px;font-weight:800;letter-spacing:.07em;padding:5px 8px;border-bottom:1px solid #dbe3e8;display:flex;align-items:center}
+.nf-c{padding:3px 8px;border-bottom:1px solid #F0F4F6;display:flex;align-items:center;min-height:26px}
+.nf-r{justify-content:flex-end;text-align:right}
+.nf-x{justify-content:center;padding:0}
+.nf-x button{border:none;background:none;color:#dc2626;cursor:pointer;font-size:13px;line-height:1;padding:0 3px}
+.nf-num{width:100%;box-sizing:border-box;text-align:right;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1!important;background:#fff!important;color:#0F172A!important;outline:none}
+.nf-num:focus{border-color:#0f766e!important}
+.nf-note{width:100%;box-sizing:border-box;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1!important;background:#fff!important;color:#0F172A!important;outline:none}
+.nf-sel{width:100%;box-sizing:border-box;padding:2px 4px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff;color:#0F172A}
+.nf-tot{background:#F7F9FA!important;border-top:2px solid #cbd5e1;border-bottom:none;font-weight:800;color:#1e293b;font-size:12px}
+.nf-empty{grid-column:1/-1;padding:10px;text-align:center;color:#94a3b8;font-size:11.5px}
+.nf-sur{margin-top:9px}
+.nf-surlbl{font-size:9.5px;font-weight:800;color:#64748b;letter-spacing:.07em;margin-bottom:4px}
 </style>
 
 <!-- ══ MINIMAL THEME — Apple/Google-inspired flat design layer ══ -->
@@ -11221,73 +11244,58 @@ function noToggleFee(key){
   if(row) row.classList.toggle('open',_NO_FEE_OPEN.has(key));
   if(btn) btn.textContent=_NO_FEE_OPEN.has(key)?'▼':'▶';
 }
-const _NO_CH_INP='width:82px;text-align:right;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff';
-
 function _noFeeFold(o,cn,ce,cols,surchargeEditor){
   const lines=_noCharges(o,cn);
   const R=_noReceivable(o,cn), P=_noPayable(o,cn), M=_noMargin(o,cn), pct=_noMarginPct(o,cn);
   const mc=m=>m<0?'#dc2626':'#0f766e';
   const id=o._id;
-  const body=lines.length?lines.map((l,ix)=>{
+  const money=(val,ix,f)=>`<input type="text" class="nf-num" value="${_noN(val)?_noN(val):''}" placeholder="0.00"
+      onchange="noChargeSet(${id},'${ce}',${ix},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"/>`;
+  const rows=lines.length?lines.map((l,ix)=>{
     const m=_noN(l.r)-_noN(l.p);
-    return `<tr>
-      <td style="padding:2px 8px">
-        <select onchange="noChargeSet(${id},'${ce}',${ix},'item',this.value)"
-          style="width:104px;padding:2px 4px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff">
-          ${NO_CHARGE_ITEMS.map(v=>`<option ${v===l.item?'selected':''}>${v}</option>`).join('')}
-        </select></td>
-      <td style="padding:2px 8px;text-align:right"><input type="text" value="${_noN(l.r)?_noN(l.r):''}" placeholder="0.00"
-        onchange="noChargeSet(${id},'${ce}',${ix},'r',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_NO_CH_INP}"/></td>
-      <td style="padding:2px 8px;text-align:right"><input type="text" value="${_noN(l.p)?_noN(l.p):''}" placeholder="0.00"
-        onchange="noChargeSet(${id},'${ce}',${ix},'p',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_NO_CH_INP}"/></td>
-      <td style="padding:2px 8px;text-align:right;font-weight:700;color:${mc(m)};white-space:nowrap">${_noEur(m)}</td>
-      <td style="padding:2px 8px"><input type="text" value="${_noEsc(l.note||'')}" placeholder="note…"
-        onchange="noChargeSet(${id},'${ce}',${ix},'note',this.value)" onkeydown="if(event.key==='Enter')this.blur()"
-        style="width:100%;min-width:130px;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff"/></td>
-      <td style="padding:2px 6px;text-align:center"><button type="button" onclick="noChargeDel(${id},'${ce}',${ix})"
-        title="Remove this line" style="border:none;background:none;color:#dc2626;cursor:pointer;font-size:12px;padding:0 3px">&times;</button></td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="6" style="padding:10px;text-align:center;color:#94a3b8;font-size:11.5px">No charges yet — add one above.</td></tr>`;
+    return `<div class="nf-c"><select class="nf-sel" onchange="noChargeSet(${id},'${ce}',${ix},'item',this.value)">
+        ${NO_CHARGE_ITEMS.map(v=>`<option ${v===l.item?'selected':''}>${v}</option>`).join('')}</select></div>
+      <div class="nf-c nf-r">${money(l.r,ix,'r')}</div>
+      <div class="nf-c nf-r">${money(l.p,ix,'p')}</div>
+      <div class="nf-c nf-r"><b style="color:${mc(m)}">${_noEur(m)}</b></div>
+      <div class="nf-c"><input type="text" class="nf-note" value="${_noEsc(l.note||'')}" placeholder="note…"
+        onchange="noChargeSet(${id},'${ce}',${ix},'note',this.value)" onkeydown="if(event.key==='Enter')this.blur()"/></div>
+      <div class="nf-c nf-x"><button type="button" onclick="noChargeDel(${id},'${ce}',${ix})" title="Remove">&times;</button></div>`;
+  }).join('') : `<div class="nf-empty">No charges yet — add one with “+ Add item”.</div>`;
 
-  // 折叠面板必须 sticky 在左边：外层 td 跨 25 列，非常宽，
-  // 不固定的话 Payable / Note 会被推到屏幕外，根本点不到。
-  return `<td colspan="${cols}" style="padding:0;background:#F8FAFC;border-top:1px solid #e2e8f0">
-    <div style="position:sticky;left:0;width:760px;max-width:calc(100vw - 48px);padding:9px 14px 11px;box-sizing:border-box">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:7px">
-        <span style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.06em">CHARGES — ${_noEsc(cn||o['Order No.']||'')}</span>
-        <span style="font-size:11px;color:#64748b">Free days
+  // 面板 sticky 在左侧：外层 td 跨 25 列非常宽，不固定右边几列会被推出屏幕。
+  // 用 grid 而非嵌套 <table>，避开外层 .sur-tbl th/td 规则（会把表头刷成深底、重排列宽）。
+  return `<td colspan="${cols}" class="nf-td">
+    <div class="nf-wrap">
+      <div class="nf-top">
+        <span class="nf-title">CHARGES — ${_noEsc(cn||o['Order No.']||'')}</span>
+        <span class="nf-lbl">Free days
           <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days"
-            onchange="noSet(${id},'Free Storage (Days)',this.value)"
-            style="width:52px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:3px"/></span>
-        <span style="font-size:11px;color:#64748b">Price/day
+            onchange="noSet(${id},'Free Storage (Days)',this.value)" class="nf-mini"/></span>
+        <span class="nf-lbl">Price/day
           <input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€/day"
-            onchange="noSet(${id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()"
-            style="width:58px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:3px"/></span>
-        <select onchange="noChargeAdd(${id},'${ce}',this)" title="Add a charge line"
-          style="margin-left:auto;padding:2px 6px;font-size:11.5px;font-weight:700;border:1px solid #0f766e;background:#fff;color:#0f766e">
+            onchange="noSet(${id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()" class="nf-mini"/></span>
+        <select class="nf-add" onchange="noChargeAdd(${id},'${ce}',this)" title="Add a charge line">
           <option value="">+ Add item…</option>
           ${NO_CHARGE_ITEMS.map(v=>`<option value="${v}">${v}</option>`).join('')}
         </select>
       </div>
-      <table style="border-collapse:collapse;font-size:11.5px;background:#fff;border:1px solid #e2e8f0;width:100%">
-        <thead><tr style="background:#EEF2F6">
-          <th style="padding:3px 8px;text-align:left;font-size:10px;letter-spacing:.06em;color:#475569;width:112px">ITEM</th>
-          <th style="padding:3px 8px;text-align:right;font-size:10px;letter-spacing:.06em;color:#0369a1;width:96px">RECEIVABLE</th>
-          <th style="padding:3px 8px;text-align:right;font-size:10px;letter-spacing:.06em;color:#b45309;width:96px">PAYABLE</th>
-          <th style="padding:3px 8px;text-align:right;font-size:10px;letter-spacing:.06em;color:#0f766e;width:86px">MARGIN</th>
-          <th style="padding:3px 8px;text-align:left;font-size:10px;letter-spacing:.06em;color:#94a3b8">NOTE</th>
-          <th style="width:24px"></th>
-        </tr></thead>
-        <tbody>${body}</tbody>
-        <tfoot><tr style="border-top:2px solid #cbd5e1;background:#F8FAFC">
-          <td style="padding:4px 8px;font-weight:800;color:#1e293b">TOTAL</td>
-          <td style="padding:4px 8px;text-align:right;font-weight:800;color:#0369a1">${_noEur(R)}</td>
-          <td style="padding:4px 8px;text-align:right;font-weight:800;color:#b45309">${_noEur(P)}</td>
-          <td style="padding:4px 8px;text-align:right;font-weight:800;color:${mc(M)}">${_noEur(M)}</td>
-          <td style="padding:4px 8px;font-weight:700;color:${mc(M)}">${pct.toFixed(1)}%</td>
-          <td></td>
-        </tr></tfoot>
-      </table>
+      <div class="nf-grid">
+        <div class="nf-h">ITEM</div>
+        <div class="nf-h nf-r" style="color:#0369a1">RECEIVABLE</div>
+        <div class="nf-h nf-r" style="color:#b45309">PAYABLE</div>
+        <div class="nf-h nf-r" style="color:#0f766e">MARGIN</div>
+        <div class="nf-h">NOTE</div>
+        <div class="nf-h"></div>
+        ${rows}
+        <div class="nf-c nf-tot">TOTAL</div>
+        <div class="nf-c nf-r nf-tot"><b style="color:#0369a1">${_noEur(R)}</b></div>
+        <div class="nf-c nf-r nf-tot"><b style="color:#b45309">${_noEur(P)}</b></div>
+        <div class="nf-c nf-r nf-tot"><b style="color:${mc(M)}">${_noEur(M)}</b></div>
+        <div class="nf-c nf-tot"><b style="color:${mc(M)}">${pct.toFixed(1)}%</b></div>
+        <div class="nf-c nf-tot"></div>
+      </div>
+      ${surchargeEditor?`<div class="nf-sur"><div class="nf-surlbl">SURCHARGE TAGS</div>${surchargeEditor}</div>`:''}
     </div></td>`;
 }
 
