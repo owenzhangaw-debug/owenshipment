@@ -1376,6 +1376,34 @@ thead tr.cf-row td.vt-fc,thead tr.cf-row td.vt-fc-expand{z-index:21}
 .cf-input:focus{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
 .cf-input.on{background:#FFFBEB;border-color:#F59E0B}
 tr.cf-hidden{display:none}
+tr.no-fee-row{display:none}
+tr.no-fee-row.open{display:table-row}
+.cf-cell{display:flex;align-items:stretch;gap:0}
+.cf-cell .cf-input{flex:1;min-width:0;border-right:none}
+.cf-arrow{
+  flex:0 0 auto;width:16px;padding:0;cursor:pointer;
+  border:1px solid #7FA8A6;border-left:none;background:#fff;color:#004D4C;
+  font-size:9px;line-height:1;font-weight:700;
+}
+.cf-arrow:hover{background:#E0F2F1}
+.cf-dd{
+  position:fixed;z-index:9999;width:260px;background:#fff;
+  border:1px solid #94A3B8;box-shadow:0 6px 20px rgba(0,0,0,.18);
+  font-size:12px;color:#0F172A;
+}
+.cf-dd-list{max-height:280px;overflow:auto;padding:3px 0}
+.cf-dd-list label{display:flex;align-items:center;gap:7px;padding:3px 9px;cursor:pointer;line-height:1.35}
+.cf-dd-list label:hover{background:#F1F5F9}
+.cf-dd-list label input{width:14px;height:14px;flex:0 0 auto;cursor:pointer}
+.cf-dd-list label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cf-dd-empty{padding:9px;color:#94A3B8;font-size:11.5px;text-align:center}
+.cf-dd-btns{display:flex;gap:6px;padding:6px;border-top:1px solid #E2E8F0;background:#F8FAFC}
+.cf-dd-btns button{
+  flex:1;padding:4px 6px;font-size:11px;font-weight:700;cursor:pointer;
+  border:1px solid #CBD5E1;background:#fff;color:#475569;
+}
+.cf-dd-btns button:hover{background:#F1F5F9}
+.cf-dd-btns .cf-dd-ok{background:#004D4C;color:#fff;border-color:#004D4C}
 
 /* 7) 导航：去掉胶囊感，改成下划线式的老派页签 */
 nav button{letter-spacing:.06em;text-transform:uppercase}
@@ -1702,7 +1730,7 @@ tbody tr:hover{background:#fafbfc}
   <div id="today-deliveries-widget" style="display:none;margin:0 0 14px"></div>
   <div id="ct-batch-progress" style="margin:0 0 12px"></div>
 
-  <div class="toolbar" style="margin:0 0 8px">
+  <div class="toolbar" style="margin:0 0 8px;display:none">
     <div class="ms-wrap" id="wrap-dest">
       <span class="ms-label">Destination</span>
       <button class="ms-btn" id="btn-dest" onclick="msOpen('dest')">All Countries</button>
@@ -1780,7 +1808,7 @@ tbody tr:hover{background:#fafbfc}
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
-  <div style="margin:0 0 8px;display:none">
+  <div style="margin:0 0 8px">
     <input type="text" id="f-search" placeholder="🔍  Search container, B/L, remark… paste multiple with commas" oninput="renderCT()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
   </div>
 
@@ -2198,7 +2226,7 @@ tbody tr:hover{background:#fafbfc}
         <button onclick="noAdd()" style="padding:5px 14px;font-size:12px;font-weight:700;background:var(--navy,#004D4C);color:#fff;border:none;border-radius:7px;cursor:pointer">+ Add Order</button>
       </div>
     </div>
-    <div data-cf-hidden="1" style="display:none;margin-top:10px">
+    <div style="margin-top:10px">
       <input type="search" id="no-search" placeholder="🔍  Search order no., container, consignee, trucker, hub, remark… — a container number narrows to just that container" oninput="renderOrders()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
     </div>
     <div id="no-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;margin-top:10px">
@@ -2225,14 +2253,10 @@ tbody tr:hover{background:#fafbfc}
         <th>Delivery Date</th>
         <th>ATA</th>
         <th style="text-align:center" title="Demurrage — checked automatically when ATA is later than Delivery Date; can be overridden manually">Demurrage</th>
-        <th title="Days of free storage before charges start — Delivery Date turns red once it's exceeded">Free Days</th>
-        <th title="Storage fee charged per day once free days are exceeded">Price/Day</th>
-        <th title="Calculated: (days over free storage) × price/day">Storage Fee</th>
-        <th style="text-align:right">Freight</th>
-        <th style="text-align:right" title="Customs Clearance price">CC</th>
-        <th style="text-align:right;min-width:100px" title="Storage fee + Freight + CC + this container's own surcharges (storage, waiting fee, customs clearance, etc.)">Container Amt</th>
-        <th style="text-align:right;min-width:100px" title="Sum of every container's own amount (Storage Fee + Freight + CC + Surcharge) across the whole order">Order Total</th>
-        <th style="min-width:160px" title="Extra fees — can have multiple reasons (e.g. storage, waiting fee, customs clearance)">Surcharge</th>
+        <th style="text-align:right;min-width:92px" title="What you invoice the customer — Freight + CC + Storage + Surcharge">Receivable</th>
+        <th style="text-align:right;min-width:92px" title="What you owe suppliers — the payable side of each charge">Payable</th>
+        <th style="text-align:right;min-width:88px" title="Receivable − Payable">Margin</th>
+        <th style="text-align:right;min-width:104px" title="Whole-order totals across every container">Order Total</th>
         <th>Payment Status</th>
         <th style="text-align:center" title="Proof of Delivery — checking this marks the container delivered">POD</th>
         <th style="min-width:150px">Service</th>
@@ -2279,7 +2303,7 @@ tbody tr:hover{background:#fafbfc}
   <!-- Return Container Planning moved to Planning page -->
 
   <!-- VT Filter Row — above table -->
-  <div class="toolbar" style="margin:0 0 8px" id="vt-filter-toolbar">
+  <div class="toolbar" style="margin:0 0 8px;display:none" id="vt-filter-toolbar">
     <div class="ms-wrap" id="vt-wrap-cy">
       <span class="ms-label">CY</span>
       <button class="ms-btn" id="vt-btn-cy" onclick="vtmsOpen('cy')">All CYs</button>
@@ -2335,7 +2359,7 @@ tbody tr:hover{background:#fafbfc}
     <button class="btn btn-ghost" onclick="exportVesselXLSX()">↓ Export</button>
   </div>
 
-  <div style="display:none;margin:0 0 8px">
+  <div style="margin:0 0 8px">
     <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port, container no…" oninput="vtCombinedSearch(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
     <span id="vt-search-msg" class="vt-search-msg" style="display:block;margin-top:4px;padding-left:4px"></span>
   </div>
@@ -10884,7 +10908,8 @@ function cfBuild(tableId){
       const inp=document.createElement('input');
       inp.type='text'; inp.className='cf-input';
       inp.dataset.col=col; inp.dataset.table=tableId;
-      inp.title='Filter by '+label;
+      inp.title=label+' — filter. Multiple values: separate with commas.';
+      inp.placeholder='';
       inp.addEventListener('input',()=>{
         inp.classList.toggle('on',!!inp.value.trim());
         cfApply(tableId);
@@ -10893,7 +10918,15 @@ function cfBuild(tableId){
         e.stopPropagation();
         if(e.key==='Escape'){ inp.value=''; inp.classList.remove('on'); cfApply(tableId); }
       });
-      td.appendChild(inp);
+      const wrap=document.createElement('div');
+      wrap.className='cf-cell';
+      const arrow=document.createElement('button');
+      arrow.type='button'; arrow.className='cf-arrow'; arrow.textContent='▾';
+      arrow.title='Pick from the values in this column';
+      const myCol=col;   // 固化本格的列号，别让回调读到循环结束后的 col
+      arrow.addEventListener('click',e=>{ e.stopPropagation(); cfDropdown(tableId,myCol,inp,arrow); });
+      wrap.appendChild(inp); wrap.appendChild(arrow);
+      td.appendChild(wrap);
     }
     tr.appendChild(td);
     col+=cs;
@@ -10912,30 +10945,47 @@ function cfStick(tableId){
   [...row.cells].forEach(td=>{ td.style.top=top+'px'; });
 }
 
+// 归一化：去首尾空白、压缩空白、转小写
+function _cfNorm(s){ return String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase(); }
+
+// 单元格文本。值可能在 .cell-view 里，也可能只存在于隐藏的 .cell-edit 输入框里，
+// 一格还可能有多行（多个提单号），所以都收集起来再压平。
+function _cfCellText(cell){
+  if(!cell) return '';
+  let s=cell.innerText||cell.textContent||'';
+  cell.querySelectorAll('input,textarea,select').forEach(el=>{
+    if(el.type==='checkbox'||el.type==='radio') s+=' '+(el.checked?'yes':'no');
+    else s+=' '+(el.value||'');
+  });
+  return _cfNorm(s);
+}
+
 function cfApply(tableId){
   const table=document.getElementById(tableId); if(!table) return;
   const row=table.tHead&&table.tHead.querySelector('tr.cf-row'); if(!row) return;
+  // 一个框里可以填多个值：逗号 / 分号 / 顿号 / 换行分隔，命中任意一个即显示。
+  // 不按空格拆，因为像 "Chengdu 12/28"、"VIA EUROPE" 本身就带空格。
   const active=[...row.querySelectorAll('.cf-input')]
-    .map(i=>({col:+i.dataset.col,q:i.value.trim().toLowerCase()}))
-    .filter(x=>x.q);
+    .map(i=>({
+      col:+i.dataset.col,
+      terms:i.value.split(/[,;、\n\r]+/).map(s=>_cfNorm(s)).filter(Boolean)
+    }))
+    .filter(x=>x.terms.length);
   const body=table.tBodies[0]; if(!body) return;
   const grid=cfGrid(body);
   let shown=0,total=0,lastOk=true;
   [...body.rows].forEach((tr,ri)=>{
     // 展开的明细行跟随它上面那条主行显示/隐藏
-    if(tr.classList.contains('ct-exp-row')){
+    if(tr.classList.contains('ct-exp-row')||tr.classList.contains('no-fee-row')){
       tr.classList.toggle('cf-hidden',!lastOk);
       return;
     }
     total++;
     let ok=true;
     for(const f of active){
-      const cell=grid[ri]&&grid[ri][f.col];
-      const txt=cell?(cell.innerText||cell.textContent||''):'';
-      // 输入框的内容在 value 里，textContent 取不到 —— 一并纳入匹配
-      let extra='';
-      if(cell) cell.querySelectorAll('input,textarea,select').forEach(el=>{ extra+=' '+(el.value||''); });
-      if(!((txt+extra).toLowerCase().includes(f.q))){ ok=false; break; }
+      const hay=_cfCellText(grid[ri]&&grid[ri][f.col]);
+      // 同一列的多个值之间是「或」；不同列之间是「且」
+      if(!f.terms.some(t=>hay.includes(t))){ ok=false; break; }
     }
     lastOk=ok;
     tr.classList.toggle('cf-hidden',!ok);
@@ -10958,6 +11008,91 @@ function cfCount(tableId,shown,total,filtering){
   el.textContent=filtering?`filtered: ${shown} of ${total}`:'';
 }
 
+// ── 列值下拉：列出该列出现过的所有值，勾选后写回输入框（逗号分隔）──────────
+let _cfDD=null;
+function cfCloseDD(){ if(_cfDD){ _cfDD.remove(); _cfDD=null; } }
+document.addEventListener('click',e=>{ if(_cfDD&&!_cfDD.contains(e.target)) cfCloseDD(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') cfCloseDD(); });
+
+// 收集某一列出现过的不同值。一格多行（例如一个柜子多个提单号）拆成多条。
+function cfDistinct(tableId,col){
+  const table=document.getElementById(tableId); if(!table) return [];
+  const body=table.tBodies[0]; if(!body) return [];
+  const grid=cfGrid(body);
+  const seen=new Map();
+  [...body.rows].forEach((tr,ri)=>{
+    if(tr.classList.contains('ct-exp-row')||tr.classList.contains('no-fee-row')) return;
+    const cell=grid[ri]&&grid[ri][col]; if(!cell) return;
+    let raw=cell.innerText||cell.textContent||'';
+    cell.querySelectorAll('input,textarea,select').forEach(el=>{
+      if(el.type!=='checkbox'&&el.type!=='radio'&&el.value) raw+='\n'+el.value;
+    });
+    raw.split(/[\n\r]+/).forEach(v=>{
+      const t=v.replace(/\s+/g,' ').trim();
+      if(!t||t==='—'||t==='-') return;
+      const k=t.toLowerCase();
+      if(!seen.has(k)) seen.set(k,t);
+    });
+  });
+  return [...seen.values()].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+}
+
+function cfDropdown(tableId,col,inp,anchor){
+  const wasOpen=_cfDD&&_cfDD.dataset.key===tableId+':'+col;
+  cfCloseDD();
+  if(wasOpen) return;                       // 再点一次关闭
+  const vals=cfDistinct(tableId,col);
+  const chosen=new Set(inp.value.split(/[,;、\n\r]+/).map(s=>s.trim().toLowerCase()).filter(Boolean));
+
+  const dd=document.createElement('div');
+  dd.className='cf-dd'; dd.dataset.key=tableId+':'+col;
+  dd.innerHTML=`
+    <div class="cf-dd-list"></div>
+    <div class="cf-dd-btns">
+      <button type="button" data-a="all">Select all</button>
+      <button type="button" data-a="none">Clear</button>
+      <button type="button" data-a="close" class="cf-dd-ok">Done</button>
+    </div>`;
+  document.body.appendChild(dd);
+  _cfDD=dd;
+
+  const list=dd.querySelector('.cf-dd-list');
+  function paint(){
+    if(!vals.length){ list.innerHTML='<div class="cf-dd-empty">This column has no values</div>'; return; }
+    list.innerHTML=vals.map(v=>{
+      const on=chosen.has(v.toLowerCase());
+      const esc=v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+      return `<label><input type="checkbox" value="${esc}" ${on?'checked':''}/><span title="${esc}">${esc}</span></label>`;
+    }).join('');
+  }
+  paint();
+
+  function commit(){
+    inp.value=[...chosen.values()].length?vals.filter(v=>chosen.has(v.toLowerCase())).join(', '):'';
+    inp.classList.toggle('on',!!inp.value.trim());
+    cfApply(tableId);
+  }
+  list.addEventListener('change',e=>{
+    const cb=e.target; if(cb.type!=='checkbox') return;
+    const k=cb.value.toLowerCase();
+    if(cb.checked) chosen.add(k); else chosen.delete(k);
+    commit();
+  });
+  dd.querySelector('.cf-dd-btns').addEventListener('click',e=>{
+    const a=e.target.dataset.a; if(!a) return;
+    if(a==='close') return cfCloseDD();
+    const boxes=[...list.querySelectorAll('input[type=checkbox]')];
+    boxes.forEach(cb=>{ cb.checked=(a==='all'); const k=cb.value.toLowerCase();
+      if(a==='all') chosen.add(k); else chosen.delete(k); });
+    commit();
+  });
+
+  // 定位：贴在按钮下方，超出屏幕就往回收
+  const r=anchor.getBoundingClientRect();
+  dd.style.top=Math.min(r.bottom+2,window.innerHeight-300)+'px';
+  dd.style.left=Math.max(6,Math.min(r.left-180,window.innerWidth-266))+'px';
+}
+
 function cfClear(tableId){
   const table=document.getElementById(tableId); if(!table) return;
   table.querySelectorAll('tr.cf-row .cf-input').forEach(i=>{ i.value=''; i.classList.remove('on'); });
@@ -10965,7 +11100,7 @@ function cfClear(tableId){
 }
 
 // 每次表格重绘后重新套用筛选
-function cfRefresh(tableId){ try{ cfBuild(tableId); cfApply(tableId); cfStick(tableId); }catch(e){} }
+function cfRefresh(tableId){ try{ cfCloseDD(); cfBuild(tableId); cfApply(tableId); cfStick(tableId); }catch(e){} }
 function cfRefreshAll(){ CF_TABLES.forEach(cfRefresh); }
 
 // 包住原有的 render 函数，重绘完自动重建 + 重新过滤
@@ -10993,6 +11128,120 @@ function cfHook(fnName,tableId){
   else setTimeout(go,0);
   window.addEventListener('resize',()=>CF_TABLES.forEach(cfStick));
 })();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  RECEIVABLE / PAYABLE — 每项费用都有「应收」和「应付」两个金额
+//  应收 = 现有的 Freight / CC / Storage Fee / Surcharge
+//  应付 = 新增的 Price P / CC P / Storage P / Surcharge P
+//  主行只显示三个汇总数，明细在折叠里。
+// ═══════════════════════════════════════════════════════════════════════════
+function _noN(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+function _noR2(n){ return Math.round(n*100)/100; }
+function _noEur(n){ return '€'+_noR2(n).toFixed(2); }
+
+// 取某个字段：优先本柜的 perCtn，其次订单级
+function _noFld(o,cn,f){
+  if(cn){ const pc=_noPc(o,cn); if(pc[f]!==undefined) return pc[f]; }
+  return o[f];
+}
+function _noSetFld(id,cn,f,v){ if(cn) noSetCtn(id,cn,f,v); else noSet(id,f,v); }
+
+// 四个费用项，各自的应收/应付
+function _noFeeLines(o,cn){
+  const sf=cn?_noStorageFee(o,cn):null;
+  const sur=cn?_noCtnSurchargeSum(o,cn):_noCtnSurchargeSum(o,null);
+  return [
+    {key:'Freight',   rf:'Price',   pf:'Price P',
+     r:_noN(_noFld(o,cn,'Price')), p:_noN(_noFld(o,cn,'Price P')), rEdit:true},
+    {key:'CC',        rf:'CC',      pf:'CC P',
+     r:_noN(_noFld(o,cn,'CC')),    p:_noN(_noFld(o,cn,'CC P')),   rEdit:true},
+    {key:'Storage',   rf:null,      pf:'Storage P',
+     r:sf?_noN(sf.fee):0,          p:_noN(_noFld(o,cn,'Storage P')), rEdit:false,
+     note:sf?`${sf.byDays}d × €${sf.ppd}`:''},
+    {key:'Surcharge', rf:null,      pf:'Surcharge P',
+     r:_noN(sur),                  p:_noN(_noFld(o,cn,'Surcharge P')), rEdit:false},
+  ];
+}
+function _noReceivable(o,cn){ return _noR2(_noFeeLines(o,cn).reduce((s,l)=>s+l.r,0)); }
+function _noPayable(o,cn){    return _noR2(_noFeeLines(o,cn).reduce((s,l)=>s+l.p,0)); }
+function _noMargin(o,cn){     return _noR2(_noReceivable(o,cn)-_noPayable(o,cn)); }
+function _noMarginPct(o,cn){
+  const r=_noReceivable(o,cn);
+  return r?_noR2((_noReceivable(o,cn)-_noPayable(o,cn))/r*100):0;
+}
+// 整单合计
+function _noOrderRP(o){
+  const cs=_noContainers(o), list=cs.length?cs:[null];
+  const r=_noR2(list.reduce((s,cn)=>s+_noReceivable(o,cn),0));
+  const p=_noR2(list.reduce((s,cn)=>s+_noPayable(o,cn),0));
+  return {r,p,m:_noR2(r-p),pct:r?_noR2((r-p)/r*100):0};
+}
+
+// ── 折叠明细 ───────────────────────────────────────────────────────────────
+const _NO_FEE_OPEN=new Set();
+function noToggleFee(key){
+  if(_NO_FEE_OPEN.has(key)) _NO_FEE_OPEN.delete(key); else _NO_FEE_OPEN.add(key);
+  const row=document.getElementById('nofee-'+key);
+  const btn=document.getElementById('nofeebtn-'+key);
+  if(row) row.classList.toggle('open',_NO_FEE_OPEN.has(key));
+  if(btn) btn.textContent=_NO_FEE_OPEN.has(key)?'▼':'▶';
+}
+const _NO_FEE_INP='width:74px;text-align:right;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff';
+
+function _noFeeFold(o,cn,ce,cols,surchargeEditor){
+  const key=o._id+'__'+(cn||'-');
+  const lines=_noFeeLines(o,cn);
+  const R=_noReceivable(o,cn), P=_noPayable(o,cn), M=_noMargin(o,cn), pct=_noMarginPct(o,cn);
+  const mColor=M<0?'#dc2626':'#15803d';
+  const num=(val,fld)=>`<input type="text" value="${val?_noEsc(val):''}" placeholder="0.00"
+      onchange="_noSetFld(${o._id},'${ce}','${fld}',this.value)"
+      onkeydown="if(event.key==='Enter')this.blur()" style="${_NO_FEE_INP}"/>`;
+  const body=lines.map(l=>`
+    <tr>
+      <td style="padding:3px 10px;font-weight:700;color:#334155">${l.key}</td>
+      <td style="padding:3px 10px;text-align:right">${
+        l.rEdit?num(_noFld(o,cn,l.rf),l.rf)
+               :`<span style="font-weight:700;color:#0369a1">${_noEur(l.r)}</span>`}</td>
+      <td style="padding:3px 10px;text-align:right">${num(_noFld(o,cn,l.pf),l.pf)}</td>
+      <td style="padding:3px 10px;text-align:right;font-weight:700;color:${(l.r-l.p)<0?'#dc2626':'#0f766e'}">${_noEur(l.r-l.p)}</td>
+      <td style="padding:3px 10px;font-size:10.5px;color:#94a3b8">${l.note||''}</td>
+    </tr>`).join('');
+  return `<td colspan="${cols}" style="padding:0;background:#F8FAFC;border-top:1px solid #e2e8f0">
+    <div style="padding:10px 16px 12px">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.06em">CHARGES — ${_noEsc(cn||o['Order No.']||'')}</span>
+        <span style="font-size:11px;color:#64748b">Free days
+          <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days"
+            onchange="noSet(${o._id},'Free Storage (Days)',this.value)"
+            style="width:56px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:4px"/></span>
+        <span style="font-size:11px;color:#64748b">Price/day
+          <input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€/day"
+            onchange="noSet(${o._id},'Price per Day',this.value)"
+            onkeydown="if(event.key==='Enter')this.blur()"
+            style="width:62px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:4px"/></span>
+      </div>
+      <table style="border-collapse:collapse;font-size:11.5px;background:#fff;border:1px solid #e2e8f0;min-width:520px">
+        <thead><tr style="background:#EEF2F6">
+          <th style="padding:4px 10px;text-align:left;font-size:10px;letter-spacing:.06em;color:#475569">ITEM</th>
+          <th style="padding:4px 10px;text-align:right;font-size:10px;letter-spacing:.06em;color:#0369a1">RECEIVABLE</th>
+          <th style="padding:4px 10px;text-align:right;font-size:10px;letter-spacing:.06em;color:#b45309">PAYABLE</th>
+          <th style="padding:4px 10px;text-align:right;font-size:10px;letter-spacing:.06em;color:#0f766e">MARGIN</th>
+          <th style="padding:4px 10px;text-align:left;font-size:10px;letter-spacing:.06em;color:#94a3b8">NOTE</th>
+        </tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr style="border-top:2px solid #cbd5e1;background:#F8FAFC">
+          <td style="padding:5px 10px;font-weight:800;color:#1e293b">TOTAL</td>
+          <td style="padding:5px 10px;text-align:right;font-weight:800;color:#0369a1">${_noEur(R)}</td>
+          <td style="padding:5px 10px;text-align:right;font-weight:800;color:#b45309">${_noEur(P)}</td>
+          <td style="padding:5px 10px;text-align:right;font-weight:800;color:${mColor}">${_noEur(M)}</td>
+          <td style="padding:5px 10px;font-weight:700;color:${mColor}">${pct.toFixed(1)}%</td>
+        </tr></tfoot>
+      </table>
+      ${surchargeEditor?`<div style="margin-top:9px">
+        <div style="font-size:10px;font-weight:800;color:#475569;letter-spacing:.06em;margin-bottom:4px">SURCHARGES (receivable)</div>
+        ${surchargeEditor}</div>`:''}
+    </div></td>`;
+}
 
 // ── SELECTION ─────────────────────────────────────────────────────
 let ctSel=new Set(), vtSel=new Set();
@@ -13417,18 +13666,23 @@ function renderOrders(){
         const demurTitle=autoDemur?`Demurrage — ATA is ${autoDemur}d after Delivery Date`:'Demurrage — check to flag manually';
         return `<input type="checkbox" ${demurChecked?'checked':''} onchange="${demurOnchange}" title="${demurTitle}" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer"/>`;
       })()}</td>
-      <td>${(()=>`<input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="days" onchange="noSet(${o._id},'Free Storage (Days)',this.value)" style="${_inpCss};min-width:64px"/>`)()}</td>
-      <td>${(()=>`<input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€/day" onchange="noSet(${o._id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px"/>`)()}</td>
-      <td style="white-space:nowrap;font-size:11.5px">${fee?`<span style="color:#b91c1c;font-weight:800">€${fee.fee}</span> <span style="color:#94a3b8;font-size:10px">(${fee.byDays}d×€${fee.ppd})</span>`:'<span style="color:#cbd5e1">—</span>'}</td>
-      <td style="text-align:right;font-weight:700;color:#0369a1">${tinpC(o,cn,'Price','€',70)}</td>
-      <td style="text-align:right">${(()=>{
-        const ccVal=cn?(pc['CC']!==undefined?pc['CC']:(o['CC']||'')):(o['CC']||'');
-        const ccOnchange=cn?`noSetCtn(${o._id},'${ce}','CC',this.value)`:`noSet(${o._id},'CC',this.value)`;
-        return `<input type="text" value="${_noEsc(ccVal)}" placeholder="€" onchange="${ccOnchange}" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:64px;text-align:right"/>`;
-      })()}</td>
-      <td style="text-align:right;font-weight:700;color:#0f766e;white-space:nowrap">€${_noContainerAmount(o,cn)}</td>
-      ${isFirst?`<td rowspan="${noGroupSize[o._id]||1}" style="text-align:right;vertical-align:middle"><span style="font-weight:800;color:#0369a1;background:#e0f2fe;border-radius:6px;padding:3px 8px;white-space:nowrap">€${_noOrderTotal(o)}</span></td>`:''}
-      <td>${surchargeEditor}</td>
+      ${(()=>{
+        const _k=o._id+'__'+(cn||'-');
+        const R=_noReceivable(o,cn), P=_noPayable(o,cn), M=_noMargin(o,cn);
+        const open=_NO_FEE_OPEN.has(_k);
+        return `<td style="text-align:right;white-space:nowrap">
+            <button type="button" id="nofeebtn-${_k}" onclick="noToggleFee('${_k}')"
+              title="Show the charge breakdown"
+              style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:9px;padding:0 4px 0 0">${open?'▼':'▶'}</button>
+            <span style="font-weight:700;color:#0369a1">${_noEur(R)}</span></td>
+          <td style="text-align:right;white-space:nowrap"><span style="font-weight:700;color:#b45309">${_noEur(P)}</span></td>
+          <td style="text-align:right;white-space:nowrap"><span style="font-weight:700;color:${M<0?'#dc2626':'#0f766e'}">${_noEur(M)}</span></td>`;
+      })()}
+      ${isFirst?(()=>{ const t=_noOrderRP(o); return `<td rowspan="${noGroupSize[o._id]||1}" style="text-align:right;vertical-align:middle;white-space:nowrap">
+          <div style="font-weight:800;color:#0369a1;background:#e0f2fe;border-radius:6px;padding:2px 8px;margin-bottom:2px">${_noEur(t.r)}</div>
+          <div style="font-weight:700;color:#b45309;font-size:11px">${_noEur(t.p)}</div>
+          <div style="font-weight:700;color:${t.m<0?'#dc2626':'#0f766e'};font-size:11px">${_noEur(t.m)} · ${t.pct.toFixed(1)}%</div>
+        </td>`; })():''}
       <td>${(()=>{
         const psVal=cn?(pc['Payment Status']!==undefined?pc['Payment Status']:(o['Payment Status']||'')):(o['Payment Status']||'');
         const psOnchange=cn?`noSetCtn(${o._id},'${ce}','Payment Status',this.value)`:`noSet(${o._id},'Payment Status',this.value)`;
@@ -13450,6 +13704,9 @@ function renderOrders(){
       })()}</td>
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
       <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
+    </tr>
+    <tr class="no-fee-row${_NO_FEE_OPEN.has(o._id+'__'+(cn||'-'))?' open':''}" id="nofee-${o._id}__${cn||'-'}">
+      ${_noFeeFold(o,cn,ce,25,surchargeEditor)}
     </tr>`;
   }).join('');
   // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
