@@ -12531,11 +12531,13 @@ function renderGanttFor(type){
   // Everything on this board is by definition NOT finished, so an item whose
   // date has already passed is overdue and still outstanding — it stays
   // visible in every window rather than silently vanishing into the past.
-  items.forEach(it=>{ it.overdue = !!(it.key && it.key < today); });
+  // 船舶不做逾期预警：过了 ETA 说明船已经到港，是正常状态，不是待办异常。
+  // 柜子/订单则相反 —— 过期还没完成就是要盯的事。
+  items.forEach(it=>{ it.overdue = type!=='vt' && !!(it.key && it.key < today); });
   if(fromISO||toISO){
     items=items.filter(it=>{
       if(!it.key)   return true;   // no date at all — keep rather than hide
-      if(it.overdue) return true;  // past due and still open
+      if(it.overdue) return true;  // 逾期未完成 —— 任何窗口都要看得到（船舶除外）
       if(fromISO && it.key<fromISO) return false;
       if(toISO   && it.key>toISO)   return false;
       return true;
