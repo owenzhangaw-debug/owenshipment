@@ -11192,7 +11192,7 @@ function _noFld(o,cn,f){
 function _noSetFld(id,cn,f,v){ if(cn) noSetCtn(id,cn,f,v); else noSet(id,f,v); }
 
 // ── 费用明细：动态行，下拉挑项目 ──────────────────────────────────────────
-const NO_CHARGE_ITEMS=['Freight','CC','T1','Docs','Handling fee','Forklift','Airport fee','Storage','Waiting','Other'];
+const NO_CHARGE_ITEMS=['Freight','CC','T1','Docs','Handling fee','Forklift','Airport fee','Terminal charges','Storage','Waiting','Other'];
 
 // 没存过 Charges 的订单，从原有字段推出默认几行，历史数据不丢
 function _noDefaultCharges(o,cn){
