@@ -1437,6 +1437,11 @@ td.nf-td{padding:0!important;background:#F7F9FA!important;border-top:1px solid #
 .nf-empty{grid-column:1/-1;padding:10px;text-align:center;color:#94a3b8;font-size:11.5px}
 .nf-sur{margin-top:9px}
 .nf-surlbl{font-size:9.5px;font-weight:800;color:#64748b;letter-spacing:.07em;margin-bottom:4px}
+
+.flt-notice{display:none;align-items:center;gap:7px;margin-left:10px;font-size:11px;font-weight:700;color:#b45309}
+.flt-notice button{padding:2px 10px;font-size:11px;font-weight:700;cursor:pointer;
+  border:1px solid #F0B429;background:#FFFBEB;color:#92400e}
+.flt-notice button:hover{background:#FEF3C7}
 </style>
 
 <!-- ══ MINIMAL THEME — Apple/Google-inspired flat design layer ══ -->
@@ -1851,7 +1856,7 @@ tbody tr:hover{background:#fafbfc}
       <button onclick="clearAllSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
     </div>
     <div class="tbl-top">
-      <h3>Container List</h3><span id="ct-count"></span>
+      <h3>Container List</h3><span id="ct-count"></span><span id="ct-filter-notice" class="flt-notice"></span>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
 <button onclick="openBulkPickup()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Bulk update Pickup Refs from Excel data">Bulk Pickup Ref</button>
         <button onclick="openTemuGen()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Generate the TEMU first-mile tracking sheet — one row per Master B/L">TEMU Tracking</button>
@@ -2395,7 +2400,7 @@ tbody tr:hover{background:#fafbfc}
   </div>
   <div class="tbl-card">
     <div class="tbl-top">
-      <h3>Vessel Tracker</h3><span id="vt-count"></span>
+      <h3>Vessel Tracker</h3><span id="vt-filter-notice" class="flt-notice"></span><span id="vt-count"></span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <label style="padding:6px 14px;background:#1d4ed8;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" title="Import vessels from CSV">
           ⬆ Import CSV<input type="file" accept=".csv" style="display:none" onchange="vtImportCSV(this)">
@@ -11144,6 +11149,7 @@ function cfRefresh(tableId){
     // 筛选行是后加进 thead 的，重算一次冻结列的 left
     if(tableId==='ct-table'&&typeof updateFrozenOffsets==='function') updateFrozenOffsets();
     if(tableId==='no-table'&&typeof updateNoFrozenOffsets==='function') updateNoFrozenOffsets();
+    if(typeof renderFilterNotices==='function') renderFilterNotices();
   }catch(e){}
 }
 function cfRefreshAll(){ CF_TABLES.forEach(cfRefresh); }
@@ -11307,6 +11313,59 @@ function _noFeeFold(o,cn,ce,cols,surchargeEditor){
       ${surchargeEditor?`<div class="nf-sur"><div class="nf-surlbl">SURCHARGE TAGS</div>${surchargeEditor}</div>`:''}
     </div></td>`;
 }
+
+
+// ── 隐藏筛选栏后的补救：有筛选时给出可见的清除入口 ───────────────────────
+// 下拉筛选栏（含 ↺ Reset）已隐藏，但点顶部项目卡片仍会设置 batch 筛选，
+// 列头日期筛选、搜索框、列筛选也都会过滤。没有入口的话就会「筛上了删不掉」。
+function _ctFilterList(){
+  const out=[];
+  const ms=[['dest','Destination'],['batch','Project'],['trucker','Trucker'],['tracking','Tracking'],
+            ['arrival','Arrival'],['broker','Broker'],['consignee','Consignee'],
+            ['surcharge','Surcharge'],['payment','Payment'],['t1pay','T1 Payment']];
+  if(typeof msGetValues==='function') ms.forEach(([id,lbl])=>{
+    const v=msGetValues(id); if(v&&v.length) out.push(lbl+': '+v.join(', '));
+  });
+  if(typeof _ctColDateFilters==='object') Object.keys(_ctColDateFilters||{}).forEach(c=>out.push(c+' (date)'));
+  const s=(document.getElementById('f-search')||{}).value||'';
+  if(s.trim()) out.push('Search: '+s.trim());
+  document.querySelectorAll('#ct-table tr.cf-row .cf-input').forEach(i=>{
+    if(i.value.trim()) out.push('Column filter');
+  });
+  return out;
+}
+function _vtFilterList(){
+  const out=[];
+  const ms=[['cy','CY'],['port','Port'],['pod','POD'],['carrier','Carrier'],['status','Status']];
+  if(typeof vtmsGetValues==='function') ms.forEach(([id,lbl])=>{
+    let v=[]; try{ v=vtmsGetValues(id)||[]; }catch(e){}
+    if(v.length) out.push(lbl+': '+v.join(', '));
+  });
+  if(typeof _vtColDateFilters==='object') Object.keys(_vtColDateFilters||{}).forEach(c=>out.push(c+' (date)'));
+  const s=(document.getElementById('vt-f-search')||{}).value||'';
+  if(s.trim()) out.push('Search: '+s.trim());
+  document.querySelectorAll('#vt-table tr.cf-row .cf-input').forEach(i=>{
+    if(i.value.trim()) out.push('Column filter');
+  });
+  return out;
+}
+function ctClearAllFilters(){
+  try{ if(typeof cfClear==='function') cfClear('ct-table'); }catch(e){}
+  if(typeof resetFilters==='function') resetFilters(); else if(typeof renderCT==='function') renderCT();
+}
+function vtClearAllFilters(){
+  try{ if(typeof cfClear==='function') cfClear('vt-table'); }catch(e){}
+  if(typeof vtResetFilters==='function') vtResetFilters(); else if(typeof renderVT==='function') renderVT();
+}
+function _renderFilterNotice(which){
+  const el=document.getElementById(which+'-filter-notice'); if(!el) return;
+  const list=which==='ct'?_ctFilterList():_vtFilterList();
+  if(!list.length){ el.innerHTML=''; el.style.display='none'; return; }
+  el.style.display='inline-flex';
+  el.innerHTML=`<span title="${list.join(' · ').replace(/"/g,'&quot;')}">${list.length} filter${list.length>1?'s':''} active</span>
+    <button type="button" onclick="${which}ClearAllFilters()">Clear all</button>`;
+}
+function renderFilterNotices(){ try{ _renderFilterNotice('ct'); _renderFilterNotice('vt'); }catch(e){} }
 
 // ── SELECTION ─────────────────────────────────────────────────────
 let ctSel=new Set(), vtSel=new Set();
