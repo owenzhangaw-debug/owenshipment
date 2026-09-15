@@ -1442,6 +1442,19 @@ td.nf-td{padding:0!important;background:#F7F9FA!important;border-top:1px solid #
 .flt-notice button{padding:2px 10px;font-size:11px;font-weight:700;cursor:pointer;
   border:1px solid #F0B429;background:#FFFBEB;color:#92400e}
 .flt-notice button:hover{background:#FEF3C7}
+
+.tm-row{display:flex;align-items:center;gap:7px;padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:11.5px;cursor:pointer}
+.tm-row:hover{background:#f8fafc}
+.tm-row input{width:14px;height:14px;flex:0 0 auto;cursor:pointer}
+.tm-dim{color:#94a3b8;font-size:10.5px}
+.tm-card{border:1px solid #e2e8f0;background:#fff;margin-bottom:10px}
+.tm-card-hd{display:flex;align-items:center;gap:9px;padding:6px 10px;background:#EDF2F5;font-size:11.5px}
+.tm-fld{padding:7px 10px}
+.tm-lbl{display:flex;align-items:center;gap:8px;font-size:9.5px;font-weight:800;color:#64748b;letter-spacing:.07em;margin-bottom:3px}
+.tm-lbl button{margin-left:auto;padding:2px 10px;font-size:10.5px;font-weight:700;cursor:pointer;border:1px solid #cbd5e1;background:#fff;color:#475569}
+.tm-lbl button:hover{background:#f1f5f9}
+.tm-subj{width:100%;box-sizing:border-box;padding:4px 7px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff}
+.tm-body{width:100%;box-sizing:border-box;padding:6px 8px;font-size:11.5px;line-height:1.6;border:1px solid #cbd5e1;background:#fff;resize:vertical;font-family:inherit}
 </style>
 
 <!-- ══ MINIMAL THEME — Apple/Google-inspired flat design layer ══ -->
@@ -1853,6 +1866,7 @@ tbody tr:hover{background:#fafbfc}
       <span id="ct-inline-sel-count">0 selected</span>
       <button onclick="openBulkEdit()" style="background:#fff;color:#004D4C;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
       <button onclick="openTemuGen()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Generate the TEMU first-mile tracking sheet from the selected containers">TEMU Tracking</button>
+      <button onclick="openTemuMail()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Generate agent emails for the selected TEMU containers">TEMU Email</button>
       <button onclick="clearAllSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
     </div>
     <div class="tbl-top">
@@ -1860,6 +1874,7 @@ tbody tr:hover{background:#fafbfc}
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
 <button onclick="openBulkPickup()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Bulk update Pickup Refs from Excel data">Bulk Pickup Ref</button>
         <button onclick="openTemuGen()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Generate the TEMU first-mile tracking sheet — one row per Master B/L">TEMU Tracking</button>
+        <button onclick="openTemuMail()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Generate agent emails for the selected TEMU containers">TEMU Email</button>
         <button onclick="openSlotPaste()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Paste warehouse slot confirmations to update Scheduled Slot + Master B/L">Paste Slots</button>
       </div>
     </div>
@@ -2952,6 +2967,31 @@ tbody tr:hover{background:#fafbfc}
   </div>
 </div>
 
+<!-- ══ TEMU AGENT EMAIL ══ -->
+<div class="overlay" id="tmmail-overlay">
+  <div class="modal" style="width:820px;max-width:96vw">
+    <h2>TEMU Agent Email</h2>
+    <p style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.55">
+      Selected containers are grouped by trucker — one email per agent. Copy the subject and body
+      into your mail client; attachments still go on manually. The greeting is left blank on purpose.</p>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button type="button" id="tm-tab-slot" onclick="tmSetType('slot')"
+        style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #004D4C;background:#004D4C;color:#fff;cursor:pointer">Book delivery slot</button>
+      <button type="button" id="tm-tab-docs" onclick="tmSetType('docs')"
+        style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;background:#fff;color:#475569;cursor:pointer">Send documents</button>
+      <label style="font-size:11px;color:#64748b;margin-left:8px">Equipment
+        <input type="text" id="tm-equip" value="40HQ" oninput="tmEquipChange(this.value)"
+          style="width:64px;padding:3px 6px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:4px"/></label>
+      <span id="tm-badge" style="margin-left:auto;font-size:11px;font-weight:700;color:#0369a1;background:#e0f2fe;padding:3px 10px"></span>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div id="tm-pick" style="width:250px;flex:0 0 auto;max-height:52vh;overflow:auto;border:1px solid #e2e8f0;background:#fff"></div>
+      <div id="tm-out" style="flex:1;min-width:0;max-height:52vh;overflow:auto"></div>
+    </div>
+    <div class="modal-btns"><button class="mbtn-cancel" onclick="closeTemuMail()">Close</button></div>
+  </div>
+</div>
+
 <!-- CLOUD SYNC MODAL -->
 <div class="overlay" id="sync-overlay">
   <div class="modal" style="width:520px">
@@ -3003,6 +3043,7 @@ tbody tr:hover{background:#fafbfc}
   <span class="sel-bar-count" id="sel-bar-count">0</span>
   <button class="btn-be" onclick="openBulkEdit()">✏️ Bulk Edit</button>
   <button class="btn-be" onclick="openTemuGen()" title="Generate the TEMU first-mile tracking sheet from the selected containers">TEMU Tracking</button>
+  <button class="btn-be" onclick="openTemuMail()" title="Generate agent emails for the selected TEMU containers">TEMU Email</button>
   <button class="btn-be-clear" onclick="clearAllSel()">✕ Clear</button>
 </div>
 
@@ -11366,6 +11407,123 @@ function _renderFilterNotice(which){
     <button type="button" onclick="${which}ClearAllFilters()">Clear all</button>`;
 }
 function renderFilterNotices(){ try{ _renderFilterNotice('ct'); _renderFilterNotice('vt'); }catch(e){} }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TEMU AGENT EMAILS — 预约派送 / 发送文件
+//  勾选的柜子按 Trucker 分组，每个代理合成一封，复制到剪贴板去 Outlook 粘贴。
+// ═══════════════════════════════════════════════════════════════════════════
+const TM_TYPES={
+  slot:{label:'Book delivery slot',
+        lead:'Pls check booked slot and confirm your availability:'},
+  docs:{label:'Send documents',
+        lead:'Pls find in attachment pick up ref, redelivery order, ATB and T1'}
+};
+let _tmType='slot', _tmSel=new Set(), _tmEquip='40HQ';
+
+function _tmBls(r){ return String(r['Master B/L']||'').split(/[\s,;、]+/).map(s=>s.trim()).filter(Boolean); }
+function _tmRef(r){
+  const m=String(r['Remark']||'').match(/TEMU[-\s]?[A-Z]{0,4}\d{4,}/i);
+  return m?m[0].replace(/\s+/g,'-').toUpperCase():(r['Batch / Train']||'');
+}
+// 一行：预约派送带时间槽，发文件带提货码
+function _tmLine(r,type){
+  const ctn=r['Container No.']||'';
+  if(type==='docs') return [ctn,(r['Pickup Ref']||'').trim()].filter(Boolean).join(' ');
+  // 预约派送只要箱号 + 时间槽，代理不需要提单号
+  return [ctn,(r['Scheduled Slot']||'').trim()].filter(Boolean).join(' ');
+}
+function _tmSubject(rows){
+  const refs=[...new Set(rows.map(_tmRef).filter(Boolean))];
+  const hub=(rows.find(r=>r['Hub'])||{})['Hub']||'';
+  const dest=(rows.find(r=>r['Destination'])||{})['Destination']||'';
+  const route=[hub,dest].filter(Boolean).join(' to ');
+  const qty=rows.length+'*'+(_tmEquip||'40HQ');
+  return (refs.join(', ')||'TEMU')+'//'+qty+(route?' '+route:'')+' delivery service';
+}
+function _tmBody(rows,type){
+  const t=TM_TYPES[type]||TM_TYPES.slot;
+  return ['Dear ,','',t.lead,'',...rows.map(r=>_tmLine(r,type)),''].join('\n');
+}
+// 按 Trucker 分组
+function _tmGroups(){
+  const rows=(typeof CT!=='undefined'?CT:[]).filter(r=>_tmSel.has(r._id));
+  const g=new Map();
+  rows.forEach(r=>{
+    const k=(r['Trucker']||'').trim()||'(no trucker)';
+    if(!g.has(k)) g.set(k,[]);
+    g.get(k).push(r);
+  });
+  return [...g.entries()];
+}
+
+function openTemuMail(){
+  const ov=document.getElementById('tmmail-overlay'); if(!ov) return;
+  // 只针对 TEMU：以 Master B/L 有值为准，和轨迹表一致
+  const temu=(typeof CT!=='undefined'?CT:[]).filter(r=>String(r['Master B/L']||'').trim());
+  const picked=(typeof ctSel!=='undefined'&&ctSel.size)?temu.filter(r=>ctSel.has(r._id)):[];
+  _tmSel=new Set((picked.length?picked:temu).map(r=>r._id));
+  const eq=document.getElementById('tm-equip'); if(eq) eq.value=_tmEquip;
+  tmSetType(_tmType);
+  ov.classList.add('open');
+}
+function closeTemuMail(){ const o=document.getElementById('tmmail-overlay'); if(o) o.classList.remove('open'); }
+function tmSetType(t){
+  _tmType=t;
+  ['slot','docs'].forEach(k=>{
+    const b=document.getElementById('tm-tab-'+k); if(!b) return;
+    const on=k===t;
+    b.style.background=on?'#004D4C':'#fff';
+    b.style.color=on?'#fff':'#475569';
+    b.style.borderColor=on?'#004D4C':'#e2e8f0';
+  });
+  tmRender();
+}
+function tmToggle(id,on){ if(on) _tmSel.add(id); else _tmSel.delete(id); tmRender(); }
+function tmEquipChange(v){ _tmEquip=(v||'').trim()||'40HQ'; tmRender(); }
+
+function tmRender(){
+  const el=document.getElementById('tm-out'); if(!el) return;
+  const temu=(typeof CT!=='undefined'?CT:[]).filter(r=>String(r['Master B/L']||'').trim());
+  const pick=document.getElementById('tm-pick');
+  if(pick){
+    pick.innerHTML=temu.filter(r=>_tmSel.has(r._id)||true).length?temu.map(r=>{
+      const on=_tmSel.has(r._id);
+      return `<label class="tm-row"><input type="checkbox" ${on?'checked':''} onchange="tmToggle(${r._id},this.checked)"/>
+        <b>${r['Container No.']||'—'}</b>
+        <span class="tm-dim">${r['Trucker']||'(no trucker)'}</span>
+        <span class="tm-dim">${_tmRef(r)||''}</span></label>`;
+    }).join(''):'<div class="tm-dim" style="padding:14px">No TEMU containers.</div>';
+  }
+  const groups=_tmGroups();
+  const n=groups.reduce((s,[,rows])=>s+rows.length,0);
+  const badge=document.getElementById('tm-badge');
+  if(badge) badge.textContent=`${n} container${n!==1?'s':''} · ${groups.length} email${groups.length!==1?'s':''}`;
+  if(!groups.length){ el.innerHTML='<div class="tm-dim" style="padding:22px;text-align:center">Tick at least one container.</div>'; return; }
+  el.innerHTML=groups.map(([truck,rows],gi)=>{
+    const subj=_tmSubject(rows), body=_tmBody(rows,_tmType);
+    return `<div class="tm-card">
+      <div class="tm-card-hd"><b>${truck}</b><span class="tm-dim">${rows.length} container${rows.length!==1?'s':''}</span></div>
+      <div class="tm-fld">
+        <div class="tm-lbl">SUBJECT<button type="button" onclick="tmCopy('tm-s-${gi}',this)">Copy</button></div>
+        <input type="text" id="tm-s-${gi}" class="tm-subj" value="${String(subj).replace(/"/g,'&quot;')}"/>
+      </div>
+      <div class="tm-fld">
+        <div class="tm-lbl">BODY<button type="button" onclick="tmCopy('tm-b-${gi}',this)">Copy</button></div>
+        <textarea id="tm-b-${gi}" class="tm-body" rows="${Math.min(4+rows.length,14)}">${String(body).replace(/</g,'&lt;')}</textarea>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function tmCopy(id,btn){
+  const el=document.getElementById(id); if(!el) return;
+  const txt=el.value;
+  const done=()=>{ const o=btn.textContent; btn.textContent='Copied'; btn.style.background='#dcfce7';
+    setTimeout(()=>{ btn.textContent=o; btn.style.background=''; },1200); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(()=>{ el.select(); document.execCommand('copy'); done(); });
+  } else { el.select(); document.execCommand('copy'); done(); }
+}
 
 // ── SELECTION ─────────────────────────────────────────────────────
 let ctSel=new Set(), vtSel=new Set();
