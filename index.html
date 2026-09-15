@@ -10192,7 +10192,8 @@ function seLoadContacts(){
     {id:7, label:'Premiere Cargo IT (Sengi)',emails:'Cristina.portalupi@premiereair.it'},
     {id:8, label:'Magazzini Brianza (KP)',   emails:'customercare@magazzinibrianza.it'},
     {id:9, label:'ViaEurope IT (VE)',        emails:'temu@viaeurope.com, inbound@viaeurope.com'},
-    {id:10,label:'Shaoke',                   emails:'operations.lgg@shaoke.eu, skcs1@shaoke.com, operation@shaoke.com, yvonne.huang@shaoke.eu, lggcs.import6@swissport.com'}
+    {id:10,label:'Shaoke',                   emails:'operations.lgg@shaoke.eu, skcs1@shaoke.com, operation@shaoke.com, yvonne.huang@shaoke.eu, lggcs.import6@swissport.com'},
+    {id:11,label:'Yunexpress',               emails:'AIRHANDLINGOFFICE@YUNEXPRESS.BE'}
   ];
   if(!SE_CONTACTS.length){
     SE_CONTACTS=DEFAULTS;
@@ -10248,15 +10249,38 @@ function seRenderContactsList(){
       <button onclick="seDeleteContact(${c.id})" style="margin-top:18px;background:none;border:none;color:#ef4444;font-size:16px;cursor:pointer;padding:2px 4px" title="Delete">🗑</button>
     </div>`).join('');
 }
-function seToggleContacts(){
+function seToggleContacts(prefillLabel){
   const panel=document.getElementById('se-contacts-panel');
   const btn=document.getElementById('se-contacts-btn');
   if(!panel) return;
-  const open=panel.style.display==='none';
+  // 从下方邮件卡片里的 "add contacts" 点进来时强制展开，
+  // 否则若面板已开着会被切成关闭，看起来就是「按了没反应」
+  const open=prefillLabel?true:(panel.style.display==='none');
   panel.style.display=open?'block':'none';
-  btn.style.background=open?'#0369a1':'#f0f9ff';
-  btn.style.color=open?'#fff':'#0369a1';
-  if(open) seRenderContactsList();
+  if(btn){
+    btn.style.background=open?'#0369a1':'#f0f9ff';
+    btn.style.color=open?'#fff':'#0369a1';
+  }
+  if(!open) return;
+  // 该收货人还没有联系人时，直接建一行并填好名字，省得再找
+  if(prefillLabel){
+    const has=SE_CONTACTS.some(c=>(c.label||'').trim().toLowerCase()===String(prefillLabel).trim().toLowerCase());
+    if(!has){
+      _seContactNextId=Math.max(_seContactNextId||0,...SE_CONTACTS.map(c=>c.id||0))+1;
+      SE_CONTACTS.push({id:_seContactNextId,label:String(prefillLabel),emails:''});
+      seSaveContacts();
+    }
+  }
+  seRenderContactsList();
+  // 面板在页面上方，不滚过去的话用户根本看不到它展开了
+  try{
+    panel.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(()=>{
+      const inp=panel.querySelector('input[value="'+String(prefillLabel||'').replace(/"/g,'')+'"]');
+      const box=inp?inp.parentElement.querySelector('input:last-of-type'):null;
+      (box||panel.querySelector('input')||panel).focus?.();
+    },320);
+  }catch(e){}
 }
 function seCopyEmails(txt){
   navigator.clipboard.writeText(txt).then(()=>showToast('📋 Emails copied!'));
@@ -10387,7 +10411,7 @@ Best regards${sender ? ',\n'+sender : ''}`;
             <span style="font-size:11px;color:#0c4a6e;flex:1;word-break:break-all;font-family:monospace">${em}</span>
             <button onclick="seCopyEmails('${em.replace(/'/g,"\\'")}')" style="flex-shrink:0;background:#0369a1;color:#fff;border:none;border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;white-space:nowrap">⎘ Copy To:</button>
           </div>`; })()
-        : `<div style="padding:5px 10px;background:#fffbeb;border-bottom:1px solid #fde68a;font-size:11px;color:#92400e">⚠️ No contacts found for <b>${g.consignee}</b> — <button onclick="seToggleContacts()" style="background:none;border:none;color:#0369a1;cursor:pointer;font-size:11px;padding:0;text-decoration:underline">add contacts</button></div>`;
+        : `<div style="padding:5px 10px;background:#fffbeb;border-bottom:1px solid #fde68a;font-size:11px;color:#92400e">⚠️ No contacts found for <b>${g.consignee}</b> — <button onclick="seToggleContacts('${String(g.consignee).replace(/'/g,"\\'")}')" style="background:none;border:none;color:#0369a1;cursor:pointer;font-size:11px;padding:0;text-decoration:underline">add contacts</button></div>`;
       emailsHtml += `<div class="se-group" id="se-group-${gi}" style="margin:0">
         <div class="se-group-hdr">
           <div>
