@@ -1447,14 +1447,16 @@ td.nf-td{padding:0!important;background:#F7F9FA!important;border-top:1px solid #
 .tm-row:hover{background:#f8fafc}
 .tm-row input{width:14px;height:14px;flex:0 0 auto;cursor:pointer}
 .tm-dim{color:#94a3b8;font-size:10.5px}
-.tm-card{border:1px solid #e2e8f0;background:#fff;margin-bottom:10px}
+.tm-card{border:1px solid #e2e8f0;background:#fff;margin-bottom:10px;padding-bottom:8px}
+.tm-card-hd button{padding:2px 12px;font-size:10.5px;font-weight:700;cursor:pointer;border:1px solid #cbd5e1;background:#fff;color:#475569}
+.tm-card-hd button:hover{background:#f1f5f9}
 .tm-card-hd{display:flex;align-items:center;gap:9px;padding:6px 10px;background:#EDF2F5;font-size:11.5px}
 .tm-fld{padding:7px 10px}
 .tm-lbl{display:flex;align-items:center;gap:8px;font-size:9.5px;font-weight:800;color:#64748b;letter-spacing:.07em;margin-bottom:3px}
 .tm-lbl button{margin-left:auto;padding:2px 10px;font-size:10.5px;font-weight:700;cursor:pointer;border:1px solid #cbd5e1;background:#fff;color:#475569}
 .tm-lbl button:hover{background:#f1f5f9}
 .tm-subj{width:100%;box-sizing:border-box;padding:4px 7px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff}
-.tm-body{width:100%;box-sizing:border-box;padding:6px 8px;font-size:11.5px;line-height:1.6;border:1px solid #cbd5e1;background:#fff;resize:vertical;font-family:inherit}
+.tm-body{width:calc(100% - 20px);margin:0 10px;box-sizing:border-box;padding:6px 8px;font-size:11.5px;line-height:1.6;border:1px solid #cbd5e1;background:#fff;resize:vertical;font-family:inherit}
 </style>
 
 <!-- ══ MINIMAL THEME — Apple/Google-inspired flat design layer ══ -->
@@ -2972,22 +2974,16 @@ tbody tr:hover{background:#fafbfc}
   <div class="modal" style="width:820px;max-width:96vw">
     <h2>TEMU Agent Email</h2>
     <p style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.55">
-      Selected containers are grouped by trucker — one email per agent. Copy the subject and body
-      into your mail client; attachments still go on manually. The greeting is left blank on purpose.</p>
+      The containers you ticked are grouped by trucker — one email per agent.
+      Copy the text into your mail client; attachments still go on manually. The greeting is left blank on purpose.</p>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button type="button" id="tm-tab-slot" onclick="tmSetType('slot')"
         style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #004D4C;background:#004D4C;color:#fff;cursor:pointer">Book delivery slot</button>
       <button type="button" id="tm-tab-docs" onclick="tmSetType('docs')"
         style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;background:#fff;color:#475569;cursor:pointer">Send documents</button>
-      <label style="font-size:11px;color:#64748b;margin-left:8px">Equipment
-        <input type="text" id="tm-equip" value="40HQ" oninput="tmEquipChange(this.value)"
-          style="width:64px;padding:3px 6px;font-size:11.5px;border:1px solid #cbd5e1;margin-left:4px"/></label>
       <span id="tm-badge" style="margin-left:auto;font-size:11px;font-weight:700;color:#0369a1;background:#e0f2fe;padding:3px 10px"></span>
     </div>
-    <div style="display:flex;gap:12px;align-items:flex-start">
-      <div id="tm-pick" style="width:250px;flex:0 0 auto;max-height:52vh;overflow:auto;border:1px solid #e2e8f0;background:#fff"></div>
-      <div id="tm-out" style="flex:1;min-width:0;max-height:52vh;overflow:auto"></div>
-    </div>
+    <div id="tm-out" style="max-height:58vh;overflow:auto"></div>
     <div class="modal-btns"><button class="mbtn-cancel" onclick="closeTemuMail()">Close</button></div>
   </div>
 </div>
@@ -11458,11 +11454,9 @@ function _tmGroups(){
 
 function openTemuMail(){
   const ov=document.getElementById('tmmail-overlay'); if(!ov) return;
-  // 只针对 TEMU：以 Master B/L 有值为准，和轨迹表一致
+  // 严格用 Container List 里勾选的柜子，不再列全部
   const temu=(typeof CT!=='undefined'?CT:[]).filter(r=>String(r['Master B/L']||'').trim());
-  const picked=(typeof ctSel!=='undefined'&&ctSel.size)?temu.filter(r=>ctSel.has(r._id)):[];
-  _tmSel=new Set((picked.length?picked:temu).map(r=>r._id));
-  const eq=document.getElementById('tm-equip'); if(eq) eq.value=_tmEquip;
+  _tmSel=new Set((typeof ctSel!=='undefined'&&ctSel.size?temu.filter(r=>ctSel.has(r._id)):[]).map(r=>r._id));
   tmSetType(_tmType);
   ov.classList.add('open');
 }
@@ -11483,34 +11477,21 @@ function tmEquipChange(v){ _tmEquip=(v||'').trim()||'40HQ'; tmRender(); }
 
 function tmRender(){
   const el=document.getElementById('tm-out'); if(!el) return;
-  const temu=(typeof CT!=='undefined'?CT:[]).filter(r=>String(r['Master B/L']||'').trim());
-  const pick=document.getElementById('tm-pick');
-  if(pick){
-    pick.innerHTML=temu.filter(r=>_tmSel.has(r._id)||true).length?temu.map(r=>{
-      const on=_tmSel.has(r._id);
-      return `<label class="tm-row"><input type="checkbox" ${on?'checked':''} onchange="tmToggle(${r._id},this.checked)"/>
-        <b>${r['Container No.']||'—'}</b>
-        <span class="tm-dim">${r['Trucker']||'(no trucker)'}</span>
-        <span class="tm-dim">${_tmRef(r)||''}</span></label>`;
-    }).join(''):'<div class="tm-dim" style="padding:14px">No TEMU containers.</div>';
-  }
   const groups=_tmGroups();
   const n=groups.reduce((s,[,rows])=>s+rows.length,0);
   const badge=document.getElementById('tm-badge');
-  if(badge) badge.textContent=`${n} container${n!==1?'s':''} · ${groups.length} email${groups.length!==1?'s':''}`;
-  if(!groups.length){ el.innerHTML='<div class="tm-dim" style="padding:22px;text-align:center">Tick at least one container.</div>'; return; }
+  if(badge) badge.textContent=n?`${n} container${n!==1?'s':''} · ${groups.length} email${groups.length!==1?'s':''}`:'';
+  if(!groups.length){
+    el.innerHTML='<div class="tm-dim" style="padding:26px;text-align:center;font-size:12.5px">'
+      +'Tick containers in the Container List first, then reopen this.</div>';
+    return;
+  }
   el.innerHTML=groups.map(([truck,rows],gi)=>{
-    const subj=_tmSubject(rows), body=_tmBody(rows,_tmType);
+    const body=_tmBody(rows,_tmType);
     return `<div class="tm-card">
-      <div class="tm-card-hd"><b>${truck}</b><span class="tm-dim">${rows.length} container${rows.length!==1?'s':''}</span></div>
-      <div class="tm-fld">
-        <div class="tm-lbl">SUBJECT<button type="button" onclick="tmCopy('tm-s-${gi}',this)">Copy</button></div>
-        <input type="text" id="tm-s-${gi}" class="tm-subj" value="${String(subj).replace(/"/g,'&quot;')}"/>
-      </div>
-      <div class="tm-fld">
-        <div class="tm-lbl">BODY<button type="button" onclick="tmCopy('tm-b-${gi}',this)">Copy</button></div>
-        <textarea id="tm-b-${gi}" class="tm-body" rows="${Math.min(4+rows.length,14)}">${String(body).replace(/</g,'&lt;')}</textarea>
-      </div>
+      <div class="tm-card-hd"><b>${truck}</b><span class="tm-dim">${rows.length} container${rows.length!==1?'s':''}</span>
+        <button type="button" onclick="tmCopy('tm-b-${gi}',this)" style="margin-left:auto">Copy</button></div>
+      <textarea id="tm-b-${gi}" class="tm-body" rows="${Math.min(4+rows.length,16)}">${String(body).replace(/</g,'&lt;')}</textarea>
     </div>`;
   }).join('');
 }
