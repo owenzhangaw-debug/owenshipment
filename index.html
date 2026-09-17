@@ -11092,13 +11092,11 @@ function cfApply(tableId){
     return;
   }
   const grid=cfGrid(body);
-  let shown=0,total=0,lastOk=true;
-  [...body.rows].forEach((tr,ri)=>{
-    // 展开的明细行跟随它上面那条主行显示/隐藏
-    if(tr.classList.contains('ct-exp-row')||tr.classList.contains('no-fee-row')){
-      tr.classList.toggle('cf-hidden',!lastOk);
-      return;
-    }
+  const rows=[...body.rows];
+  const verdict=new Array(rows.length).fill(null);
+  let total=0;
+  rows.forEach((tr,ri)=>{
+    if(tr.classList.contains('ct-exp-row')||tr.classList.contains('no-fee-row')) return;
     total++;
     let ok=true;
     for(const f of active){
@@ -11106,6 +11104,30 @@ function cfApply(tableId){
       // 同一列的多个值之间是「或」；不同列之间是「且」
       if(!f.terms.some(t=>hay.includes(t))){ ok=false; break; }
     }
+    verdict[ri]=ok;
+  });
+
+  // 订单级字段（Project / Order No. 等）只写在订单的首行，
+  // 同一订单的其余柜子那几格是空的。若按行判定，筛 Project 就会把
+  // 同单的其他柜子全隐藏掉。所以：一单之内任一行命中，整单都显示。
+  const groupHit={};
+  rows.forEach((tr,ri)=>{
+    const g=tr.dataset&&tr.dataset.noOrder;
+    if(g&&verdict[ri]) groupHit[g]=true;
+  });
+  rows.forEach((tr,ri)=>{
+    const g=tr.dataset&&tr.dataset.noOrder;
+    if(g&&groupHit[g]) verdict[ri]=true;
+  });
+
+  let shown=0,lastOk=true;
+  rows.forEach((tr,ri)=>{
+    // 展开的明细行跟随它上面那条主行显示/隐藏
+    if(tr.classList.contains('ct-exp-row')||tr.classList.contains('no-fee-row')){
+      tr.classList.toggle('cf-hidden',!lastOk);
+      return;
+    }
+    const ok=verdict[ri]!==false;
     lastOk=ok;
     tr.classList.toggle('cf-hidden',!ok);
     if(ok) shown++;
