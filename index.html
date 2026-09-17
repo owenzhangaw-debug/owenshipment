@@ -9220,29 +9220,43 @@ function exportAllData(){
   };
   addSheet('Containers (TEMU)',CT);
   addSheet('Vessels',VT);
-  // Orders: expand per-container rows so ATA, Delivery Date, Status etc. from perCtn are visible
+  // Orders: 一柜一行。以前这里写死了几个 perCtn 字段，新增的
+  // Pick Up Date / T1 Date / CC Date / POD Date、以及费用明细都漏掉了。
+  // 改成把该柜所有的 perCtn 覆盖值全部合并进来，以后再加字段也不用改这里。
   if(typeof NO!=='undefined'&&NO.length){
     const noExpanded=[];
-    const _splitCns=v=>(v||'').split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+    const num=v=>{ const n=parseFloat(v); return isNaN(n)?0:n; };
     NO.forEach(o=>{
-      const cns=_splitCns(o['Container No.']);
-      if(cns.length<=1){
-        // Single or no container — merge perCtn into the row if present
-        const pc=(o.perCtn&&cns.length&&o.perCtn[cns[0]])||{};
+      const cns=(typeof _noContainers==='function')?_noContainers(o):[];
+      const list=cns.length?cns:[null];
+      const ord=(typeof _noOrderRP==='function')?_noOrderRP(o):null;
+      list.forEach(cn=>{
+        const pc=(cn&&o.perCtn&&o.perCtn[cn])||{};
         const row={...o};
         delete row.perCtn;
-        ['ATA','Delivery Date','Status','At Hub','Ready to be Picked'].forEach(f=>{ if(pc[f]!==undefined&&pc[f]!=='') row[f]=pc[f]; });
-        noExpanded.push(row);
-      } else {
-        // Multiple containers — one row per container
-        cns.forEach(cn=>{
-          const pc=(o.perCtn&&o.perCtn[cn])||{};
-          const row={...o,'Container No.':cn};
-          delete row.perCtn;
-          ['ATA','Delivery Date','Status','At Hub','Ready to be Picked'].forEach(f=>{ if(pc[f]!==undefined&&pc[f]!=='') row[f]=pc[f]; else if(row[f]===undefined) row[f]=''; });
-          noExpanded.push(row);
+        if(cn) row['Container No.']=cn;
+        // 该柜的所有覆盖值（含日期、勾选、价格、状态…）
+        Object.keys(pc).forEach(k=>{
+          if(k==='Charges') return;            // 单独展开成可读文本
+          if(pc[k]!==undefined&&pc[k]!=='') row[k]=pc[k];
         });
-      }
+        // 费用明细 + 应收应付
+        if(typeof _noCharges==='function'){
+          const lines=_noCharges(o,cn)||[];
+          row['Charges']=lines.map(l=>
+            `${l.item}: R${num(l.r)}/P${num(l.p)}`+(l.note?' ('+l.note+')':'')).join(' | ');
+          row['Receivable']=_noReceivable(o,cn);
+          row['Payable']=_noPayable(o,cn);
+          row['Margin']=_noMargin(o,cn);
+          row['Margin %']=_noMarginPct(o,cn);
+        }
+        if(ord){
+          row['Order Receivable']=ord.r;
+          row['Order Payable']=ord.p;
+          row['Order Margin']=ord.m;
+        }
+        noExpanded.push(row);
+      });
     });
     addSheet('Orders',noExpanded);
   }
@@ -9254,6 +9268,8 @@ function exportAllData(){
     ['Containers (TEMU)',CT.length],
     ['Vessels',VT.length],
     ['Orders',(typeof NO!=='undefined')?NO.length:0],
+    ['Orders (rows)',(typeof NO!=='undefined')?NO.reduce((s,o)=>s+Math.max((typeof _noContainers==='function'?_noContainers(o).length:0),1),0):0],
+    ['Note','Orders sheet is one row per B/L, with that B/L\'s own dates, flags and charges merged in'],
     ['Note','Object/array fields are exported as JSON text']
   ];
   const wsInfo=XLSX.utils.aoa_to_sheet(meta); wsInfo['!cols']=[{wch:22},{wch:30}];
