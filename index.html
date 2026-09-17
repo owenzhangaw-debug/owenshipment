@@ -1457,6 +1457,12 @@ td.nf-td{padding:0!important;background:#F7F9FA!important;border-top:1px solid #
 .tm-lbl button:hover{background:#f1f5f9}
 .tm-subj{width:100%;box-sizing:border-box;padding:4px 7px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff}
 .tm-body{width:calc(100% - 20px);margin:0 10px;box-sizing:border-box;padding:6px 8px;font-size:11.5px;line-height:1.6;border:1px solid #cbd5e1;background:#fff;resize:vertical;font-family:inherit}
+
+/* 订单卡片上的项目名 —— 在订单号上面一行 */
+.no-bp-proj{font-size:9.5px;font-weight:800;color:#0369a1;background:#e0f2fe;
+  letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;margin-bottom:3px;
+  align-self:flex-start;display:inline-block;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 
 <!-- ══ MINIMAL THEME — Apple/Google-inspired flat design layer ══ -->
@@ -2293,7 +2299,7 @@ tbody tr:hover{background:#fafbfc}
       <thead><tr>
         <th class="fc-1" style="min-width:110px" title="Project — the order numbers below belong to it">Project</th>
         <th class="fc-2">Order No.</th>
-        <th class="fc-3">Container No.</th>
+        <th class="fc-3">B/L No.</th>
         <th class="fc-4">Consignee</th>
         <th>Destination</th>
         <th style="text-align:center" title="Customs office provided?">Customs Office</th>
@@ -13386,7 +13392,7 @@ function noSet(id,field,val){
   saveNO();
   // Re-render so the progress cards (and everything else on this page reading the field) pick up the
   // change immediately — previously this only happened for 'Status', so an order-level edit (e.g. ETA
-  // on an order with no container yet) could look "stuck" on its old value until something else forced a redraw.
+  // on an order with no B/L yet) could look "stuck" on its old value until something else forced a redraw.
   renderOrders();
   const dp=document.getElementById('page-dispatch');
   if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
@@ -13463,7 +13469,7 @@ function noToggleService(id,svc){
 }
 // Surcharges: PER CONTAINER — each container can carry its own separate reason+fee line items
 // (e.g. one container gets Demurrage €80, another gets nothing). Falls back to the order level
-// only for the placeholder row of an order that has no container yet.
+// only for the placeholder row of an order that has no B/L yet.
 function _noSurcharges(o,cn){
   if(cn){ const pc=_noPc(o,cn); return Array.isArray(pc.Surcharges)?pc.Surcharges:[]; }
   return Array.isArray(o&&o.Surcharges)?o.Surcharges:[];
@@ -13756,7 +13762,9 @@ function renderNoBatchProgress(){
     const demurHtml=demurCount?`<div style="font-size:10.5px;color:#dc2626;font-weight:700;margin-top:3px">⏱ Demurrage: ${demurCount} container${demurCount!==1?'s':''}, up to ${demurMaxDays}d late</div>`:'';
     const remarkTxt=(o['Remark']||'').trim();
     const todayStatusVal=_noEsc(o['Today Status']);
+    const projName=(o['Project']||'').trim();
     return `<div class="ct-bp-card${isActive?' bp-active':''}" onclick="noBpCardClick('${nameEsc}')" title="Click to filter by this order · click again to clear">
+      ${projName?`<div class="no-bp-proj">${_noEsc(projName)}</div>`:''}
       <div class="ct-bp-hdr">
         <span class="ct-bp-name">${_noEsc(name)}</span>
         <span class="ct-bp-sub">${arrived}/${total} arrived</span>
@@ -13835,7 +13843,7 @@ function renderOrders(){
   // sitting on the first row with blanks underneath.
   const noGroupSize={}; flat.forEach(r=>{ noGroupSize[r.o._id]=(noGroupSize[r.o._id]||0)+1; });
 
-  if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' container'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
+  if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' B/L'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
     body.innerHTML='<tr><td colspan="29" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
@@ -13930,9 +13938,9 @@ function renderOrders(){
       <td class="fc-2" style="font-weight:700;color:var(--navy)">${isFirst?tinp(o,'Order No.','ORD-001',90):''}</td>
       <td class="fc-3" style="font-family:monospace;font-weight:600;font-size:12px">
         <div style="display:flex;align-items:flex-start;gap:2px">
-        ${cn?`<textarea rows="1" class="no-autogrow" oninput="_noAutoGrow(this)" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:110px;font-family:monospace">${_noEsc(cn)}</textarea>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no container yet</span>'}
+        ${cn?`<textarea rows="1" class="no-autogrow" oninput="_noAutoGrow(this)" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:110px;font-family:monospace">${_noEsc(cn)}</textarea>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no B/L yet</span>'}
         ${cn?`<button type="button" title="Remove this container" onclick="noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:2px;flex-shrink:0">✕</button>`:''}
-        ${isFirst?`<button type="button" title="Add another container to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px;flex-shrink:0">+</button>`:''}
+        ${isFirst?`<button type="button" title="Add another B/L to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px;flex-shrink:0">+</button>`:''}
         </div>
       </td>
       <td class="fc-4">${tinpC(o,cn,'Consignee','',130)}</td>
