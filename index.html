@@ -13912,14 +13912,7 @@ function renderOrders(){
   // Rows per order in the FILTERED set — drives the rowspan on order-level
   // cells (Order Total), so the figure spans its containers instead of
   // sitting on the first row with blanks underneath.
-  // 该订单实际占用的 <tr> 数 = 主行数 + 展开着的折叠行数。
-  // 折叠行夹在主行之间，不算进去的话合并单元格会跨错行，导致整行错位。
-  const noGroupSize={};
-  flat.forEach(r=>{
-    const k=r.o._id;
-    const open=_NO_FEE_OPEN.has(r.o._id+'__'+(r.cn||'-'))?1:0;
-    noGroupSize[k]=(noGroupSize[k]||0)+1+open;
-  });
+
 
   if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' B/L'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
@@ -14068,11 +14061,10 @@ function renderOrders(){
           <td style="text-align:right;white-space:nowrap"><span style="font-weight:700;color:#b45309">${_noEur(P)}</span></td>
           <td style="text-align:right;white-space:nowrap"><span style="font-weight:700;color:${M<0?'#dc2626':'#0f766e'}">${_noEur(M)}</span></td>`;
       })()}
-      ${isFirst?(()=>{ const t=_noOrderRP(o); return `<td rowspan="${noGroupSize[o._id]||1}" style="text-align:right;vertical-align:middle;white-space:nowrap">
+      <td style="text-align:right;vertical-align:middle;white-space:nowrap">${isFirst?(()=>{ const t=_noOrderRP(o); return `
           <div style="font-weight:800;color:#0369a1;background:#e0f2fe;border-radius:6px;padding:2px 8px;margin-bottom:2px">${_noEur(t.r)}</div>
           <div style="font-weight:700;color:#b45309;font-size:11px">${_noEur(t.p)}</div>
-          <div style="font-weight:700;color:${t.m<0?'#dc2626':'#0f766e'};font-size:11px">${_noEur(t.m)} · ${t.pct.toFixed(1)}%</div>
-        </td>`; })():''}
+          <div style="font-weight:700;color:${t.m<0?'#dc2626':'#0f766e'};font-size:11px">${_noEur(t.m)} · ${t.pct.toFixed(1)}%</div>`; })():''}</td>
       <td>${(()=>{
         const psVal=cn?(pc['Payment Status']!==undefined?pc['Payment Status']:(o['Payment Status']||'')):(o['Payment Status']||'');
         const psOnchange=cn?`noSetCtn(${o._id},'${ce}','Payment Status',this.value)`:`noSet(${o._id},'Payment Status',this.value)`;
