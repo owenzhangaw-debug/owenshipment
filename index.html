@@ -9207,7 +9207,19 @@ function exportAllData(){
   const addSheet=(name,arr)=>{
     if(!Array.isArray(arr)||!arr.length) return;
     // dynamic headers = every key that appears anywhere in the dataset
-    const keys=[...new Set(arr.flatMap(r=>Object.keys(r||{})))].filter(k=>k==='_id'||!k.startsWith('_'));
+    let keys=[...new Set(arr.flatMap(r=>Object.keys(r||{})))].filter(k=>k==='_id'||!k.startsWith('_'));
+    // 丢掉从头到尾一个值都没有的列 —— 数据模型里残留的旧字段
+    // （Pickup Location / ETA Station / Note…）会白白撑出十几个空列。
+    const hasValue=k=>arr.some(r=>{
+      const v=(r||{})[k];
+      if(v==null||v==='') return false;
+      if(Array.isArray(v)) return v.length>0;
+      if(typeof v==='object') return Object.keys(v).length>0;
+      if(v===false) return false;          // 从没勾过的勾选框不算数据
+      return true;
+    });
+    keys=keys.filter(k=>k==='_id'||hasValue(k));
+    if(!keys.length) return;
     const rows=arr.map(r=>keys.map(k=>{
       const v=(r||{})[k];
       if(v==null) return '';
@@ -9240,6 +9252,10 @@ function exportAllData(){
           if(k==='Charges') return;            // 单独展开成可读文本
           if(pc[k]!==undefined&&pc[k]!=='') row[k]=pc[k];
         });
+        // 旧字段 'Pickup Date' 和新列 'Pick Up Date' 只差一个空格，
+        // 并到新列里，避免导出表里出现两个几乎同名的列
+        if(!row['Pick Up Date']&&row['Pickup Date']) row['Pick Up Date']=row['Pickup Date'];
+        delete row['Pickup Date'];
         // 费用明细 + 应收应付
         if(typeof _noCharges==='function'){
           const lines=_noCharges(o,cn)||[];
