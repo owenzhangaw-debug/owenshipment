@@ -11084,6 +11084,13 @@ function cfApply(tableId){
     }))
     .filter(x=>x.terms.length);
   const body=table.tBodies[0]; if(!body) return;
+  // 没有任何筛选时不必逐格建映射 —— 只要把上一次隐藏的行放出来就行
+  if(!active.length){
+    let had=false;
+    [...body.rows].forEach(tr=>{ if(tr.classList.contains('cf-hidden')){ tr.classList.remove('cf-hidden'); had=true; } });
+    cfCount(tableId,0,0,false);
+    return;
+  }
   const grid=cfGrid(body);
   let shown=0,total=0,lastOk=true;
   [...body.rows].forEach((tr,ri)=>{
@@ -11325,11 +11332,25 @@ function _noOrderRP(o){
 
 const _NO_FEE_OPEN=new Set();
 function noToggleFee(key){
-  if(_NO_FEE_OPEN.has(key)) _NO_FEE_OPEN.delete(key); else _NO_FEE_OPEN.add(key);
+  const open=!_NO_FEE_OPEN.has(key);
+  if(open) _NO_FEE_OPEN.add(key); else _NO_FEE_OPEN.delete(key);
   const row=document.getElementById('nofee-'+key);
   const btn=document.getElementById('nofeebtn-'+key);
-  if(row) row.classList.toggle('open',_NO_FEE_OPEN.has(key));
-  if(btn) btn.textContent=_NO_FEE_OPEN.has(key)?'▼':'▶';
+  if(btn) btn.textContent=open?'▼':'▶';
+  if(!row) return;
+  // 收起时不保留内容 —— 58 个订单各挂一个费用表格，光是隐藏着也拖慢每次重绘
+  if(open){
+    const oid=+row.dataset.oid, cn=row.dataset.cn||null;
+    const o=NO.find(x=>x._id===oid);
+    if(o){
+      const ce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
+      row.innerHTML=_noFeeFold(o,cn,ce,27,_noSurchargeEditor(o,cn));
+      row.querySelectorAll('input.no-fp-date').forEach(el=>{ if(typeof fpDate==='function') fpDate(el); });
+    }
+  } else {
+    row.innerHTML='<td colspan="27" class="nf-td"></td>';
+  }
+  row.classList.toggle('open',open);
 }
 function _noFeeFold(o,cn,ce,cols,surchargeEditor){
   const lines=_noCharges(o,cn);
@@ -11537,6 +11558,46 @@ function tmCopy(id,btn){
     navigator.clipboard.writeText(txt).then(done).catch(()=>{ el.select(); document.execCommand('copy'); done(); });
   } else { el.select(); document.execCommand('copy'); done(); }
 }
+
+function _noSurchargeEditor(o,cn){
+  const _sce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
+  return `<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+        ${_noSurcharges(o,cn).map((s,idx)=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#c2410c;color:#fff;white-space:nowrap">${_noEsc(s.reason)}${s.fee?': €'+_noEsc(s.fee):''}<button type="button" onclick="noRemoveSurcharge(${o._id},'${_sce}',${idx})" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`).join('')}
+        <input type="text" placeholder="+ tag" onkeydown="if(event.key==='Enter'){event.preventDefault();const f=this.nextElementSibling;noAddSurcharge(${o._id},'${_sce}',this.value,f.value);this.value='';f.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:70px"/>
+        <input type="text" placeholder="€ price" onkeydown="if(event.key==='Enter'){event.preventDefault();const r=this.previousElementSibling;noAddSurcharge(${o._id},'${_sce}',r.value,this.value);r.value='';this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:56px"/>
+      </div>`;
+}
+
+// 日期框聚焦时才初始化日历，且每个只初始化一次
+function _noBindLazyDates(root){
+  if(!root||root._lazyDates) return;
+  root._lazyDates=true;
+  root.addEventListener('focusin',e=>{
+    const el=e.target;
+    if(el&&el.classList&&el.classList.contains('no-fp-date')&&!el._flatpickr&&typeof fpDate==='function'){
+      fpDate(el);
+    }
+  });
+}
+
+// 连续编辑（改完一格马上改下一格）会触发多次整表重绘，合并成一帧只画一次。
+let _noRenderPending=false;
+function noRenderSoon(){
+  if(_noRenderPending) return;
+  _noRenderPending=true;
+  const run=()=>{ _noRenderPending=false; try{ renderOrders(); }catch(e){} };
+  if(typeof requestAnimationFrame==='function') requestAnimationFrame(run); else setTimeout(run,0);
+}
+// localStorage 写入也合并 —— 整个 NO 序列化一次不便宜，逐键敲字时更明显。
+// 内存里立即生效，落盘延后；切走页面/关闭前强制落盘，不会丢数据。
+let _noSaveTimer=null;
+function _noFlushSave(){
+  if(_noSaveTimer){ clearTimeout(_noSaveTimer); _noSaveTimer=null; }
+  try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){}
+  if(typeof cloudAutoSave==='function') cloudAutoSave();
+}
+window.addEventListener('beforeunload',_noFlushSave);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') _noFlushSave(); });
 
 // ── SELECTION ─────────────────────────────────────────────────────
 let ctSel=new Set(), vtSel=new Set();
@@ -13341,7 +13402,13 @@ const NO_ST_STYLE={
   'Delivered':'background:#15803d;color:#fff','Cancelled':'background:#b91c1c;color:#fff'
 };
 function loadNO(){ try{ const s=localStorage.getItem(LS_NO); if(s){ NO=JSON.parse(s); noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; if(typeof _noNormalizeDelivered==='function'&&_noNormalizeDelivered()) saveNO(); } }catch(e){ NO=[]; } }
-function saveNO(){ try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
+function saveNO(){
+  if(_noSaveTimer) clearTimeout(_noSaveTimer);
+  _noSaveTimer=setTimeout(()=>{ _noSaveTimer=null;
+    try{ localStorage.setItem(LS_NO,JSON.stringify(NO)); }catch(e){}
+    if(typeof cloudAutoSave==='function') cloudAutoSave();
+  },250);
+}
 function noAdd(){
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
@@ -13393,7 +13460,7 @@ function noSet(id,field,val){
   // Re-render so the progress cards (and everything else on this page reading the field) pick up the
   // change immediately — previously this only happened for 'Status', so an order-level edit (e.g. ETA
   // on an order with no B/L yet) could look "stuck" on its old value until something else forced a redraw.
-  renderOrders();
+  noRenderSoon();
   const dp=document.getElementById('page-dispatch');
   if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
@@ -13583,7 +13650,7 @@ function noSetCtn(id,cn,field,val){
   NO[i].perCtn[cn]=NO[i].perCtn[cn]||{};
   NO[i].perCtn[cn][field]=val;
   if(field==='ATA'||field==='POD') _noSyncDeliveredCtn(i,cn);
-  saveNO(); renderOrders();
+  saveNO(); noRenderSoon();
   const dp=document.getElementById('page-dispatch');
   if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
@@ -13900,11 +13967,7 @@ function renderOrders(){
       </div>`;
     // Surcharge — per CONTAINER: each entry is a tag (reason) + price, stack as many as needed for this container
     const _sce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
-    const surchargeEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
-        ${_noSurcharges(o,cn).map((s,idx)=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#c2410c;color:#fff;white-space:nowrap">${_noEsc(s.reason)}${s.fee?': €'+_noEsc(s.fee):''}<button type="button" onclick="noRemoveSurcharge(${o._id},'${_sce}',${idx})" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`).join('')}
-        <input type="text" placeholder="+ tag" onkeydown="if(event.key==='Enter'){event.preventDefault();const f=this.nextElementSibling;noAddSurcharge(${o._id},'${_sce}',this.value,f.value);this.value='';f.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:70px"/>
-        <input type="text" placeholder="€ price" onkeydown="if(event.key==='Enter'){event.preventDefault();const r=this.previousElementSibling;noAddSurcharge(${o._id},'${_sce}',r.value,this.value);r.value='';this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:56px"/>
-      </div>`;
+    const surchargeEditor=_noSurchargeEditor(o,cn);
     // At Hub (ready to be picked): per-container when a container exists, else falls back to the order-level flag
     const atHubChecked=cn?!!pc['At Hub']:!!o['Arrived at Hub'];
     const atHubOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub',this.checked)`:`noSet(${o._id},'Arrived at Hub',this.checked)`;
@@ -14023,12 +14086,15 @@ function renderOrders(){
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
       <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
     </tr>
-    <tr class="no-fee-row${_NO_FEE_OPEN.has(o._id+'__'+(cn||'-'))?' open':''}" id="nofee-${o._id}__${cn||'-'}">
-      ${_noFeeFold(o,cn,ce,27,surchargeEditor)}
+    <tr class="no-fee-row${_NO_FEE_OPEN.has(o._id+'__'+(cn||'-'))?' open':''}" id="nofee-${o._id}__${cn||'-'}"
+        data-oid="${o._id}" data-cn="${_noEsc(cn||'')}">
+      ${_NO_FEE_OPEN.has(o._id+'__'+(cn||'-'))?_noFeeFold(o,cn,ce,27,surchargeEditor):'<td colspan="27" class="nf-td"></td>'}
     </tr>`;
   }).join('');
   // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
-  body.querySelectorAll('input.no-fp-date').forEach(el=>{ if(typeof fpDate==='function') fpDate(el); });
+  // 不再逐个建 flatpickr 实例 —— 58 行 × 每行多个日期框 = 每次重绘几百次实例化，
+  // 是编辑卡顿的主因。改成聚焦时再建（输入框本来就支持直接打字）。
+  _noBindLazyDates(body);
   body.querySelectorAll('textarea.no-autogrow').forEach(el=>_noAutoGrow(el));
   _noRenderStorageAlerts(uniqueOrders);
   noUpdateSelBar();
