@@ -11236,7 +11236,9 @@ function cfHook(fnName,tableId){
   if(typeof orig!=='function'||orig.__cf) return;
   const wrapped=function(){
     const r=orig.apply(this,arguments);
-    setTimeout(()=>cfRefresh(tableId),0);
+    // 必须同步套用筛选：放到 setTimeout 里的话，浏览器会先画一帧「全部行」
+    // 再隐藏，看起来就是输入完之后所有栏闪一下。
+    try{ cfRefresh(tableId); }catch(e){}
     return r;
   };
   wrapped.__cf=true;
@@ -11334,6 +11336,8 @@ const _NO_FEE_OPEN=new Set();
 function noToggleFee(key){
   const open=!_NO_FEE_OPEN.has(key);
   if(open) _NO_FEE_OPEN.add(key); else _NO_FEE_OPEN.delete(key);
+  // 折叠行的增删会改变合并单元格的跨行数，必须整表重绘才不会错位
+  if(typeof noRenderSoon==='function') return noRenderSoon();
   const row=document.getElementById('nofee-'+key);
   const btn=document.getElementById('nofeebtn-'+key);
   if(btn) btn.textContent=open?'▼':'▶';
@@ -13908,7 +13912,14 @@ function renderOrders(){
   // Rows per order in the FILTERED set — drives the rowspan on order-level
   // cells (Order Total), so the figure spans its containers instead of
   // sitting on the first row with blanks underneath.
-  const noGroupSize={}; flat.forEach(r=>{ noGroupSize[r.o._id]=(noGroupSize[r.o._id]||0)+1; });
+  // 该订单实际占用的 <tr> 数 = 主行数 + 展开着的折叠行数。
+  // 折叠行夹在主行之间，不算进去的话合并单元格会跨错行，导致整行错位。
+  const noGroupSize={};
+  flat.forEach(r=>{
+    const k=r.o._id;
+    const open=_NO_FEE_OPEN.has(r.o._id+'__'+(r.cn||'-'))?1:0;
+    noGroupSize[k]=(noGroupSize[k]||0)+1+open;
+  });
 
   if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' B/L'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
@@ -14086,10 +14097,10 @@ function renderOrders(){
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
       <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
     </tr>
-    <tr class="no-fee-row${_NO_FEE_OPEN.has(o._id+'__'+(cn||'-'))?' open':''}" id="nofee-${o._id}__${cn||'-'}"
+    ${_NO_FEE_OPEN.has(o._id+'__'+(cn||'-'))?`<tr class="no-fee-row open" id="nofee-${o._id}__${cn||'-'}"
         data-oid="${o._id}" data-cn="${_noEsc(cn||'')}">
-      ${_NO_FEE_OPEN.has(o._id+'__'+(cn||'-'))?_noFeeFold(o,cn,ce,27,surchargeEditor):'<td colspan="27" class="nf-td"></td>'}
-    </tr>`;
+      ${_noFeeFold(o,cn,ce,27,surchargeEditor)}
+    </tr>`:''}`;
   }).join('');
   // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
   // 不再逐个建 flatpickr 实例 —— 58 行 × 每行多个日期框 = 每次重绘几百次实例化，
