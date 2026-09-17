@@ -2291,9 +2291,10 @@ tbody tr:hover{background:#fafbfc}
   <div class="chart-card tbl-scroll" style="padding:0">
     <table class="sur-tbl" id="no-table" style="width:100%;min-width:900px">
       <thead><tr>
-        <th class="fc-1">Order No.</th>
-        <th class="fc-2">Container No.</th>
-        <th class="fc-3">Consignee</th>
+        <th class="fc-1" style="min-width:110px" title="Project — the order numbers below belong to it">Project</th>
+        <th class="fc-2">Order No.</th>
+        <th class="fc-3">Container No.</th>
+        <th class="fc-4">Consignee</th>
         <th>Destination</th>
         <th style="text-align:center" title="Customs office provided?">Customs Office</th>
         <th>Trucker</th>
@@ -2301,7 +2302,8 @@ tbody tr:hover{background:#fafbfc}
         <th>ETA</th>
         <th style='min-width:90px'>At Hub Date</th>
         <th style="text-align:center" title="Arrived at hub — ready to be picked up">Ready to be Picked</th>
-        <th style="text-align:center;min-width:104px" title="Customs handling — T1 transit document and/or CC customs clearance">Custom</th>
+        <th style="min-width:95px" title="Date the container was actually picked up">Pick Up Date</th>
+        <th style="text-align:center;min-width:172px" title="Customs handling — T1 and/or CC, each with the date it was completed">Custom</th>
         <th>Delivery Date</th>
         <th>ATA</th>
         <th style="text-align:center;min-width:150px" title="Demurrage — auto-checked when ATA is later than Delivery Date. Free storage days and price per day drive the storage charge.">Demurrage · Free d · €/d</th>
@@ -2310,7 +2312,7 @@ tbody tr:hover{background:#fafbfc}
         <th style="text-align:right;min-width:88px" title="Receivable − Payable">Margin</th>
         <th style="text-align:right;min-width:104px" title="Whole-order totals across every container">Order Total</th>
         <th>Payment Status</th>
-        <th style="text-align:center" title="Proof of Delivery — checking this marks the container delivered">POD</th>
+        <th style="text-align:center;min-width:118px" title="Proof of Delivery — marks the container delivered; date optional">POD</th>
         <th style="min-width:150px">Service</th>
         <th style="text-align:center;min-width:150px">Status</th>
         <th style="min-width:220px">Remark</th>
@@ -13905,11 +13907,16 @@ function renderOrders(){
     // 'CC' key already holds the customs-clearance PRICE.
     const ccChecked=cn?!!pc['CC Cleared']:!!o['CC Cleared'];
     const ccOnchange=cn?`noSetCtn(${o._id},'${ce}','CC Cleared',this.checked)`:`noSet(${o._id},'CC Cleared',this.checked)`;
+    // T1 / CC 各自的完成日期
+    const t1Date=dinpC(o,cn,'T1 Date',82);
+    const ccDate=dinpC(o,cn,'CC Date',82);
     const customCell=`<div style="display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding-left:6px">
+        <div style="display:flex;align-items:center;gap:5px">
         <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:${t1Checked?'#1d4ed8':'#94a3b8'};cursor:pointer;white-space:nowrap" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}">
-          <input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" style="width:14px;height:14px;accent-color:#1d4ed8;cursor:pointer;margin:0"/>T1</label>
+          <input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" style="width:14px;height:14px;accent-color:#1d4ed8;cursor:pointer;margin:0"/>T1</label>${t1Date}</div>
+        <div style="display:flex;align-items:center;gap:5px">
         <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:${ccChecked?'#0f766e':'#94a3b8'};cursor:pointer;white-space:nowrap" title="CC customs clearance ${ccChecked?'done':'not done yet'}">
-          <input type="checkbox" ${ccChecked?'checked':''} onchange="${ccOnchange}" style="width:14px;height:14px;accent-color:#0f766e;cursor:pointer;margin:0"/>CC</label>
+          <input type="checkbox" ${ccChecked?'checked':''} onchange="${ccOnchange}" style="width:14px;height:14px;accent-color:#0f766e;cursor:pointer;margin:0"/>CC</label>${ccDate}</div>
       </div>`;
     // Delivery Date / ATA: per-container, falling back to the order-level value (legacy single-container orders)
     const delivVal=cn?(pc['Delivery Date']||o['Delivery Date']||''):(o['Delivery Date']||'');
@@ -13919,15 +13926,16 @@ function renderOrders(){
     const ataOnchange=cn?`noSetCtn(${o._id},'${ce}','ATA',this.value.trim())`:`noSet(${o._id},'ATA',this.value.trim())`;
     const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:`noSet(${o._id},'At Hub Date',this.value.trim())`;
     return `<tr class="${noOrderClass}" data-no-order="${o._id}" style="${groupBorder}">
-      <td class="fc-1" style="font-weight:700;color:var(--navy)">${isFirst?tinp(o,'Order No.','ORD-001',90):''}</td>
-      <td class="fc-2" style="font-family:monospace;font-weight:600;font-size:12px">
+      <td class="fc-1" style="font-weight:700;color:#334155">${isFirst?tinp(o,'Project','Project',95):''}</td>
+      <td class="fc-2" style="font-weight:700;color:var(--navy)">${isFirst?tinp(o,'Order No.','ORD-001',90):''}</td>
+      <td class="fc-3" style="font-family:monospace;font-weight:600;font-size:12px">
         <div style="display:flex;align-items:flex-start;gap:2px">
         ${cn?`<textarea rows="1" class="no-autogrow" oninput="_noAutoGrow(this)" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:110px;font-family:monospace">${_noEsc(cn)}</textarea>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no container yet</span>'}
         ${cn?`<button type="button" title="Remove this container" onclick="noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:2px;flex-shrink:0">✕</button>`:''}
         ${isFirst?`<button type="button" title="Add another container to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px;flex-shrink:0">+</button>`:''}
         </div>
       </td>
-      <td class="fc-3">${tinpC(o,cn,'Consignee','',130)}</td>
+      <td class="fc-4">${tinpC(o,cn,'Consignee','',130)}</td>
       <td>${tinpC(o,cn,'Destination','country / city',110)}</td>
       <td style="text-align:center">${(()=>{
         const coField=cn?pc['Customs Office']:undefined;
@@ -13944,6 +13952,7 @@ function renderOrders(){
       <td>${dinpC(o,cn,'ETA',95)}</td>
       <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
       <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
+      <td>${dinpC(o,cn,'Pick Up Date',95)}</td>
       <td>${customCell}</td>
       <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s) — free until '+st.expiry:''}" style="${_inpCss};min-width:95px${st&&st.exceeded?';background:#fee2e2;border-color:#fca5a5;color:#b91c1c;font-weight:700':''}"/></td>
       <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
@@ -13992,7 +14001,9 @@ function renderOrders(){
       <td style="text-align:center">${(()=>{
         const podChecked=cn?!!pc['POD']:!!o['POD'];
         const podOnchange=cn?`noSetCtn(${o._id},'${ce}','POD',this.checked)`:`noSet(${o._id},'POD',this.checked)`;
-        return `<input type="checkbox" ${podChecked?'checked':''} onchange="${podOnchange}" title="Proof of Delivery ${podChecked?'— delivered':'— not delivered yet'}" style="width:16px;height:16px;accent-color:#15803d;cursor:pointer"/>`;
+        return `<div style="display:flex;align-items:center;justify-content:center;gap:5px">
+          <input type="checkbox" ${podChecked?'checked':''} onchange="${podOnchange}" title="Proof of Delivery ${podChecked?'— delivered':'— not delivered yet'}" style="width:16px;height:16px;accent-color:#15803d;cursor:pointer;flex:0 0 auto;margin:0"/>
+          ${dinpC(o,cn,'POD Date',82)}</div>`;
       })()}</td>
       <td>${svcTagsEditor}</td>
       <td style="text-align:center">${stTagsEditor}</td>
@@ -14005,7 +14016,7 @@ function renderOrders(){
       <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
     </tr>
     <tr class="no-fee-row${_NO_FEE_OPEN.has(o._id+'__'+(cn||'-'))?' open':''}" id="nofee-${o._id}__${cn||'-'}">
-      ${_noFeeFold(o,cn,ce,25,surchargeEditor)}
+      ${_noFeeFold(o,cn,ce,27,surchargeEditor)}
     </tr>`;
   }).join('');
   // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
@@ -14020,7 +14031,7 @@ function updateNoFrozenOffsets(){
   const table=document.getElementById('no-table'); if(!table) return;
   const ths=Array.from(table.querySelectorAll('thead th'));
   let offset=0;
-  for(let i=0;i<3;i++){
+  for(let i=0;i<4;i++){
     const th=ths[i]; if(!th) break;
     const left=offset+'px';
     th.style.left=left;
@@ -14028,7 +14039,7 @@ function updateNoFrozenOffsets(){
     table.querySelectorAll('thead tr.cf-row').forEach(tr=>{ const td=tr.children[i]; if(td) td.style.left=left; });
     offset+=th.offsetWidth;
   }
-  const lastIdx=2;
+  const lastIdx=3;
   [ths[lastIdx],...Array.from(table.querySelectorAll('tbody tr td:nth-child('+(lastIdx+1)+')'))].forEach(el=>{
     if(el) el.style.boxShadow='3px 0 6px -2px rgba(0,0,0,.18)';
   });
