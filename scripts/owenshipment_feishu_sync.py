@@ -47,7 +47,7 @@ import tempfile
 from datetime import datetime
 
 JSONBIN_BIN_ID = os.environ.get("JSONBIN_BIN_ID", "69ae286843b1c97be9c2dece")
-JSONBIN_MASTER_KEY = os.environ.get("JSONBIN_MASTER_KEY")
+JSONBIN_MASTER_KEY = (os.environ.get("JSONBIN_MASTER_KEY") or "").strip() or None
 FEISHU_BASE_TOKEN = os.environ.get("FEISHU_BASE_TOKEN", "XxTWb1ss4anN9WsMpzScoL6Tnje")
 FEISHU_TABLE_ID = os.environ.get("FEISHU_TABLE_ID", "tbl58vGY4bfyJXL7")
 ORDERS_KEY_IN_BIN = os.environ.get("JSONBIN_ORDERS_KEY", "NO")  # the app's localStorage key for "Orders"
