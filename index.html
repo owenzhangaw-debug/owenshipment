@@ -10881,7 +10881,8 @@ function openTemuGen(){
   const ov=document.getElementById('temu-overlay'); if(!ov) return;
   // 直接用列表里勾选的柜子；没勾选才退回「全部带提单号的柜子」
   const withBl=(typeof CT!=='undefined'?CT:[]).filter(r=>(r['Master B/L']||'').toString().trim());
-  const picked=(typeof ctSel!=='undefined'&&ctSel.size)?withBl.filter(r=>ctSel.has(r._id)):[];
+  const _visIds=new Set(ctSelectedVisibleIds());
+  const picked=_visIds.size?withBl.filter(r=>_visIds.has(r._id)):[];
   _temuFromSel=picked.length>0;
   _temuSel=new Set((_temuFromSel?picked:withBl).map(r=>r._id));
   const sel=document.getElementById('temu-preset');
@@ -10958,8 +10959,10 @@ function temuRenderList(){
   const src=document.getElementById('temu-src');
   if(src){
     src.style.display='';
+    const _hid=(typeof ctSelectedHiddenCount==='function')?ctSelectedHiddenCount():0;
     src.innerHTML=_temuFromSel
       ? `From your selection — <b>${rows.length}</b> container${rows.length>1?'s':''}`
+        +(_hid?` <span style="color:#b45309">(${_hid} more ticked but hidden by the active filter — not included)</span>`:'')
       : `Nothing selected — showing all <b>${rows.length}</b> containers with a Master B/L. Tick rows in the Container List first to narrow it down.`;
     src.style.color=_temuFromSel?'#15803d':'#b45309';
   }
@@ -11567,7 +11570,8 @@ function openTemuMail(){
   const ov=document.getElementById('tmmail-overlay'); if(!ov) return;
   // 严格用 Container List 里勾选的柜子，不再列全部
   const temu=(typeof CT!=='undefined'?CT:[]).filter(r=>String(r['Master B/L']||'').trim());
-  _tmSel=new Set((typeof ctSel!=='undefined'&&ctSel.size?temu.filter(r=>ctSel.has(r._id)):[]).map(r=>r._id));
+  const visIds=new Set(ctSelectedVisibleIds());
+  _tmSel=new Set((visIds.size?temu.filter(r=>visIds.has(r._id)):[]).map(r=>r._id));
   tmSetType(_tmType);
   ov.classList.add('open');
 }
@@ -11656,6 +11660,27 @@ function _noFlushSave(){
 }
 window.addEventListener('beforeunload',_noFlushSave);
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') _noFlushSave(); });
+
+// 勾选 ∩ 当前可见。列筛选只是把行藏起来（cf-hidden），ctSel 里仍留着
+// 筛选前勾的那些，直接拿 ctSel 去生成就会混进屏幕上看不到的柜子。
+function ctSelectedVisibleIds(){
+  const all=(typeof ctSel!=='undefined')?[...ctSel]:[];
+  const tbl=document.getElementById('ct-table');
+  if(!tbl||!all.length) return all;
+  const vis=new Set();
+  tbl.querySelectorAll('tbody tr').forEach(tr=>{
+    if(tr.classList.contains('cf-hidden')) return;
+    const cb=tr.querySelector('.ct-sel-cb');
+    if(cb&&cb.dataset&&cb.dataset.id) vis.add(+cb.dataset.id);
+  });
+  if(!vis.size) return all;              // 表没渲染时不裁剪
+  const kept=all.filter(id=>vis.has(id));
+  return kept.length?kept:all;
+}
+function ctSelectedHiddenCount(){
+  const all=(typeof ctSel!=='undefined')?ctSel.size:0;
+  return Math.max(0,all-ctSelectedVisibleIds().length);
+}
 
 // ── SELECTION ─────────────────────────────────────────────────────
 let ctSel=new Set(), vtSel=new Set();
