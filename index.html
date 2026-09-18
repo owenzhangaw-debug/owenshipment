@@ -13783,12 +13783,17 @@ function applyNoBulkEdit(){
 // 6-8 digits), it's treated as a pasted list and split into separate tokens; otherwise the phrase is
 // kept whole so a single Order No. with spaces still matches exactly instead of bleeding into siblings.
 function _noTokenizeSearch(qRaw){
-  const isCtnLike=s=>/^[A-Za-z]{4}\d{6,8}$/.test(s);
-  const phrases=(qRaw||'').split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
+  // 用空格粘在一起的多个单号要能分别搜。判断标准放宽到「像单号」：
+  // 至少 6 个字符且含 4 位以上数字 —— 箱号 TBJU7671325、提单号 OyTM202608134831、
+  // 订单号 CDNEPLL26080030 都符合。
+  // 之所以不无脑按空格拆：'VIA EUROPE'、'Chengdu 12/28' 这类本身带空格的值会被拆坏，
+  // 而 'ZNNEPRF26060023 C4' 里的 C4 太短也不满足条件，整串会被当成一个词保住。
+  const isIdLike=s=>s.length>=6 && (s.match(/\d/g)||[]).length>=4 && !/\s/.test(s);
+  const phrases=(qRaw||'').split(/[,;、\n]+/).map(s=>s.trim()).filter(Boolean);
   const tokens=[];
   phrases.forEach(phrase=>{
     const words=phrase.split(/\s+/).filter(Boolean);
-    if(words.length>1 && words.every(isCtnLike)) words.forEach(w=>tokens.push(w.toLowerCase()));
+    if(words.length>1 && words.every(isIdLike)) words.forEach(w=>tokens.push(w.toLowerCase()));
     else tokens.push(phrase.toLowerCase());
   });
   return tokens.filter(Boolean);
@@ -13862,6 +13867,7 @@ function renderNoBatchProgress(){
   });
   const done=groups.filter(g=>g.arrived===g.total);
   const _curSearch=(document.getElementById('no-search')?.value||'').trim().toLowerCase();
+  const _curSearchList=_curSearch?_curSearch.split(/[\s,;、]+/).filter(Boolean):[];
   const renderCard=(g)=>{
     const {o,total,arrived,t1Count,demurCount,demurMaxDays}=g;
     const pct=Math.round(arrived/total*100);
@@ -13869,7 +13875,8 @@ function renderNoBatchProgress(){
     const fillColor=allDone?'#16a34a':pct===0?'#e53935':pct>=60?'#22c55e':'#f59e0b';
     const name=o['Order No.']||('Order #'+o._id);
     const nameEsc=String(name).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    const isActive=_curSearch&&_curSearch===String(name).toLowerCase();
+    // 搜索框里可能同时有多个订单号，逐个比对而不是整串相等
+    const isActive=!!_curSearchList.length&&_curSearchList.includes(String(name).toLowerCase());
     const hubStr=_noEffectiveHub(o)?_noEsc(_noEffectiveHub(o)):'';
     const etaDistinct=[...new Set(_noEtaListRaw(o))].map(v=>({v,d:_noParseDate(v)})).filter(x=>x.d).sort((a,b)=>a.d-b.d);
     // If containers disagree on ETA, pair each date with its container number so it's clear which is which.
@@ -13917,10 +13924,27 @@ function renderNoBatchProgress(){
   if(_newActiveRow&&_prevScrollActive) _newActiveRow.scrollLeft=_prevScrollActive;
   if(_newDoneRow&&_prevScrollDone) _newDoneRow.scrollLeft=_prevScrollDone;
 }
+// 点订单卡片：累加到搜索框而不是替换，这样能同时看两个或更多订单；
+// 再点一次把它去掉。
+function _noSearchIsIdList(parts){
+  const idLike=s=>s.length>=6 && (s.match(/\d/g)||[]).length>=4;
+  return parts.length===0 || parts.every(idLike);
+}
 function noBpCardClick(orderName){
   const box=document.getElementById('no-search'); if(!box) return;
-  if(box.value.trim().toLowerCase()===orderName.toLowerCase()){ box.value=''; }
-  else { box.value=orderName; }
+  const name=String(orderName||'').trim(); if(!name) return;
+  const parts=(box.value||'').trim().split(/[\s,;、]+/).filter(Boolean);
+  const low=name.toLowerCase();
+  let next;
+  if(!_noSearchIsIdList(parts)){
+    // 框里是用户自己打的短语（如 VIA EUROPE），拆开会搞坏，直接替换
+    next=[name];
+  } else if(parts.some(p=>p.toLowerCase()===low)){
+    next=parts.filter(p=>p.toLowerCase()!==low);   // 再点一次 = 取消
+  } else {
+    next=[...parts,name];                          // 累加
+  }
+  box.value=next.join(' ');
   renderOrders();
   if(box.value){
     requestAnimationFrame(()=>{
