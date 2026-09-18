@@ -62,15 +62,26 @@ def log(msg):
 
 def fetch_jsonbin_orders():
     import urllib.request
+    import urllib.error
 
     if not JSONBIN_MASTER_KEY:
         log("ERROR: JSONBIN_MASTER_KEY is not set in the environment. Aborting.")
         sys.exit(1)
 
     url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
-    req = urllib.request.Request(url, headers={"X-Master-Key": JSONBIN_MASTER_KEY})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        data = json.load(resp)
+    req = urllib.request.Request(url, headers={
+        "X-Master-Key": JSONBIN_MASTER_KEY,
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.load(resp)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        log(f"JSONBin request failed: HTTP {e.code}\n{body}")
+        raise
     orders = data.get("record", {}).get(ORDERS_KEY_IN_BIN, [])
     log(f"Fetched {len(orders)} order rows from JSONBin (key='{ORDERS_KEY_IN_BIN}')")
     return orders
