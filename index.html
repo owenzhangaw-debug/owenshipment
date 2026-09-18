@@ -7223,7 +7223,7 @@ function renderCT(){
         <button class="btn-del-row" onclick="openDel(${r._id})" title="Delete">✕</button>
       </td>
       <td style="text-align:center;padding:4px 6px">
-        <input type="checkbox" class="ct-sel-cb" data-id="${r._id}" onchange="ctSelChange()" style="width:14px;height:14px;cursor:pointer"/>
+        <input type="checkbox" class="ct-sel-cb" data-id="${r._id}" ${ctSel.has(r._id)?'checked':''} onchange="ctSelChange()" style="width:14px;height:14px;cursor:pointer"/>
       </td>
     </tr>
     <tr class="ct-exp-row${ctIsOpen?' open':''}" id="ctexp-${r._id}">
@@ -11787,8 +11787,15 @@ function switchBETab(tab, btn){
 function applyBulkEdit(){
   const g=id=>document.getElementById(id).value.trim();
   let ctCount=0, vtCount=0;
+  // 只改屏幕上看得到的那些。被列筛选藏起来的即使还勾着也不动 ——
+  // 否则就会出现「我只选了几个，却把所有柜子都改了」。
+  const _visSel=new Set((typeof ctSelectedVisibleIds==='function')?ctSelectedVisibleIds():[..._visSel]);
+  const _hiddenSel=ctSel.size-_visSel.size;
+  if(_hiddenSel>0&&!confirm(
+      _hiddenSel+' of the '+ctSel.size+' ticked containers are hidden by the active filter.\n\n'+
+      'Only the '+_visSel.size+' visible ones will be changed. Continue?')) return;
   // Apply to containers
-  if(ctSel.size){
+  if(_visSel.size){
     const fields={
       'Batch / Train':g('be_batch'),'Trucker':g('be_truck'),'Consignee':g('be_con'),
       'ETA in Mala':g('be_eta_mala'),'ETA at Hub':g('be_eta'),'T1 Date':g('be_t1date'),'Actual Arrival':g('be_arr'),'Deadline':g('be_dl'),
@@ -11821,7 +11828,7 @@ function applyBulkEdit(){
     const newEta = fields['ETA at Hub'];
     const clearEta = clearMap['ETA at Hub'];
     CT.forEach(r=>{
-      if(!ctSel.has(r._id)) return;
+      if(!_visSel.has(r._id)) return;
       Object.entries(fields).forEach(([k,v])=>{
         if(clearMap[k]) r[k]='';      // explicit clear
         else if(v) r[k]=v;            // fill if non-empty
