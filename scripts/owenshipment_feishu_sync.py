@@ -276,29 +276,48 @@ def main():
             "代理信息": rows[0].get("Trucker"),
         }
 
-        for row in rows:
-            container = row.get("Container No.")
-            existing_rec = by_container.get(container) if container else None
-            if not existing_rec:
-                # look for an existing record of this order that has no
-                # container yet (covers orders created before a container
-                # number was known)
-                existing_rec = next((r for r in existing_for_order if not r.get("柜号")), None)
+               for row in rows:
+            # The app can store multiple containers for one order as a single
+            # comma-separated string (JSONBin) rather than one row per
+            # container (unlike the Excel export). Explode that here so we
+            # always end up with one container per Feishu record.
+            raw_container = row.get("Container No.")
+            containers = [c.strip() for c in raw_container.split(",")] if raw_container else [None]
+            containers = [c for c in containers if c] or [None]
+            used_record_ids_this_order = set()
 
-            fresh_fields = build_container_fields(order_no_raw, row, shared)
+            for container in containers:
+                sub_row = dict(row)
+                sub_row["Container No."] = container
 
-            if existing_rec:
-                changes = {}
-                for fk, fv in fresh_fields.items():
-                    if fk in ("状态", "订单状态"):
-                        if existing_rec.get(fk) != fv:
+                existing_rec = by_container.get(container) if container else None
+                if not existing_rec:
+                    # look for an existing record of this order that has no
+                    # container yet (covers orders created before a container
+                    # number was known), and that we have not already claimed
+                    # for a different container in this same pass
+                    existing_rec = next(
+                        (r for r in existing_for_order
+                         if not r.get("柜号") and r["record_id"] not in used_record_ids_this_order),
+                        None,
+                    )
+                if existing_rec:
+                    used_record_ids_this_order.add(existing_rec["record_id"])
+
+                fresh_fields = build_container_fields(order_no_raw, sub_row, shared)
+
+                if existing_rec:
+                    changes = {}
+                    for fk, fv in fresh_fields.items():
+                        if fk in ("状态", "订单状态"):
+                            if existing_rec.get(fk) != fv:
+                                changes[fk] = fv
+                        elif not existing_rec.get(fk):
                             changes[fk] = fv
-                    elif not existing_rec.get(fk):
-                        changes[fk] = fv
-                if changes:
-                    to_update[existing_rec["record_id"]] = changes
-            else:
-                to_create.append(fresh_fields)
+                    if changes:
+                        to_update[existing_rec["record_id"]] = changes
+                else:
+                    to_create.append(fresh_fields)
 
     log(f"Plan: {len(to_update)} records to update, {len(to_create)} new records to create")
 
