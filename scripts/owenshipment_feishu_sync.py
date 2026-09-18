@@ -284,7 +284,7 @@ def main():
             # container (unlike the Excel export). Explode that here so we
             # always end up with one container per Feishu record.
             raw_container = row.get("Container No.")
-            containers = [c.strip() for c in raw_container.split(",")] if raw_container else [None]
+            containers = [c.strip() for c in re.split(r"[,\n;]+", raw_container)] if raw_container else [None]
             containers = [c for c in containers if c] or [None]
             used_record_ids_this_order = set()
 
