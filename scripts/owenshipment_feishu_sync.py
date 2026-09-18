@@ -18,7 +18,9 @@ Design notes / business rules encoded here (agreed with Owen over several rounds
     format assumption for matching.
   - One row per container. An order with N containers becomes N Feishu
     records sharing the same NBS工作单号 but each with its own 柜号 and
-    per-container dates.
+    per-container dates. The app may store multiple containers for one
+    order as a single comma-separated string; this script explodes that
+    into one row per container.
   - 订单状态 / 状态: "已完成" if that container's ATA is present, else "进行中".
   - 到站文件获取日期 = App's "At Hub Date".
   - 清关放行日期 = App's "CC Date", falling back to "T1 Date" if CC Date is empty.
@@ -47,7 +49,7 @@ import tempfile
 from datetime import datetime
 
 JSONBIN_BIN_ID = os.environ.get("JSONBIN_BIN_ID", "69ae286843b1c97be9c2dece")
-JSONBIN_MASTER_KEY = (os.environ.get("JSONBIN_MASTER_KEY") or "").strip() or None
+JSONBIN_MASTER_KEY = os.environ.get("JSONBIN_MASTER_KEY")
 FEISHU_BASE_TOKEN = os.environ.get("FEISHU_BASE_TOKEN", "XxTWb1ss4anN9WsMpzScoL6Tnje")
 FEISHU_TABLE_ID = os.environ.get("FEISHU_TABLE_ID", "tbl58vGY4bfyJXL7")
 ORDERS_KEY_IN_BIN = os.environ.get("JSONBIN_ORDERS_KEY", "NO")  # the app's localStorage key for "Orders"
@@ -276,7 +278,7 @@ def main():
             "代理信息": rows[0].get("Trucker"),
         }
 
-               for row in rows:
+        for row in rows:
             # The app can store multiple containers for one order as a single
             # comma-separated string (JSONBin) rather than one row per
             # container (unlike the Excel export). Explode that here so we
