@@ -11239,17 +11239,26 @@ function cfDistinct(tableId,col){
     if(tr.classList.contains('ct-exp-row')||tr.classList.contains('no-fee-row')) return;
     const cell=grid[ri]&&grid[ri][col];
     if(!cell){ hasBlank=true; return; }
-    let raw=cell.innerText||cell.textContent||'';
-    cell.querySelectorAll('input,textarea,select').forEach(el=>{
-      if(el.type!=='checkbox'&&el.type!=='radio'&&el.value) raw+='\n'+el.value;
-    });
+    // 单元格通常同时有「显示文本」和「隐藏的编辑输入框」，两者内容可能不同：
+    // 比如 Dest 显示 '🇧🇪 Belgium'，输入框里是 'Belgium'。
+    // 两个都收就会在下拉里出现两条。以输入框的值为准（那才是真实数据），
+    // 没有输入框时才退回显示文本。
+    const inps=[...cell.querySelectorAll('input,textarea,select')]
+      .filter(el=>el.type!=='checkbox'&&el.type!=='radio');
+    const inputVals=inps.map(el=>el.value).filter(v=>v&&v.trim());
+    const parts=inputVals.length?inputVals
+      :String(cell.innerText||cell.textContent||'').split(/[\n\r]+/);
     let any=false;
-    raw.split(/[\n\r]+/).forEach(v=>{
-      const t=v.replace(/\s+/g,' ').trim();
+    parts.forEach(v=>{
+      const t=String(v).replace(/\s+/g,' ').trim();
       if(!t||t==='—'||t==='-') return;
       any=true;
-      const k=t.toLowerCase();
-      if(!seen.has(k)) seen.set(k,t);
+      // 只剥开头的旗帜/表情，让 '🇧🇪 Belgium' 和 'Belgium' 归为一项。
+      // 不能用「非字母数字」一刀切 —— 那会把 '€50.00' 的货币符号也吃掉。
+      const strip=s=>s.replace(/^(?:[\p{Extended_Pictographic}\p{Regional_Indicator}\uFE0F\u200D]+\s*)+/u,'').trim();
+      const disp=strip(t)||t;
+      const k=disp.toLowerCase();
+      if(!seen.has(k)) seen.set(k,disp);
     });
     if(!any) hasBlank=true;          // 这一行该列是空的
   });
