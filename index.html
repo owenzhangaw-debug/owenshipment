@@ -11168,8 +11168,12 @@ function cfApply(tableId){
     let ok=true;
     for(const f of active){
       const hay=_cfCellText(grid[ri]&&grid[ri][f.col]);
-      // 同一列的多个值之间是「或」；不同列之间是「且」
-      if(!f.terms.some(t=>hay.includes(t))){ ok=false; break; }
+      // 同一列的多个值之间是「或」；不同列之间是「且」。
+      // (blank) 是特殊项：匹配「这一格没有内容」，而不是字面包含。
+      const hit=f.terms.some(t=>t===CF_BLANK.toLowerCase()
+        ? (hay===''||hay==='—'||hay==='-')
+        : hay.includes(t));
+      if(!hit){ ok=false; break; }
     }
     verdict[ri]=ok;
   });
@@ -11223,26 +11227,35 @@ document.addEventListener('click',e=>{ if(_cfDD&&!_cfDD.contains(e.target)) cfCl
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') cfCloseDD(); });
 
 // 收集某一列出现过的不同值。一格多行（例如一个柜子多个提单号）拆成多条。
+// 下拉里代表「这一列为空」的条目
+const CF_BLANK='(blank)';
 function cfDistinct(tableId,col){
   const table=document.getElementById(tableId); if(!table) return [];
   const body=table.tBodies[0]; if(!body) return [];
   const grid=cfGrid(body);
   const seen=new Map();
+  let hasBlank=false;
   [...body.rows].forEach((tr,ri)=>{
     if(tr.classList.contains('ct-exp-row')||tr.classList.contains('no-fee-row')) return;
-    const cell=grid[ri]&&grid[ri][col]; if(!cell) return;
+    const cell=grid[ri]&&grid[ri][col];
+    if(!cell){ hasBlank=true; return; }
     let raw=cell.innerText||cell.textContent||'';
     cell.querySelectorAll('input,textarea,select').forEach(el=>{
       if(el.type!=='checkbox'&&el.type!=='radio'&&el.value) raw+='\n'+el.value;
     });
+    let any=false;
     raw.split(/[\n\r]+/).forEach(v=>{
       const t=v.replace(/\s+/g,' ').trim();
       if(!t||t==='—'||t==='-') return;
+      any=true;
       const k=t.toLowerCase();
       if(!seen.has(k)) seen.set(k,t);
     });
+    if(!any) hasBlank=true;          // 这一行该列是空的
   });
-  return [...seen.values()].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  const vals=[...seen.values()].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  // 空白项排在最前，方便挑「还没填的」
+  return hasBlank?[CF_BLANK,...vals]:vals;
 }
 
 function cfDropdown(tableId,col,inp,anchor){
@@ -11270,7 +11283,9 @@ function cfDropdown(tableId,col,inp,anchor){
     list.innerHTML=vals.map(v=>{
       const on=chosen.has(v.toLowerCase());
       const esc=v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-      return `<label><input type="checkbox" value="${esc}" ${on?'checked':''}/><span title="${esc}">${esc}</span></label>`;
+      const isBlank=v===CF_BLANK;
+      return `<label><input type="checkbox" value="${esc}" ${on?'checked':''}/>`
+        +`<span title="${esc}"${isBlank?' style="font-style:italic;color:#94a3b8"':''}>${esc}</span></label>`;
     }).join('');
   }
   paint();
