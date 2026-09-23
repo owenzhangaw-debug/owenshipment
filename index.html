@@ -10746,13 +10746,26 @@ const TEMU_EVENTS=[
  ['海运卸船操作','海运柜从船上卸下','Container was discharged at Port of Destination'],
  ['海运放单','提供提单正本用于目的港提货','Bill of Lading Release'],
 ];
-// 常用场景：与上传的两份样表一致
+// 常用场景：与上传的两份样表一致（place/country 仅作为「未知目的地」时的兜底默认值 ——
+// 实际生成时优先用勾选柜子自己的 Destination，见 temuPresetChange() / temuDestFromSel()）
 const TEMU_PRESETS={
   t1:{label:'T1 — Entry documents obtained · 1 row per B/L',place:'Germany',country:'德国',
       events:['入境文件办理成功']},
   arrive:{label:'Arrival sequence · 4 rows per B/L',place:'Belgium',country:'比利时',
       events:['通过入境口岸','国际转运中','到达目的站台','货站交付清关行']},
 };
+// Destination（英文）→ 国家中文名，用于自动带出柜子真实目的地对应的中文国家名
+const TEMU_DEST_CN={'Belgium':'比利时','Netherlands':'荷兰','Italy':'意大利','Germany':'德国','France':'法国',
+  'Spain':'西班牙','Poland':'波兰','UK':'英国','Austria':'奥地利','Switzerland':'瑞士','Sweden':'瑞典',
+  'Denmark':'丹麦','Czech Republic':'捷克','Hungary':'匈牙利','Romania':'罗马尼亚','Portugal':'葡萄牙',
+  'Greece':'希腊','Slovakia':'斯洛伐克','Slovenia':'斯洛文尼亚','Croatia':'克罗地亚','Bulgaria':'保加利亚',
+  'Finland':'芬兰','Norway':'挪威'};
+// 勾选的柜子若目的地一致，就用它们真实的 Destination；不一致或未知才返回 null（退回预设默认值）
+function temuDestFromSel(){
+  const rows=(typeof CT!=='undefined'?CT:[]).filter(r=>(typeof _temuSel!=='undefined'&&_temuSel.has(r._id)));
+  const dests=[...new Set(rows.map(r=>(r['Destination']||'').trim()).filter(Boolean))];
+  return dests.length===1?dests[0]:null;
+}
 
 // ── 极简 ZIP 打包（store 模式，无压缩）──────────────────────────────────────
 let _crcTab=null;
@@ -10945,8 +10958,9 @@ function temuPresetChange(){
   } else {
     box.style.display='none';
     const p=TEMU_PRESETS[k];
-    document.getElementById('temu-place').value=p.place;
-    document.getElementById('temu-country').value=p.country;
+    const dest=temuDestFromSel();
+    document.getElementById('temu-place').value=dest||p.place;
+    document.getElementById('temu-country').value=(dest&&TEMU_DEST_CN[dest])||p.country;
   }
   temuUpdateCount();
 }
