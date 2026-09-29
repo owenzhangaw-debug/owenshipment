@@ -2809,15 +2809,15 @@ tbody tr:hover{background:#fafbfc}
 <div class="overlay" id="bulk-overlay">
   <div class="modal" style="width:660px">
     <h2>⊞ Bulk Add Containers</h2>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Fill shared fields, then paste container numbers (one per line).</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Adding new containers? Fill in the shared fields below. Just updating slots/dates on <b>existing</b> containers? Leave everything blank except what you're changing — paste the container numbers and Scheduled Slot / dates and only those fields get touched; nothing else (country, status, project…) gets overwritten.</p>
     <div class="form-grid">
-      <div class="form-group"><label>Project *</label><input type="text" id="b_batch" list="dl-batch"/></div>
+      <div class="form-group"><label>Project <span style="font-weight:400;color:var(--muted)">(required for new containers only)</span></label><input type="text" id="b_batch" list="dl-batch"/></div>
       <div class="form-group"><label>Consignee</label><input type="text" id="b_con" list="dl-con"/></div>
       <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
       <div class="form-group"><label>Destination</label>
-        <input type="text" id="b_dest" list="dl-dest" placeholder="e.g. Belgium"/></div>
+        <input type="text" id="b_dest" list="dl-dest" placeholder="leave blank = no change / Belgium default for new"/></div>
       <div class="form-group"><label>Tracking</label>
-        <select id="b_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
+        <select id="b_track"><option value="">— no change / blank for new —</option><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
       <div class="form-group"><label>ETA in Mala</label><input type="text" id="b_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
       <div class="form-group"><label>ETA at Hub</label><input type="text" id="b_eta" placeholder="YYYY/MM/DD"/></div>
       <div class="form-group"><label>T1 Date</label><input type="text" id="b_t1date" placeholder="YYYY/MM/DD"/></div>
@@ -3068,6 +3068,7 @@ tbody tr:hover{background:#fafbfc}
         <div class="form-group"><label>Broker<label class="be-clear-lbl"><input type="checkbox" id="be_clr_broker" onchange="beToggleClear(this,'be_broker')"> × clear</label></label>
           <input type="text" id="be_broker" list="dl-broker" placeholder="e.g. Wispex"/></div>
         <div class="form-group"><label>Consignee<label class="be-clear-lbl"><input type="checkbox" id="be_clr_con" onchange="beToggleClear(this,'be_con')"> × clear</label></label><input type="text" id="be_con" list="dl-con"/></div>
+        <div class="form-group"><label>Destination<label class="be-clear-lbl"><input type="checkbox" id="be_clr_dest" onchange="beToggleClear(this,'be_dest')"> × clear</label></label><input type="text" id="be_dest" list="dl-dest"/></div>
         <div class="form-group"><label>Tracking<label class="be-clear-lbl"><input type="checkbox" id="be_clr_track" onchange="beToggleClear(this,'be_track')"> × clear</label></label>
           <select id="be_track"><option value="">— no change —</option><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
         <div class="form-group"><label>Trk Confirm<label class="be-clear-lbl"><input type="checkbox" id="be_clr_trkconf" onchange="beToggleClear(this,'be_trkconf')"> × clear</label></label>
@@ -3075,11 +3076,16 @@ tbody tr:hover{background:#fafbfc}
         <div class="form-group"><label>ETA in Mala<label class="be-clear-lbl"><input type="checkbox" id="be_clr_eta_mala" onchange="beToggleClear(this,'be_eta_mala')"> × clear</label></label><input type="text" id="be_eta_mala" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>ETA at Hub<label class="be-clear-lbl"><input type="checkbox" id="be_clr_eta" onchange="beToggleClear(this,'be_eta')"> × clear</label></label><input type="text" id="be_eta" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>T1 Date<label class="be-clear-lbl"><input type="checkbox" id="be_clr_t1date" onchange="beToggleClear(this,'be_t1date')"> × clear</label></label><input type="text" id="be_t1date" placeholder="yyyy/mm/dd"/></div>
+        <div class="form-group"><label>Scheduled Slot<label class="be-clear-lbl"><input type="checkbox" id="be_clr_slot" onchange="beToggleClear(this,'be_slot')"> × clear</label></label><input type="text" id="be_slot" placeholder="yyyy/mm/dd hh:mm"/></div>
         <div class="form-group"><label>Actual Arrival<label class="be-clear-lbl"><input type="checkbox" id="be_clr_arr" onchange="beToggleClear(this,'be_arr')"> × clear</label></label><input type="text" id="be_arr" placeholder="yyyy/mm/dd"/></div>
         <div class="form-group"><label>Deadline<label class="be-clear-lbl"><input type="checkbox" id="be_clr_dl" onchange="beToggleClear(this,'be_dl')"> × clear</label></label><input type="text" id="be_dl" placeholder="yyyy/mm/dd"/></div>
+        <div class="form-group"><label>CMR Received<label class="be-clear-lbl"><input type="checkbox" id="be_clr_cmr" onchange="beToggleClear(this,'be_cmr')"> × clear</label></label>
+          <select id="be_cmr"><option value="">— no change —</option><option value="yes">✔ Received</option></select></div>
         <div class="form-group"><label>Pickup Ref<label class="be-clear-lbl"><input type="checkbox" id="be_clr_ref" onchange="beToggleClear(this,'be_ref')"> × clear</label></label><input type="text" id="be_ref"/></div>
         <div class="form-group"><label>Price (€)<label class="be-clear-lbl"><input type="checkbox" id="be_clr_price" onchange="beToggleClear(this,'be_price')"> × clear</label></label><input type="number" min="0" step="0.01" id="be_price" placeholder="0.00"/></div>
         <div class="form-group"><label>Price T1 (€)<label class="be-clear-lbl"><input type="checkbox" id="be_clr_price_t1" onchange="beToggleClear(this,'be_price_t1')"> × clear</label></label><input type="number" min="0" step="0.01" id="be_price_t1" placeholder="0.00"/></div>
+        <div class="form-group"><label>Surcharge (€)<label class="be-clear-lbl"><input type="checkbox" id="be_clr_sur" onchange="beToggleClear(this,'be_sur')"> × clear</label></label><input type="number" min="0" step="0.01" id="be_sur" placeholder="0.00"/></div>
+        <div class="form-group"><label>Surcharge Reason<label class="be-clear-lbl"><input type="checkbox" id="be_clr_surr" onchange="beToggleClear(this,'be_surr')"> × clear</label></label><input type="text" id="be_surr"/></div>
         <div class="form-group"><label>Payment Status<label class="be-clear-lbl"><input type="checkbox" id="be_clr_pay" onchange="beToggleClear(this,'be_pay_status')"> × clear</label></label>
           <select id="be_pay_status"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Amending">Amending</option><option value="Verifying">Verifying</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
         <div class="form-group"><label>T1 Payment Status<label class="be-clear-lbl"><input type="checkbox" id="be_clr_t1pay" onchange="beToggleClear(this,'be_t1_pay_status')"> × clear</label></label>
@@ -9048,8 +9054,8 @@ function saveRow(){
 // ── BULK ADD ──────────────────────────────────────────────────────
 function openBulk(){
   ['b_batch','b_con','b_truck','b_eta_mala','b_eta','b_t1date','b_slot','b_dl','b_nos'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('b_dest').value='Belgium';
-  document.getElementById('b_track').value='T1';
+  document.getElementById('b_dest').value='';
+  document.getElementById('b_track').value='';
   document.getElementById('b_cmr').checked=false;
   document.getElementById('b_ok').style.display='none';
   document.getElementById('b_err').style.display='none';
@@ -9140,33 +9146,48 @@ function bulkPreview(){
 function saveBulk(){
   const pairs=parseBulkPairs(), err=document.getElementById('b_err');
   if(!pairs.length){ err.textContent='Please enter at least one container number.'; err.style.display='block'; return; }
-  const batch=document.getElementById('b_batch').value.trim();
-  if(!batch){ err.textContent='Project is required.'; err.style.display='block'; return; }
   const g=id=>document.getElementById(id).value.trim();
-  const shared={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),'Destination':g('b_dest')||'Belgium',
-    'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'T1 Date':g('b_t1date'),
-    'Scheduled Slot':g('b_slot'),'Deadline':g('b_dl'),'CMR':document.getElementById('b_cmr').checked?'✅':'',
-    'Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'','Surcharge':'','Surcharge Reason':'','Payment Status':'','T1 Payment Status':'','Broker':'','Remark':''};
   // Build existing map for merge
   const existMapSave={};
   CT.forEach(r=>{ const k=(r['Container No.']||'').toUpperCase(); existMapSave[k]=r; });
+  const batch=g('b_batch');
+  const hasNew=pairs.some(p=>!existMapSave[p.cn]);
+  if(hasNew && !batch){
+    err.textContent='Project is required to add new containers. (Pure updates to existing containers don\'t need it — leave it blank.)';
+    err.style.display='block'; return;
+  }
+  err.style.display='none';
+  // Only fields the user actually typed/picked — these are the ONLY ones allowed to
+  // touch an EXISTING container. A blank field here means "leave that alone", full stop,
+  // so pasting slot updates never silently resets country/status/project on old rows.
+  const typed={'Batch / Train':batch,'Consignee':g('b_con'),'Trucker':g('b_truck'),'Destination':g('b_dest'),
+    'Tracking':g('b_track'),'ETA in Mala':g('b_eta_mala'),'ETA at Hub':g('b_eta'),'T1 Date':g('b_t1date'),'Deadline':g('b_dl')};
+  const cmrChecked=document.getElementById('b_cmr').checked;
+  const sharedSlot=g('b_slot');
   let added=0, updated=0;
   pairs.forEach(p=>{
     const existing=existMapSave[p.cn];
+    const rowSlot=p.slot||sharedSlot;
     if(existing){
-      // Merge: only overwrite fields that are non-empty in the form or per-row data
-      Object.entries(shared).forEach(([k,v])=>{ if(v) existing[k]=v; });
+      Object.entries(typed).forEach(([k,v])=>{ if(v) existing[k]=v; });
+      if(cmrChecked) existing['CMR']='✅';   // unchecked box never clears an existing CMR flag
       if(p.bl) existing['Master B/L']=p.bl;
-      const rowSlot=p.slot||shared['Scheduled Slot'];
       if(rowSlot){ existing['Scheduled Slot']=rowSlot; delete existing._slotAuto; }
       updated++;
     } else {
-      CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,'Scheduled Slot':p.slot||shared['Scheduled Slot'],_id:nextId++});
+      // Brand-new container: same typed fields, plus sensible fallback defaults
+      // (only used here — never forced onto an existing row above).
+      const shared={...typed,
+        'Destination':typed['Destination']||'Belgium',
+        'CMR':cmrChecked?'✅':'','Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'',
+        'Surcharge':'','Surcharge Reason':'','Payment Status':'','T1 Payment Status':'','Broker':'','Remark':''};
+      CT.push({...shared,'Container No.':p.cn,'Master B/L':p.bl,'Scheduled Slot':rowSlot,_id:nextId++});
       added++;
     }
   });
   saveData(); closeBulk(); renderCT();
-  if(updated) showToast(`✅ ${added?added+' added, ':''} ${updated} container${updated>1?'s':''} updated`);
+  const parts=[]; if(added) parts.push(added+' added'); if(updated) parts.push(updated+' updated');
+  if(parts.length) showToast('✅ '+parts.join(', '));
 }
 
 // ── DELETE ────────────────────────────────────────────────────────
@@ -11807,13 +11828,14 @@ function openBulkEditDirect(){
   openBulkEdit();
 }
 function openBulkEdit(){
-  ['be_batch','be_truck','be_con','be_eta_mala','be_eta','be_t1date','be_arr','be_dl','be_ref','be_price','be_price_t1','be_rmk','be_broker',
+  ['be_batch','be_truck','be_con','be_dest','be_eta_mala','be_eta','be_t1date','be_slot','be_arr','be_dl','be_ref','be_price','be_price_t1','be_sur','be_surr','be_rmk','be_broker',
    'be_port','be_pod','be_carrier','be_ets','be_pco','be_notes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('be_broker').value='';
   document.getElementById('be_track').value='';
   document.getElementById('be_trkconf').value='';
+  document.getElementById('be_cmr').value='';
   document.getElementById('be_vstatus').value='';
   document.getElementById('be_pay_status').value='';
   document.getElementById('be_t1_pay_status').value='';
@@ -11826,6 +11848,7 @@ function openBulkEdit(){
   else if(vtSel.size){ const tabs=document.querySelectorAll('.be-tab'); switchBETab('vt',tabs[1]); }
   refreshDLs();
   ['be_eta_mala','be_eta','be_t1date','be_arr','be_dl'].forEach(id=>initFP(id,'date'));
+  initFP('be_slot','datetime');
   // Reset all clear checkboxes
   document.querySelectorAll('[id^="be_clr_"]').forEach(cb=>{
     cb.checked=false;
@@ -11867,12 +11890,15 @@ function applyBulkEdit(){
   // Apply to containers
   if(_visSel.size){
     const fields={
-      'Batch / Train':g('be_batch'),'Trucker':g('be_truck'),'Consignee':g('be_con'),
-      'ETA in Mala':g('be_eta_mala'),'ETA at Hub':g('be_eta'),'T1 Date':g('be_t1date'),'Actual Arrival':g('be_arr'),'Deadline':g('be_dl'),
-      'Pickup Ref':g('be_ref'),'Price':g('be_price'),'Price T1':g('be_price_t1'),'Remark':g('be_rmk'),'Broker':g('be_broker')
+      'Batch / Train':g('be_batch'),'Trucker':g('be_truck'),'Consignee':g('be_con'),'Destination':g('be_dest'),
+      'ETA in Mala':g('be_eta_mala'),'ETA at Hub':g('be_eta'),'T1 Date':g('be_t1date'),'Scheduled Slot':g('be_slot'),
+      'Actual Arrival':g('be_arr'),'Deadline':g('be_dl'),
+      'Pickup Ref':g('be_ref'),'Price':g('be_price'),'Price T1':g('be_price_t1'),'Surcharge':g('be_sur'),
+      'Surcharge Reason':g('be_surr'),'Remark':g('be_rmk'),'Broker':g('be_broker')
     };
     const tracking=g('be_track');
     const trkConf=g('be_trkconf');
+    const cmr=g('be_cmr');
     const payStatus=g('be_pay_status');
     const t1PayStatus=g('be_t1_pay_status');
     // Build a map of which fields the user wants to explicitly CLEAR
@@ -11888,9 +11914,14 @@ function applyBulkEdit(){
       'T1 Date':       document.getElementById('be_clr_t1date')?.checked,
       'Actual Arrival':document.getElementById('be_clr_arr')?.checked,
       'Deadline':      document.getElementById('be_clr_dl')?.checked,
+      'Destination':   document.getElementById('be_clr_dest')?.checked,
+      'Scheduled Slot':document.getElementById('be_clr_slot')?.checked,
+      'CMR':           document.getElementById('be_clr_cmr')?.checked,
       'Pickup Ref':    document.getElementById('be_clr_ref')?.checked,
       'Price':         document.getElementById('be_clr_price')?.checked,
       'Price T1':      document.getElementById('be_clr_price_t1')?.checked,
+      'Surcharge':     document.getElementById('be_clr_sur')?.checked,
+      'Surcharge Reason':document.getElementById('be_clr_surr')?.checked,
       'Payment Status':document.getElementById('be_clr_pay')?.checked,
       'T1 Payment Status':document.getElementById('be_clr_t1pay')?.checked,
       'Remark':        document.getElementById('be_clr_rmk')?.checked,
@@ -11907,12 +11938,16 @@ function applyBulkEdit(){
       else if(tracking) r['Tracking']=tracking;
       if(clearMap['Trk Confirm']) r['Trk Confirm']='';
       else if(trkConf) r['Trk Confirm']=trkConf;
+      if(clearMap['CMR']) r['CMR']='';
+      else if(cmr==='yes') r['CMR']='✅';
       if(clearMap['Payment Status']) r['Payment Status']='';
       else if(payStatus) r['Payment Status']=payStatus;
       if(clearMap['T1 Payment Status']) r['T1 Payment Status']='';
       else if(t1PayStatus) r['T1 Payment Status']=t1PayStatus;
-      // If ETA at Hub changed or cleared, wipe stale auto-slot
-      if((newEta || clearEta) && r._slotAuto){
+      // Scheduled Slot was explicitly set/cleared here → no longer "auto"
+      if(fields['Scheduled Slot']||clearMap['Scheduled Slot']) delete r._slotAuto;
+      // If ETA at Hub changed or cleared (and slot wasn't also explicitly set), wipe stale auto-slot
+      else if((newEta || clearEta) && r._slotAuto){
         delete r._slotAuto;
         r['Scheduled Slot'] = '';
       }
