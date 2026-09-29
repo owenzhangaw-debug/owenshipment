@@ -1536,7 +1536,6 @@ tbody tr:hover{background:#fafbfc}
     <button onclick="showPage('orders')">Orders</button>
     <button onclick="showPage('vessels')">Vessels</button>
     <button onclick="showPage('dispatch')">Dispatch</button>
-    <button onclick="showPage('reports')">Reports</button>
     <span class="nav-divider"></span>
     <!-- Tools dropdown -->
     <div class="nav-tools-wrap" id="nav-tools-wrap">
@@ -2484,83 +2483,6 @@ tbody tr:hover{background:#fafbfc}
 </div>
 
 
-<!-- ══ REPORTS ══ -->
-<div id="page-reports" class="page">
-
-  <div class="rp-wrap">
-
-    <!-- Left: form -->
-    <div class="rp-left">
-      <!-- Header row -->
-      <div class="rp-hdr-bar">
-        <div>
-          <div class="rp-hdr-title">📋 Daily Operations Report</div>
-          <div class="rp-hdr-sub" id="rp-date-label"></div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="date" id="rp-date" onchange="rpUpdateDateLabel()"/>
-          <button class="rp-submit-btn" onclick="rpSubmit()">✓ Save</button>
-          <button class="rp-clear-btn" onclick="rpClearForm()">✕</button>
-        </div>
-      </div>
-      <div id="rp-msg"></div>
-
-      <!-- Module 一: Containers — Temu -->
-      <div class="rp-section">
-        <div class="rp-sec-hdr">
-          <span class="rp-sec-title">Containers — Temu</span>
-        </div>
-        <textarea id="rp-m1" class="rp-notes-area" placeholder="TEMU 班列 / 柜子跟进…" rows="7"></textarea>
-      </div>
-
-      <!-- Module 二: Orders — 散单派送 -->
-      <div class="rp-section">
-        <div class="rp-sec-hdr">
-          <span class="rp-sec-title">Orders — 散单派送</span>
-        </div>
-        <textarea id="rp-m2" class="rp-notes-area" placeholder="散单派送跟进…" rows="7"></textarea>
-      </div>
-
-      <!-- Module 三: Vessels — 空箱返程进口 -->
-      <div class="rp-section">
-        <div class="rp-sec-hdr">
-          <span class="rp-sec-title">Vessels — 空箱返程进口</span>
-        </div>
-        <textarea id="rp-m3" class="rp-notes-area" placeholder="空箱返程 / 进口订舱跟进…" rows="7"></textarea>
-      </div>
-
-      <!-- Weekly generator -->
-      <div class="rp-section">
-        <div class="rp-sec-hdr">
-          <span class="rp-sec-title">周报生成 Weekly Report</span>
-          <select id="rp-week-sel" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;background:#fff;color:#1e293b"></select>
-          <button class="rp-add-row-btn" onclick="rpGenerateWeekly()">⚡ 生成</button>
-          <button onclick="rpExportWeekly()" style="padding:3px 11px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">↓ Export</button>
-        </div>
-        <div id="rp-weekly-out"></div>
-      </div>
-    </div>
-
-    <!-- Right: history -->
-    <div class="rp-right">
-      <div class="rp-card" style="height:100%">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-          <div class="rp-card-title" style="margin:0">📂 历史报告 History</div>
-          <input type="text" id="rp-search" placeholder="Search…" oninput="rpRenderHistory()"
-            style="margin-left:auto;padding:5px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;width:140px"/>
-          <select id="rp-hist-filter" onchange="rpRenderHistory()" style="padding:5px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:11px">
-            <option value="">All</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-          </select>
-        </div>
-        <div id="rp-history"></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
 <!-- ══ PLANNING ══ -->
 
 <!-- ══ NOTICES ══ -->
@@ -3446,7 +3368,7 @@ function showPage(p){
   const _mnb=document.getElementById('mnav-'+p);
   if(_mnb) _mnb.classList.add('active');
   document.getElementById('page-'+p).classList.add('active');
-  const pages=['dashboard','containers','vessels','planning','notices','reports'];
+  const pages=['dashboard','containers','vessels','planning','notices'];
   const idx=pages.indexOf(p);
   // Match active state by data or text scan (robust to button order)
   document.querySelectorAll('nav > button').forEach(b=>{
@@ -3465,7 +3387,6 @@ function showPage(p){
   if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); setTimeout(vtApplyFreezeColumns,50); }
   if(p==='planning'){ rcpRender(); }
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
-  if(p==='reports') renderReports();
   if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); }
   if(p==='dispatch'){ switchDispatchTab(_activeDispatchTab||'ct'); }
 }
@@ -10592,11 +10513,10 @@ async function connectSync(){
     let binId=binInput;
     if(!binId){
       // Create new bin
-      if(typeof rpLoad==='function') rpLoad();
       const res=await fetch(JBIN,{
         method:'POST',
         headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'Owen Zhang'},
-        body:JSON.stringify({CT,VT,NOTICES,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),REPORTS:(typeof REPORTS!=='undefined'?REPORTS:[])})
+        body:JSON.stringify({CT,VT,NOTICES,REMINDERS,NO:(typeof NO!=='undefined'?NO:[])})
       });
       if(!res.ok) throw new Error('Failed to create bin (HTTP '+res.status+'). Check your Master Key.');
       const data=await res.json();
@@ -10626,15 +10546,11 @@ async function pushToCloud(manual=false){
     return;
   }
   setSyncDot('busy','Pushing…');
-  // Make sure the in-memory REPORTS reflects whatever's in localStorage — the Daily Report
-  // page only loads it lazily (rpLoad()) when visited, so without this a push from a session
-  // that never opened the Reports page would silently wipe reports on the other device.
-  if(typeof rpLoad==='function') rpLoad();
   try{
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),REPORTS:(typeof REPORTS!=='undefined'?REPORTS:[]),_dlReasons,_bpTrainDates,_ts:Date.now()})
+      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),_dlReasons,_bpTrainDates,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
@@ -10693,7 +10609,6 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     if(rec&&Array.isArray(rec.REMINDERS)){ REMINDERS=rec.REMINDERS; _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); if(typeof remRender==='function') remRender(); }
-    if(rec&&Array.isArray(rec.REPORTS)){ REPORTS=rec.REPORTS; localStorage.setItem(LS_REPORTS,JSON.stringify(REPORTS)); if(typeof rpRenderHistory==='function') rpRenderHistory(); }
     if(rec&&rec._dlReasons){ _dlReasons=rec._dlReasons; localStorage.setItem(_DL_REASON_KEY,JSON.stringify(_dlReasons)); }
     if(rec&&rec._bpTrainDates){ _bpTrainDates=rec._bpTrainDates; localStorage.setItem(_bpTrainKey,JSON.stringify(_bpTrainDates)); }
     setSyncDot('ok','Synced — '+(new Date().toLocaleTimeString()));
@@ -11989,567 +11904,6 @@ function applyBulkEdit(){
   ok.style.display='block';
   renderCT(); renderVT(); renderDashboard();
   setTimeout(()=>{ closeBE(); clearAllSel(); }, 900);
-}
-
-// ── REPORTS PAGE ─────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════
-// ══════════════════════════════════════════════════════════════════
-// ── REPORTS PAGE ─────────────────────────────────────────────────
-const LS_REPORTS = 'owenz_reports_v1';
-let REPORTS = [];
-// Section row counters
-let _rpRowId = Date.now();
-function _rpId(){ return ++_rpRowId; }
-
-function rpLoad(){
-  try{ REPORTS=JSON.parse(localStorage.getItem(LS_REPORTS)||'[]'); } catch(e){ REPORTS=[]; }
-}
-function rpSave(){ localStorage.setItem(LS_REPORTS,JSON.stringify(REPORTS)); }
-
-function rpTodayISO(){
-  const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function rpFmtDate(iso){ return iso.replace(/-/g,'/'); }
-function rpDayName(iso){
-  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  return days[new Date(iso).getDay()];
-}
-function rpWeekKey(iso){
-  const d=new Date(iso);
-  const jan1=new Date(d.getFullYear(),0,1);
-  const wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
-  return d.getFullYear()+'-W'+String(wk).padStart(2,'0');
-}
-function rpUpdateDateLabel(){
-  const v=document.getElementById('rp-date')?.value||'';
-  const el=document.getElementById('rp-date-label');
-  if(el) el.textContent=v?rpDayName(v)+', '+rpFmtDate(v):'';
-}
-
-// ── Helpers: pull options from live tracker data ──────────────────
-function rpGetBatches(){
-  return [...new Set((CT||[]).map(r=>(r['Batch / Train']||'').trim()).filter(Boolean))].sort((a,b)=>{
-    // sort by date embedded in name e.g. "成都4.18班列" → 4.18
-    const nm=s=>{ const m=s.match(/(\d+)[./](\d+)/); return m?+m[1]*100+ +m[2]:9999; };
-    return nm(a)-nm(b);
-  });
-}
-function rpGetVTBookings(){
-  return (VT||[])
-    .filter(r=>(r['Booking / BC No.']||'').trim())
-    .map(r=>({
-      bk: (r['Booking / BC No.']||'').trim(),
-      ctn: (parseFloat(r['Container Qty'])||0) ? (parseFloat(r['Container Qty'])|0)+'*40HQ' : '',
-      route: rpExtractRoute(r),
-      vessel: r['Vessel Name']||'',
-      port: r['Port']||''
-    }));
-}
-function rpExtractRoute(vt){
-  // Best case: both POL and POD are set
-  if(vt['Port']&&vt['POD']) return vt['Port']+'-'+vt['POD'];
-  // Try Remark: "KLAIPEDA--NINGBO" or "Rotterdam-Nansha" patterns
-  const rem=(vt['Remark']||'')+(vt['Booking / BC No.']||'');
-  const m=rem.match(/([A-Za-z一-龥]+[-–—]{1,2}[A-Za-z一-龥]+)/);
-  if(m) return m[1].replace(/[-–—]+/g,'-');
-  // Fallback: just use Port
-  return (vt['Port']||'')+'-';
-}
-function rpOnBkSelect(sel, rowId){
-  const opt=sel.options[sel.selectedIndex];
-  if(!opt||!opt.value) return;
-  const row=document.getElementById(rowId);
-  if(!row) return;
-  const ctn=opt.dataset.ctn||'';
-  const route=opt.dataset.route||'';
-  const ctnEl=row.querySelector('.rp-f-ctn');
-  const routeEl=row.querySelector('.rp-f-route');
-  if(ctnEl&&ctn){ ctnEl.value=ctn; ctnEl.classList.add('rp-autofilled'); setTimeout(()=>ctnEl.classList.remove('rp-autofilled'),1200); }
-  if(routeEl&&route){ routeEl.value=route; routeEl.classList.add('rp-autofilled'); setTimeout(()=>routeEl.classList.remove('rp-autofilled'),1200); }
-  // Focus task if both filled
-  const task=row.querySelector('.rp-f-task');
-  if(task) setTimeout(()=>task.focus(),80);
-}
-// Container Orders (normal, non-TEMU) — pulled live from the Orders page (NO array)
-function rpGetOrders(){
-  return (typeof NO!=='undefined'?NO:[])
-    .filter(o=>typeof _noHasSt!=='function'||!_noHasSt(o,'Cancelled'))
-    .map(o=>({
-      orderNo: o['Order No.']||('Order #'+o._id),
-      consignee: o['Consignee']||'',
-      destination: o['Destination']||''
-    }));
-}
-function rpOnOrderSelect(sel, rowId){
-  const opt=sel.options[sel.selectedIndex];
-  if(!opt||!opt.value) return;
-  const row=document.getElementById(rowId);
-  if(!row) return;
-  const cons=opt.dataset.cons||'';
-  const dest=opt.dataset.dest||'';
-  const consEl=row.querySelector('.rp-f-cons');
-  const destEl=row.querySelector('.rp-f-dest2');
-  if(consEl&&cons){ consEl.value=cons; consEl.classList.add('rp-autofilled'); setTimeout(()=>consEl.classList.remove('rp-autofilled'),1200); }
-  if(destEl&&dest){ destEl.value=dest; destEl.classList.add('rp-autofilled'); setTimeout(()=>destEl.classList.remove('rp-autofilled'),1200); }
-  const task=row.querySelector('.rp-f-task');
-  if(task) setTimeout(()=>task.focus(),80);
-}
-
-// ── Section row templates ─────────────────────────────────────────
-function rpAddRow(sec, data){
-  const id=_rpId();
-  const container=document.getElementById('rp-'+sec+'-rows');
-  if(!container) return;
-  const div=document.createElement('div');
-  div.className='rp-row'; div.id='rpr-'+id;
-
-  if(sec==='s1'){
-    const batches=rpGetBatches();
-    const batchOpts=batches.map(b=>`<option value="${b.replace(/"/g,'&quot;')}">${b}</option>`).join('');
-    const savedBatch=(data?.batch||'').replace(/"/g,'&quot;');
-    // if saved batch not in list, add as extra option so it shows
-    const extraBatch=(data?.batch&&!batches.includes(data.batch))?`<option value="${savedBatch}">${savedBatch}</option>`:'';
-    div.innerHTML=`
-      <div class="rp-row-fields">
-        <div class="rp-field-row">
-          <select class="rp-f-batch">
-            <option value="">— 选择班列 Select batch —</option>
-            ${batchOpts}${extraBatch}
-          </select>
-          <select class="rp-f-dest">
-            <option value="">— 目的地 Destination —</option>
-            <option value="比利时">🇧🇪 比利时 Belgium</option>
-            <option value="荷兰">🇳🇱 荷兰 Netherlands</option>
-            <option value="比利时/荷兰">🇧🇪🇳🇱 比利时/荷兰 BE/NL</option>
-          </select>
-        </div>
-        <textarea class="rp-f-task" placeholder="跟进任务 e.g. 与代理及仓库确认派送计划，收到ATB后办理T1" rows="2">${data?.task||''}</textarea>
-      </div>
-      <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
-    // Restore saved values
-    if(data?.batch){ const s=div.querySelector('.rp-f-batch'); if(s) s.value=data.batch||''; }
-    if(data?.dest){ const s=div.querySelector('.rp-f-dest'); if(s) s.value=data.dest||''; }
-
-  } else if(sec==='s2'){
-    const bookings=rpGetVTBookings();
-    const bkOpts=bookings.map(v=>`<option value="${v.bk.replace(/"/g,'&quot;')}" data-ctn="${v.ctn}" data-route="${v.route.replace(/"/g,'&quot;')}">${v.bk}${v.vessel?' · '+v.vessel:''}</option>`).join('');
-    const savedBk=(data?.bookingNo||'').replace(/"/g,'&quot;');
-    const extraBk=(data?.bookingNo&&!bookings.find(v=>v.bk===data.bookingNo))?`<option value="${savedBk}" data-ctn="${(data.containers||'').replace(/"/g,'&quot;')}" data-route="${(data.route||'').replace(/"/g,'&quot;')}">${savedBk}</option>`:'';
-    div.innerHTML=`
-      <div class="rp-row-fields">
-        <select class="rp-f-bkno" onchange="rpOnBkSelect(this,'rpr-${id}')">
-          <option value="">— 选择订舱号 Select booking —</option>
-          ${bkOpts}${extraBk}
-        </select>
-        <div class="rp-field-row">
-          <input class="rp-f-ctn" placeholder="箱量 e.g. 136*40HQ" value="${(data?.containers||'').replace(/"/g,'&quot;')}"/>
-          <input class="rp-f-route" placeholder="航线 e.g. 安特卫普-宁波" value="${(data?.route||'').replace(/"/g,'&quot;')}"/>
-        </div>
-        <textarea class="rp-f-task" placeholder="操作事项 e.g. 提供VGM，SOC data表，B/L Instruction" rows="2">${data?.task||''}</textarea>
-      </div>
-      <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
-    if(data?.bookingNo){ const s=div.querySelector('.rp-f-bkno'); if(s) s.value=data.bookingNo; }
-
-  } else if(sec==='s3'){
-    const bookings=rpGetVTBookings();
-    const bkOpts=bookings.map(v=>`<option value="${v.bk.replace(/"/g,'&quot;')}" data-ctn="${v.ctn}" data-route="${v.route.replace(/"/g,'&quot;')}">${v.bk}${v.vessel?' · '+v.vessel:''}</option>`).join('');
-    const savedBk=(data?.bookingNo||'').replace(/"/g,'&quot;');
-    const extraBk=(data?.bookingNo&&!bookings.find(v=>v.bk===data.bookingNo))?`<option value="${savedBk}" data-ctn="${(data.containers||'').replace(/"/g,'&quot;')}" data-route="${(data.route||'').replace(/"/g,'&quot;')}">${savedBk}</option>`:'';
-    div.innerHTML=`
-      <div class="rp-row-fields">
-        <div class="rp-field-row">
-          <input class="rp-f-ref" placeholder="工作单号 e.g. XGDB2603203187" value="${(data?.ref||'').replace(/"/g,'&quot;')}"/>
-          <select class="rp-f-bkno2" onchange="rpOnBkSelect(this,'rpr-${id}')">
-            <option value="">— 订舱号 Booking —</option>
-            ${bkOpts}${extraBk}
-          </select>
-        </div>
-        <div class="rp-field-row">
-          <input class="rp-f-ctn" placeholder="箱量 e.g. 38*40HQ" value="${(data?.containers||'').replace(/"/g,'&quot;')}"/>
-          <input class="rp-f-route" placeholder="航线 e.g. 鹿特丹-南沙" value="${(data?.route||'').replace(/"/g,'&quot;')}"/>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:3px">
-          <label style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.3px">📦 批次 Batch</label>
-          <select class="rp-f-batch3">
-            <option value="">— 选择批次 Select batch —</option>
-            ${rpGetBatches().map(b=>`<option value="${b.replace(/"/g,'&quot;')}"${data?.batch===b?' selected':''}>${b}</option>`).join('')}
-            ${data?.batch&&!rpGetBatches().includes(data.batch)?`<option value="${(data.batch||'').replace(/"/g,'&quot;')}" selected>${data.batch}</option>`:''}
-          </select>
-        </div>
-        <div class="rp-field-row" style="grid-template-columns:1fr 1fr 1fr">
-          <div style="display:flex;flex-direction:column;gap:3px">
-            <label style="font-size:10px;font-weight:700;color:#0c4a6e;letter-spacing:.3px">🚢 海运费</label>
-            <select class="rp-f-pay3" style="font-size:11px">
-              <option value="">— Freight —</option>
-              <option value="Pending invoice"${data?.payStatus==='Pending invoice'?' selected':''}>🕐 Pending</option>
-              <option value="Amending"${data?.payStatus==='Amending'?' selected':''}>✏️ Amending</option>
-              <option value="Verifying"${data?.payStatus==='Verifying'?' selected':''}>🔍 Verifying</option>
-              <option value="Requested"${data?.payStatus==='Requested'?' selected':''}>📤 Requested</option>
-              <option value="Paid"${data?.payStatus==='Paid'?' selected':''}>✅ Paid</option>
-            </select>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:3px">
-            <label style="font-size:10px;font-weight:700;color:#581c87;letter-spacing:.3px">🛂 T1付款</label>
-            <select class="rp-f-pay3t1" style="font-size:11px">
-              <option value="">— T1 —</option>
-              <option value="Pending invoice"${data?.t1PayStatus==='Pending invoice'?' selected':''}>🕐 Pending</option>
-              <option value="Amending"${data?.t1PayStatus==='Amending'?' selected':''}>✏️ Amending</option>
-              <option value="Verifying"${data?.t1PayStatus==='Verifying'?' selected':''}>🔍 Verifying</option>
-              <option value="Requested"${data?.t1PayStatus==='Requested'?' selected':''}>📤 Requested</option>
-              <option value="Paid"${data?.t1PayStatus==='Paid'?' selected':''}>✅ Paid</option>
-            </select>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:3px">
-            <label style="font-size:10px;font-weight:700;color:#854d0e;letter-spacing:.3px">🚛 卡车付款</label>
-            <select class="rp-f-pay3tr" style="font-size:11px">
-              <option value="">— Trucker —</option>
-              <option value="Pending invoice"${data?.truckerPayStatus==='Pending invoice'?' selected':''}>🕐 Pending</option>
-              <option value="Amending"${data?.truckerPayStatus==='Amending'?' selected':''}>✏️ Amending</option>
-              <option value="Verifying"${data?.truckerPayStatus==='Verifying'?' selected':''}>🔍 Verifying</option>
-              <option value="Requested"${data?.truckerPayStatus==='Requested'?' selected':''}>📤 Requested</option>
-              <option value="Paid"${data?.truckerPayStatus==='Paid'?' selected':''}>✅ Paid</option>
-            </select>
-          </div>
-        </div>
-        <textarea class="rp-f-task" placeholder="事项 e.g. 船公司账单提交请款" rows="2">${data?.task||''}</textarea>
-      </div>
-      <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
-    if(data?.bookingNo){ const s=div.querySelector('.rp-f-bkno2'); if(s) s.value=data.bookingNo; }
-
-  } else if(sec==='s4'){
-    const orders=rpGetOrders();
-    const orderOpts=orders.map(o=>`<option value="${o.orderNo.replace(/"/g,'&quot;')}" data-cons="${(o.consignee||'').replace(/"/g,'&quot;')}" data-dest="${(o.destination||'').replace(/"/g,'&quot;')}">${o.orderNo}${o.consignee?' · '+o.consignee:''}</option>`).join('');
-    const savedOrder=(data?.orderNo||'').replace(/"/g,'&quot;');
-    const extraOrder=(data?.orderNo&&!orders.find(o=>o.orderNo===data.orderNo))?`<option value="${savedOrder}" data-cons="${(data.consignee||'').replace(/"/g,'&quot;')}" data-dest="${(data.destination||'').replace(/"/g,'&quot;')}">${savedOrder}</option>`:'';
-    div.innerHTML=`
-      <div class="rp-row-fields">
-        <select class="rp-f-order" onchange="rpOnOrderSelect(this,'rpr-${id}')">
-          <option value="">— 选择订单 Select order —</option>
-          ${orderOpts}${extraOrder}
-        </select>
-        <div class="rp-field-row">
-          <input class="rp-f-cons" placeholder="收货人 Consignee" value="${(data?.consignee||'').replace(/"/g,'&quot;')}"/>
-          <input class="rp-f-dest2" placeholder="目的地 Destination" value="${(data?.destination||'').replace(/"/g,'&quot;')}"/>
-        </div>
-        <textarea class="rp-f-task" placeholder="跟进事项 e.g. 确认清关文件，安排提货" rows="2">${data?.task||''}</textarea>
-      </div>
-      <button class="rp-row-del" onclick="document.getElementById('rpr-${id}').remove()">✕</button>`;
-    if(data?.orderNo){ const s=div.querySelector('.rp-f-order'); if(s) s.value=data.orderNo; }
-  }
-
-  container.appendChild(div);
-  // Focus first unfilled field
-  if(!data){
-    const first=div.querySelector('select,input');
-    if(first) setTimeout(()=>first.focus(),30);
-  }
-}
-
-// ── Collect form data ─────────────────────────────────────────────
-function rpCollectRows(sec){
-  const container=document.getElementById('rp-'+sec+'-rows');
-  if(!container) return [];
-  const rows=[];
-  container.querySelectorAll('.rp-row').forEach(row=>{
-    if(sec==='s1'){
-      const batch=row.querySelector('.rp-f-batch')?.value.trim()||'';
-      const dest=row.querySelector('.rp-f-dest')?.value.trim()||'';
-      const task=row.querySelector('.rp-f-task')?.value.trim()||'';
-      if(batch||task) rows.push({batch,dest,task});
-    } else if(sec==='s2'){
-      const bookingNo=row.querySelector('.rp-f-bkno')?.value.trim()||'';
-      const containers=row.querySelector('.rp-f-ctn')?.value.trim()||'';
-      const route=row.querySelector('.rp-f-route')?.value.trim()||'';
-      const task=row.querySelector('.rp-f-task')?.value.trim()||'';
-      if(bookingNo||task) rows.push({bookingNo,containers,route,task});
-    } else if(sec==='s3'){
-      const ref=row.querySelector('.rp-f-ref')?.value.trim()||'';
-      const bookingNo=row.querySelector('.rp-f-bkno2')?.value.trim()||'';
-      const containers=row.querySelector('.rp-f-ctn')?.value.trim()||'';
-      const route=row.querySelector('.rp-f-route')?.value.trim()||'';
-      const batch=row.querySelector('.rp-f-batch3')?.value||'';
-      const payStatus=row.querySelector('.rp-f-pay3')?.value||'';
-      const t1PayStatus=row.querySelector('.rp-f-pay3t1')?.value||'';
-      const truckerPayStatus=row.querySelector('.rp-f-pay3tr')?.value||'';
-      const task=row.querySelector('.rp-f-task')?.value.trim()||'';
-      if(ref||bookingNo||task) rows.push({ref,bookingNo,containers,route,batch,payStatus,t1PayStatus,truckerPayStatus,task});
-    } else if(sec==='s4'){
-      const orderNo=row.querySelector('.rp-f-order')?.value.trim()||'';
-      const consignee=row.querySelector('.rp-f-cons')?.value.trim()||'';
-      const destination=row.querySelector('.rp-f-dest2')?.value.trim()||'';
-      const task=row.querySelector('.rp-f-task')?.value.trim()||'';
-      if(orderNo||task) rows.push({orderNo,consignee,destination,task});
-    }
-  });
-  return rows;
-}
-
-// ── Submit ────────────────────────────────────────────────────────
-function rpSubmit(){
-  const iso=document.getElementById('rp-date')?.value||'';
-  if(!iso){ rpMsg('请选择日期 Please set a date.','#ef4444'); return; }
-  const _v=id=>(document.getElementById(id)?.value||'').trim();
-  const m1=_v('rp-m1'), m2=_v('rp-m2'), m3=_v('rp-m3');
-  if(!m1&&!m2&&!m3){ rpMsg('报告为空 Report is empty.','#b45309'); return; }
-  rpLoad();
-  const existing=REPORTS.findIndex(r=>r.date===iso);
-  const report={ id:existing>=0?REPORTS[existing].id:Date.now(), date:iso, week:rpWeekKey(iso), m1, m2, m3, savedAt:new Date().toISOString() };
-  if(existing>=0) REPORTS[existing]=report; else REPORTS.unshift(report);
-  rpSave();
-  rpMsg((existing>=0?'更新成功 Updated ✓':'已保存 Saved ✓'),'#15803d');
-  rpRenderHistory();
-}
-
-function rpMsg(text,color){
-  const el=document.getElementById('rp-msg');
-  if(!el) return;
-  el.textContent=text; el.style.color=color; el.style.cssText+='display:block;font-size:12px;font-weight:600;padding:4px 0';
-  setTimeout(()=>{ el.style.display='none'; },3000);
-}
-
-function rpClearForm(){
-  ['rp-m1','rp-m2','rp-m3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-}
-
-// ── Load a saved report into the form ─────────────────────────────
-function rpLoadToForm(id){
-  rpLoad();
-  const r=REPORTS.find(x=>x.id===id); if(!r) return;
-  const dateEl=document.getElementById('rp-date');
-  if(dateEl){ dateEl.value=r.date; rpUpdateDateLabel(); }
-  rpClearForm();
-  // 旧报告存的是结构化行(s1..s4)，转成纯文本填进对应模块，历史不丢
-  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||''; };
-  if(r.m1!==undefined||r.m2!==undefined||r.m3!==undefined){
-    set('rp-m1',r.m1); set('rp-m2',r.m2); set('rp-m3',r.m3);
-  } else {
-    set('rp-m1',_rpLegacyText(r.s1));
-    set('rp-m2',_rpLegacyText(r.s4));
-    set('rp-m3',[_rpLegacyText(r.s2),_rpLegacyText(r.s3)].filter(Boolean).join('\n'));
-    const extra=(r.notes||'').trim();
-    if(extra){ const el=document.getElementById('rp-m1'); if(el) el.value=(el.value?el.value+'\n':'')+extra; }
-  }
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-// 旧结构化行 → 可读文本
-function _rpLegacyText(rows){
-  if(!Array.isArray(rows)||!rows.length) return '';
-  return rows.map(r=>Object.keys(r)
-      .filter(k=>r[k]!==''&&r[k]!=null)
-      .map(k=>String(r[k])).join(' · ')).join('\n');
-}
-
-function rpDeleteReport(id,e){
-  e.stopPropagation();
-  if(!confirm('Delete this report?')) return;
-  rpLoad(); REPORTS=REPORTS.filter(r=>r.id!==id); rpSave(); rpRenderHistory();
-}
-
-// ── Render history ─────────────────────────────────────────────────
-function rpToggleItem(id){
-  const el=document.getElementById('rphi-'+id);
-  if(el) el.classList.toggle('expanded');
-}
-function rpRenderHistory(){
-  rpLoad();
-  const q=(document.getElementById('rp-search')?.value||'').toLowerCase();
-  const flt=document.getElementById('rp-hist-filter')?.value||'';
-  const now=new Date();
-  const items=REPORTS.filter(r=>{
-    if(q&&!JSON.stringify(r).toLowerCase().includes(q)) return false;
-    const d=new Date(r.date);
-    if(flt==='week'){ const sw=new Date(now); sw.setDate(now.getDate()-((now.getDay()+6)%7)); sw.setHours(0,0,0,0); if(d<sw) return false; }
-    if(flt==='month'){ if(d.getMonth()!==now.getMonth()||d.getFullYear()!==now.getFullYear()) return false; }
-    return true;
-  });
-  const container=document.getElementById('rp-history');
-  if(!container) return;
-  if(!items.length){ container.innerHTML='<div class="rp-empty">暂无报告<br>No reports yet.</div>'; return; }
-
-  // 取某个模块的文本；旧报告(s1..s4)自动折算，历史不丢
-  function _rpMod(r,key){
-    if(r[key]!==undefined) return String(r[key]||'').trim();
-    if(key==='m1') return [_rpLegacyText(r.s1),(r.notes||'').trim()].filter(Boolean).join('\n');
-    if(key==='m2') return _rpLegacyText(r.s4);
-    return [_rpLegacyText(r.s2),_rpLegacyText(r.s3)].filter(Boolean).join('\n');
-  }
-  function _rpModBlock(r,key,label){
-    const t=_rpMod(r,key); if(!t) return '';
-    return `<div class="rpd-sec-lbl">${label}</div><div class="rpd-item">${
-      t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`;
-  }
-  function fmtSection(sec, rows){
-    if(!rows||!rows.length) return '';
-    let html=`<div class="rpd-sec-lbl">${sec}</div>`;
-    rows.forEach(row=>{
-      if(row.ref!==undefined){
-        // s3 — check ref first because s3 also has a batch field
-        const _badge=(v,prefix)=>{ if(!v) return ''; const c=v==='Paid'?'#15803d':v==='Requested'?'#1d4ed8':v==='Verifying'?'#0369a1':v==='Amending'?'#c2410c':'#92400e'; const b=v==='Paid'?'#dcfce7':v==='Requested'?'#dbeafe':v==='Verifying'?'#e0f2fe':v==='Amending'?'#ffedd5':'#fef3c7'; return `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:${b};color:${c};margin-left:3px">${prefix}${v}</span>`; };
-        const refTag=row.ref?`<span class="rpd-tag">${row.ref}</span>`:'';
-        const bkTag=row.bookingNo?`<span class="rpd-tag" style="background:#ede9fe;color:#5b21b6">${row.bookingNo}</span>`:'';
-        const ctnTag=row.containers?`<span class="rpd-ctn">${row.containers}</span>`:'';
-        const routeTag=row.route?`<em style="color:#0369a1">${row.route}</em>`:'';
-        const batchBadge=row.batch?`<span style="font-size:9px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;padding:1px 6px;font-weight:700;margin-right:4px">📦 ${row.batch}</span>`:'';
-        html+=`<div class="rpd-item">${batchBadge}${refTag}${bkTag}${ctnTag}${routeTag}${_badge(row.payStatus,'🚢')}${_badge(row.t1PayStatus,'🛂')}${_badge(row.truckerPayStatus,'🚛')}${(refTag||bkTag||ctnTag||routeTag)?'<br>':''}${row.task}</div>`;
-      } else if(row.orderNo!==undefined){
-        // s4 — Container Orders
-        const orderTag=row.orderNo?`<span class="rpd-tag" style="background:#e0f2fe;color:#0369a1">${row.orderNo}</span>`:'';
-        const consTxt=row.consignee?`<em style="color:#374151">${row.consignee}</em>`:'';
-        const destTxt=row.destination?`<span style="color:#64748b"> → ${row.destination}</span>`:'';
-        html+=`<div class="rpd-item">${orderTag} ${consTxt}${destTxt}${(orderTag||consTxt||destTxt)?'<br>':''}${row.task}</div>`;
-      } else if(row.dest!==undefined){
-        // s1 — dest is unique to s1
-        html+=`<div class="rpd-item"><span class="rpd-tag">${row.batch}${row.dest?' → '+row.dest:''}</span> ${row.task}</div>`;
-      } else {
-        // s2
-        html+=`<div class="rpd-item"><span class="rpd-tag">${row.bookingNo||'—'}</span> ${row.containers?'<span class="rpd-ctn">'+row.containers+'</span>':''} ${row.route?'<em>'+row.route+'</em>':''}<br>${row.task}</div>`;
-      }
-    });
-    return html;
-  }
-
-  container.innerHTML=items.map(r=>`
-    <div class="rp-hist-item" id="rphi-${r.id}">
-      <div class="rp-hist-header" onclick="rpToggleItem(${r.id})">
-        <div>
-          <span class="rp-hist-date">${rpFmtDate(r.date)}</span>
-          <span class="rp-hist-day">${rpDayName(r.date)}</span>
-        </div>
-        <div class="rp-hist-tags">
-          ${_rpMod(r,'m1')?`<span class="rpd-cnt-tag" style="background:#dbeafe;color:#1d4ed8">Containers</span>`:''}
-          ${_rpMod(r,'m2')?`<span class="rpd-cnt-tag" style="background:#e0f2fe;color:#0369a1">Orders</span>`:''}
-          ${_rpMod(r,'m3')?`<span class="rpd-cnt-tag" style="background:#dcfce7;color:#15803d">Vessels</span>`:''}
-        </div>
-        <button class="rp-hist-del" onclick="rpDeleteReport(${r.id},event)" title="Delete">✕</button>
-      </div>
-      <div class="rp-hist-body">
-        ${_rpModBlock(r,'m1','一  Containers — Temu')}
-        ${_rpModBlock(r,'m2','二  Orders — 散单派送')}
-        ${_rpModBlock(r,'m3','三  Vessels — 空箱返程进口')}
-        <button onclick="rpLoadToForm(${r.id})" style="margin-top:8px;padding:4px 12px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">✏ Edit</button>
-      </div>
-    </div>`).join('');
-}
-
-// ── Weekly report ─────────────────────────────────────────────────
-function rpCurrentWeekKey(){
-  // Derive current week from today regardless of input state
-  return rpWeekKey(rpTodayISO());
-}
-function rpGenerateWeekly(){
-  const out=document.getElementById('rp-weekly-out');
-  if(!out) return;
-  try{
-  rpLoad();
-  let wk=document.getElementById('rp-week-sel')?.value||'';
-  // Fallback: input[type=week] unsupported in some browsers — derive from today
-  if(!wk) wk=rpCurrentWeekKey();
-
-  // Show all weeks with data if no specific week selected
-  const allWeeks=[...new Set(REPORTS.map(r=>r.week))].sort();
-  const days=REPORTS.filter(r=>r.week===wk).sort((a,b)=>a.date.localeCompare(b.date));
-
-  if(!REPORTS.length){
-    out.innerHTML='<div style="padding:18px 16px;color:#64748b;font-size:13px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">📭 暂无保存的报告。请先在左侧填写每日工作内容并点击"Save"。<br><br>No reports saved yet. Fill in the daily work sections on the left and click <b>Save</b> first.</div>';
-    return;
-  }
-  if(!days.length){
-    const hints=allWeeks.map(w=>`<span onclick="(function(){var el=document.getElementById('rp-week-sel');if(el)el.value='${w}';rpGenerateWeekly();})()" style="cursor:pointer;padding:3px 9px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;color:#15803d;margin:2px">${w.replace('-W',' W')}</span>`).join(' ');
-    out.innerHTML=`<div style="padding:14px 16px;color:#64748b;font-size:13px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">该周 (${wk}) 暂无报告。<br>有数据的周次：<br><br>${hints||'无'}</div>`;
-    return;
-  }
-  const [yr,wprt]=wk.split('-W');
-  const jan1=new Date(parseInt(yr),0,1);
-  const wStart=new Date(jan1.getTime()+(parseInt(wprt)-1)*7*86400000);
-  const wEnd=new Date(wStart.getTime()+6*86400000);
-  const fmtD=d=>['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();
-  const wLabel=`Week ${wprt} · ${fmtD(wStart)}–${fmtD(wEnd)}, ${yr}`;
-  // 每天按三个模块输出；旧报告(s1..s4/notes)自动折算，历史周报仍可生成
-  function _rpwLegacy(rows){
-    if(!Array.isArray(rows)||!rows.length) return '';
-    return rows.map(r=>Object.keys(r).filter(k=>r[k]!==''&&r[k]!=null).map(k=>String(r[k])).join(' · ')).join('\n');
-  }
-  function _rpwMod(r,k){
-    if(r[k]!==undefined) return String(r[k]||'').trim();
-    if(k==='m1') return [_rpwLegacy(r.s1),(r.notes||'').trim()].filter(Boolean).join('\n');
-    if(k==='m2') return _rpwLegacy(r.s4);
-    return [_rpwLegacy(r.s2),_rpwLegacy(r.s3)].filter(Boolean).join('\n');
-  }
-  const RPW_MODS=[['m1','Containers — Temu'],['m2','Orders — 散单派送'],['m3','Vessels — 空箱返程进口']];
-  function renderDayBlock(r){
-    const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-    const parts=[];
-    RPW_MODS.forEach(([k,label])=>{
-      const t=_rpwMod(r,k);
-      if(!t) return;
-      parts.push(`<div class="rpw-sec-lbl">${label}</div><div class="rpw-item">${esc(t).replace(/\n/g,'<br>')}</div>`);
-    });
-    return parts.join('');
-  }
-
-  out.innerHTML=`<div class="rp-weekly">
-    <div class="rp-weekly-hdr">📋 周报 Weekly Report — ${wLabel} · ${days.length} day${days.length>1?'s':''}</div>
-    <div style="padding:14px 16px">
-      ${days.map(r=>`
-        <div class="rpw-day">
-          <div class="rpw-day-hdr">${rpFmtDate(r.date)} &nbsp;<span style="font-weight:400;color:#64748b">${rpDayName(r.date)}</span></div>
-          ${renderDayBlock(r)}
-        </div>`).join('')}
-    </div>
-  </div>`;
-  out.scrollIntoView({behavior:'smooth',block:'nearest'});
-  }catch(e){
-    out.innerHTML=`<div style="padding:14px 16px;color:#dc2626;font-size:13px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca">❌ Error generating report: ${e.message}<br><small style="color:#9ca3af">Check browser console (F12) for details.</small></div>`;
-    console.error('rpGenerateWeekly error:',e);
-  }
-}
-
-function rpExportWeekly(){
-  const outEl=document.getElementById('rp-weekly-out');
-  if(!outEl?.innerHTML.trim()){ alert('Generate the report first.'); return; }
-  const wk=(document.getElementById('rp-week-sel')?.value||'week').replace('-','_');
-  const blob=new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Weekly Report ${wk}</title>
-<style>body{font-family:system-ui,sans-serif;padding:24px;max-width:900px;margin:0 auto;color:#1e293b}
-.rp-weekly{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
-.rp-weekly-hdr{background:#003534;color:#fff;padding:12px 16px;font-size:15px;font-weight:800}
-.rpw-day{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #f1f5f9}
-.rpw-day-hdr{font-size:13px;font-weight:800;color:#004D4C;margin-bottom:8px}
-.rpw-sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.4px;margin:8px 0 4px}
-.rpw-item{font-size:12px;color:#374151;line-height:1.6;padding:2px 0 2px 10px;border-left:2px solid #e2e8f0;margin-bottom:4px}
-</style></head><body>${outEl.innerHTML}</body></html>`],{type:'text/html'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='weekly_report_'+wk+'.html';
-  a.click();
-}
-
-function rpPopulateWeekSel(){
-  rpLoad();
-  const sel=document.getElementById('rp-week-sel'); if(!sel) return;
-  const cur=sel.value||rpWeekKey(rpTodayISO());
-  // Build list: weeks from reports + surrounding weeks around today
-  const today=rpWeekKey(rpTodayISO());
-  const existing=[...new Set(REPORTS.map(r=>r.week).filter(Boolean))];
-  // Add current + prev 8 + next 4 weeks
-  const extras=[];
-  for(let i=-8;i<=4;i++){
-    const d=new Date(); d.setDate(d.getDate()+i*7);
-    extras.push(rpWeekKey(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')));
-  }
-  const allWks=[...new Set([...existing,...extras])].sort().reverse();
-  sel.innerHTML=allWks.map(w=>{
-    const [yr,wp]=w.split('-W');
-    return `<option value="${w}"${w===cur?' selected':''}>${'Week '+parseInt(wp)+', '+yr}</option>`;
-  }).join('');
-  if(!sel.value && allWks.length) sel.value=allWks.find(w=>w===today)||allWks[0];
-}
-function renderReports(){
-  rpLoad();
-  const dateEl=document.getElementById('rp-date');
-  if(dateEl&&!dateEl.value){ dateEl.value=rpTodayISO(); rpUpdateDateLabel(); }
-  rpPopulateWeekSel();
-  rpRenderHistory();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -14607,69 +13961,6 @@ header { padding-top: max(8px, env(safe-area-inset-top)); }
   main { padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important; }
 }
 
-/* ── Reports Page ── */
-.rp-wrap{display:grid;grid-template-columns:520px 1fr;gap:16px;padding:16px;align-items:start}
-@media(max-width:960px){.rp-wrap{grid-template-columns:1fr}}
-.rp-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
-.rp-card-title{font-size:14px;font-weight:800;color:#1e293b;margin-bottom:12px}
-/* Header bar */
-.rp-hdr-bar{background:linear-gradient(135deg,#003534,#005c5b);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.rp-hdr-title{font-size:15px;font-weight:800;color:#fff}
-.rp-hdr-sub{font-size:12px;color:#5DD8D0;font-weight:600;margin-top:2px}
-.rp-hdr-bar input[type=date]{padding:6px 10px;border:1.5px solid rgba(255,255,255,.25);border-radius:7px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;cursor:pointer}
-.rp-hdr-bar input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1)}
-.rp-submit-btn{padding:7px 18px;background:#5DD8D0;color:#003534;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer}
-.rp-submit-btn:hover{background:#4cc9c1}
-.rp-clear-btn{padding:7px 10px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;font-size:13px;cursor:pointer}
-#rp-msg{padding:4px 0;font-size:12px;font-weight:600}
-/* Sections */
-.rp-section{background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:10px;overflow:hidden}
-.rp-sec-hdr{display:flex;align-items:center;gap:8px;padding:9px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap}
-.rp-sec-num{width:22px;height:22px;border-radius:50%;background:#003534;color:#5DD8D0;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.rp-sec-title{font-size:12px;font-weight:700;color:#1e293b}
-.rp-add-row-btn{margin-left:auto;padding:3px 11px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:12px;cursor:pointer;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Inter','Segoe UI',Arial,sans-serif}
-.rp-add-row-btn:hover{background:#dcfce7}
-.rp-sec-body{padding:8px 10px}
-/* Row inputs */
-.rp-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:start;padding:6px 4px;border-bottom:1px solid #f8fafc}
-.rp-field-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.rp-row:last-child{border-bottom:none}
-.rp-row-fields{display:flex;flex-direction:column;gap:5px}
-.rp-row-fields input,.rp-row-fields textarea,.rp-row-fields select{padding:6px 9px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;width:100%;box-sizing:border-box;background:#fff}
-.rp-row-fields input:focus,.rp-row-fields textarea:focus,.rp-row-fields select:focus{outline:none;border-color:#004D4C}
-.rp-f-batch,.rp-f-bkno,.rp-f-bkno2,.rp-f-ref{font-weight:600;color:#004D4C}
-.rp-f-batch option,.rp-f-bkno option,.rp-f-bkno2 option{font-weight:normal;color:#1e293b}
-.rp-autofilled{background:#f0fdf4!important;border-color:#86efac!important;color:#166534!important}
-.rp-row-del{background:none;border:none;color:#cbd5e1;font-size:16px;cursor:pointer;padding:4px 6px;border-radius:4px;flex-shrink:0;align-self:flex-start;margin-top:2px}
-.rp-row-del:hover{color:#ef4444;background:#fee2e2}
-.rp-notes-area{width:100%;box-sizing:border-box;padding:8px 12px;border:none;font-size:13px;font-family:inherit;resize:vertical;border-radius:0;background:#fff}
-.rp-notes-area:focus{outline:none}
-/* History */
-.rp-hist-item{border:1px solid #e2e8f0;border-radius:9px;margin-bottom:8px;overflow:hidden}
-.rp-hist-header{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;background:#f8fafc}
-.rp-hist-header:hover{background:#f1f5f9}
-.rp-hist-date{font-size:13px;font-weight:800;color:#1e293b}
-.rp-hist-day{font-size:11px;color:#94a3b8}
-.rp-hist-tags{display:flex;gap:4px;margin-left:auto}
-.rp-hist-del{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:13px;padding:0 4px}
-.rp-hist-del:hover{color:#ef4444}
-.rp-hist-body{display:none;padding:10px 12px;border-top:1px solid #f1f5f9}
-.rp-hist-item.expanded .rp-hist-body{display:block}
-.rpd-cnt-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700}
-.rpd-sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#94a3b8;margin:8px 0 4px;padding-bottom:2px;border-bottom:1px solid #f1f5f9}
-.rpd-item{font-size:12px;color:#374151;line-height:1.6;padding:3px 0;border-left:2px solid #e2e8f0;padding-left:8px;margin-bottom:3px}
-.rpd-tag{font-weight:700;color:#004D4C;background:#e0f2fe;border-radius:4px;padding:1px 6px;font-size:11px;margin-right:4px}
-.rpd-ctn{font-size:11px;background:#fef9c3;color:#92400e;border-radius:4px;padding:1px 5px;margin:0 3px}
-/* Weekly */
-.rp-weekly{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-top:10px;font-size:12px}
-.rp-weekly-hdr{background:linear-gradient(135deg,#003534,#005c5b);color:#fff;padding:10px 14px;font-size:13px;font-weight:800}
-.rpw-day{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #f1f5f9}
-.rpw-day:last-child{border-bottom:none;margin-bottom:0}
-.rpw-day-hdr{font-size:13px;font-weight:800;color:#004D4C;margin-bottom:8px;padding:4px 8px;background:#e0f2fe;border-radius:5px;display:inline-block}
-.rpw-sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.4px;margin:6px 0 3px;border-bottom:1px solid #f1f5f9;padding-bottom:2px}
-.rpw-item{font-size:11px;color:#374151;line-height:1.6;padding:2px 0 2px 8px;border-left:2px solid #e2e8f0;margin-bottom:3px}
-.rp-empty{text-align:center;padding:28px;color:#94a3b8;font-size:13px}
-
 /* ── VT Frozen columns (CY → Vessel Name) ── */
 th.vt-fc,td.vt-fc{position:sticky;z-index:3;background:#fff}
 thead th.vt-fc{z-index:20;top:0;background:#004D4C}
@@ -14813,9 +14104,6 @@ window.addEventListener('resize', ()=>{ if(_currentPage==='vessels') vtApplyFree
   </button>
   <button onclick="showPage('notices')" id="mnav-notices">
     <span class="mnav-icon">🔔</span>Notices
-  </button>
-  <button onclick="showPage('reports')" id="mnav-reports">
-    <span class="mnav-icon">📋</span>Reports
   </button>
   <button onclick="openSync()" id="mnav-sync">
     <span class="mnav-icon">☁️</span><span id="mnav-sync-label">Sync</span>
