@@ -1865,7 +1865,7 @@ tbody tr:hover{background:#fafbfc}
   </div>
 
   <div style="margin:0 0 8px">
-    <input type="text" id="f-search" placeholder="🔍  Search container, B/L, remark… paste multiple with commas" oninput="renderCT()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+    <input type="text" id="f-search" placeholder="🔍  Search container, B/L, remark… paste multiple with commas" oninput="ctSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
   </div>
 
   <div class="tbl-card">
@@ -2285,7 +2285,7 @@ tbody tr:hover{background:#fafbfc}
       </div>
     </div>
     <div style="margin-top:10px">
-      <input type="search" id="no-search" placeholder="🔍  Search order no., container, consignee, trucker, hub, remark… — a container number narrows to just that container" oninput="renderOrders()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
+      <input type="search" id="no-search" placeholder="🔍  Search order no., container, consignee, trucker, hub, remark… — a container number narrows to just that container" oninput="noSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
     </div>
     <div id="no-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;margin-top:10px">
       <span id="no-inline-sel-count">0 selected</span>
@@ -2420,7 +2420,7 @@ tbody tr:hover{background:#fafbfc}
   </div>
 
   <div style="margin:0 0 8px">
-    <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port, container no…" oninput="vtCombinedSearch(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+    <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port, container no…" oninput="vtSearchSoon(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
     <span id="vt-search-msg" class="vt-search-msg" style="display:block;margin-top:4px;padding-left:4px"></span>
   </div>
   <div class="tbl-card">
@@ -11732,6 +11732,15 @@ function _noBindLazyDates(root){
     }
   });
 }
+
+// 搜索框逐字触发整表重绘（多个多选下拉+全表+图表都要重算）很卡 ——
+// 停止打字 ~180ms 后再重绘一次，打字本身不再卡顿。
+let _ctSearchT=null;
+function ctSearchSoon(){ clearTimeout(_ctSearchT); _ctSearchT=setTimeout(()=>{ try{ renderCT(); }catch(e){} }, 180); }
+let _noSearchT=null;
+function noSearchSoon(){ clearTimeout(_noSearchT); _noSearchT=setTimeout(()=>{ try{ renderOrders(); }catch(e){} }, 180); }
+let _vtSearchT=null;
+function vtSearchSoon(v){ clearTimeout(_vtSearchT); _vtSearchT=setTimeout(()=>{ try{ vtCombinedSearch(v); }catch(e){} }, 180); }
 
 // 连续编辑（改完一格马上改下一格）会触发多次整表重绘，合并成一帧只画一次。
 let _noRenderPending=false;
