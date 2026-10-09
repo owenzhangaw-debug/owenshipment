@@ -1377,6 +1377,7 @@ thead tr.cf-row td.vt-fc,thead tr.cf-row td.vt-fc-expand{z-index:21}
 tr.cf-hidden{display:none}
 tr.no-fee-row{display:none}
 tr.no-fee-row.open{display:table-row}
+tr.no-fee-row.cf-hidden,tr.cf-hidden{display:none !important}
 .cf-cell{
   display:flex;align-items:center;height:21px;overflow:hidden;
   background:#fff;border:1px solid rgba(255,255,255,.30);
@@ -11036,7 +11037,8 @@ function cfBuild(tableId){
       inp.dataset.col=col; inp.dataset.table=tableId;
       inp.title=label+' — filter. Multiple values: separate with commas.';
       inp.placeholder='';
-      inp.addEventListener('input',()=>{ _cfMark(inp); cfApply(tableId); });
+      let _cfT=null;
+      inp.addEventListener('input',()=>{ _cfMark(inp); clearTimeout(_cfT); _cfT=setTimeout(()=>cfApply(tableId),150); });
       inp.addEventListener('keydown',e=>{
         e.stopPropagation();
         if(e.key==='Escape'){ inp.value=''; _cfMark(inp); cfApply(tableId); }
@@ -11081,7 +11083,14 @@ function _cfNorm(s){ return String(s==null?'':s).replace(/\s+/g,' ').trim().toLo
 // 一格还可能有多行（多个提单号），所以都收集起来再压平。
 function _cfCellText(cell){
   if(!cell) return '';
-  let s=cell.innerText||cell.textContent||'';
+  // innerText 会强制回流，整表逐格读取非常慢；改用 TreeWalker 读文本节点（跳过 select 的选项）
+  let s='';
+  const w=document.createTreeWalker(cell,NodeFilter.SHOW_TEXT);
+  for(let n=w.nextNode();n;n=w.nextNode()){
+    const pe=n.parentNode&&n.parentNode.nodeName;
+    if(pe==='OPTION'||pe==='SELECT'||pe==='STYLE'||pe==='SCRIPT') continue;
+    s+=n.nodeValue+' ';
+  }
   cell.querySelectorAll('input,textarea,select').forEach(el=>{
     if(el.type==='checkbox'||el.type==='radio') s+=' '+(el.checked?'yes':'no');
     else s+=' '+(el.value||'');
