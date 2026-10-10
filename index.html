@@ -103,6 +103,17 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 .sur-tbl tr.no-odd-order:hover td{background:#EFF7F7}
 .sur-tbl tr.no-odd-order td.fc-1,.sur-tbl tr.no-odd-order td.fc-2,.sur-tbl tr.no-odd-order td.fc-3{background:#F5FAF9}
 .sur-tbl tr.no-odd-order:hover td.fc-1,.sur-tbl tr.no-odd-order:hover td.fc-2,.sur-tbl tr.no-odd-order:hover td.fc-3{background:#EFF7F7}
+/* Orders 表：放宽行高/字号，输入更舒服 */
+#no-table th{font-size:11px;padding:6px 10px}
+#no-table tbody td{padding:5px 3px !important}
+#no-table tbody tr:not(.no-fee-row) td{height:54px}
+#no-table textarea.no-autogrow,#no-table input[type=text],#no-table input[type=number],#no-table select{
+  font-size:13px !important;padding:8px 10px !important;line-height:1.4 !important;border-radius:4px !important}
+#no-table textarea.no-autogrow{min-width:140px !important}
+#no-table input[type=text],#no-table select{min-width:110px}
+#no-table textarea.no-autogrow:hover,#no-table input[type=text]:hover{background:rgba(15,118,110,.06) !important}
+#no-table textarea.no-autogrow:focus,#no-table input[type=text]:focus,#no-table input[type=number]:focus,#no-table select:focus{
+  background:#fff !important;box-shadow:0 0 0 2px #0f766e inset !important}
 .sur-amt{font-weight:800;color:#DB2777}
 /* UNDELIVERED BATCH TABLE */
 .ud-tbl{width:100%;border-collapse:collapse;font-size:11px}
