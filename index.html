@@ -13803,12 +13803,45 @@ function _noOrderTotal(o){
   const total=list.reduce((s,cn)=>s+_noContainerAmount(o,cn),0);
   return Math.round(total*100)/100;
 }
+// ETA 3 天内（含今天）且还没到的订单提醒；每条可勾选「已处理」去掉提醒。
+// 忽略记录按「订单 + 当前 ETA」存，ETA 改了会重新提醒。
+let _noEtaDismissed=new Set();
+try{ _noEtaDismissed=new Set(JSON.parse(localStorage.getItem('owenz_no_eta_dismissed')||'[]')); }catch(e){}
+function noEtaDismiss(key,on){
+  if(on) _noEtaDismissed.add(key); else _noEtaDismissed.delete(key);
+  try{ localStorage.setItem('owenz_no_eta_dismissed',JSON.stringify([..._noEtaDismissed])); }catch(e){}
+  _noRenderStorageAlerts(window._noAlertRows||[]);
+}
+function _noEtaSoon(o){
+  const cs=_noContainers(o);
+  const list=cs.length?cs:[null];
+  const today=new Date(); today.setHours(0,0,0,0);
+  let best=null;
+  list.forEach(cn=>{
+    const pc=cn?_noPc(o,cn):{};
+    if(!!(pc['ATA']||o['ATA'])||!!pc['POD']) return;            // 已到/已送达的不提醒
+    const v=(cn&&pc['ETA']!==undefined&&pc['ETA']!=='')?pc['ETA']:o['ETA'];
+    const d=_noParseDate(v); if(!d) return;
+    const days=Math.round((d-today)/864e5);
+    if(days<0||days>3) return;
+    if(!best||d<best.d) best={d,days,v};
+  });
+  return best;
+}
 function _noRenderStorageAlerts(rows){
   const el=document.getElementById('no-storage-alerts'); if(!el) return;
-  const bad=rows.filter(_noOrderStorageExceeded);
-  if(!bad.length){ el.innerHTML=''; return; }
-  el.innerHTML=`<div style="margin-top:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#b91c1c;font-weight:600">
-    ⚠ ${bad.length} order${bad.length!==1?'s':''} exceeding free storage: ${bad.map(o=>_noEsc(o['Order No.']||('Order #'+o._id))).join(', ')}
+  window._noAlertRows=rows;
+  const hits=[];
+  rows.forEach(o=>{ const e=_noEtaSoon(o); if(e) hits.push({o,e,key:o._id+'|'+e.v}); });
+  hits.sort((a,b)=>a.e.d-b.e.d);
+  const show=hits.filter(h=>!_noEtaDismissed.has(h.key));
+  if(!show.length){ el.innerHTML=''; return; }
+  const dl=n=>n===0?'today':n===1?'tomorrow':'in '+n+' days';
+  el.innerHTML=`<div style="margin-top:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#92400e">
+    <div style="font-weight:700;margin-bottom:4px">⏰ ${show.length} order${show.length!==1?'s':''} arriving within 3 days</div>
+    ${show.map(h=>`<label style="display:flex;align-items:center;gap:8px;padding:2px 0;cursor:pointer">
+      <input type="checkbox" onchange="noEtaDismiss('${h.key.replace(/'/g,"\\'")}',this.checked)" title="Done — hide this reminder" style="width:14px;height:14px;cursor:pointer"/>
+      <b>${_noEsc(h.o['Order No.']||('Order #'+h.o._id))}</b><span>ETA ${_noEsc(h.e.v)} (${dl(h.e.days)})</span></label>`).join('')}
   </div>`;
 }
 // Map orders into dispatch pseudo-rows (used by renderDispatch)
