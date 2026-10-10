@@ -824,6 +824,8 @@ td.editing .cell-edit{display:block}
 /* ── CT Batch Progress Cards (new clean design) ── */
 .ct-bp-row{display:flex;flex-wrap:nowrap;gap:10px;overflow-x:auto;padding-bottom:4px}
 .ct-bp-card{background:#fff;border-radius:12px;border:1.5px solid #e5e7eb;padding:11px 13px;flex:0 0 auto;width:210px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:border-color .15s,box-shadow .15s;user-select:none}
+.ct-bp-card.bp-mini{width:168px;padding:6px 9px;border-radius:8px;box-shadow:none}
+.ct-bp-row:has(.bp-mini){gap:6px}
 .ct-bp-card:hover{border-color:#94a3b8;box-shadow:0 3px 10px rgba(0,0,0,.10)}
 .ct-bp-card.bp-active{border:2px solid #2563eb !important;box-shadow:0 3px 14px rgba(37,99,235,.18)}
 .ct-bp-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;gap:4px;flex-wrap:wrap}
@@ -13351,6 +13353,11 @@ function _noEffectiveHub(o){
   }).filter(Boolean))];
   return hubs.length?hubs.join(' / '):(o['Hub']||'');
 }
+// 订单进度卡片的显示模式：compact（默认，小卡片）/ full（完整）/ hide（收起），记在本机
+let _noBpMode='compact', _noBpDoneOpen=false;
+try{ _noBpMode=localStorage.getItem('owenz_no_bp_mode')||'compact'; }catch(e){}
+function noBpSetMode(m){ _noBpMode=m; try{ localStorage.setItem('owenz_no_bp_mode',m); }catch(e){} renderNoBatchProgress(); }
+function noBpToggleDone(){ _noBpDoneOpen=!_noBpDoneOpen; renderNoBatchProgress(); }
 function renderNoBatchProgress(){
   const el=document.getElementById('no-batch-progress'); if(!el) return;
   if(!NO.length){ el.innerHTML=''; return; }
@@ -13415,6 +13422,17 @@ function renderNoBatchProgress(){
     const remarkTxt=(o['Remark']||'').trim();
     const todayStatusVal=_noEsc(o['Today Status']);
     const projName=(o['Project']||'').trim();
+    if(_noBpMode==='compact'){
+      const st=(o['Today Status']||'').trim();
+      return `<div class="ct-bp-card bp-mini${isActive?' bp-active':''}" onclick="noBpCardClick('${nameEsc}')" title="${_noEsc(name+(st?' — '+st:''))}">
+        <div style="display:flex;align-items:center;gap:6px;justify-content:space-between">
+          <span class="ct-bp-name" style="font-size:11.5px">${_noEsc(name)}</span>
+          <span style="font-size:11px;font-weight:800;color:${fillColor}">${pct}%</span>
+        </div>
+        <div class="ct-bp-track" style="margin:3px 0"><div class="ct-bp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+        <div style="font-size:10px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${projName?_noEsc(projName)+' · ':''}${arrived}/${total}${hubStr?' · '+hubStr:''}${etaStr?' '+etaStr:''}${demurCount?' · <span style="color:#dc2626;font-weight:700">⏱'+demurMaxDays+'d</span>':''}</div>
+      </div>`;
+    }
     return `<div class="ct-bp-card${isActive?' bp-active':''}" onclick="noBpCardClick('${nameEsc}')" title="Click to filter by this order · click again to clear">
       ${projName?`<div class="no-bp-proj">${_noEsc(projName)}</div>`:''}
       <div class="ct-bp-hdr">
@@ -13434,9 +13452,13 @@ function renderNoBatchProgress(){
     </div>`;
   };
   const _groupLbl='font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.6px;margin:0 0 6px 2px';
-  el.innerHTML=`
+  const _bt=(m,l)=>`<button onclick="noBpSetMode('${m}')" style="padding:2px 10px;font-size:11px;font-weight:600;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;background:${_noBpMode===m?'#004D4C':'#fff'};color:${_noBpMode===m?'#fff':'#475569'}">${l}</button>`;
+  const _bar=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="${_groupLbl};margin:0">Order progress · ${active.length} ongoing / ${done.length} finished</span><span style="margin-left:auto;display:flex;gap:4px">${_bt('compact','Compact')}${_bt('full','Full')}${_bt('hide','Hide')}</span></div>`;
+  if(_noBpMode==='hide'){ el.innerHTML=_bar; return; }
+  const _doneOpen=(_noBpMode==='full')||_noBpDoneOpen;
+  el.innerHTML=_bar+`
     ${active.length?`<div style="${_groupLbl}">🚚 Ongoing (${active.length})</div><div class="ct-bp-row" data-bp-group="active">${active.map(renderCard).join('')}</div>`:''}
-    ${done.length?`<div style="${_groupLbl};margin-top:${active.length?'12px':'0'}">✅ Finished (${done.length})</div><div class="ct-bp-row" data-bp-group="done">${done.map(renderCard).join('')}</div>`:''}
+    ${done.length?`<div style="${_groupLbl};margin-top:${active.length?'10px':'0'};${_noBpMode==='compact'?'cursor:pointer':''}" ${_noBpMode==='compact'?'onclick="noBpToggleDone()"':''}>✅ Finished (${done.length})${_noBpMode==='compact'?(_doneOpen?' ▾':' ▸'):''}</div>${_doneOpen?`<div class="ct-bp-row" data-bp-group="done">${done.map(renderCard).join('')}</div>`:''}`:''}
   `;
   el.querySelectorAll('textarea.no-autogrow').forEach(_noAutoGrow);
   const _newActiveRow=el.querySelector('.ct-bp-row[data-bp-group="active"]');
