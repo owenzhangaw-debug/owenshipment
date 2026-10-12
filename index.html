@@ -2342,6 +2342,7 @@ tbody tr:hover{background:#fafbfc}
       <tbody id="no-body"></tbody>
     </table>
   </div>
+  <div class="chart-card" id="no-hub-tariff" style="padding:14px 16px;margin-top:14px"></div>
 </div>
 
 <!-- ══ VESSELS ══ -->
@@ -2705,7 +2706,7 @@ tbody tr:hover{background:#fafbfc}
       <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/><datalist id="dl-truck"></datalist></div>
       <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker" placeholder="e.g. Wispex"/><datalist id="dl-broker"><option value="Wispex"/><option value="Self"/></datalist></div>
       <datalist id="dl-hub"><option value="Duisburg"/><option value="Tilburg"/><option value="Direct (Małaszewicze)"/></datalist>
-      <datalist id="dl-hub-o"><option value="Duisburg"/><option value="Tilburg"/><option value="Małaszewicze"/><option value="Rotterdam"/><option value="Antwerp"/></datalist>
+      <datalist id="dl-hub-o"></datalist>
       <datalist id="dl-service-o"><option value="LCL Delivery"/><option value="FCL Delivery"/><option value="T1"/><option value="Custom Clearance"/><option value="T1 + Delivery"/><option value="Custom Clearance + Delivery"/><option value="Storage"/><option value="Transshipment"/></datalist>
       <datalist id="dl-status-o"><option value="New"/><option value="Booked"/><option value="Picked Up"/><option value="In Transit"/><option value="Delivered"/><option value="Cancelled"/></datalist>
       <div class="form-group"><label>Destination</label>
@@ -10565,7 +10566,7 @@ async function pushToCloud(manual=false){
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),_dlReasons,_bpTrainDates,_ts:Date.now()})
+      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),NO_HUBS,_dlReasons,_bpTrainDates,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
@@ -10621,6 +10622,7 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.VT){ VT=rec.VT; vtNextId=Math.max(0,...VT.map(r=>r._id||0))+1; localStorage.setItem(LS_VT,JSON.stringify(VT)); }
     if(rec&&rec.FB){ FB=rec.FB; localStorage.setItem(FB_KEY,JSON.stringify(FB)); }
     if(rec&&Array.isArray(rec.NO)){ NO=rec.NO; noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; localStorage.setItem(LS_NO,JSON.stringify(NO)); if(typeof renderOrders==='function') renderOrders(); }
+    if(rec&&Array.isArray(rec.NO_HUBS)&&rec.NO_HUBS.length){ NO_HUBS=rec.NO_HUBS; try{ localStorage.setItem(LS_NO_HUBS,JSON.stringify(NO_HUBS)); }catch(e){} if(typeof renderNoHubs==='function') renderNoHubs(); }
     if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     if(rec&&Array.isArray(rec.REMINDERS)){ REMINDERS=rec.REMINDERS; _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); if(typeof remRender==='function') remRender(); }
@@ -11373,7 +11375,7 @@ function _noDefaultCharges(o,cn){
   const sur=(typeof _noSurcharges==='function')?_noSurcharges(o,cn):[];
   if(fr) out.push({item:'Freight',r:fr,p:0,note:''});
   if(cc) out.push({item:'CC',r:cc,p:0,note:''});
-  if(sf&&_noN(sf.fee)) out.push({item:'Storage',r:_noN(sf.fee),p:0,note:sf.byDays+'d x EUR'+sf.ppd});
+  if(sf&&_noN(sf.fee)) out.push({item:'Storage',r:_noN(sf.fee),p:0,note:sf.tiered?(sf.byDays+'d tiered ('+(sf.cur||'EUR')+')'):(sf.byDays+'d x EUR'+sf.ppd)});
   (sur||[]).forEach(s=>{ if(_noN(s.fee)) out.push({item:'Other',r:_noN(s.fee),p:0,note:s.reason||''}); });
   return out;
 }
@@ -12975,6 +12977,97 @@ remLoad(); remRender();
 // ── NORMAL CONTAINER ORDERS (non-TEMU) ────────────────────────────
 const LS_NO='owenz_no_v1';
 let NO=[]; let noNextId=1;
+// ── 场站堆存费率表（Hub 来源）─────────────────────────────────────
+// 每个场站：免堆天数 + 阶梯日费（"5:20, 11:40, 21:50" = 第5天起20/天，第11天起40/天，第21天起50/天）+ 一次性操作费
+const LS_NO_HUBS='owenz_no_hubs_v1';
+let NO_HUBS=[
+ {id:1,name:'Malaszewicze（RTSB）',free:4,cur:'EUR',tiers:'5:20, 11:40, 21:50',oneoff:'',note:''},
+ {id:2,name:'Malaszewicze（金华班列）',free:3,cur:'EUR',tiers:'5:30, 9:60, 21:90',oneoff:'',note:''},
+ {id:3,name:'Duisburg（RTSB/MTD/D3T/DIT）',free:3,cur:'EUR',tiers:'4:30, 11:60, 21:150',oneoff:'',note:''},
+ {id:4,name:'Duisburg Gateway（DGT）',free:3,cur:'EUR',tiers:'4:30, 11:60, 21:150, 31:200',oneoff:'',note:''},
+ {id:5,name:'DIT',free:4,cur:'USD',tiers:'5:58, 11:75, 21:140, 31:230',oneoff:'40',note:'另收一次性操作费 40$'},
+ {id:6,name:'Duisburg（金华班列）',free:2,cur:'EUR',tiers:'4:70, 11:90, 21:180, 31:240',oneoff:'',note:'31天起 240€/天 限DGT'},
+ {id:7,name:'Hamburg DUSS（金华班列）',free:1,cur:'EUR',tiers:'3:70, 13:130, 21:160',oneoff:'',note:''},
+ {id:8,name:'布拉格 Ceska Trebova',free:7,cur:'USD',tiers:'8:40, 11:45, 21:65',oneoff:'60',note:'另收一次性操作费 60$'},
+ {id:9,name:'Milan（金华班列）',free:1,cur:'EUR',tiers:'3:70, 11:130',oneoff:'',note:''},
+ {id:10,name:'Budapest（金华班列）',free:3,cur:'EUR',tiers:'5:60, 11:100, 14:190',oneoff:'',note:''},
+];
+try{ const _h=localStorage.getItem(LS_NO_HUBS); if(_h){ const a=JSON.parse(_h); if(Array.isArray(a)) NO_HUBS=a; } }catch(e){}
+function saveNoHubs(){
+  try{ localStorage.setItem(LS_NO_HUBS,JSON.stringify(NO_HUBS)); }catch(e){}
+  if(typeof cloudAutoSave==='function') cloudAutoSave();
+}
+function _noHubByName(name){
+  const n=String(name||'').trim().toLowerCase(); if(!n) return null;
+  return NO_HUBS.find(h=>String(h.name||'').trim().toLowerCase()===n)||null;
+}
+function _noHubTiers(h){
+  return String(h&&h.tiers||'').split(/[,;，；|\n]+/).map(t=>{
+    const m=t.trim().match(/^(\d+)\s*[:：=@]\s*(\d+(?:\.\d+)?)$/);
+    return m?{from:+m[1],rate:+m[2]}:null;
+  }).filter(Boolean).sort((a,b)=>a.from-b.from);
+}
+// 超免堆期后第 day 天（从到场起算，第 free+1 天是首个收费日）的日费
+function _noHubRateOnDay(h,day){
+  const t=_noHubTiers(h); if(!t.length) return 0;
+  let r=t[0].rate; t.forEach(x=>{ if(day>=x.from) r=x.rate; });
+  return r;
+}
+function _noHubFee(h,byDays){
+  const free=parseInt(h.free,10)||0; let fee=0;
+  for(let d=free+1; d<=free+byDays; d++) fee+=_noHubRateOnDay(h,d);
+  return Math.round(fee*100)/100;
+}
+function noHubRefreshDL(){
+  const dl=document.getElementById('dl-hub-o'); if(!dl) return;
+  dl.innerHTML=NO_HUBS.filter(h=>(h.name||'').trim()).map(h=>`<option value="${_noEsc(h.name)}"></option>`).join('');
+}
+function noHubSet(id,f,v){
+  const h=NO_HUBS.find(x=>x.id===id); if(!h) return;
+  h[f]=(f==='free')?(v===''?'':Math.max(0,parseInt(v,10)||0)):String(v).trim();
+  saveNoHubs(); noHubRefreshDL();
+  if(typeof noRenderSoon==='function') noRenderSoon();
+}
+function noHubAdd(){
+  NO_HUBS.push({id:Math.max(0,...NO_HUBS.map(h=>h.id||0))+1,name:'',free:3,cur:'EUR',tiers:'',oneoff:'',note:''});
+  saveNoHubs(); renderNoHubs();
+}
+function noHubDel(id){
+  const h=NO_HUBS.find(x=>x.id===id); if(!h) return;
+  if(!confirm('Delete terminal "'+(h.name||'(unnamed)')+'"?')) return;
+  NO_HUBS=NO_HUBS.filter(x=>x.id!==id); saveNoHubs(); renderNoHubs(); noHubRefreshDL();
+  if(typeof noRenderSoon==='function') noRenderSoon();
+}
+function renderNoHubs(){
+  const el=document.getElementById('no-hub-tariff'); if(!el) return;
+  const inp='padding:6px 8px;font-size:12.5px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;width:100%;box-sizing:border-box';
+  const used=n=>{
+    const k=String(n||'').trim().toLowerCase(); if(!k) return 0;
+    return NO.filter(o=>{ const cs=_noContainers(o); return (cs.length?cs:[null]).some(cn=>String(_noCtnHub(o,cn)).trim().toLowerCase()===k); }).length;
+  };
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+      <h3 style="margin:0;font-size:14px">🏗️ Terminal storage tariff</h3>
+      <span style="font-size:11.5px;color:#64748b">Orders' Hub only suggests terminals listed here · picking one auto-fills free days and tiered storage fee</span>
+      <button onclick="noHubAdd()" style="margin-left:auto;padding:5px 14px;font-size:12px;font-weight:700;background:#004D4C;color:#fff;border:none;border-radius:6px;cursor:pointer">+ Add terminal</button>
+    </div>
+    <div class="tbl-scroll"><table class="sur-tbl" style="width:100%;min-width:900px"><thead><tr>
+      <th style="min-width:220px">Terminal (= Hub name)</th><th style="width:80px">Free days</th><th style="width:90px">Currency</th>
+      <th style="min-width:240px">Tiers — from day : rate/day</th><th style="width:110px">One-off fee</th><th style="min-width:160px">Note</th><th style="width:60px">Orders</th><th style="width:36px"></th></tr></thead><tbody>
+    ${NO_HUBS.map(h=>`<tr>
+      <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.name)}" onchange="noHubSet(${h.id},'name',this.value)" placeholder="e.g. Duisburg（DGT）"/></td>
+      <td style="padding:4px"><input type="number" min="0" style="${inp};text-align:center" value="${_noEsc(h.free)}" onchange="noHubSet(${h.id},'free',this.value)"/></td>
+      <td style="padding:4px"><select style="${inp}" onchange="noHubSet(${h.id},'cur',this.value)">${['EUR','USD'].map(c=>`<option${h.cur===c?' selected':''}>${c}</option>`).join('')}</select></td>
+      <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.tiers)}" onchange="noHubSet(${h.id},'tiers',this.value)" placeholder="5:20, 11:40, 21:50"/></td>
+      <td style="padding:4px"><input style="${inp};text-align:right" value="${_noEsc(h.oneoff)}" onchange="noHubSet(${h.id},'oneoff',this.value)" placeholder="0"/></td>
+      <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.note)}" onchange="noHubSet(${h.id},'note',this.value)"/></td>
+      <td style="padding:4px;text-align:center;color:#64748b;font-size:12px">${used(h.name)||''}</td>
+      <td style="padding:4px;text-align:center"><span onclick="noHubDel(${h.id})" style="color:#dc2626;cursor:pointer;font-weight:700" title="Delete">✕</span></td>
+    </tr>`).join('')}
+    </tbody></table></div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:6px">Tiers: "5:20" = day 5 onward is 20/day until the next tier. A container's own Free days / €/d entered in the Demurrage column overrides the tariff.</div>`;
+  noHubRefreshDL();
+}
 const _noOpen=new Set();
 const NO_STATUS=['New','Booked','Picked Up','In Transit','Delivered','Cancelled'];
 const NO_ST_STYLE={
@@ -13497,6 +13590,7 @@ function noBpCardClick(orderName){
   }
 }
 function renderOrders(){
+  if(!window._noHubsBuilt){ window._noHubsBuilt=true; try{ renderNoHubs(); }catch(e){} }
   renderNoBatchProgress();
   const body=document.getElementById('no-body'); if(!body) return;
   // status filter options follow whatever statuses exist in the data (free-typed included)
@@ -13665,7 +13759,7 @@ function renderOrders(){
             onchange="${cn?`noSetCtn(${o._id},'${ce}','Free Storage (Days)',this.value)`:`noSet(${o._id},'Free Storage (Days)',this.value)`}"
             style="width:52px;min-width:0;padding:2px 3px;font-size:11px;text-align:center;border:1px solid #e2e8f0;background:#fff"/>
           <span style="font-size:10px;color:#94a3b8">d</span>
-          <input type="text" value="${_noEsc(_noCtnFld(o,cn,'Price per Day'))}" class="no-dem-in" placeholder="€" title="Storage price per day (this container)"
+          <input type="text" value="${_noEsc((cn&&_noPc(o,cn)['Price per Day']!==undefined&&_noPc(o,cn)['Price per Day']!=='')?_noPc(o,cn)['Price per Day']:(_noHubByName(_noCtnHub(o,cn))&&_noHubTiers(_noHubByName(_noCtnHub(o,cn))).length?'':o['Price per Day']))}" class="no-dem-in" placeholder="${(cn&&_noHubByName(_noCtnHub(o,cn))&&_noHubTiers(_noHubByName(_noCtnHub(o,cn))).length)?'auto':'€'}" title="Storage price per day (this container). Blank + terminal in tariff table = tiered rate from the tariff"
             onchange="${cn?`noSetCtn(${o._id},'${ce}','Price per Day',this.value)`:`noSet(${o._id},'Price per Day',this.value)`}" onkeydown="if(event.key==='Enter')this.blur()"
             style="width:62px;min-width:0;padding:2px 3px;font-size:11px;text-align:right;border:1px solid #e2e8f0;background:#fff"/>
         </div>`;
@@ -13765,7 +13859,13 @@ function _noDemurrageDays(o,cn){
 // Free days count from "At Hub Date"; alert if Delivery Date (or, once at hub, today if no delivery date yet) is past the expiry.
 // Falls back to the order's Hub ETA when At Hub Date hasn't been filled in yet, so the calc still works with just Free Days + Price/Day + ETA + Delivery Date.
 // 免堆天数 / 日费：每个柜子可单独设置，没设置时沿用订单级的旧值
-function _noCtnFld(o,cn,f){ const pc=cn?_noPc(o,cn):{}; return (pc[f]!==undefined&&pc[f]!=='')?pc[f]:o[f]; }
+function _noCtnHub(o,cn){ const pc=cn?_noPc(o,cn):{}; return (pc['Hub']!==undefined&&pc['Hub']!=='')?pc['Hub']:(o['Hub']||''); }
+function _noCtnFld(o,cn,f){
+  const pc=cn?_noPc(o,cn):{};
+  if(pc[f]!==undefined&&pc[f]!=='') return pc[f];
+  if(f==='Free Storage (Days)'){ const h=_noHubByName(_noCtnHub(o,cn)); if(h&&h.free!=='') return h.free; }
+  return o[f];
+}
 function _noStorageInfo(o,cn){
   const pc=_noPc(o,cn);
   const freeDays=parseInt(_noCtnFld(o,cn,'Free Storage (Days)'),10);
@@ -13782,7 +13882,15 @@ function _noStorageInfo(o,cn){
 // Storage fee = (days over free storage) × price/day, for one container
 function _noStorageFee(o,cn){
   const st=_noStorageInfo(o,cn); if(!st||!st.exceeded) return null;
-  const ppd=parseFloat(_noCtnFld(o,cn,'Price per Day'));
+  const pc=_noPc(o,cn);
+  const explicit=parseFloat(pc['Price per Day']);
+  const h=_noHubByName(_noCtnHub(o,cn));
+  if(!(explicit>0) && h && _noHubTiers(h).length){
+    const fee=_noHubFee(h,st.byDays);
+    if(!fee) return null;
+    return {byDays:st.byDays, ppd:_noHubRateOnDay(h,(parseInt(h.free,10)||0)+st.byDays), fee, tiered:true, cur:h.cur};
+  }
+  const ppd=parseFloat(explicit>0?explicit:o['Price per Day']);
   if(!ppd||ppd<=0) return null;
   return {byDays:st.byDays, ppd, fee:Math.round(st.byDays*ppd*100)/100};
 }
