@@ -110,6 +110,7 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 #no-table textarea.no-autogrow,#no-table input[type=text],#no-table input[type=number],#no-table select{
   font-size:13px !important;padding:8px 10px !important;line-height:1.4 !important;border-radius:4px !important}
 #no-table textarea.no-autogrow{min-width:140px !important}
+#no-table input.no-dem-in{min-width:0 !important;padding:6px 4px !important;font-size:13px !important;text-align:center}
 #no-table input[type=text],#no-table select{min-width:110px}
 #no-table textarea.no-autogrow:hover,#no-table input[type=text]:hover{background:rgba(15,118,110,.06) !important}
 #no-table textarea.no-autogrow:focus,#no-table input[type=text]:focus,#no-table input[type=number]:focus,#no-table select:focus{
@@ -13660,13 +13661,13 @@ function renderOrders(){
         // Free days / Price per day 是算滞箱费的参数，放在 Demurrage 一起
         return `<div style="display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap">
           <input type="checkbox" ${demurChecked?'checked':''} onchange="${demurOnchange}" title="${demurTitle}" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer;flex:0 0 auto;margin:0"/>
-          <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" placeholder="d" title="Free storage days"
+          <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" class="no-dem-in" placeholder="d" title="Free storage days"
             onchange="noSet(${o._id},'Free Storage (Days)',this.value)"
-            style="width:34px;min-width:0;padding:2px 3px;font-size:11px;text-align:center;border:1px solid #e2e8f0;background:#fff"/>
+            style="width:52px;min-width:0;padding:2px 3px;font-size:11px;text-align:center;border:1px solid #e2e8f0;background:#fff"/>
           <span style="font-size:10px;color:#94a3b8">d</span>
-          <input type="text" value="${_noEsc(o['Price per Day'])}" placeholder="€" title="Storage price per day"
+          <input type="text" value="${_noEsc(o['Price per Day'])}" class="no-dem-in" placeholder="€" title="Storage price per day"
             onchange="noSet(${o._id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()"
-            style="width:42px;min-width:0;padding:2px 3px;font-size:11px;text-align:right;border:1px solid #e2e8f0;background:#fff"/>
+            style="width:62px;min-width:0;padding:2px 3px;font-size:11px;text-align:right;border:1px solid #e2e8f0;background:#fff"/>
         </div>`;
       })()}</td>
       ${(()=>{
