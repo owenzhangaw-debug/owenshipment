@@ -13279,7 +13279,7 @@ function applyNoBulkEdit(){
     let touched=false;
     if(truck){ o['Trucker']=truck; touched=true; }
     if(hub){ o['Hub']=hub; touched=true; }
-    if(ppd){ o['Price per Day']=ppd; touched=true; }
+    if(ppd){ o['Price per Day']=ppd; _noContainers(o).forEach(cn=>{ const pc=_noPc(o,cn); if(pc) delete pc['Price per Day']; }); touched=true; }
     if(pay){ o['Payment Status']=pay; touched=true; }
     if(remark){ o['Remark']=remark; touched=true; }
     if(customs){ o['Customs Office']=(customs==='yes'); touched=true; }
@@ -13661,12 +13661,12 @@ function renderOrders(){
         // Free days / Price per day 是算滞箱费的参数，放在 Demurrage 一起
         return `<div style="display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap">
           <input type="checkbox" ${demurChecked?'checked':''} onchange="${demurOnchange}" title="${demurTitle}" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer;flex:0 0 auto;margin:0"/>
-          <input type="number" min="0" value="${_noEsc(o['Free Storage (Days)'])}" class="no-dem-in" placeholder="d" title="Free storage days"
-            onchange="noSet(${o._id},'Free Storage (Days)',this.value)"
+          <input type="number" min="0" value="${_noEsc(_noCtnFld(o,cn,'Free Storage (Days)'))}" class="no-dem-in" placeholder="d" title="Free storage days (this container)"
+            onchange="${cn?`noSetCtn(${o._id},'${ce}','Free Storage (Days)',this.value)`:`noSet(${o._id},'Free Storage (Days)',this.value)`}"
             style="width:52px;min-width:0;padding:2px 3px;font-size:11px;text-align:center;border:1px solid #e2e8f0;background:#fff"/>
           <span style="font-size:10px;color:#94a3b8">d</span>
-          <input type="text" value="${_noEsc(o['Price per Day'])}" class="no-dem-in" placeholder="€" title="Storage price per day"
-            onchange="noSet(${o._id},'Price per Day',this.value)" onkeydown="if(event.key==='Enter')this.blur()"
+          <input type="text" value="${_noEsc(_noCtnFld(o,cn,'Price per Day'))}" class="no-dem-in" placeholder="€" title="Storage price per day (this container)"
+            onchange="${cn?`noSetCtn(${o._id},'${ce}','Price per Day',this.value)`:`noSet(${o._id},'Price per Day',this.value)`}" onkeydown="if(event.key==='Enter')this.blur()"
             style="width:62px;min-width:0;padding:2px 3px;font-size:11px;text-align:right;border:1px solid #e2e8f0;background:#fff"/>
         </div>`;
       })()}</td>
@@ -13764,10 +13764,12 @@ function _noDemurrageDays(o,cn){
 // Computes free-storage status for one container of an order.
 // Free days count from "At Hub Date"; alert if Delivery Date (or, once at hub, today if no delivery date yet) is past the expiry.
 // Falls back to the order's Hub ETA when At Hub Date hasn't been filled in yet, so the calc still works with just Free Days + Price/Day + ETA + Delivery Date.
+// 免堆天数 / 日费：每个柜子可单独设置，没设置时沿用订单级的旧值
+function _noCtnFld(o,cn,f){ const pc=cn?_noPc(o,cn):{}; return (pc[f]!==undefined&&pc[f]!=='')?pc[f]:o[f]; }
 function _noStorageInfo(o,cn){
-  const freeDays=parseInt(o['Free Storage (Days)'],10);
-  if(!freeDays||freeDays<=0) return null;
   const pc=_noPc(o,cn);
+  const freeDays=parseInt(_noCtnFld(o,cn,'Free Storage (Days)'),10);
+  if(!freeDays||freeDays<=0) return null;
   const atHub=_noParseDate(pc['At Hub Date'])||_noParseDate(o['ETA']);
   if(!atHub) return null;
   const expiry=new Date(atHub); expiry.setDate(expiry.getDate()+freeDays);
@@ -13780,7 +13782,7 @@ function _noStorageInfo(o,cn){
 // Storage fee = (days over free storage) × price/day, for one container
 function _noStorageFee(o,cn){
   const st=_noStorageInfo(o,cn); if(!st||!st.exceeded) return null;
-  const ppd=parseFloat(o['Price per Day']);
+  const ppd=parseFloat(_noCtnFld(o,cn,'Price per Day'));
   if(!ppd||ppd<=0) return null;
   return {byDays:st.byDays, ppd, fee:Math.round(st.byDays*ppd*100)/100};
 }
