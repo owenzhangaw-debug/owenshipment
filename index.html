@@ -12981,16 +12981,16 @@ let NO=[]; let noNextId=1;
 // 每个场站：免堆天数 + 阶梯日费（"5:20, 11:40, 21:50" = 第5天起20/天，第11天起40/天，第21天起50/天）+ 一次性操作费
 const LS_NO_HUBS='owenz_no_hubs_v1';
 let NO_HUBS=[
- {id:1,name:'Malaszewicze（RTSB）',free:4,cur:'EUR',tiers:'5:20, 11:40, 21:50',oneoff:'',note:''},
- {id:2,name:'Malaszewicze（金华班列）',free:3,cur:'EUR',tiers:'5:30, 9:60, 21:90',oneoff:'',note:''},
- {id:3,name:'Duisburg（RTSB/MTD/D3T/DIT）',free:3,cur:'EUR',tiers:'4:30, 11:60, 21:150',oneoff:'',note:''},
- {id:4,name:'Duisburg Gateway（DGT）',free:3,cur:'EUR',tiers:'4:30, 11:60, 21:150, 31:200',oneoff:'',note:''},
- {id:5,name:'DIT',free:4,cur:'USD',tiers:'5:58, 11:75, 21:140, 31:230',oneoff:'40',note:'另收一次性操作费 40$'},
- {id:6,name:'Duisburg（金华班列）',free:2,cur:'EUR',tiers:'4:70, 11:90, 21:180, 31:240',oneoff:'',note:'31天起 240€/天 限DGT'},
- {id:7,name:'Hamburg DUSS（金华班列）',free:1,cur:'EUR',tiers:'3:70, 13:130, 21:160',oneoff:'',note:''},
- {id:8,name:'布拉格 Ceska Trebova',free:7,cur:'USD',tiers:'8:40, 11:45, 21:65',oneoff:'60',note:'另收一次性操作费 60$'},
- {id:9,name:'Milan（金华班列）',free:1,cur:'EUR',tiers:'3:70, 11:130',oneoff:'',note:''},
- {id:10,name:'Budapest（金华班列）',free:3,cur:'EUR',tiers:'5:60, 11:100, 14:190',oneoff:'',note:''},
+ {id:1,name:'Malaszewicze（RTSB）',free:4,cur:'EUR',tiers:'5:20, 11:40, 21:50',note:''},
+ {id:2,name:'Malaszewicze（金华班列）',free:3,cur:'EUR',tiers:'5:30, 9:60, 21:90',note:''},
+ {id:3,name:'Duisburg（RTSB/MTD/D3T/DIT）',free:3,cur:'EUR',tiers:'4:30, 11:60, 21:150',note:''},
+ {id:4,name:'Duisburg Gateway（DGT）',free:3,cur:'EUR',tiers:'4:30, 11:60, 21:150, 31:200',note:''},
+ {id:5,name:'DIT',free:4,cur:'USD',tiers:'5:58, 11:75, 21:140, 31:230',note:'另收一次性操作费 40$'},
+ {id:6,name:'Duisburg（金华班列）',free:2,cur:'EUR',tiers:'4:70, 11:90, 21:180, 31:240',note:'31天起 240€/天 限DGT'},
+ {id:7,name:'Hamburg DUSS（金华班列）',free:1,cur:'EUR',tiers:'3:70, 13:130, 21:160',note:''},
+ {id:8,name:'布拉格 Ceska Trebova',free:7,cur:'USD',tiers:'8:40, 11:45, 21:65',note:'另收一次性操作费 60$'},
+ {id:9,name:'Milan（金华班列）',free:1,cur:'EUR',tiers:'3:70, 11:130',note:''},
+ {id:10,name:'Budapest（金华班列）',free:3,cur:'EUR',tiers:'5:60, 11:100, 14:190',note:''},
 ];
 try{ const _h=localStorage.getItem(LS_NO_HUBS); if(_h){ const a=JSON.parse(_h); if(Array.isArray(a)) NO_HUBS=a; } }catch(e){}
 function saveNoHubs(){
@@ -13029,7 +13029,7 @@ function noHubSet(id,f,v){
   if(typeof noRenderSoon==='function') noRenderSoon();
 }
 function noHubAdd(){
-  NO_HUBS.push({id:Math.max(0,...NO_HUBS.map(h=>h.id||0))+1,name:'',free:3,cur:'EUR',tiers:'',oneoff:'',note:''});
+  NO_HUBS.push({id:Math.max(0,...NO_HUBS.map(h=>h.id||0))+1,name:'',free:3,cur:'EUR',tiers:'',note:''});
   saveNoHubs(); renderNoHubs();
 }
 function noHubDel(id){
@@ -13041,10 +13041,6 @@ function noHubDel(id){
 function renderNoHubs(){
   const el=document.getElementById('no-hub-tariff'); if(!el) return;
   const inp='padding:6px 8px;font-size:12.5px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;width:100%;box-sizing:border-box';
-  const used=n=>{
-    const k=String(n||'').trim().toLowerCase(); if(!k) return 0;
-    return NO.filter(o=>{ const cs=_noContainers(o); return (cs.length?cs:[null]).some(cn=>String(_noCtnHub(o,cn)).trim().toLowerCase()===k); }).length;
-  };
   el.innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
       <h3 style="margin:0;font-size:14px">🏗️ Terminal storage tariff</h3>
@@ -13052,16 +13048,14 @@ function renderNoHubs(){
       <button onclick="noHubAdd()" style="margin-left:auto;padding:5px 14px;font-size:12px;font-weight:700;background:#004D4C;color:#fff;border:none;border-radius:6px;cursor:pointer">+ Add terminal</button>
     </div>
     <div class="tbl-scroll"><table class="sur-tbl" style="width:100%;min-width:900px"><thead><tr>
-      <th style="min-width:220px">Terminal (= Hub name)</th><th style="width:80px">Free days</th><th style="width:90px">Currency</th>
-      <th style="min-width:240px">Tiers — from day : rate/day</th><th style="width:110px">One-off fee</th><th style="min-width:160px">Note</th><th style="width:60px">Orders</th><th style="width:36px"></th></tr></thead><tbody>
+      <th style="min-width:220px">Hub</th><th style="width:80px">Free days</th><th style="width:90px">Currency</th>
+      <th style="min-width:240px">Tiers — from day : rate/day</th><th style="min-width:200px">Note</th><th style="width:36px"></th></tr></thead><tbody>
     ${NO_HUBS.map(h=>`<tr>
       <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.name)}" onchange="noHubSet(${h.id},'name',this.value)" placeholder="e.g. Duisburg（DGT）"/></td>
       <td style="padding:4px"><input type="number" min="0" style="${inp};text-align:center" value="${_noEsc(h.free)}" onchange="noHubSet(${h.id},'free',this.value)"/></td>
       <td style="padding:4px"><select style="${inp}" onchange="noHubSet(${h.id},'cur',this.value)">${['EUR','USD'].map(c=>`<option${h.cur===c?' selected':''}>${c}</option>`).join('')}</select></td>
       <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.tiers)}" onchange="noHubSet(${h.id},'tiers',this.value)" placeholder="5:20, 11:40, 21:50"/></td>
-      <td style="padding:4px"><input style="${inp};text-align:right" value="${_noEsc(h.oneoff)}" onchange="noHubSet(${h.id},'oneoff',this.value)" placeholder="0"/></td>
       <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.note)}" onchange="noHubSet(${h.id},'note',this.value)"/></td>
-      <td style="padding:4px;text-align:center;color:#64748b;font-size:12px">${used(h.name)||''}</td>
       <td style="padding:4px;text-align:center"><span onclick="noHubDel(${h.id})" style="color:#dc2626;cursor:pointer;font-weight:700" title="Delete">✕</span></td>
     </tr>`).join('')}
     </tbody></table></div>
