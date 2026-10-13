@@ -1584,7 +1584,6 @@ tbody tr:hover{background:#fafbfc}
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('orders')">Orders</button>
     <button onclick="showPage('vessels')">Vessels</button>
-    <button onclick="showPage('dispatch')">Dispatch</button>
     <span class="nav-divider"></span>
     <div class="hb-sec">Tools</div>
     <!-- Tools dropdown -->
@@ -2353,26 +2352,14 @@ tbody tr:hover{background:#fafbfc}
         <th class="fc-3">B/L No.</th>
         <th class="fc-4">Consignee</th>
         <th>Destination</th>
-        <th style="text-align:center" title="Customs office provided?">Customs Office</th>
         <th>Trucker</th>
-        <th style="min-width:70px">Hub</th>
+        <th>Hub</th>
         <th>ETA</th>
-        <th style='min-width:90px'>At Hub Date</th>
-        <th style="text-align:center" title="Arrived at hub — ready to be picked up">Ready to be Picked</th>
-        <th style="min-width:95px" title="Date the container was actually picked up">Pick Up Date</th>
-        <th style="text-align:center;min-width:172px" title="Customs handling — T1 and/or CC, each with the date it was completed">Custom</th>
         <th>Delivery Date</th>
         <th>ATA</th>
-        <th style="text-align:center;min-width:150px" title="Demurrage — auto-checked when ATA is later than Delivery Date. Free storage days and price per day drive the storage charge.">Demurrage · Free d · €/d</th>
-        <th style="text-align:right;min-width:92px" title="What you invoice the customer — Freight + CC + Storage + Surcharge">Receivable</th>
-        <th style="text-align:right;min-width:92px" title="What you owe suppliers — the payable side of each charge">Payable</th>
+        <th style="min-width:160px">Status</th>
+        <th style="text-align:right;min-width:92px" title="Receivable (from Charges in the detail drawer)">Receivable</th>
         <th style="text-align:right;min-width:88px" title="Receivable − Payable">Margin</th>
-        <th style="text-align:right;min-width:104px" title="Whole-order totals across every container">Order Total</th>
-        <th>Payment Status</th>
-        <th style="text-align:center;min-width:118px" title="Proof of Delivery — marks the container delivered; date optional">POD</th>
-        <th style="min-width:150px">Service</th>
-        <th style="text-align:center;min-width:150px">Status</th>
-        <th style="min-width:220px">Remark</th>
         <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="no-sel-all" onchange="noSelAllVisible(this.checked)" title="Select all visible"/></th>
         <th style="width:32px"></th>
       </tr></thead>
@@ -2627,298 +2614,6 @@ tbody tr:hover{background:#fafbfc}
 <!-- ══════════════════════════════════════════════════════════
      DISPATCH PAGE (Container + Vessel tabs)
 ══════════════════════════════════════════════════════════ -->
-<div id="page-dispatch" class="page">
-  <!-- Tab switcher: 3 Gantt tabs -->
-  <div style="display:flex;background:#003534;padding:8px 16px 0;gap:6px">
-    <button id="dispatch-tab-ct" onclick="switchDispatchTab('ct')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:#fff;color:#003534;transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:none">📦</span> Containers</button>
-    <button id="dispatch-tab-order" onclick="switchDispatchTab('order')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:grayscale(.4) brightness(1.3)">🧾</span> Orders</button>
-    <button id="dispatch-tab-vt" onclick="switchDispatchTab('vt')" style="display:flex;align-items:center;gap:8px;padding:9px 22px;font-size:12.5px;font-weight:800;border:none;cursor:pointer;border-radius:10px 10px 0 0;background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);transition:all .15s;letter-spacing:.2px"><span style="font-size:17px;line-height:1;filter:grayscale(.4) brightness(1.3)">🚢</span> Vessels</button>
-  </div>
-
-  <!-- ── Containers Gantt ── -->
-  <div id="dispatch-panel-ct">
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
-      <span id="gantt-ct-badge" style="font-size:11px;background:#eff6ff;color:#1d4ed8;border-radius:10px;padding:2px 10px;font-weight:700"></span>
-      <label style="font-size:11px;color:#64748b;font-weight:600">From</label>
-      <input type="date" id="gantt-ct-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('ct')">
-      <label style="font-size:11px;color:#64748b;font-weight:600">To</label>
-      <input type="date" id="gantt-ct-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('ct')">
-      <button onclick="ganttSetRange('ct','thisweek')" title="Mon–Sun of the current week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-      <button onclick="ganttSetRange('ct','next2w')" title="2 full Mon–Sun weeks: this week + next week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-      <button onclick="ganttSetRange('ct','all')" title="No date filter" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
-      <select id="gantt-ct-trucker" onchange="renderGanttFor('ct')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Truckers</option></select>
-      <select id="gantt-ct-consignee" onchange="renderGanttFor('ct')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Consignees</option></select>
-    </div>
-    <div id="gantt-ct-content"></div>
-  </div>
-
-  <!-- ── Orders Gantt ── -->
-  <div id="dispatch-panel-order" style="display:none">
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
-      <span id="gantt-order-badge" style="font-size:11px;background:#f5f3ff;color:#7c3aed;border-radius:10px;padding:2px 10px;font-weight:700"></span>
-      <label style="font-size:11px;color:#64748b;font-weight:600">From</label>
-      <input type="date" id="gantt-order-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('order')">
-      <label style="font-size:11px;color:#64748b;font-weight:600">To</label>
-      <input type="date" id="gantt-order-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('order')">
-      <button onclick="ganttSetRange('order','thisweek')" title="Mon–Sun of the current week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-      <button onclick="ganttSetRange('order','next2w')" title="2 full Mon–Sun weeks: this week + next week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-      <button onclick="ganttSetRange('order','all')" title="No date filter" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
-      <select id="gantt-order-consignee" onchange="renderGanttFor('order')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Consignees</option></select>
-    </div>
-    <div id="gantt-order-content"></div>
-  </div>
-
-  <!-- ── Vessels Gantt ── -->
-  <div id="dispatch-panel-vt" style="display:none">
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
-      <span id="gantt-vt-badge" style="font-size:11px;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:2px 10px;font-weight:700"></span>
-      <label style="font-size:11px;color:#64748b;font-weight:600">From</label>
-      <input type="date" id="gantt-vt-from" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('vt')">
-      <label style="font-size:11px;color:#64748b;font-weight:600">To</label>
-      <input type="date" id="gantt-vt-to" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px" onchange="renderGanttFor('vt')">
-      <button onclick="ganttSetRange('vt','thisweek')" title="Mon–Sun of the current week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer">This Week</button>
-      <button onclick="ganttSetRange('vt','next2w')" title="2 full Mon–Sun weeks: this week + next week" style="padding:4px 10px;font-size:11px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;cursor:pointer">Next 2 Wks</button>
-      <button onclick="ganttSetRange('vt','next4w')" title="4 full Mon–Sun weeks from this Monday" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer">Next 4 Wks</button>
-      <button onclick="ganttSetRange('vt','all')" title="No date filter" style="padding:4px 10px;font-size:11px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">All</button>
-      <select id="gantt-vt-status" onchange="renderGanttFor('vt')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
-        <option value="">All Statuses</option>
-        <option value="Scheduled">Scheduled</option>
-        <option value="Cut-Off Soon">Cut-Off Soon</option>
-        <option value="Cut-Off Passed">Cut-Off Passed</option>
-        <option value="Departed">Departed</option>
-        <option value="Discharged">Discharged</option>
-        <option value="TBD">TBD</option>
-      </select>
-      <select id="gantt-vt-cy" onchange="renderGanttFor('vt')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All CYs</option></select>
-      <select id="gantt-vt-carrier" onchange="renderGanttFor('vt')" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px"><option value="">All Carriers</option></select>
-    </div>
-    <div id="gantt-vt-content"></div>
-  </div>
-</div>
-
-</main>
-
-<!-- SLOT EMAIL GENERATOR MODAL -->
-<div class="overlay" id="se-overlay" onclick="if(event.target===this)closeSlotEmails()">
-  <div class="modal se-modal">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h2 style="margin:0">📧 Slot Booking Emails</h2>
-      <button class="mbtn-cancel" onclick="closeSlotEmails()" style="margin:0">✕ Close</button>
-    </div>
-    <div class="se-toolbar" style="margin-bottom:10px">
-      <label>Recipient</label>
-      <input type="text" id="se-recipient" placeholder="e.g. Warehouse Team" style="width:190px" oninput="buildSlotEmails()"/>
-      <label style="margin-left:8px">Sender</label>
-      <input type="text" id="se-sender" placeholder="e.g. Owen" style="width:120px" oninput="buildSlotEmails()"/>
-      <label style="margin-left:8px">Carrier CC</label>
-      <input type="text" id="se-carrier-cc" placeholder="e.g. carrier@rhenus.com" style="width:200px" oninput="buildSlotEmails()"/>
-      <button class="se-copy-btn" onclick="seToggleContacts()" id="se-contacts-btn" style="margin-left:8px;background:#f0f9ff;color:#0369a1;border-color:#bae6fd">📋 Contacts</button>
-      <button class="se-copy-btn" id="se-copy-all-btn" onclick="copyAllSlotEmails()" style="margin-left:auto">⎘ Copy All</button>
-    </div>
-    <!-- Contacts Management Panel -->
-    <div id="se-contacts-panel" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <span style="font-weight:700;font-size:14px;color:#0f172a">📋 Consignee Contacts</span>
-        <span style="font-size:11px;color:#6b7280;flex:1">Used to populate "To:" in slot emails. Matched by consignee name.</span>
-        <button class="se-copy-btn" onclick="seAddContact()" style="background:#d1fae5;color:#065f46;border-color:#6ee7b7;font-size:12px">+ Add</button>
-      </div>
-      <div id="se-contacts-list"></div>
-    </div>
-    <div style="margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Filter by Batch</div>
-      <div id="se-batch-pills" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-    </div>
-    <div id="se-body"></div>
-  </div>
-</div>
-
-<!-- ADD / EDIT MODAL -->
-<div class="overlay" id="modal-overlay">
-  <div class="modal">
-    <h2 id="modal-title">Add Container</h2>
-    <div class="form-grid">
-      <div class="form-group"><label>Container No.</label><input type="text" id="f_no"/></div>
-      <div class="form-group"><label>Master B/L</label><input type="text" id="f_bl"/></div>
-      <div class="form-group"><label>Project</label><input type="text" id="f_batch" list="dl-batch"/><datalist id="dl-batch"></datalist></div>
-      <div class="form-group"><label>Consignee</label><input type="text" id="f_con" list="dl-con"/><datalist id="dl-con"></datalist></div>
-      <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/><datalist id="dl-truck"></datalist></div>
-      <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker" placeholder="e.g. Wispex"/><datalist id="dl-broker"><option value="Wispex"/><option value="Self"/></datalist></div>
-      <datalist id="dl-hub"><option value="Duisburg"/><option value="Tilburg"/><option value="Direct (Małaszewicze)"/></datalist>
-      <datalist id="dl-hub-o"></datalist>
-      <datalist id="dl-service-o"><option value="LCL Delivery"/><option value="FCL Delivery"/><option value="T1"/><option value="Custom Clearance"/><option value="T1 + Delivery"/><option value="Custom Clearance + Delivery"/><option value="Storage"/><option value="Transshipment"/></datalist>
-      <datalist id="dl-status-o"><option value="New"/><option value="Booked"/><option value="Picked Up"/><option value="In Transit"/><option value="Delivered"/><option value="Cancelled"/></datalist>
-      <div class="form-group"><label>Destination</label>
-        <input type="text" id="f_dest" list="dl-dest" placeholder="e.g. Belgium"/><datalist id="dl-dest"></datalist></div>
-      <div class="form-group"><label>Tracking</label>
-        <select id="f_track"><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
-      <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
-      <div class="form-group"><label>ETA at Hub <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: Mala+3wd)</span></label><input type="text" id="f_eta" placeholder="YYYY/MM/DD"/></div>
-      <div class="form-group"><label>T1 Date <span style="font-size:10px;color:var(--muted);font-weight:400">T1 customs cleared</span></label><input type="text" id="f_t1date" placeholder="YYYY/MM/DD"/></div>
-      <div class="form-group"><label>Scheduled Slot <span style="font-size:10px;color:var(--muted);font-weight:400">(auto: next working day after Hub, afternoon)</span></label><input type="text" id="f_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
-      <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr" placeholder="YYYY/MM/DD"/></div>
-      <div class="form-group"><label>Deadline</label><input type="text" id="f_dl" placeholder="YYYY/MM/DD"/></div>
-      <div class="form-group"><label>Pickup Ref</label><input type="text" id="f_ref"/></div>
-      <div class="form-group"><label>Price (€)</label><input type="number" min="0" step="0.01" id="f_price" placeholder="0.00"/></div>
-      <div class="form-group"><label>Price T1 (€)</label><input type="number" min="0" step="0.01" id="f_price_t1" placeholder="0.00"/></div>
-      <div class="form-group"><label>Surcharge (€)</label><input type="number" min="0" step="0.01" id="f_surcharge" placeholder="0.00"/></div>
-      <div class="form-group"><label>Surcharge Reason</label>
-        <select id="f_surcharge_reason"><option value="">—</option><option value="unloading">Unloading</option><option value="ATA delayed">ATA Delayed</option><option value="other">Other</option></select></div>
-      <div class="form-group"><label>Payment Status</label>
-        <select id="f_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Amending">Amending</option><option value="Verifying">Verifying</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
-      <div class="form-group"><label>T1 Payment Status</label>
-        <select id="f_t1_pay_status"><option value="">—</option><option value="Pending invoice">Pending invoice</option><option value="Amending">Amending</option><option value="Verifying">Verifying</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
-      <div class="form-group"><label>Remark</label><input type="text" id="f_rmk"/></div>
-      <div class="form-group" style="align-items:flex-start;padding-top:18px">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
-          <input type="checkbox" id="f_cmr" style="width:16px;height:16px;cursor:pointer"/> CMR Received
-        </label>
-      </div>
-    </div>
-    <div class="modal-btns">
-      <button class="mbtn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="mbtn-save" onclick="saveRow()">💾 Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- BULK ADD MODAL -->
-<div class="overlay" id="bulk-overlay">
-  <div class="modal" style="width:660px">
-    <h2>⊞ Bulk Add Containers</h2>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Adding new containers? Fill in the shared fields below. Just updating slots/dates on <b>existing</b> containers? Leave everything blank except what you're changing — paste the container numbers and Scheduled Slot / dates and only those fields get touched; nothing else (country, status, project…) gets overwritten.</p>
-    <div class="form-grid">
-      <div class="form-group"><label>Project <span style="font-weight:400;color:var(--muted)">(required for new containers only)</span></label><input type="text" id="b_batch" list="dl-batch"/></div>
-      <div class="form-group"><label>Consignee</label><input type="text" id="b_con" list="dl-con"/></div>
-      <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
-      <div class="form-group"><label>Destination</label>
-        <input type="text" id="b_dest" list="dl-dest" placeholder="leave blank = no change / Belgium default for new"/></div>
-      <div class="form-group"><label>Tracking</label>
-        <select id="b_track"><option value="">— no change / blank for new —</option><option value="None">None</option><option value="T1">T1</option><option value="Arrived">Arrived</option></select></div>
-      <div class="form-group"><label>ETA in Mala</label><input type="text" id="b_eta_mala" placeholder="YYYY/MM/DD" title="ETA at Port of Malaysia"/></div>
-      <div class="form-group"><label>ETA at Hub</label><input type="text" id="b_eta" placeholder="YYYY/MM/DD"/></div>
-      <div class="form-group"><label>T1 Date</label><input type="text" id="b_t1date" placeholder="YYYY/MM/DD"/></div>
-      <div class="form-group"><label>Scheduled Slot</label><input type="text" id="b_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
-      <div class="form-group"><label>Deadline</label><input type="text" id="b_dl" placeholder="YYYY/MM/DD"/></div>
-      <div class="form-group" style="align-items:flex-start;padding-top:18px">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600">
-          <input type="checkbox" id="b_cmr" style="width:16px;height:16px;cursor:pointer"/> CMR Received
-        </label>
-      </div>
-      <div class="form-group full">
-        <label>Container No., Master B/L &amp; Scheduled Slot — one per line
-          <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px">
-            Format: <code style="background:#f0f2f8;padding:1px 5px;border-radius:4px">CONTAINER_NO, MASTER_BL, SLOT</code>
-            &nbsp;—&nbsp; Master B/L and Slot are optional &nbsp;|&nbsp; use <code style="background:#f0f2f8;padding:1px 5px;border-radius:4px">CONTAINER_NO,, SLOT</code> to skip B/L
-          </span>
-        </label>
-        <textarea id="b_nos" rows="10" style="border:1px solid var(--border);border-radius:7px;padding:8px;font-family:monospace;font-size:12px;resize:vertical" placeholder="Paste straight from Excel — any column order.&#10;Container numbers and B/L numbers are detected automatically.&#10;Merged cells: rows with only a B/L attach to the container above.&#10;&#10;OyTM202609103257&#9;TBJU7618547&#10;OyTM202609109990&#10;OyTM202609101892&#9;NEPU4570234" oninput="bulkPreview()"></textarea>
-        <div id="b_parsed_preview" style="margin-top:6px;font-size:11px;color:var(--muted);max-height:120px;overflow-y:auto"></div>
-      </div>
-    </div>
-    <div id="b_ok"  class="info-box info-ok"></div>
-    <div id="b_err" class="info-box info-err"></div>
-    <div class="modal-btns">
-      <button class="mbtn-cancel" onclick="closeBulk()">Cancel</button>
-      <button class="mbtn-save" onclick="saveBulk()">⊞ Add All</button>
-    </div>
-  </div>
-</div>
-
-<!-- IMPORT MODAL -->
-<div class="overlay" id="bulk-pickup-overlay">
-  <div class="modal" style="width:560px">
-    <h2>📥 Bulk Pickup Ref Import</h2>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Paste two columns: <b>Container No.</b> and <b>Pickup Ref</b> — tab, comma, or space separated. One container per line.</p>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <label style="font-size:12px;font-weight:600;white-space:nowrap">Only apply to batch:</label>
-      <input id="bulk-pickup-batch" type="text" value="Chengdu 3/11" style="flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Leave blank to apply to all batches"/>
-    </div>
-    <textarea id="bulk-pickup-text" rows="12" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical" placeholder="NEPU4534432&#9;WB049289CDHOT_1&#10;NEPU4595525&#9;WB049290CDHOT_1&#10;..."></textarea>
-    <div id="bulk-pickup-result" style="margin-top:8px;font-size:12px;min-height:20px"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-      <button class="mbtn-cancel" onclick="closeBulkPickup()">Cancel</button>
-      <button class="mbtn-save" onclick="applyBulkPickup()">↑ Apply</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── PASTE SLOTS MODAL ─────────────────────────────────────── -->
-<div class="overlay" id="slot-paste-overlay">
-  <div class="modal" style="max-width:640px;width:95%">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-      <span style="font-size:20px">📋</span>
-      <h3 style="margin:0;font-size:15px;font-weight:800;color:#003534">Paste Warehouse Slots</h3>
-    </div>
-    <p style="font-size:12px;color:#64748b;margin:0 0 10px">
-      Paste slot confirmations from warehouse system. Accepted formats:<br>
-      <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:11px">DD/MM/YYYY HH:MM  CONTAINER  BL1 [BL2 ...]</code>
-      &nbsp;or&nbsp;
-      <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:11px">MM/DD/YYYY HH:MM  CONTAINER  BL</code><br>
-      Lines that are just labels (e.g. "AMS", "BRU") are treated as warehouse tags — ignored for matching.
-    </p>
-    <textarea id="slot-paste-text" rows="16" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;resize:vertical" placeholder="08/06/2026 10:00  NEPU4598360  OYTM202604300333&#10;08/06/2026 12:00  SEGU4698096  OYTM202604303975&#10;..."></textarea>
-    <div id="slot-paste-preview" style="margin-top:8px;font-size:12px;min-height:20px;max-height:160px;overflow-y:auto"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-      <button class="mbtn-cancel" onclick="closeSlotPaste()">Cancel</button>
-      <button style="padding:6px 18px;font-size:13px;font-weight:700;background:#003534;color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="applySlotPaste()">↑ Apply Slots</button>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="import-overlay">
-  <div class="modal" style="width:700px">
-    <h2>↑ Import from Excel / CSV</h2>
-    <div id="drop-zone" style="border:2px dashed var(--border);border-radius:10px;padding:28px;
-      text-align:center;cursor:pointer;margin-bottom:14px"
-      onclick="document.getElementById('xl-input').click()"
-      ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
-      ondragleave="this.style.borderColor='var(--border)'"
-      ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleImport({target:{files:event.dataTransfer.files}})">
-      <div style="font-size:30px;margin-bottom:6px">📂</div>
-      <div style="font-weight:600;color:var(--navy)">Click or drag &amp; drop your Excel file here</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">.xlsx · .xls · .csv</div>
-    </div>
-    <div id="imp-sheet" style="display:none;margin-bottom:12px">
-      <div class="fg"><label>Select sheet</label>
-        <select id="imp-sheet-sel" onchange="renderImportPreview()"></select></div>
-    </div>
-    <div id="imp-mapinfo" style="display:none;font-size:12px;color:var(--muted);
-      background:#f8f9ff;border:1px solid var(--border);border-radius:8px;padding:9px 13px;margin-bottom:12px"></div>
-    <div id="imp-preview-wrap" style="display:none">
-      <div id="imp-preview-title" style="font-weight:600;font-size:13px;margin-bottom:7px"></div>
-      <div style="overflow-x:auto;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead id="imp-head" style="position:sticky;top:0;background:var(--navy);color:#fff"></thead>
-          <tbody id="imp-body"></tbody>
-        </table>
-      </div>
-    </div>
-    <div id="imp-opts" style="display:none;margin-top:14px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Import Mode</div>
-      <div style="display:flex;flex-direction:column;gap:6px" id="imp-mode-radios">
-        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:8px 12px;border-radius:7px;border:2px solid #43A047;background:#F1F8E9">
-          <input type="radio" name="imp_mode" value="add" checked style="margin-top:2px;accent-color:#43A047"/>
-          <span><strong style="color:#2E7D32">Add new only</strong><br><span style="font-size:11px;color:#558B2F">Skip containers already in the tracker (matched by Container No.) — existing data is untouched</span></span>
-        </label>
-        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid var(--border);background:#fff">
-          <input type="radio" name="imp_mode" value="upsert" style="margin-top:2px;accent-color:#004D4C"/>
-          <span><strong style="color:#004D4C">Update existing + add new</strong><br><span style="font-size:11px;color:var(--muted)">Update fields for matching containers and add any new ones — no data is deleted</span></span>
-        </label>
-        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid var(--border);background:#fff">
-          <input type="radio" name="imp_mode" value="replace" style="margin-top:2px;accent-color:#C62828"/>
-          <span><strong style="color:#C62828">Replace all</strong><br><span style="font-size:11px;color:var(--muted)">⚠ Removes all existing containers and imports fresh from this file</span></span>
-        </label>
-      </div>
-    </div>
-    <div id="imp-ok"  class="info-box info-ok"></div>
-    <div id="imp-err" class="info-box info-err"></div>
-    <div class="modal-btns">
-      <button class="mbtn-cancel" onclick="closeImport()">Cancel</button>
-      <button class="mbtn-save" id="imp-btn" style="display:none" onclick="confirmImport()">↑ Import</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ TEMU 轨迹表生成 ══ -->
 <div class="overlay" id="temu-overlay">
   <div class="modal" style="width:760px;max-width:96vw">
@@ -3444,7 +3139,6 @@ function showPage(p){
   if(p==='planning'){ rcpRender(); }
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); }
-  if(p==='dispatch'){ switchDispatchTab(_activeDispatchTab||'ct'); }
 }
 function _contextAdd(){
   if(_currentPage==='vessels') openAddVesselModal();
@@ -7139,7 +6833,7 @@ function renderCT(){
       </div>
     </div>`;
 
-    return `<tr class="${rowCls}" id="row-${r._id}">
+    return `<tr class="${rowCls}" id="row-${r._id}" onclick="wbRowClick(event,'ct',${r._id})" style="cursor:pointer">
       <td class="fc-1" style="padding:4px 6px;white-space:nowrap"><button class="ct-exp-btn" onclick="ctToggleExpand(${r._id})" title="${ctIsOpen?'Collapse':'Expand'}">${ctIsOpen?'▼':'▶'}</button>${r['Batch / Train']||''}${slotBadge}</td>
       <td class="fc-2" style="padding:2px 7px;white-space:nowrap"><strong>${r['Container No.']||''}</strong>${_isTemu?' <span title="Temu project (Master B/L filled)" style="font-size:8px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;border-radius:4px;padding:0 4px;font-weight:800;vertical-align:middle">TEMU</span>':''}</td>
       ${blC}
@@ -8106,7 +7800,7 @@ function renderVT(){
     }).join('');
     const tagsHtml=cnCount?`<div class="vt-cn-tags">${tags}</div>`:`<div class="vt-cn-tags"><span class="vt-cn-empty">No containers linked yet</span></div>`;
 
-    return `<tr class="${cls}" id="vrow-${r._id}" style="--vpct:${Math.round(_vpPct*100)}%" onmouseenter="(function(){const c=document.querySelector('.vt-voyage-card[data-vtid=\\'${r._id}\\']');if(c){c.classList.remove('vt-pop');void c.offsetWidth;c.classList.add('vt-pop');}})()">
+    return `<tr class="${cls}" id="vrow-${r._id}" onclick="wbRowClick(event,'vt',${r._id})" style="cursor:pointer;--vpct:${Math.round(_vpPct*100)}%" onmouseenter="(function(){const c=document.querySelector('.vt-voyage-card[data-vtid=\\'${r._id}\\']');if(c){c.classList.remove('vt-pop');void c.offsetWidth;c.classList.add('vt-pop');}})()">
       <td class="vt-fc-expand" style="padding:1px 4px;text-align:center;white-space:nowrap">
         <button class="vt-expand-btn" onclick="vtToggleExpand(${r._id})" title="${isOpen?'Collapse':'Expand'}">${isOpen?'▼':'▶'}</button>
         ${cnCount?`<span style="font-size:10px;color:var(--blue);font-weight:700">${cnCount}</span>`:''}
@@ -12018,778 +11712,6 @@ function applyBulkEdit(){
   setTimeout(()=>{ closeBE(); clearAllSel(); }, 900);
 }
 
-// ══════════════════════════════════════════════════════════
-// DISPATCH VIEW
-// ══════════════════════════════════════════════════════════
-
-// Trucker colour palette
-// DV_TRUCKER_COLORS declared at top of script to avoid TDZ errors
-function dvTruckerStyle(t){
-  const c=DV_TRUCKER_COLORS[t]||{bg:'#f1f5f9',border:'#cbd5e1',text:'#475569'};
-  return `background:${c.bg};border-color:${c.border};color:${c.text}`;
-}
-
-// Parse slot string → ISO date "YYYY-MM-DD"
-// Handles: "2026/5/22 13:00", "2026-05-22 13:00", "22-May 13:00", "22-May-2026"
-function dvParseSlot(s){
-  if(!s) return null;
-  // Format: YYYY/M/D ... or YYYY-MM-DD ...
-  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if(m) return `${m[1]}-${String(parseInt(m[2])).padStart(2,'0')}-${String(parseInt(m[3])).padStart(2,'0')}`;
-  // Format: DD-MMM HH:MM or DD-MMM-YYYY
-  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-  m=s.match(/^(\d{1,2})-([A-Za-z]{3})(?:-(\d{4}))?/);
-  if(m){
-    const mo=months[m[2].toLowerCase()]; if(!mo) return null;
-    const day=parseInt(m[1]);
-    let yr=m[3]?parseInt(m[3]):new Date().getFullYear();
-    return `${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-  }
-  return null;
-}
-
-// Parse arrival date string → ISO "YYYY-MM-DD"
-// Handles: "24-Jan-2026", "2026/1/24", "2026-01-24"
-function dvParseArrival(s){
-  if(!s) return null;
-  // YYYY/M/D or YYYY-MM-DD
-  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if(m) return `${m[1]}-${String(parseInt(m[2])).padStart(2,'0')}-${String(parseInt(m[3])).padStart(2,'0')}`;
-  // DD-MMM-YYYY
-  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-  m=s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
-  if(m){ const mo=months[m[2].toLowerCase()]; return mo?`${m[3]}-${String(mo).padStart(2,'0')}-${String(parseInt(m[1])).padStart(2,'0')}`:null; }
-  return null;
-}
-
-function dvTodayISO(){
-  const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function dvAddDays(iso,n){
-  const d=new Date(iso); d.setDate(d.getDate()+n);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function dvFmtDate(iso){
-  const d=new Date(iso+'T00:00:00');
-  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return {full:`${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`, dow:days[d.getDay()], short:`${months[d.getMonth()]} ${d.getDate()}`};
-}
-
-function dvSetRange(key){
-  const today=dvTodayISO();
-  let from='',to='';
-  if(key==='thisweek'){
-    const d=new Date(); const dow=d.getDay();
-    const mon=new Date(d); mon.setDate(d.getDate()-(dow===0?6:dow-1));
-    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
-    from=mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');
-    to=sun.getFullYear()+'-'+String(sun.getMonth()+1).padStart(2,'0')+'-'+String(sun.getDate()).padStart(2,'0');
-  }
-  else if(key==='next2w'){ from=today; to=dvAddDays(today,13); }
-  else if(key==='all'){ from=''; to=''; }
-  window._dvDefaultApplied=true; // user chose a range — don't re-apply default
-  const f=document.getElementById('dv-from'); if(f) f.value=from;
-  const t=document.getElementById('dv-to'); if(t) t.value=to;
-  renderDispatch();
-}
-
-// ══ VESSEL DISPATCH ══════════════════════════════════════════════════
-function vdParseDate(s){
-  if(!s) return null;
-  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if(m) return `${m[1]}-${String(parseInt(m[2])).padStart(2,'0')}-${String(parseInt(m[3])).padStart(2,'0')}`;
-  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-  m=s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
-  if(m){ const mo=months[m[2].toLowerCase()]; return mo?`${m[3]}-${String(mo).padStart(2,'0')}-${String(parseInt(m[1])).padStart(2,'0')}`:null; }
-  return null;
-}
-function vdTodayISO(){
-  const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function vdAddDays(iso,n){
-  const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function vdFmtDate(iso){
-  const d=new Date(iso+'T00:00:00');
-  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return {full:`${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`, short:`${months[d.getMonth()]} ${d.getDate()}`};
-}
-function vdSetRange(key){
-  const today=vdTodayISO();
-  let from='',to='';
-  if(key==='thisweek'){
-    const d=new Date(); const dow=d.getDay();
-    const mon=new Date(d); mon.setDate(d.getDate()-(dow===0?6:dow-1));
-    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
-    from=mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');
-    to=sun.getFullYear()+'-'+String(sun.getMonth()+1).padStart(2,'0')+'-'+String(sun.getDate()).padStart(2,'0');
-  } else if(key==='next2w'){ from=today; to=vdAddDays(today,13); }
-  else if(key==='next4w'){ from=today; to=vdAddDays(today,27); }
-  else if(key==='all'){ from=''; to=''; }
-  const f=document.getElementById('vd-from'); if(f) f.value=from;
-  const t=document.getElementById('vd-to'); if(t) t.value=to;
-  renderVesselDispatch();
-}
-function vdStatusStyle(s){
-  if(!s||s==='TBD') return 'background:#f3e8ff;color:#7c3aed';
-  if(s==='Scheduled') return 'background:#dbeafe;color:#1d4ed8';
-  if(s==='Cut-Off Soon') return 'background:#ffedd5;color:#c2410c';
-  if(s==='Cut-Off Passed') return 'background:#fee2e2;color:#991b1b';
-  if(s==='Departed') return 'background:#d1fae5;color:#065f46';
-  if(s==='Discharged') return 'background:#f1f5f9;color:#64748b';
-  return 'background:#f1f5f9;color:#475569';
-}
-// carrier colour palette (mirrors DV_TRUCKER_COLORS style)
-const VD_CARRIER_COLORS={};
-const _VD_CARRIER_PALETTE=[
-  {bg:'#eff6ff',border:'#bfdbfe',text:'#1e40af'},
-  {bg:'#f0fdf4',border:'#bbf7d0',text:'#14532d'},
-  {bg:'#fdf4ff',border:'#e9d5ff',text:'#6b21a8'},
-  {bg:'#fff7ed',border:'#fed7aa',text:'#9a3412'},
-  {bg:'#fefce8',border:'#fde68a',text:'#78350f'},
-  {bg:'#f0f9ff',border:'#bae6fd',text:'#075985'},
-  {bg:'#fdf2f8',border:'#fbcfe8',text:'#831843'},
-  {bg:'#f0fdfa',border:'#99f6e4',text:'#134e4a'},
-];
-let _vdCarrierIdx=0;
-function vdCarrierStyle(c){
-  if(!VD_CARRIER_COLORS[c]){
-    VD_CARRIER_COLORS[c]=_VD_CARRIER_PALETTE[_vdCarrierIdx++%_VD_CARRIER_PALETTE.length];
-  }
-  const col=VD_CARRIER_COLORS[c];
-  return `background:${col.bg};border-color:${col.border};color:${col.text}`;
-}
-
-let _activeDispatchTab='ct';
-function switchDispatchTab(tab){
-  _activeDispatchTab=tab;
-  const panels={ct:'dispatch-panel-ct',order:'dispatch-panel-order',vt:'dispatch-panel-vt'};
-  const tabs={ct:'dispatch-tab-ct',order:'dispatch-tab-order',vt:'dispatch-tab-vt'};
-  Object.entries(panels).forEach(([k,id])=>{
-    const el=document.getElementById(id); if(el) el.style.display=k===tab?'':'none';
-  });
-  const _tabOn=el=>{ el.style.background='#fff'; el.style.color='#003534'; const ic=el.querySelector('span'); if(ic) ic.style.filter='none'; };
-  const _tabOff=el=>{ el.style.background='rgba(255,255,255,.1)'; el.style.color='rgba(255,255,255,.75)'; const ic=el.querySelector('span'); if(ic) ic.style.filter='grayscale(.4) brightness(1.3)'; };
-  Object.entries(tabs).forEach(([k,id])=>{
-    const el=document.getElementById(id); if(el) (k===tab?_tabOn:_tabOff)(el);
-  });
-  renderGanttFor(tab);
-}
-
-function renderVesselDispatch(){
-  const content=document.getElementById('vd-content');
-  if(!content) return;
-  const fromEl=document.getElementById('vd-from');
-  const toEl=document.getElementById('vd-to');
-  const statusEl=document.getElementById('vd-status-filter');
-  const cyEl=document.getElementById('vd-cy-filter');
-  const carrierEl=document.getElementById('vd-carrier-filter');
-  let fromISO=fromEl?.value||'';
-  let toISO=toEl?.value||'';
-  const statusFilter=statusEl?.value||'';
-  const cyFilter=cyEl?.value||'';
-  const carrierFilter=carrierEl?.value||'';
-  const today=vdTodayISO();
-
-  if(!fromISO && !toISO){
-    if(fromEl){ fromEl.value=today; fromISO=today; }
-    if(toEl){ const to=vdAddDays(today,13); toEl.value=to; toISO=to; }
-  }
-
-  // Enrich — group by Cut-Off date, fall back to ETS then ETA
-  const rows=VT.map(r=>{
-    const etaISO=vdParseDate(r['ETA (Arrival)']||'');
-    const etsISO=vdParseDate(r['ETS (Departure)']||'');
-    const cutISO=vdParseDate(r['Port Cut-Off']||'');
-    return {...r,_etaISO:etaISO,_etsISO:etsISO,_cutISO:cutISO,_groupDate:cutISO||etsISO||etaISO||null};
-  });
-
-  // Populate dropdowns
-  const allCYs=[...new Set(rows.map(r=>r['CY']||'').filter(Boolean))].sort();
-  const allCarriers=[...new Set(rows.map(r=>r['Carrier']||'').filter(Boolean))].sort();
-  if(cyEl){ const p=cyEl.value; cyEl.innerHTML='<option value="">All CYs</option>'+allCYs.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join(''); }
-  if(carrierEl){ const p=carrierEl.value; carrierEl.innerHTML='<option value="">All Carriers</option>'+allCarriers.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join(''); }
-
-  // Filter — exclude Discharged by default
-  let filtered=rows.filter(r=>r['Status']!=='Discharged');
-  if(statusFilter) filtered=rows.filter(r=>(r['Status']||'TBD')===statusFilter||(!r['Status']&&statusFilter==='TBD'));
-  // Date filter: always include vessels with VGM or Custom unfiled (even past cut-off)
-  const needsAttention=r=>!r['VGM']||!r['Custom'];
-  if(fromISO) filtered=filtered.filter(r=>needsAttention(r)||(r._groupDate&&r._groupDate>=fromISO));
-  if(toISO)   filtered=filtered.filter(r=>needsAttention(r)||(r._groupDate&&r._groupDate<=toISO));
-  if(cyFilter)      filtered=filtered.filter(r=>r['CY']===cyFilter);
-  if(carrierFilter) filtered=filtered.filter(r=>r['Carrier']===carrierFilter);
-
-  const badge=document.getElementById('vd-count-badge');
-  if(badge) badge.textContent=`${filtered.length} vessel${filtered.length!==1?'s':''}`;
-
-  if(!filtered.length){
-    content.innerHTML=`<div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px">No vessels found for the selected range.<br><br>
-      <button onclick="vdSetRange('all')" style="padding:6px 16px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:7px;font-size:13px;cursor:pointer">Show All Active</button></div>`;
-    return;
-  }
-
-  const withDate=filtered.filter(r=>r._groupDate);
-  const noDate=filtered.filter(r=>!r._groupDate);
-
-  const byDate={};
-  withDate.forEach(r=>{ const d=r._groupDate; if(!byDate[d]) byDate[d]=[]; byDate[d].push(r); });
-  const sortedDates=Object.keys(byDate).sort();
-
-  const _vdMo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  function vdFmtShort(s){
-    if(!s) return '';
-    const m=s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if(m) return `${_vdMo[parseInt(m[2])-1]} ${parseInt(m[3])}`;
-    return s;
-  }
-
-  function vesselPill(r){
-    const status=r['Status']||'TBD';
-    const st=vdStatusStyle(status);
-    const vgmOk=!!r['VGM'], custOk=!!r['Custom'];
-    const qty=r['Container Qty']||'';
-    const etsStr=vdFmtShort(r['ETS (Departure)']||'');
-    const etaStr=vdFmtShort(r['ETA (Arrival)']||'');
-    const cutStr=vdFmtShort(r['Port Cut-Off']||'');
-    const bargeStr=vdFmtShort(r['Barge Date']||'');
-    const rmk=r['Remark']||'';
-    const bookingStr=r['Booking / BC No.']||'';
-    const polStr=r['Port']||'';
-    const podStr=r['POD']||'';
-
-    // Cut-off colour (same logic as deadline in container dispatch)
-    let cutColor='#64748b', cutBg='#f1f5f9';
-    if(r._cutISO){
-      const d=Math.round((new Date(r._cutISO+'T00:00:00')-new Date(today+'T00:00:00'))/864e5);
-      if(d<0){cutColor='#dc2626';cutBg='#fee2e2';}
-      else if(d<=2){cutColor='#c2410c';cutBg='#ffedd5';}
-      else if(d<=5){cutColor='#854d0e';cutBg='#fef9c3';}
-    }
-
-    const isOverdue=r._cutISO&&r._cutISO<today&&(!r['VGM']||!r['Custom']);
-    return `<div class="dv-ct-pill" style="display:inline-flex;flex-direction:column;gap:3px;padding:6px 9px;margin:3px 3px;background:${isOverdue?'#fff7f7':'#f8fafc'};border:1.5px solid ${isOverdue?'#fca5a5':'#e2e8f0'};border-radius:7px;font-size:11px;min-width:150px;vertical-align:top;cursor:pointer" onclick="gotoVessel(${r._id})">
-      <span style="font-family:monospace;font-weight:700;color:#1e293b;font-size:11px">${isOverdue?'⚠️ ':''} 🚢 ${r['Vessel Name']||'(unnamed)'}</span>
-      ${bookingStr?`<span style="font-size:10px;color:#64748b;font-family:monospace">${bookingStr}</span>`:''}
-      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:1px">
-        ${etsStr?`<span style="font-size:10px;background:#e0f2fe;color:#0369a1;border-radius:3px;padding:1px 5px;font-weight:600">ETS ${etsStr}</span>`:''}
-        ${etaStr?`<span style="font-size:10px;background:#dcfce7;color:#15803d;border-radius:3px;padding:1px 5px;font-weight:600">ETA ${etaStr}</span>`:''}
-        ${cutStr?`<span style="font-size:10px;background:${cutBg};color:${cutColor};border-radius:3px;padding:1px 5px;font-weight:600">Cut ${cutStr}</span>`:''}
-      </div>
-      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
-        ${qty?`<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:3px;padding:1px 5px;font-weight:600">${qty} ctr</span>`:''}
-        ${polStr||podStr?`<span style="font-size:10px;color:#94a3b8">${[polStr,podStr].filter(Boolean).join(' → ')}</span>`:''}
-      </div>
-      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
-        <span style="font-size:9px;border-radius:3px;padding:1px 4px;font-weight:700;${vgmOk?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#991b1b'}">VGM${vgmOk?'✓':'✗'}</span>
-        <span style="font-size:9px;border-radius:3px;padding:1px 4px;font-weight:700;${custOk?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#991b1b'}">Custom${custOk?'✓':'✗'}</span>
-        ${bargeStr?`<span style="font-size:9px;color:#94a3b8">Barge ${bargeStr}</span>`:''}
-      </div>
-      ${rmk?`<div style="font-size:10px;color:#94a3b8;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px">${rmk}</div>`:''}
-    </div>`;
-  }
-
-  const dateBlocks=sortedDates.map(date=>{
-    const vessels=byDate[date];
-    const dateInfo=vdFmtDate(date);
-    const isToday=date===today, isPast=date<today;
-    const dateBg=isToday?'linear-gradient(90deg,#003534,#0f766e)':isPast?'#f1f5f9':'#fff';
-    const dateTextColor=isToday?'#fff':isPast?'#6b7280':'#1e293b';
-    const todayLabel=isToday?'<span style="font-size:10px;background:#fef9c3;color:#92400e;border-radius:6px;padding:1px 8px;font-weight:800">TODAY</span>':'';
-    const pastLabel=isPast&&!isToday?'<span style="font-size:10px;background:#fef2f2;color:#dc2626;border-radius:6px;padding:1px 8px;font-weight:700">PAST DUE</span>':'';
-    const pendingBadge=`<span style="font-size:11px;background:${isToday?'rgba(255,255,255,.15)':'#fef9c3'};color:${isToday?'#fff':'#854d0e'};border-radius:8px;padding:2px 10px;font-weight:700">${vessels.length} vessel${vessels.length!==1?'s':''}</span>`;
-
-    // Group by CY (like consignee in container dispatch)
-    const byCY={};
-    vessels.forEach(r=>{ const cy=r['CY']||'(no CY)'; if(!byCY[cy]) byCY[cy]=[]; byCY[cy].push(r); });
-
-    const cyCards=Object.entries(byCY).map(([cy,items])=>{
-      // Group by carrier within CY (like trucker within consignee)
-      const byCarrier={};
-      items.forEach(r=>{ const c=r['Carrier']||'(unknown)'; if(!byCarrier[c]) byCarrier[c]=[]; byCarrier[c].push(r); });
-
-      const carrierRows=Object.entries(byCarrier).map(([carrier,vlist])=>{
-        const cs=vdCarrierStyle(carrier);
-        // Sub-line: show unique POLs + total containers like "GUANGZHOU 6/7 · 3 CTR"
-        const pols=[...new Set(vlist.map(r=>r['Port']||'').filter(Boolean))].join(', ');
-        const totalCtrs=vlist.reduce((s,r)=>s+(parseInt(r['Container Qty'])||0),0);
-        const subLine=[pols,totalCtrs?`${totalCtrs} ctr`:''].filter(Boolean).join(' · ');
-        return `<div style="margin-bottom:8px;padding:7px 10px;border-radius:7px;border:1px solid;${cs}">
-          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px">🚢 ${carrier} <span style="font-weight:500;font-size:10px">(${vlist.length} vessel${vlist.length!==1?'s':''})</span></div>
-          ${subLine?`<div style="font-size:10px;color:#94a3b8;margin-bottom:5px;margin-top:1px">${subLine}</div>`:'<div style="margin-bottom:5px"></div>'}
-          <div style="line-height:1.8">${vlist.map(vesselPill).join('')}</div>
-        </div>`;
-      }).join('');
-
-      return `<div class="dv-cons-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;min-width:260px;flex:1 1 280px;max-width:420px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-          <span style="font-size:14px;font-weight:800;color:#003534">${cy}</span>
-          <span style="font-size:10px;background:#fef9c3;color:#854d0e;border-radius:6px;padding:1px 8px;font-weight:700">${items.length} vessel${items.length!==1?'s':''}</span>
-        </div>
-        ${carrierRows}
-      </div>`;
-    }).join('');
-
-    return `<div style="margin-bottom:20px" id="vd-date-${date}">
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px 10px 0 0;background:${dateBg};flex-wrap:wrap">
-        <span style="font-size:16px;font-weight:900;color:${dateTextColor}">${dateInfo.full}</span>
-        ${todayLabel}${pastLabel}${pendingBadge}
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">
-        ${cyCards}
-      </div>
-    </div>`;
-  }).join('');
-
-  const noDateBlock=noDate.length?`<div style="margin-bottom:20px">
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px 10px 0 0;background:#f8fafc;border:1px solid #e2e8f0">
-      <span style="font-size:15px;font-weight:800;color:#94a3b8">No Cut-Off Date Set</span>
-      <span style="font-size:11px;background:#f1f5f9;color:#64748b;border-radius:8px;padding:2px 10px;font-weight:700">${noDate.length} vessel${noDate.length!==1?'s':''}</span>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">
-      ${noDate.map(vesselPill).join('')}
-    </div>
-  </div>`:'';
-
-  content.innerHTML=dateBlocks+noDateBlock||'<div style="padding:40px;text-align:center;color:#94a3b8">No data.</div>';
-}
-
-// Monday of the calendar week containing `iso`
-function ganttWeekStart(iso){
-  const dow=new Date(iso+'T00:00:00').getDay();  // 0=Sun … 6=Sat
-  return dvAddDays(iso,-((dow+6)%7));            // days back to Monday
-}
-
-// Ranges snap to whole calendar weeks (Mon–Sun) so a delivery on
-// Monday counts as NEXT week, not "this week".
-function ganttSetRange(type,key){
-  const mon=ganttWeekStart(dvTodayISO());
-  const fEl=document.getElementById('gantt-'+type+'-from');
-  const tEl=document.getElementById('gantt-'+type+'-to');
-  let fr='',to='';
-  if(key==='thisweek'){fr=mon;to=dvAddDays(mon,6);}        // Mon–Sun, 1 week
-  else if(key==='next2w'){fr=mon;to=dvAddDays(mon,13);}    // 2 whole weeks
-  else if(key==='next4w'){fr=mon;to=dvAddDays(mon,27);}    // 4 whole weeks
-  if(fEl) fEl.value=fr;
-  if(tEl) tEl.value=to;
-  renderGanttFor(type);
-}
-
-function renderGanttFor(type){
-  const el=document.getElementById('gantt-'+type+'-content'); if(!el) return;
-  const today=dvTodayISO();
-  const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const fromISO=document.getElementById('gantt-'+type+'-from')?.value||'';
-  const toISO=document.getElementById('gantt-'+type+'-to')?.value||'';
-  const P=dvParseSlot;
-
-  // Milestone palette
-  const C={mala:'#1d4ed8',hub:'#0f766e',slot:'#ea580c',eta:'#7c3aed',del:'#ea580c',ets:'#0369a1',arr:'#0891b2'};
-
-  let items=[];
-
-  if(type==='ct'){
-    const trF=document.getElementById('gantt-ct-trucker')?.value||'';
-    const coF=document.getElementById('gantt-ct-consignee')?.value||'';
-    // FINISHED = Actual Arrival filled (or Tracking already 'Arrived')
-    const raw=(typeof CT!=='undefined'?CT:[]).filter(r=>{
-      if(r['Actual Arrival']&&r['Actual Arrival'].toString().trim()) return false;
-      if((r['Tracking']||'').toLowerCase()==='arrived') return false;
-      return true;
-    });
-    const allTr=[...new Set(raw.map(r=>r['Trucker']||'').filter(Boolean))].sort();
-    const allCo=[...new Set(raw.map(r=>r['Consignee']||'').filter(Boolean))].sort();
-    const trEl=document.getElementById('gantt-ct-trucker'); if(trEl){const p=trEl.value;trEl.innerHTML='<option value="">All Truckers</option>'+allTr.map(t=>`<option value="${t}"${t===p?' selected':''}>${t}</option>`).join('');}
-    const coEl=document.getElementById('gantt-ct-consignee'); if(coEl){const p=coEl.value;coEl.innerHTML='<option value="">All Consignees</option>'+allCo.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
-    raw.filter(r=>(!trF||(r['Trucker']||'')===trF)&&(!coF||(r['Consignee']||'')===coF)).forEach(r=>{
-      const mala=P(r['ETA in Mala']||'');
-      const hub =P(r['ETA at Hub']||'');
-      const slot=P(r['Scheduled Slot']||'')||P(r['Deadline']||'');
-      if(!mala&&!hub&&!slot) return;
-      const segs=[];
-      if(mala&&hub)        segs.push({s:mala,e:hub, c:C.mala,t:'ETA Mala → ETA Hub'});
-      if(hub&&slot)        segs.push({s:hub, e:slot,c:C.hub, t:'ETA Hub → Scheduled Slot'});
-      if(mala&&!hub&&slot) segs.push({s:mala,e:slot,c:C.mala,t:'ETA Mala → Scheduled Slot'});
-      const marks=[];
-      if(mala) marks.push({d:mala,c:C.mala,t:'ETA Mala: '+mala});
-      if(hub)  marks.push({d:hub, c:C.hub, t:'ETA Hub: '+hub});
-      if(slot) marks.push({d:slot,c:C.slot,t:'Scheduled Slot: '+slot});
-      items.push({label:r['Container No.']||'?',proj:r['Batch / Train']||'',
-                  sub:[r['Consignee']||'',r['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
-                  key:slot||hub||mala,first:mala||hub||slot,last:slot||hub||mala});
-    });
-    const b=document.getElementById('gantt-ct-badge'); if(b) b.textContent=items.length+' container'+(items.length!==1?'s':'');
-
-  } else if(type==='order'){
-    const coF=document.getElementById('gantt-order-consignee')?.value||'';
-    const raw=(typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled'));
-    const allCo=[...new Set(raw.map(o=>o['Consignee']||'').filter(Boolean))].sort();
-    const coEl=document.getElementById('gantt-order-consignee'); if(coEl){const p=coEl.value;coEl.innerHTML='<option value="">All Consignees</option>'+allCo.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
-    raw.filter(o=>!coF||(o['Consignee']||'')===coF).forEach(o=>{
-      if(o['ATA']&&o['ATA'].toString().trim()) return;   // whole order closed out
-      const cs=_noContainers(o);
-      (cs.length?cs:[null]).forEach(cn=>{
-        const pc=cn?_noPc(o,cn):{};
-        // FINISHED is judged PER CONTAINER: its own ATA / POD / status.
-        // _noHasStFor falls back to the order status when this container has
-        // no status of its own, so one delivered box drops out on its own
-        // without taking its siblings with it.
-        if(pc['ATA']&&pc['ATA'].toString().trim()) return;
-        if(pc['POD']&&pc['POD'].toString().trim()) return;
-        if(_noHasStFor(o,cn,'Delivered')) return;
-        if(_noHasStFor(o,cn,'Cancelled')) return;
-        const eta=P(pc['ETA']||o['ETA']||'');
-        const hub=P(pc['At Hub Date']||o['At Hub Date']||'');
-        const del=P(pc['Delivery Date']||o['Delivery Date']||'');
-        if(!eta&&!hub&&!del) return;
-        // Bar runs ETA → Delivery Date. If delivery isn't scheduled yet but the
-        // box is already at the hub, run it ETA → At Hub so it stays visible.
-        const end=del||hub;
-        const segs=[];
-        if(eta&&end&&end>eta) segs.push({s:eta,e:end,c:C.eta,t:del?'ETA → Delivery Date':'ETA → At Hub'});
-        const marks=[];
-        if(eta) marks.push({d:eta,c:C.eta,t:'ETA: '+eta});
-        if(hub) marks.push({d:hub,c:C.hub,t:'At Hub: '+hub});
-        if(del) marks.push({d:del,c:C.del,t:'Delivery Date: '+del});
-        items.push({label:cn||(o['Order No.']||'(order)'),proj:o['Order No.']||'',
-                    sub:[o['Consignee']||'',o['Trucker']||''].filter(Boolean).join(' · '),segs,marks,
-                    key:del||hub||eta,first:eta||hub||del,last:del||hub||eta});
-      });
-    });
-    const b=document.getElementById('gantt-order-badge'); if(b) b.textContent=items.length+' order'+(items.length!==1?'s':'');
-
-  } else if(type==='vt'){
-    const stF=document.getElementById('gantt-vt-status')?.value||'';
-    const cyF=document.getElementById('gantt-vt-cy')?.value||'';
-    const caF=document.getElementById('gantt-vt-carrier')?.value||'';
-    const raw=(typeof VT!=='undefined'?VT:[]);
-    const allCY=[...new Set(raw.map(r=>r['CY']||'').filter(Boolean))].sort();
-    const allCA=[...new Set(raw.map(r=>r['Carrier']||'').filter(Boolean))].sort();
-    const cyEl=document.getElementById('gantt-vt-cy'); if(cyEl){const p=cyEl.value;cyEl.innerHTML='<option value="">All CYs</option>'+allCY.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
-    const caEl=document.getElementById('gantt-vt-carrier'); if(caEl){const p=caEl.value;caEl.innerHTML='<option value="">All Carriers</option>'+allCA.map(c=>`<option value="${c}"${c===p?' selected':''}>${c}</option>`).join('');}
-    raw.filter(r=>r['Status']!=='Discharged').filter(r=>
-      (!stF||((r['Status']||'TBD')===stF||(!r['Status']&&stF==='TBD')))&&(!cyF||(r['CY']||'')===cyF)&&(!caF||(r['Carrier']||'')===caF)
-    ).forEach(r=>{
-      const s=P(r['ETS (Departure)']||''), e=P(r['ETA (Arrival)']||'');
-      if(!s&&!e) return;
-      const segs=[]; if(s&&e) segs.push({s,e,c:C.ets,t:'ETS → ETA'});
-      const marks=[];
-      if(s) marks.push({d:s,c:C.ets,t:'ETS: '+s});
-      if(e) marks.push({d:e,c:C.arr,t:'ETA: '+e});
-      items.push({label:r['Vessel Name']||(r['Booking / BC No.']||'(vessel)'),proj:r['Booking / BC No.']||'',
-        sub:[r['CY']||'',r['Carrier']||'',[r['Port'],r['POD']].filter(Boolean).join('→')].filter(Boolean).join(' · '),
-        segs,marks,key:e||s,first:s||e,last:e||s});
-    });
-    const b=document.getElementById('gantt-vt-badge'); if(b) b.textContent=items.length+' vessel'+(items.length!==1?'s':'');
-  }
-
-  // Date-range filter, anchored on the due milestone
-  // (Containers = Scheduled Slot, Orders = Delivery Date, Vessels = ETA;
-  //  each falling back to an earlier date when the later one isn't set yet).
-  //
-  // Everything on this board is by definition NOT finished, so an item whose
-  // date has already passed is overdue and still outstanding — it stays
-  // visible in every window rather than silently vanishing into the past.
-  // 船舶不做逾期预警：过了 ETA 说明船已经到港，是正常状态，不是待办异常。
-  // 柜子/订单则相反 —— 过期还没完成就是要盯的事。
-  items.forEach(it=>{ it.overdue = type!=='vt' && !!(it.key && it.key < today); });
-  if(fromISO||toISO){
-    items=items.filter(it=>{
-      if(!it.key)   return true;   // no date at all — keep rather than hide
-      if(it.overdue) return true;  // 逾期未完成 —— 任何窗口都要看得到（船舶除外）
-      if(fromISO && it.key<fromISO) return false;
-      if(toISO   && it.key>toISO)   return false;
-      return true;
-    });
-  }
-  const badge=document.getElementById('gantt-'+type+'-badge');
-  if(badge) badge.textContent=items.length+' '+(type==='ct'?'container':type==='order'?'order':'vessel')+(items.length!==1?'s':'');
-
-  if(!items.length){
-    el.innerHTML='<div style="padding:48px;text-align:center;color:#94a3b8;font-size:14px">No ongoing items for the selected filters.</div>';
-    return;
-  }
-
-  items.sort((a,b)=>(a.first||'zzzz')>(b.first||'zzzz')?1:-1);
-
-  const allD=items.flatMap(it=>it.marks.map(m=>m.d)).filter(Boolean);
-  const minD=allD.reduce((a,b)=>a<b?a:b);
-  const maxD=allD.reduce((a,b)=>a>b?a:b);
-  const cs=dvAddDays(minD,-2), ce=dvAddDays(maxD,3);
-  const days=[]; let dd=cs; while(dd<=ce){days.push(dd);dd=dvAddDays(dd,1);}
-
-  const PPD=40,RH=44,LW=270,HH=50;
-  const TW=days.length*PPD;
-  const dOff=iso=>iso?Math.round((new Date(iso+'T00:00:00')-new Date(cs+'T00:00:00'))/864e5)*PPD:null;
-  const todX=dOff(today);
-
-  const moS=[]; let pm=null;
-  days.forEach((d,i)=>{
-    const m=d.slice(0,7);
-    if(m!==pm){if(pm!==null)moS[moS.length-1].w=(i-moS[moS.length-1].i)*PPD;moS.push({l:MO[parseInt(m.slice(5))-1]+' '+m.slice(2,4),i,w:0});pm=m;}
-  });
-  if(moS.length)moS[moS.length-1].w=(days.length-moS[moS.length-1].i)*PPD;
-  const moRow=moS.map(m=>`<div style="width:${m.w}px;flex-shrink:0;font-size:9px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;padding:4px 6px;box-sizing:border-box;border-left:1px solid #e2e8f0;overflow:hidden;white-space:nowrap">${m.l}</div>`).join('');
-
-  const dayRow=days.map(d=>{
-    const dom=parseInt(d.slice(8)),dow=new Date(d+'T00:00:00').getDay();
-    const iT=d===today,iW=dow===0||dow===6;
-    return `<div style="width:${PPD}px;flex-shrink:0;text-align:center;font-size:9px;padding:2px 0;box-sizing:border-box;border-left:1px solid ${iT?'#fca5a5':'#f1f5f9'};background:${iT?'#fff7f7':iW?'#f9fafb':'#fff'};color:${iT?'#dc2626':iW?'#94a3b8':'#64748b'};font-weight:${iT?900:400}"><div style="font-size:8px;opacity:.55">${['Su','Mo','Tu','We','Th','Fr','Sa'][dow]}</div><div>${dom}</div></div>`;
-  }).join('');
-
-  const stripe=todX!==null?`<div style="position:absolute;left:${todX}px;top:0;width:2px;height:100%;background:rgba(220,38,38,.35);pointer-events:none;z-index:2"></div>`:'';
-
-  const rowsHtml=items.map((it,ri)=>{
-    const bg=ri%2===0?'#fff':'#f9fbfa';
-    let inner='';
-    // Bars (inclusive of the end day)
-    it.segs.forEach((sg,si)=>{
-      const x=dOff(sg.s), xe=dOff(sg.e);
-      if(x===null||xe===null) return;
-      const w=Math.max(xe+PPD-x,PPD);
-      const first=si===0, last=si===it.segs.length-1;
-      const rad=(first&&last)?'4px':first?'4px 0 0 4px':last?'0 4px 4px 0':'0';
-      inner+=`<div title="${it.label} — ${sg.t}: ${sg.s} → ${sg.e}" style="position:absolute;left:${x}px;width:${w}px;top:13px;height:18px;border-radius:${rad};background:${sg.c};box-sizing:border-box;z-index:3"></div>`;
-    });
-    // Milestone diamonds, centred on their day
-    it.marks.forEach(mk=>{
-      const x=dOff(mk.d); if(x===null) return;
-      inner+=`<div title="${it.label} — ${mk.t}" style="position:absolute;left:${x+PPD/2-5}px;top:17px;width:10px;height:10px;background:#fff;border:2.5px solid ${mk.c};border-radius:2px;transform:rotate(45deg);z-index:5;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)"></div>`;
-    });
-    return `<div style="display:flex;height:${RH}px;border-bottom:1px solid #f0f4f4">
-      <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:6;background:${bg};border-right:1.5px solid #e2e8f0;${it.overdue?'border-left:3px solid #dc2626;padding:0 10px 0 7px;':'padding:0 10px;'}display:flex;flex-direction:column;justify-content:center;gap:1px;box-sizing:border-box">
-        <div style="font-size:10.5px;font-weight:700;color:${it.overdue?'#b91c1c':'#1e293b'};line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.overdue?it.label+' — OVERDUE (due '+it.key+', still not completed)':it.label}">${it.overdue?'⚠ ':''}${it.label}</div>
-        ${it.proj?`<div style="font-size:8.5px;font-weight:700;color:#475569;background:#eef2f7;border-radius:3px;padding:1px 5px;align-self:flex-start;max-width:100%;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.proj}">${it.proj}</div>`:''}
-        ${it.sub?`<div style="font-size:9px;color:#94a3b8;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.sub}">${it.sub}</div>`:''}
-      </div>
-      <div style="position:relative;flex:1;min-width:${TW}px;height:${RH}px;background:${bg}">${stripe}${inner}</div>
-    </div>`;
-  }).join('');
-
-  const legendDefs={
-    ct:[['bar',C.mala,'ETA Mala → ETA Hub'],['bar',C.hub,'ETA Hub → Scheduled Slot'],
-        ['dia',C.mala,'ETA Mala'],['dia',C.hub,'ETA Hub'],['dia',C.slot,'Scheduled Slot']],
-    order:[['bar',C.eta,'ETA → Delivery Date'],['dia',C.eta,'ETA'],['dia',C.hub,'At Hub'],['dia',C.del,'Delivery Date']],
-    vt:[['bar',C.ets,'ETS → ETA'],['dia',C.ets,'ETS'],['dia',C.arr,'ETA']],
-  };
-  const legend='<div style="display:flex;gap:12px;padding:7px 14px;font-size:10px;font-weight:600;color:#475569;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;align-items:center">'
-    +(legendDefs[type]||[]).map(([k,c,l])=>k==='dia'
-      ?`<span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:9px;height:9px;background:#fff;border:2px solid ${c};border-radius:1px;transform:rotate(45deg)"></span>${l}</span>`
-      :`<span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:18px;height:10px;background:${c};border-radius:2px"></span>${l}</span>`
-    ).join('')
-    +`<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:2px;height:14px;background:#dc2626;opacity:.8"></span>Today</span>`
-    +(items.some(i=>i.overdue)?`<span style="display:flex;align-items:center;gap:5px;color:#b91c1c;font-weight:700">⚠ Overdue — past due, still open</span>`:'')
-    +`<span style="margin-left:auto;font-weight:400;color:#94a3b8">${items.length} item${items.length!==1?'s':''} · ${days.length}d window</span>`
-    +'</div>';
-
-  el.innerHTML=legend+`<div id="gantt-scroll-${type}" style="overflow:auto;max-height:calc(100vh - 185px)"><div style="min-width:${LW+TW}px">
-    <div style="display:flex;flex-direction:column;position:sticky;top:0;z-index:12;background:#fff;border-bottom:2px solid #cbd5e1;height:${HH}px">
-      <div style="display:flex;height:22px;border-bottom:1px solid #e2e8f0">
-        <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:15;background:#f8fafc;border-right:1.5px solid #cbd5e1;padding:0 10px;display:flex;align-items:center;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;box-sizing:border-box">ITEM</div>
-        <div style="display:flex;flex:1">${moRow}</div>
-      </div>
-      <div style="display:flex;height:${HH-22}px">
-        <div style="width:${LW}px;flex-shrink:0;position:sticky;left:0;z-index:15;background:#f8fafc;border-right:1.5px solid #cbd5e1;box-sizing:border-box"></div>
-        <div style="display:flex;flex:1">${dayRow}</div>
-      </div>
-    </div>
-    ${rowsHtml}
-  </div></div>`;
-
-  // Long spans (e.g. vessels sailing 80+ days) push today far off-screen.
-  // Open the chart at today rather than at the earliest date.
-  if(todX!==null){
-    const sc=document.getElementById('gantt-scroll-'+type);
-    if(sc){
-      const target=Math.max(0,todX-3*PPD);   // keep ~3 days of lead-in visible
-      const go=()=>{ sc.scrollLeft=target; };
-      go();
-      if(typeof requestAnimationFrame==='function') requestAnimationFrame(go);
-    }
-  }
-}
-
-function renderDispatch(){
-  // CT is already loaded via loadData() on page init
-  const content=document.getElementById('dv-content');
-  if(!content) return;
-
-  // Read filters
-  const fromEl=document.getElementById('dv-from');
-  const toEl=document.getElementById('dv-to');
-  const truckEl=document.getElementById('dv-trucker-filter');
-  const consEl=document.getElementById('dv-consignee-filter');
-  let fromISO=fromEl?.value||'';
-  let toISO=toEl?.value||'';
-  const truckFilter=truckEl?.value||'';
-  const consFilter=consEl?.value||'';
-
-  // Build enriched rows: only UNDELIVERED containers (no Actual Arrival)
-  // — includes normal container orders (🧾) alongside TEMU containers
-  const _noRows=(typeof noDispatchRows==='function')?noDispatchRows():[];
-  const rows=CT.concat(_noRows).map(r=>{
-    const slotISO=dvParseSlot(r['Scheduled Slot']||'');
-    const arrISO=dvParseArrival(r['Actual Arrival']||'');
-    const etaISO=dvParseSlot(r['ETA at Hub']||'');
-    const delivDate=slotISO||etaISO||null;
-    return {...r, _slotISO:slotISO, _arrISO:arrISO, _delivDate:delivDate};
-  }).filter(r=>{
-    if(!r._delivDate) return false;
-    if(r._arrISO) return false;
-    // CT containers whose Tracking field is already 'Arrived'
-    if((r['Tracking']||'').toLowerCase()==='arrived') return false;
-    // belt-and-suspenders: non-empty Actual Arrival string
-    if(r['Actual Arrival']&&r['Actual Arrival'].toString().trim()) return false;
-    return true;
-  }); // only undelivered rows with a scheduled date
-
-  // Populate filter dropdowns
-  const allTruckers=[...new Set(rows.map(r=>r['Trucker']||'').filter(Boolean))].sort();
-  const allConsignees=[...new Set(rows.map(r=>r['Consignee']||'').filter(Boolean))].sort();
-  if(truckEl){
-    const prevT=truckEl.value;
-    truckEl.innerHTML='<option value="">All Truckers</option>'+allTruckers.map(t=>`<option value="${t}"${t===prevT?' selected':''}>${t}</option>`).join('');
-  }
-  if(consEl){
-    const prevC=consEl.value;
-    consEl.innerHTML='<option value="">All Consignees</option>'+allConsignees.map(c=>`<option value="${c}"${c===prevC?' selected':''}>${c}</option>`).join('');
-  }
-
-  // Apply filters
-  let filtered=rows;
-  if(fromISO) filtered=filtered.filter(r=>r._delivDate>=fromISO);
-  if(toISO) filtered=filtered.filter(r=>r._delivDate<=toISO);
-  if(truckFilter) filtered=filtered.filter(r=>r['Trucker']===truckFilter);
-  if(consFilter) filtered=filtered.filter(r=>r['Consignee']===consFilter);
-
-  // Badge
-  const badge=document.getElementById('dv-count-badge');
-  if(badge) badge.textContent=`${filtered.length} container${filtered.length!==1?'s':''}`;
-
-  if(!filtered.length){
-    content.innerHTML=`<div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px">
-      No containers found for the selected range.<br><br>
-      <button onclick="dvSetRange('all')" style="padding:6px 16px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:7px;font-size:13px;cursor:pointer">Show All Pending</button>
-    </div>`;
-    return;
-  }
-
-  // Group by date
-  const byDate={};
-  filtered.forEach(r=>{
-    const d=r._delivDate;
-    if(!byDate[d]) byDate[d]=[];
-    byDate[d].push(r);
-  });
-  const sortedDates=Object.keys(byDate).sort();
-  const today=dvTodayISO();
-
-  const html=sortedDates.map(date=>{
-    const conts=byDate[date];
-    const arrived=conts.filter(r=>r._arrISO).length;
-    const pending=conts.length-arrived;
-    const dateInfo=dvFmtDate(date);
-    const isToday=date===today;
-    const isPast=date<today;
-    const isFuture=date>today;
-
-    // Group by consignee within this date
-    const byConsignee={};
-    conts.forEach(r=>{
-      const c=r['Consignee']||'(unknown)';
-      if(!byConsignee[c]) byConsignee[c]=[];
-      byConsignee[c].push(r);
-    });
-
-    const consCards=Object.entries(byConsignee).map(([cons,items])=>{
-      // Group by trucker within consignee
-      const byTrucker={};
-      items.forEach(r=>{
-        const t=r['Trucker']||'(unknown)';
-        if(!byTrucker[t]) byTrucker[t]=[];
-        byTrucker[t].push(r);
-      });
-
-      const truckerRows=Object.entries(byTrucker).map(([trucker,cboxes])=>{
-        const ts=dvTruckerStyle(trucker);
-        // Group by batch
-        const byBatch={};
-        cboxes.forEach(r=>{ const b=r['Batch / Train']||r['Order No.']||''; if(!byBatch[b]) byBatch[b]=[]; byBatch[b].push(r); });
-
-        const batchRows=Object.entries(byBatch).map(([batch,bboxes])=>{
-          const nums=bboxes.map(r=>{
-            const slot=r['Scheduled Slot']||'';
-            const deadl=r['Deadline']||'';
-            // Extract just HH:MM from slot (e.g. "2026/6/2 10:00" → "10:00")
-            const slotTime=(slot.match(/(\d{1,2}:\d{2})$/)||[])[1]||'';
-            // Format deadline as "Jun 2" etc.
-            const _dlMo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            let dlFmt='';
-            if(deadl){const dm=deadl.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);if(dm) dlFmt=`${_dlMo[parseInt(dm[2])-1]} ${parseInt(dm[3])}`;}
-            const _today=new Date(); _today.setHours(0,0,0,0);
-            let dlColor='#64748b', dlBg='#f1f5f9';
-            if(dlFmt){
-              const _dlDate=new Date(deadl.replace(/\//g,'-')+'T00:00:00');
-              const _dlDays=Math.round((_dlDate-_today)/864e5);
-              if(_dlDays<=0){dlColor='#dc2626';dlBg='#fee2e2';}
-              else if(_dlDays<=2){dlColor='#c2410c';dlBg='#ffedd5';}
-              else if(_dlDays<=5){dlColor='#854d0e';dlBg='#fef9c3';}
-            }
-            return `<div class="dv-ct-pill" style="display:inline-flex;flex-direction:column;gap:2px;padding:5px 8px;margin:3px 3px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;min-width:120px;vertical-align:top">
-              <span style="font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',monospace;font-weight:700;color:#1e293b;font-size:11px">⏳ ${r['Container No.']||'–'}</span>
-              <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-                ${slotTime?`<span style="font-size:10px;background:#e0f2fe;color:#0369a1;border-radius:3px;padding:1px 5px;font-weight:600">🕐 ${slotTime}</span>`:''}
-                ${dlFmt?`<span style="font-size:10px;background:${dlBg};color:${dlColor};border-radius:3px;padding:1px 5px;font-weight:600">DL ${dlFmt}</span>`:''}
-              </div>
-            </div>`;
-          }).join('');
-          return `<div style="margin-bottom:8px">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.5px;margin-bottom:3px">🚂 ${batch||'(no batch)'} &nbsp;<span style="font-weight:400;color:#cbd5e1">${bboxes.length} ctr</span></div>
-            <div style="line-height:1.8">${nums}</div>
-          </div>`;
-        }).join('');
-
-        return `<div style="margin-bottom:10px;padding:8px 10px;border-radius:7px;border:1px solid;${ts}">
-          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">🚛 ${trucker} &nbsp;<span style="font-weight:500;font-size:10px">(${cboxes.length} ctr)</span></div>
-          ${batchRows}
-        </div>`;
-      }).join('');
-
-      return `<div class="dv-cons-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;min-width:260px;flex:1 1 280px;max-width:420px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-          <span style="font-size:14px;font-weight:800;color:#003534">${cons}</span>
-          <span style="font-size:10px;background:#fef9c3;color:#854d0e;border-radius:6px;padding:1px 8px;font-weight:700">⏳ ${items.length} pending</span>
-        </div>
-        ${truckerRows}
-      </div>`;
-    }).join('');
-
-    const dateBg=isToday?'linear-gradient(90deg,#003534,#0f766e)':isPast?'#f1f5f9':'#fff';
-    const dateTextColor=isToday?'#fff':isPast?'#6b7280':'#1e293b';
-    const pendingBadge=`<span style="font-size:11px;background:${isToday?'rgba(255,255,255,.15)':'#fef9c3'};color:${isToday?'#fff':'#854d0e'};border-radius:8px;padding:2px 10px;font-weight:700">⏳ ${conts.length} pending</span>`;
-    const pastLabel=isPast&&!isToday?'<span style="font-size:10px;background:#fef2f2;color:#dc2626;border-radius:6px;padding:1px 8px;font-weight:700">PAST DUE</span>':'';
-    const todayLabel=isToday?'<span style="font-size:10px;background:#fef9c3;color:#92400e;border-radius:6px;padding:1px 8px;font-weight:800">TODAY</span>':'';
-
-    return `<div style="margin-bottom:20px" id="dv-date-${date}">
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px 10px 0 0;background:${dateBg};flex-wrap:wrap">
-        <span style="font-size:16px;font-weight:900;color:${dateTextColor}">${dateInfo.full}</span>
-        ${todayLabel}${pastLabel}
-        ${pendingBadge}
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">
-        ${consCards}
-      </div>
-    </div>`;
-  }).join('');
-
-  content.innerHTML=html||'<div style="padding:40px;text-align:center;color:#94a3b8">No data to display.</div>';
-}
-
 </script>
 
 <script>
@@ -13180,8 +12102,6 @@ function noDelCtn(id,cn){
   NO[i]['Container No.']=cs.filter(c=>c!==cn).join('\n');
   if(NO[i].perCtn) delete NO[i].perCtn[cn];
   saveNO(); renderOrders();
-  const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 // Rename a container in-place (row is directly editable — no expand panel anymore)
 function noRenameCtn(id,oldCn,newCn){
@@ -13194,8 +12114,6 @@ function noRenameCtn(id,oldCn,newCn){
   NO[i]['Container No.']=cs.join('\n');
   if(NO[i].perCtn&&NO[i].perCtn[oldCn]){ NO[i].perCtn[newCn]=NO[i].perCtn[oldCn]; delete NO[i].perCtn[oldCn]; }
   saveNO(); renderOrders();
-  const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 // Add another container row to an existing order
 function noAddCtnPrompt(id){
@@ -13216,8 +12134,6 @@ function noSet(id,field,val){
   // change immediately — previously this only happened for 'Status', so an order-level edit (e.g. ETA
   // on an order with no B/L yet) could look "stuck" on its old value until something else forced a redraw.
   noRenderSoon();
-  const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 function _noEsc(v){ return (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 function _noSvcList(o){ return ((o&&o['Service Type'])||'').split(/\s*[,;+]\s*/).map(s=>s.trim()).filter(Boolean); }
@@ -13277,8 +12193,6 @@ function noToggleStatus(id,st){
   else list.push(st);
   NO[i]['Status']=list.join(', ');
   saveNO(); renderOrders();
-  const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 function noToggleService(id,svc){
   svc=(svc||'').trim(); if(!svc) return;
@@ -13406,8 +12320,6 @@ function noSetCtn(id,cn,field,val){
   NO[i].perCtn[cn][field]=val;
   if(field==='ATA'||field==='POD') _noSyncDeliveredCtn(i,cn);
   saveNO(); noRenderSoon();
-  const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
 }
 
 // ── BULK EDIT — select orders (checkbox appears per container row, but selection is by order) ──
@@ -13468,8 +12380,6 @@ function applyNoBulkEdit(){
     return;
   }
   saveNO(); renderOrders();
-  const dp=document.getElementById('page-dispatch');
-  if(dp&&dp.classList.contains('active')&&typeof renderGanttFor==='function') renderGanttFor(_activeDispatchTab||'ct');
   const ok=document.getElementById('no-be-ok');
   if(ok){ ok.textContent='✓ Updated '+count+' order'+(count!==1?'s':'')+'.'; ok.style.display='block'; }
   setTimeout(()=>{ closeNoBE(); noClearSel(); },900);
@@ -13713,11 +12623,11 @@ function renderOrders(){
 
   if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' B/L'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
-    body.innerHTML='<tr><td colspan="29" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="15" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   if(!flat.length){
-    body.innerHTML='<tr><td colspan="29" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
+    body.innerHTML='<tr><td colspan="15" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
     return;
   }
   const _inpCss='font-size:11px;font-weight:500;color:#1e293b;padding:2px 5px;border:none;outline:none;background:transparent;width:100%;box-sizing:border-box';
@@ -13752,44 +12662,6 @@ function renderOrders(){
     const orderIdx=uniqueOrders.findIndex(ord=>ord._id===o._id);
     const noOrderClass=(orderIdx%2===1)?'no-odd-order':'';
     const groupBorder=isFirst?'border-top:2px solid #94a3b8;':'';
-    const svcTagsEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
-        ${_noSvcListFor(o,cn).map(svc=>{
-          const esc=svc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-          return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;background:#5b21b6;color:#fff;white-space:nowrap">${_noEsc(svc)}<button type="button" onclick="noToggleServiceCtn(${o._id},'${ce}','${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`;
-        }).join('')}
-        <input type="text" list="dl-service-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleServiceCtn(${o._id},'${ce}',this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
-      </div>`;
-    const stTagsEditor=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center">
-        ${_noStListFor(o,cn).map(sv=>{
-          const esc=sv.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-          return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:10.5px;font-weight:700;border-radius:12px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'};white-space:nowrap">${_noEsc(sv)}<button type="button" onclick="noToggleStatusCtn(${o._id},'${ce}','${esc}')" title="Remove" style="background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:50%;width:13px;height:13px;line-height:1;font-size:8px;cursor:pointer;padding:0">✕</button></span>`;
-        }).join('')}
-        <input type="text" list="dl-status-o" placeholder="+ type & Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleStatusCtn(${o._id},'${ce}',this.value);this.value='';}" style="font-size:10.5px;padding:3px 8px;border:1.5px dashed #cbd5e1;border-radius:12px;width:100px"/>
-      </div>`;
-    // Surcharge — per CONTAINER: each entry is a tag (reason) + price, stack as many as needed for this container
-    const _sce=cn?cn.replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
-    const surchargeEditor=_noSurchargeEditor(o,cn);
-    // At Hub (ready to be picked): per-container when a container exists, else falls back to the order-level flag
-    const atHubChecked=cn?!!pc['At Hub']:!!o['Arrived at Hub'];
-    const atHubOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub',this.checked)`:`noSet(${o._id},'Arrived at Hub',this.checked)`;
-    // T1: per-container when a container exists, else order-level fallback
-    const t1Checked=cn?!!pc['T1']:!!o['T1'];
-    const t1Onchange=cn?`noSetCtn(${o._id},'${ce}','T1',this.checked)`:`noSet(${o._id},'T1',this.checked)`;
-    // CC = customs clearance flag. Stored as 'CC Cleared' because the plain
-    // 'CC' key already holds the customs-clearance PRICE.
-    const ccChecked=cn?!!pc['CC Cleared']:!!o['CC Cleared'];
-    const ccOnchange=cn?`noSetCtn(${o._id},'${ce}','CC Cleared',this.checked)`:`noSet(${o._id},'CC Cleared',this.checked)`;
-    // T1 / CC 各自的完成日期
-    const t1Date=dinpC(o,cn,'T1 Date',82);
-    const ccDate=dinpC(o,cn,'CC Date',82);
-    const customCell=`<div style="display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding-left:6px">
-        <div style="display:flex;align-items:center;gap:5px">
-        <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:${t1Checked?'#1d4ed8':'#94a3b8'};cursor:pointer;white-space:nowrap" title="T1 customs transit document ${t1Checked?'issued':'not issued yet'}">
-          <input type="checkbox" ${t1Checked?'checked':''} onchange="${t1Onchange}" style="width:14px;height:14px;accent-color:#1d4ed8;cursor:pointer;margin:0"/>T1</label>${t1Date}</div>
-        <div style="display:flex;align-items:center;gap:5px">
-        <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:${ccChecked?'#0f766e':'#94a3b8'};cursor:pointer;white-space:nowrap" title="CC customs clearance ${ccChecked?'done':'not done yet'}">
-          <input type="checkbox" ${ccChecked?'checked':''} onchange="${ccOnchange}" style="width:14px;height:14px;accent-color:#0f766e;cursor:pointer;margin:0"/>CC</label>${ccDate}</div>
-      </div>`;
     // Delivery Date / ATA: per-container, falling back to the order-level value (legacy single-container orders)
     const delivVal=cn?(pc['Delivery Date']||o['Delivery Date']||''):(o['Delivery Date']||'');
     const ataVal=cn?(pc['ATA']||o['ATA']||''):(o['ATA']||'');
@@ -13797,99 +12669,32 @@ function renderOrders(){
     const delivOnchange=cn?`noSetCtn(${o._id},'${ce}','Delivery Date',this.value.trim())`:`noSet(${o._id},'Delivery Date',this.value.trim())`;
     const ataOnchange=cn?`noSetCtn(${o._id},'${ce}','ATA',this.value.trim())`:`noSet(${o._id},'ATA',this.value.trim())`;
     const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:`noSet(${o._id},'At Hub Date',this.value.trim())`;
-    return `<tr class="${noOrderClass}" data-no-order="${o._id}" style="${groupBorder}">
-      <td class="fc-1" style="font-weight:700;color:#334155">${isFirst?tinp(o,'Project','Project',95):''}</td>
-      <td class="fc-2" style="font-weight:700;color:var(--navy)">${isFirst?tinp(o,'Order No.','ORD-001',90):''}</td>
-      <td class="fc-3" style="font-family:monospace;font-weight:600;font-size:12px">
-        <div style="display:flex;align-items:flex-start;gap:2px">
-        ${cn?`<textarea rows="1" class="no-autogrow" oninput="_noAutoGrow(this)" onchange="noRenameCtn(${o._id},'${ce}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="${_taCss};min-width:110px;font-family:monospace">${_noEsc(cn)}</textarea>`:'<span style="color:#cbd5e1;font-style:italic;font-family:inherit">no B/L yet</span>'}
-        ${cn?`<button type="button" title="Remove this container" onclick="noDelCtn(${o._id},'${ce}')" style="border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:11px;margin-left:2px;flex-shrink:0">✕</button>`:''}
-        ${isFirst?`<button type="button" title="Add another B/L to this order" onclick="noAddCtnPrompt(${o._id})" style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:12px;font-weight:800;margin-left:2px;flex-shrink:0">+</button>`:''}
-        </div>
-      </td>
-      <td class="fc-4">${tinpC(o,cn,'Consignee','',130)}</td>
-      <td>${tinpC(o,cn,'Destination','country / city',110)}</td>
-      <td style="text-align:center">${(()=>{
-        const coField=cn?pc['Customs Office']:undefined;
-        const coChecked=coField!==undefined?!!coField:!!o['Customs Office'];
-        const coOnchange=cn?`noSetCtn(${o._id},'${ce}','Customs Office',this.checked)`:`noSet(${o._id},'Customs Office',this.checked)`;
-        return `<input type="checkbox" ${coChecked?'checked':''} onchange="${coOnchange}" title="Customs office ${coChecked?'provided':'NOT provided yet'}" style="width:16px;height:16px;accent-color:#0f766e;cursor:pointer"/>`;
-      })()}</td>
-      <td>${tinpC(o,cn,'Trucker','',100)}</td>
-      <td>${(()=>{
-        const hubVal=cn?(pc['Hub']!==undefined?pc['Hub']:(o['Hub']||'')):(o['Hub']||'');
-        const hubOnchange=cn?`noSetCtn(${o._id},'${ce}','Hub',this.value)`:`noSet(${o._id},'Hub',this.value)`;
-        return `<input type="text" list="dl-hub-o" value="${_noEsc(hubVal)}" placeholder="Duisburg / Tilburg…" onchange="${hubOnchange}" onkeydown="if(event.key==='Enter')this.blur()" style="${_inpCss};min-width:110px"/>`;
-      })()}</td>
-      <td>${dinpC(o,cn,'ETA',95)}</td>
-      <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(atHubDateVal)}" placeholder="YYYY/MM/DD" onblur="${atHubDateOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
-      <td style="text-align:center"><input type="checkbox" ${atHubChecked?'checked':''} onchange="${atHubOnchange}" title="Ready to be picked up" style="width:16px;height:16px;accent-color:#b45309;cursor:pointer"/></td>
-      <td>${dinpC(o,cn,'Pick Up Date',95)}</td>
-      <td>${customCell}</td>
-      <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(delivVal)}" placeholder="YYYY/MM/DD" onblur="${delivOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s) — free until '+st.expiry:''}" style="${_inpCss};min-width:95px${st&&st.exceeded?';background:#fee2e2;border-color:#fca5a5;color:#b91c1c;font-weight:700':''}"/></td>
-      <td><input type="text" data-fptype="date" class="no-fp-date" value="${_noEsc(ataVal)}" placeholder="YYYY/MM/DD" onblur="${ataOnchange}" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()" style="${_inpCss};min-width:95px"/></td>
-      <td style="text-align:center">${(()=>{
-        const autoDemur=_noDemurrageDays(o,cn);
-        const demField=cn?pc['Demurrage']:o['Demurrage'];
-        const demurChecked=demField!==undefined?!!demField:!!autoDemur;
-        const demurOnchange=cn?`noSetCtn(${o._id},'${ce}','Demurrage',this.checked)`:`noSet(${o._id},'Demurrage',this.checked)`;
-        const demurTitle=autoDemur?`Demurrage — ATA is ${autoDemur}d after Delivery Date`:'Demurrage — check to flag manually';
-        // Free days / Price per day 是算滞箱费的参数，放在 Demurrage 一起
-        return `<div style="display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap">
-          <input type="checkbox" ${demurChecked?'checked':''} onchange="${demurOnchange}" title="${demurTitle}" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer;flex:0 0 auto;margin:0"/>
-          <input type="number" min="0" value="${_noEsc(_noCtnFld(o,cn,'Free Storage (Days)'))}" class="no-dem-in" placeholder="d" title="Free storage days (this container)"
-            onchange="${cn?`noSetCtn(${o._id},'${ce}','Free Storage (Days)',this.value)`:`noSet(${o._id},'Free Storage (Days)',this.value)`}"
-            style="width:52px;min-width:0;padding:2px 3px;font-size:11px;text-align:center;border:1px solid #e2e8f0;background:#fff"/>
-          <span style="font-size:10px;color:#94a3b8">d</span>
-          <input type="text" value="${_noEsc((cn&&_noPc(o,cn)['Price per Day']!==undefined&&_noPc(o,cn)['Price per Day']!=='')?_noPc(o,cn)['Price per Day']:(_noHubByName(_noCtnHub(o,cn))&&_noHubTiers(_noHubByName(_noCtnHub(o,cn))).length?'':o['Price per Day']))}" class="no-dem-in" placeholder="${(cn&&_noHubByName(_noCtnHub(o,cn))&&_noHubTiers(_noHubByName(_noCtnHub(o,cn))).length)?'auto':'€'}" title="Storage price per day (this container). Blank + terminal in tariff table = tiered rate from the tariff"
-            onchange="${cn?`noSetCtn(${o._id},'${ce}','Price per Day',this.value)`:`noSet(${o._id},'Price per Day',this.value)`}" onkeydown="if(event.key==='Enter')this.blur()"
-            style="width:62px;min-width:0;padding:2px 3px;font-size:11px;text-align:right;border:1px solid #e2e8f0;background:#fff"/>
-        </div>`;
-      })()}</td>
-      ${(()=>{
-        const _k=o._id+'__'+(cn||'-');
-        const R=_noReceivable(o,cn), P=_noPayable(o,cn), M=_noMargin(o,cn);
-        const open=_NO_FEE_OPEN.has(_k);
-        return `<td style="text-align:right;white-space:nowrap">
-            <button type="button" id="nofeebtn-${_k}" onclick="noToggleFee('${_k}')"
-              title="Show the charge breakdown"
-              style="border:none;background:none;color:#0f766e;cursor:pointer;font-size:9px;padding:0 4px 0 0">${open?'▼':'▶'}</button>
-            <span style="font-weight:700;color:#0369a1">${_noEur(R)}</span></td>
-          <td style="text-align:right;white-space:nowrap"><span style="font-weight:700;color:#b45309">${_noEur(P)}</span></td>
-          <td style="text-align:right;white-space:nowrap"><span style="font-weight:700;color:${M<0?'#dc2626':'#0f766e'}">${_noEur(M)}</span></td>`;
-      })()}
-      <td style="text-align:right;vertical-align:middle;white-space:nowrap">${isFirst?(()=>{ const t=_noOrderRP(o); return `
-          <div style="font-weight:800;color:#0369a1;background:#e0f2fe;border-radius:6px;padding:2px 8px;margin-bottom:2px">${_noEur(t.r)}</div>
-          <div style="font-weight:700;color:#b45309;font-size:11px">${_noEur(t.p)}</div>
-          <div style="font-weight:700;color:${t.m<0?'#dc2626':'#0f766e'};font-size:11px">${_noEur(t.m)} · ${t.pct.toFixed(1)}%</div>`; })():''}</td>
-      <td>${(()=>{
-        const psVal=cn?(pc['Payment Status']!==undefined?pc['Payment Status']:(o['Payment Status']||'')):(o['Payment Status']||'');
-        const psOnchange=cn?`noSetCtn(${o._id},'${ce}','Payment Status',this.value)`:`noSet(${o._id},'Payment Status',this.value)`;
-        return `<select onchange="${psOnchange}" style="${_inpCss};min-width:110px">
-          ${['','Pending invoice','Requested','Paid'].map(v=>`<option value="${v}" ${(psVal===v)?'selected':''}>${v||'—'}</option>`).join('')}
-        </select>`;
-      })()}</td>
-      <td style="text-align:center">${(()=>{
-        const podChecked=cn?!!pc['POD']:!!o['POD'];
-        const podOnchange=cn?`noSetCtn(${o._id},'${ce}','POD',this.checked)`:`noSet(${o._id},'POD',this.checked)`;
-        return `<div style="display:flex;align-items:center;justify-content:center;gap:5px">
-          <input type="checkbox" ${podChecked?'checked':''} onchange="${podOnchange}" title="Proof of Delivery ${podChecked?'— delivered':'— not delivered yet'}" style="width:16px;height:16px;accent-color:#15803d;cursor:pointer;flex:0 0 auto;margin:0"/>
-          ${dinpC(o,cn,'POD Date',82)}</div>`;
-      })()}</td>
-      <td>${svcTagsEditor}</td>
-      <td style="text-align:center">${stTagsEditor}</td>
-      <td style="min-width:200px">${(()=>{
-        const rmVal=cn?(pc['Remark']!==undefined?pc['Remark']:(o['Remark']||'')):(o['Remark']||'');
-        const rmOnchange=cn?`noSetCtn(${o._id},'${ce}','Remark',this.value)`:`noSet(${o._id},'Remark',this.value)`;
-        return `<textarea rows="1" class="no-autogrow" placeholder="Remark…" onchange="${rmOnchange}" oninput="_noAutoGrow(this)" style="${_taCss}">${_noEsc(rmVal)}</textarea>`;
-      })()}</td>
+    // 精简只读行：所有可录入的字段都搬到右侧详情抽屉里（点这一行打开）
+    const _done=_wbDelivered(o,cn);
+    const _tags=_noStListFor(o,cn).map(sv=>`<span style="display:inline-block;padding:1px 7px;font-size:10.5px;font-weight:700;border-radius:10px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'};margin-right:3px">${_noEsc(sv)}</span>`).join('');
+    const _dem=_noDemurrageDays(o,cn);
+    const _statusHtml=(_done?'<span style="font-size:10.5px;font-weight:700;color:#15803d;background:#dcfce7;border-radius:10px;padding:1px 7px;margin-right:3px">Delivered</span>':'<span style="font-size:10.5px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:10px;padding:1px 7px;margin-right:3px">On the way</span>')
+      +(st&&st.exceeded?`<span title="Free storage exceeded by ${st.byDays}d" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⚠ storage ${st.byDays}d</span>`:'')
+      +(_dem?`<span title="ATA ${_dem}d after Delivery Date" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⏱ ${_dem}d</span>`:'')+_tags;
+    const _R=_noReceivable(o,cn), _M=_noMargin(o,cn);
+    const _tx='padding:8px 10px;white-space:nowrap';
+    return `<tr class="${noOrderClass}" data-no-order="${o._id}" onclick="wbRowClick(event,'no',${o._id})" style="${groupBorder}cursor:pointer">
+      <td class="fc-1" style="${_tx};font-weight:700;color:#334155">${isFirst?_noEsc(o['Project']||''):''}</td>
+      <td class="fc-2" style="${_tx};font-weight:700;color:var(--navy)">${isFirst?_noEsc(o['Order No.']||''):''}</td>
+      <td class="fc-3" style="${_tx};font-family:monospace;font-weight:600;font-size:12px">${cn?_noEsc(cn):'<span style="color:#cbd5e1;font-style:italic">no B/L yet</span>'}</td>
+      <td class="fc-4" style="${_tx}">${_noEsc(_noFld(o,cn,'Consignee')||'')}</td>
+      <td style="${_tx}">${_noEsc(_noFld(o,cn,'Destination')||'')}</td>
+      <td style="${_tx}">${_noEsc(_noFld(o,cn,'Trucker')||'')}</td>
+      <td style="${_tx}">${_noEsc(_noCtnHub(o,cn)||'')}</td>
+      <td style="${_tx}">${_noEsc(_noFld(o,cn,'ETA')||'')}</td>
+      <td style="${_tx}" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s)':''}">${_noEsc(delivVal)}</td>
+      <td style="${_tx}">${_noEsc(ataVal)}</td>
+      <td style="${_tx}">${_statusHtml}</td>
+      <td style="${_tx};text-align:right"><span style="font-weight:700;color:#0369a1">${_R?_noEur(_R):''}</span></td>
+      <td style="${_tx};text-align:right"><span style="font-weight:700;color:${_M<0?'#dc2626':'#0f766e'}">${_R||_M?_noEur(_M):''}</span></td>
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
       <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
-    </tr>
-    ${_NO_FEE_OPEN.has(o._id+'__'+(cn||'-'))?`<tr class="no-fee-row open" id="nofee-${o._id}__${cn||'-'}"
-        data-oid="${o._id}" data-cn="${_noEsc(cn||'')}">
-      ${_noFeeFold(o,cn,ce,27,surchargeEditor)}
-    </tr>`:''}`;
+    </tr>`;
   }).join('');
   // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
   // 不再逐个建 flatpickr 实例 —— 58 行 × 每行多个日期框 = 每次重绘几百次实例化，
@@ -14037,7 +12842,6 @@ function _noRenderStorageAlerts(rows){
       <b>${_noEsc(h.o['Order No.']||('Order #'+h.o._id))}</b><span>ETA ${_noEsc(h.e.v)} (${dl(h.e.days)})</span></label>`).join('')}
   </div>`;
 }
-// Map orders into dispatch pseudo-rows (used by renderDispatch)
 // ══════════════════════════════════════════════════════════
 // WORKBENCH（参照 Oracle TM Workbench）：嵌在 Orders / Containers / Vessels 表格上方
 //   Assignments 时间轴（Orders 按 Trucker、TEMU 按项目、Vessels 按船公司）+ 点击后才出现的详情
@@ -14082,7 +12886,7 @@ function _wbJobs(kind){
   }
   return out;
 }
-function wbPick(kind,key){ _wbS[kind].sel=key; _wbS[kind].open=true; wbRender(kind); const d=document.getElementById('wb-'+kind+'-detail'); if(d&&d.scrollIntoView) d.scrollIntoView({block:'nearest',behavior:'smooth'}); }
+function wbPick(kind,key){ ['no','ct','vt'].forEach(k=>{ if(k!==kind&&_wbS[k].sel!=null){ _wbS[k].sel=null; wbRender(k); } }); _wbS[kind].sel=key; wbRender(kind); }
 function wbClose(kind){ _wbS[kind].sel=null; wbRender(kind); }
 function wbToggle(kind){ _wbS[kind].open=!_wbS[kind].open; wbRender(kind); }
 function wbSetRange(kind,k){
@@ -14101,6 +12905,8 @@ let _wbPend={};
 function wbSoon(kind){ if(_wbPend[kind]) return; _wbPend[kind]=true; requestAnimationFrame(()=>{ _wbPend[kind]=false; try{ wbRender(kind); }catch(e){ console.error('wbRender',e); } }); }
 function wbRender(kind){
   const host=document.getElementById('wb-'+kind); if(!host) return;
+  const _od=document.getElementById('wb-'+kind+'-detail'); const _scr=_od?_od.scrollTop:0;
+  const _ae=document.activeElement; const _foc=(_od&&_ae&&_od.contains(_ae)&&_ae.dataset&&_ae.dataset.k)?{k:_ae.dataset.k,s:_ae.selectionStart,e:_ae.selectionEnd}:null;
   const S=_wbS[kind], cfg=_wbCfg[kind];
   if(!S.from) S.from=_wbMon();
   const jobs=_wbJobs(kind);
@@ -14150,19 +12956,28 @@ function wbRender(kind){
       <div style="display:flex;gap:14px;padding:5px 12px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;flex-wrap:wrap">
         <span><i style="display:inline-block;width:10px;height:10px;background:#0369a1;border-radius:2px"></i> in progress</span><span><i style="display:inline-block;width:10px;height:10px;background:#7c3aed;border-radius:2px"></i> upcoming</span>
         <span><i style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px"></i> done</span><span><i style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px"></i> overdue</span><span style="margin-left:auto">click a bar to inspect</span></div>`:''}
-    <div id="wb-${kind}-detail" style="${S.sel!=null&&S.open?'':'display:none'}"></div></div>`;
-  if(S.sel!=null&&S.open){
+    <div id="wb-${kind}-detail" style="${S.sel!=null?'position:fixed;top:0;right:0;bottom:0;width:min(760px,96vw);z-index:9500;overflow:auto;background:#f1f5f9;box-shadow:-12px 0 40px rgba(15,23,42,.28);border-left:1px solid #cbd5e1':'display:none'}"></div></div>`;
+  if(S.sel!=null){
     const d=document.getElementById('wb-'+kind+'-detail');
     let html='';
     try{ html=kind==='no'?wbDetailNo(S.sel):kind==='ct'?wbDetailCt(S.sel,jobs):wbDetailVt(S.sel); }catch(e){ console.error(e); }
-    if(!html){ S.sel=null; d.style.display='none'; } else d.innerHTML=html;
+    if(!html){ S.sel=null; d.style.display='none'; } else { d.innerHTML=html; d.scrollTop=_scr; if(typeof _noBindLazyDates==='function') _noBindLazyDates(d); if(_foc){ const t=[...d.querySelectorAll('[data-k]')].find(x=>x.dataset.k===_foc.k); if(t){ t.focus(); try{ if(_foc.s!=null&&t.setSelectionRange) t.setSelectionRange(_foc.s,_foc.e); }catch(e){} } } }
   }
 }
 const _wbChip=(t,c,bg)=>`<span style="font-size:11px;font-weight:700;color:${c};background:${bg};border-radius:10px;padding:2px 9px">${_noEsc(t)}</span>`;
 const _wbKpi=(l,v,c)=>`<div style="flex:1;min-width:110px;background:#fff;border:1px solid #e2e8f0;border-top:3px solid ${c};border-radius:6px;padding:7px 11px"><div style="font-size:10.5px;color:#64748b;font-weight:700;text-transform:uppercase">${l}</div><div style="font-size:18px;font-weight:800;color:${c}">${v}</div></div>`;
 const _wbSec=(t,inner)=>`<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:11px 13px;margin-top:10px"><div style="font-size:11.5px;font-weight:800;color:#475569;letter-spacing:.4px;margin-bottom:8px;text-transform:uppercase">${t}</div>${inner}</div>`;
 const _wbHead=(kind,title,sub,extra)=>`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-size:19px;font-weight:800;color:#0f172a">${_noEsc(title)}</div>${sub||''}<div style="margin-left:auto;display:flex;gap:6px">${extra||''}<button onclick="wbClose('${kind}')" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer">✕ Close</button></div></div>`;
-// ── 订单详情（含可录入的 Charges / Margin）──
+// ── 详情里的可编辑控件 ──
+const _wbI='padding:6px 8px;border:1px solid #d7dde6;border-radius:6px;font-size:13px;font-weight:500;color:#0f172a;background:#fff;width:100%;box-sizing:border-box;text-transform:none;letter-spacing:0';
+const _wbL=(label,inner,w)=>`<label style="display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.3px;flex:1 1 ${w||150}px;min-width:${w||150}px">${label}${inner}</label>`;
+const _wbSet=(setter,v)=>setter.replace('@@',v);
+function _wbText(k,val,setter,o){ o=o||{}; return `<input data-k="${_noEsc(k)}" ${o.list?`list="${o.list}"`:''} type="text" value="${_noEsc(val)}" placeholder="${_noEsc(o.ph||'')}" style="${_wbI}" onchange="${_wbSet(setter,'this.value.trim()')}" onkeydown="if(event.key==='Enter')this.blur()">`; }
+function _wbDate(k,val,setter){ return `<input data-k="${_noEsc(k)}" class="no-fp-date" data-fptype="date" type="text" value="${_noEsc(val)}" placeholder="YYYY/MM/DD" style="${_wbI}" onblur="if(this.value.trim()!==this.defaultValue){${_wbSet(setter,'this.value.trim()')}}" onkeydown="if(event.key==='Enter'||event.key==='Escape')this.blur()">`; }
+function _wbSelect(k,val,opts,setter){ const os=opts.includes(val)?opts:[val,...opts]; return `<select data-k="${_noEsc(k)}" style="${_wbI}" onchange="${_wbSet(setter,'this.value')}">${os.map(v=>`<option value="${_noEsc(v)}" ${v===val?'selected':''}>${_noEsc(v||'—')}</option>`).join('')}</select>`; }
+function _wbArea(k,val,setter){ return `<textarea data-k="${_noEsc(k)}" rows="2" style="${_wbI};resize:vertical;font-family:inherit" onchange="${_wbSet(setter,'this.value')}">${_noEsc(val)}</textarea>`; }
+function _wbChk(k,label,on,setter,color){ return `<label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:${on?(color||'#0f766e'):'#64748b'};cursor:pointer;padding:4px 10px;border:1px solid ${on?(color||'#0f766e'):'#e2e8f0'};border-radius:16px;background:${on?'#f0fdfa':'#fff'}"><input data-k="${_noEsc(k)}" type="checkbox" ${on?'checked':''} onchange="${_wbSet(setter,'this.checked')}" style="width:15px;height:15px;accent-color:${color||'#0f766e'};margin:0">${label}</label>`; }
+// ── 订单详情：全部字段都在这里录入 ──
 function wbDetailNo(id){
   const o=NO.find(x=>x._id===id); if(!o) return '';
   const cs=_noContainers(o), list=cs.length?cs:[null];
@@ -14170,90 +12985,144 @@ function wbDetailNo(id){
   const today=new Date(); today.setHours(0,0,0,0);
   const ceOf=cn=>cn?String(cn).replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
   const mc=m=>m>0?'#0f766e':m<0?'#dc2626':'#94a3b8';
+  const oset=f=>`noSet(${o._id},'${f}',@@)`;
   const miles=cn=>{
     const steps=[['ETA',_wbFld(o,cn,'ETA')],['At Hub',_wbFld(o,cn,'At Hub Date')],['Pick Up',_wbFld(o,cn,'Pick Up Date')],['Delivery',_wbFld(o,cn,'Delivery Date')],['ATA',_wbFld(o,cn,'ATA')],['POD',_wbFld(o,cn,'POD Date')||(_wbFld(o,cn,'POD')?'✓':'')]];
-    return `<div style="display:flex;margin:8px 0 4px">${steps.map(([n,v],i)=>{ const d=_noParseDate(v), ok=!!v&&(!d||d<=today||n==='POD'), c=v?(ok?'#16a34a':'#f59e0b'):'#cbd5e1';
+    return `<div style="display:flex;margin:8px 0 6px">${steps.map(([n,v],i)=>{ const d=_noParseDate(v), ok=!!v&&(!d||d<=today||n==='POD'), c=v?(ok?'#16a34a':'#f59e0b'):'#cbd5e1';
       return `<div style="flex:1;text-align:center;position:relative"><div style="height:3px;background:${i?'#cbd5e1':'transparent'};position:absolute;left:0;right:50%;top:7px"></div><div style="height:3px;background:${i<5?'#cbd5e1':'transparent'};position:absolute;left:50%;right:0;top:7px"></div>
       <div style="position:relative;width:15px;height:15px;border-radius:50%;margin:0 auto;background:${v?c:'#fff'};border:2px solid ${c}"></div><div style="font-size:10.5px;font-weight:700;color:#475569;margin-top:3px">${n}</div><div style="font-size:10.5px;color:#64748b">${_noEsc(v||'—')}</div></div>`; }).join('')}</div>`;
   };
-  const ctn=list.map(cn=>{
-    const si=cn?_noStorageInfo(o,cn):null, sf=cn?_noStorageFee(o,cn):null, hub=_wbFld(o,cn,'Hub'), hubT=_noHubByName(hub), done=_wbDelivered(o,cn);
-    const flags=[['T1',_wbFld(o,cn,'T1')],['Customs Office',_wbFld(o,cn,'Customs Office')],['CC Cleared',_wbFld(o,cn,'CC Cleared')],['POD',_wbFld(o,cn,'POD')]].map(([n,v])=>_wbChip((v?'✔ ':'✕ ')+n,v?'#15803d':'#94a3b8',v?'#dcfce7':'#f1f5f9')).join(' ');
-    return `<div style="border:1px solid #e2e8f0;border-left:4px solid ${done?'#16a34a':'#f59e0b'};border-radius:6px;padding:9px 12px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-family:monospace;font-size:13px">${_noEsc(cn||'(no B/L yet)')}</b>${done?_wbChip('Delivered','#15803d','#dcfce7'):_wbChip('On the way','#92400e','#fef3c7')}
-      <span style="color:#64748b;font-size:12px">Trucker <b>${_noEsc(_wbFld(o,cn,'Trucker')||'—')}</b></span><span style="color:#64748b;font-size:12px">Hub <b>${_noEsc(hub||'—')}</b>${hubT?` <span style="color:#94a3b8">(free ${_noEsc(_noCtnFld(o,cn,'Free Storage (Days)'))}d)</span>`:''}</span><span style="color:#64748b;font-size:12px">Dest <b>${_noEsc(_wbFld(o,cn,'Destination')||'—')}</b></span></div>
-      ${miles(cn)}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${flags}${si?(si.exceeded?_wbChip('Storage over by '+si.byDays+'d'+(sf?' · '+_wbF2(sf.fee):''),'#b91c1c','#fee2e2'):_wbChip('Free storage until '+si.expiry,'#0369a1','#e0f2fe')):''}</div></div>`;
-  }).join('');
   const inp='padding:4px 6px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;width:100%;box-sizing:border-box;background:#fff';
-  const charges=list.map(cn=>{
-    const ce=ceOf(cn), ch=_noCharges(o,cn), R=_noReceivable(o,cn), P=_noPayable(o,cn), M=_noMargin(o,cn);
-    const num=(v,ix,f)=>`<input style="${inp};text-align:right" value="${_noN(v)?_noN(v):''}" placeholder="0.00" onchange="noChargeSet(${o._id},'${ce}',${ix},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
-    return `<div style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:12px;font-weight:700">${_noEsc(cn||'Order')}</span>
-      <select onchange="noChargeAdd(${o._id},'${ce}',this)" style="padding:3px 8px;border:1px solid #0f766e;color:#0f766e;border-radius:5px;font-size:11.5px;font-weight:700;background:#fff;margin-left:auto"><option value="">+ Add item…</option>${NO_CHARGE_ITEMS.map(v=>`<option value="${v}">${v}</option>`).join('')}</select></div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#004D4C;color:#fff"><th style="padding:5px 8px;text-align:left;width:160px">Item</th><th style="padding:5px 8px;text-align:right;width:120px">Receivable</th><th style="padding:5px 8px;text-align:right;width:120px">Payable</th><th style="padding:5px 8px;text-align:right;width:100px">Margin</th><th style="padding:5px 8px;text-align:left">Note</th><th style="width:28px"></th></tr></thead><tbody>
-      ${ch.map((l,ix)=>{ const opts=NO_CHARGE_ITEMS.includes(l.item)?NO_CHARGE_ITEMS:[l.item,...NO_CHARGE_ITEMS]; const m=_noN(l.r)-_noN(l.p);
-        return `<tr><td style="padding:3px 4px;border-bottom:1px solid #eef2f7"><select style="${inp}" onchange="noChargeSet(${o._id},'${ce}',${ix},'item',this.value)">${opts.map(v=>`<option ${v===l.item?'selected':''}>${_noEsc(v)}</option>`).join('')}</select></td>
-        <td style="padding:3px 4px;border-bottom:1px solid #eef2f7">${num(l.r,ix,'r')}</td><td style="padding:3px 4px;border-bottom:1px solid #eef2f7">${num(l.p,ix,'p')}</td>
-        <td style="padding:3px 8px;border-bottom:1px solid #eef2f7;text-align:right;font-weight:700;color:${mc(m)}">${_wbF2(m)}</td>
-        <td style="padding:3px 4px;border-bottom:1px solid #eef2f7"><input style="${inp}" value="${_noEsc(l.note||'')}" placeholder="note…" onchange="noChargeSet(${o._id},'${ce}',${ix},'note',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
-        <td style="border-bottom:1px solid #eef2f7;text-align:center"><span onclick="noChargeDel(${o._id},'${ce}',${ix})" style="color:#dc2626;cursor:pointer;font-weight:700" title="Remove">✕</span></td></tr>`; }).join('')||'<tr><td colspan="6" style="padding:8px;color:#94a3b8">No charges yet — add one with “+ Add item…”.</td></tr>'}
-      <tr style="font-weight:800;background:#f8fafc"><td style="padding:5px 8px">Total</td><td style="padding:5px 8px;text-align:right;color:#1d4ed8">${_wbF2(R)}</td><td style="padding:5px 8px;text-align:right;color:#b45309">${_wbF2(P)}</td><td style="padding:5px 8px;text-align:right;color:${mc(M)}">${_wbF2(M)}</td><td style="padding:5px 8px;color:${mc(M)}">${_noMarginPct(o,cn)}%</td><td></td></tr></tbody></table></div>`;
-  }).join('');
-  const sur=list.map(cn=>_noSurcharges(o,cn).map(x=>_wbChip((cn?cn+': ':'')+x.reason+' '+_wbF2(x.fee),'#9a3412','#ffedd5'))).flat().join(' ');
-  const tags=_noSvcList(o).map(t=>_wbChip(t,'#0369a1','#e0f2fe')).concat(_noStList(o).map(t=>_wbChip(t,'#6d28d9','#ede9fe'))).join(' ');
-  return `<div style="padding:12px 14px;background:#f8fafc">
-    ${_wbHead('no',o['Order No.']||'Order #'+o._id,(o['Project']?_wbChip(o['Project'],'#0369a1','#e0f2fe'):'')+`<span style="color:#475569;font-size:13px">${_noEsc(o['Consignee']||'')}</span>`,`<button onclick="wbOpenInOrders(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #004D4C;color:#004D4C;background:#fff;border-radius:6px;cursor:pointer">✏️ Edit in table</button>`)}
+  const card=cn=>{
+    const ce=ceOf(cn), pc=cn?_noPc(o,cn):{};
+    const set=(f,fo)=>cn?`noSetCtn(${o._id},'${ce}','${f}',@@)`:`noSet(${o._id},'${fo||f}',@@)`;
+    const kk=f=>f+'|'+ce;
+    const txt=f=>cn?(pc[f]!==undefined?pc[f]:(o[f]||'')):(o[f]||'');
+    const dv=f=>cn?(pc[f]||o[f]||''):(o[f]||'');
+    const si=cn?_noStorageInfo(o,cn):null, sf=cn?_noStorageFee(o,cn):null, done=_wbDelivered(o,cn);
+    const coF=cn?pc['Customs Office']:undefined, co=coF!==undefined?!!coF:!!o['Customs Office'];
+    const autoD=_noDemurrageDays(o,cn), demF=cn?pc['Demurrage']:o['Demurrage'], dem=demF!==undefined?!!demF:!!autoD;
+    const hubT=_noHubByName(_noCtnHub(o,cn)), tiered=cn&&hubT&&_noHubTiers(hubT).length;
+    const ppdExplicit=(cn&&pc['Price per Day']!==undefined&&pc['Price per Day']!=='')?pc['Price per Day']:(tiered?'':(o['Price per Day']||''));
+    const ch=_noCharges(o,cn), R=_noReceivable(o,cn), P=_noPayable(o,cn), M=_noMargin(o,cn);
+    const num=(v,ix,f)=>`<input data-k="ch${ix}${f}|${ce}" style="${inp};text-align:right" value="${_noN(v)?_noN(v):''}" placeholder="0.00" onchange="noChargeSet(${o._id},'${ce}',${ix},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
+    const svc=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">${_noSvcListFor(o,cn).map(v=>{ const esc=v.replace(/'/g,"\\'").replace(/"/g,'&quot;'); return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:11px;font-weight:700;border-radius:12px;background:#5b21b6;color:#fff">${_noEsc(v)}<button type="button" onclick="noToggleServiceCtn(${o._id},'${ce}','${esc}')" style="background:none;border:none;color:#fff;cursor:pointer;padding:0">✕</button></span>`; }).join('')}
+      <input data-k="svcadd|${ce}" type="text" list="dl-service-o" placeholder="+ service, Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleServiceCtn(${o._id},'${ce}',this.value);this.value='';}" style="font-size:11px;padding:3px 9px;border:1.5px dashed #cbd5e1;border-radius:12px;width:130px"></div>`;
+    const stt=`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">${_noStListFor(o,cn).map(v=>{ const esc=v.replace(/'/g,"\\'").replace(/"/g,'&quot;'); return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 6px 2px 9px;font-size:11px;font-weight:700;border-radius:12px;${NO_ST_STYLE[v]||'background:#be123c;color:#fff'}">${_noEsc(v)}<button type="button" onclick="noToggleStatusCtn(${o._id},'${ce}','${esc}')" style="background:none;border:none;color:#fff;cursor:pointer;padding:0">✕</button></span>`; }).join('')}
+      <input data-k="stadd|${ce}" type="text" list="dl-status-o" placeholder="+ status, Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();noToggleStatusCtn(${o._id},'${ce}',this.value);this.value='';}" style="font-size:11px;padding:3px 9px;border:1.5px dashed #cbd5e1;border-radius:12px;width:130px"></div>`;
+    const sur=_noSurchargeEditor(o,cn);
+    return `<div style="border:1px solid #e2e8f0;border-left:4px solid ${done?'#16a34a':'#f59e0b'};border-radius:8px;background:#fff;padding:12px 14px;margin-top:10px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${cn?`<input data-k="bl|${ce}" value="${_noEsc(cn)}" onchange="noRenameCtn(${o._id},'${ce}',this.value)" style="${_wbI};width:210px;font-family:monospace;font-weight:700">`:'<b style="color:#94a3b8;font-style:italic">no B/L yet</b>'}
+        ${done?_wbChip('Delivered','#15803d','#dcfce7'):_wbChip('On the way','#92400e','#fef3c7')}
+        ${si?(si.exceeded?_wbChip('Storage over by '+si.byDays+'d'+(sf?' · '+_wbF2(sf.fee):''),'#b91c1c','#fee2e2'):_wbChip('Free storage until '+si.expiry,'#0369a1','#e0f2fe')):''}
+        ${cn?`<button type="button" onclick="noDelCtn(${o._id},'${ce}')" style="margin-left:auto;border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:6px;padding:3px 10px;font-size:11.5px;cursor:pointer">Remove B/L</button>`:''}</div>
+      ${miles(cn)}
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${_wbL('Consignee',_wbText(kk('Consignee'),txt('Consignee'),set('Consignee'),{list:'dl-con'}))}${_wbL('Destination',_wbText(kk('Destination'),txt('Destination'),set('Destination'),{ph:'country / city'}))}
+        ${_wbL('Trucker',_wbText(kk('Trucker'),txt('Trucker'),set('Trucker'),{list:'dl-truck'}))}${_wbL('Hub',_wbText(kk('Hub'),cn?(pc['Hub']!==undefined?pc['Hub']:(o['Hub']||'')):(o['Hub']||''),set('Hub'),{list:'dl-hub-o',ph:'pick from tariff table'}))}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">
+        ${_wbL('ETA',_wbDate(kk('ETA'),txt('ETA'),set('ETA')),110)}${_wbL('At Hub date',_wbDate(kk('At Hub Date'),cn?(pc['At Hub Date']||''):(o['At Hub Date']||''),set('At Hub Date')),110)}${_wbL('Pick up',_wbDate(kk('Pick Up Date'),txt('Pick Up Date'),set('Pick Up Date')),110)}
+        ${_wbL('Delivery',_wbDate(kk('Delivery Date'),dv('Delivery Date'),set('Delivery Date')),110)}${_wbL('ATA',_wbDate(kk('ATA'),dv('ATA'),set('ATA')),110)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center">
+        ${_wbChk(kk('Customs Office'),'Customs office',co,set('Customs Office'),'#0f766e')}${_wbChk(kk('At Hub'),'Ready to be picked',cn?!!pc['At Hub']:!!o['Arrived at Hub'],set('At Hub','Arrived at Hub'),'#b45309')}
+        ${_wbChk(kk('T1'),'T1',cn?!!pc['T1']:!!o['T1'],set('T1'),'#1d4ed8')}<span style="width:120px">${_wbDate(kk('T1 Date'),txt('T1 Date'),set('T1 Date'))}</span>
+        ${_wbChk(kk('CC Cleared'),'CC',cn?!!pc['CC Cleared']:!!o['CC Cleared'],set('CC Cleared'),'#0f766e')}<span style="width:120px">${_wbDate(kk('CC Date'),txt('CC Date'),set('CC Date'))}</span>
+        ${_wbChk(kk('POD'),'POD',cn?!!pc['POD']:!!o['POD'],set('POD'),'#15803d')}<span style="width:120px">${_wbDate(kk('POD Date'),txt('POD Date'),set('POD Date'))}</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;align-items:flex-end">
+        <div style="flex:0 0 auto;padding-bottom:3px">${_wbChk(kk('Demurrage'),'Demurrage'+(autoD?' ('+autoD+'d late)':''),dem,set('Demurrage'),'#dc2626')}</div>
+        ${_wbL('Free days',`<input data-k="${kk('Free Storage (Days)')}" type="number" min="0" value="${_noEsc(_noCtnFld(o,cn,'Free Storage (Days)'))}" style="${_wbI}" onchange="${_wbSet(set('Free Storage (Days)'),'this.value')}">`,90)}
+        ${_wbL('Price / day',`<input data-k="${kk('Price per Day')}" type="text" value="${_noEsc(ppdExplicit)}" placeholder="${tiered?'auto (tariff)':'€'}" style="${_wbI}" onchange="${_wbSet(set('Price per Day'),'this.value.trim()')}">`,100)}
+        ${_wbL('Payment status',_wbSelect(kk('Payment Status'),cn?(pc['Payment Status']!==undefined?pc['Payment Status']:(o['Payment Status']||'')):(o['Payment Status']||''),['','Pending invoice','Requested','Paid'],set('Payment Status')),150)}</div>
+      <div style="margin-top:10px">${_wbL('Service',svc,300)}</div><div style="margin-top:8px">${_wbL('Status',stt,300)}</div>
+      <div style="margin-top:8px">${_wbL('Remark',_wbArea(kk('Remark'),cn?(pc['Remark']!==undefined?pc['Remark']:(o['Remark']||'')):(o['Remark']||''),set('Remark')),300)}</div>
+      ${sur?`<div style="margin-top:8px"><div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:3px">Surcharge tags</div>${sur}</div>`:''}
+      <div style="margin-top:12px;border-top:1px dashed #cbd5e1;padding-top:10px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:11.5px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.4px">Charges &amp; margin — enter fees</span>
+          <select onchange="noChargeAdd(${o._id},'${ce}',this)" style="padding:3px 8px;border:1px solid #0f766e;color:#0f766e;border-radius:5px;font-size:11.5px;font-weight:700;background:#fff;margin-left:auto"><option value="">+ Add item…</option>${NO_CHARGE_ITEMS.map(v=>`<option value="${v}">${v}</option>`).join('')}</select></div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#004D4C;color:#fff"><th style="padding:5px 8px;text-align:left;width:130px">Item</th><th style="padding:5px 8px;text-align:right;width:100px">Receivable</th><th style="padding:5px 8px;text-align:right;width:100px">Payable</th><th style="padding:5px 8px;text-align:right;width:80px">Margin</th><th style="padding:5px 8px;text-align:left">Note</th><th style="width:24px"></th></tr></thead><tbody>
+        ${ch.map((l,ix)=>{ const opts=NO_CHARGE_ITEMS.includes(l.item)?NO_CHARGE_ITEMS:[l.item,...NO_CHARGE_ITEMS]; const m=_noN(l.r)-_noN(l.p);
+          return `<tr><td style="padding:3px 4px;border-bottom:1px solid #eef2f7"><select style="${inp}" onchange="noChargeSet(${o._id},'${ce}',${ix},'item',this.value)">${opts.map(v=>`<option ${v===l.item?'selected':''}>${_noEsc(v)}</option>`).join('')}</select></td>
+          <td style="padding:3px 4px;border-bottom:1px solid #eef2f7">${num(l.r,ix,'r')}</td><td style="padding:3px 4px;border-bottom:1px solid #eef2f7">${num(l.p,ix,'p')}</td>
+          <td style="padding:3px 8px;border-bottom:1px solid #eef2f7;text-align:right;font-weight:700;color:${mc(m)}">${_wbF2(m)}</td>
+          <td style="padding:3px 4px;border-bottom:1px solid #eef2f7"><input data-k="chn${ix}|${ce}" style="${inp}" value="${_noEsc(l.note||'')}" placeholder="note…" onchange="noChargeSet(${o._id},'${ce}',${ix},'note',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+          <td style="border-bottom:1px solid #eef2f7;text-align:center"><span onclick="noChargeDel(${o._id},'${ce}',${ix})" style="color:#dc2626;cursor:pointer;font-weight:700" title="Remove">✕</span></td></tr>`; }).join('')||'<tr><td colspan="6" style="padding:8px;color:#94a3b8">No charges yet — add one with “+ Add item…”.</td></tr>'}
+        <tr style="font-weight:800;background:#f8fafc"><td style="padding:5px 8px">Total</td><td style="padding:5px 8px;text-align:right;color:#1d4ed8">${_wbF2(R)}</td><td style="padding:5px 8px;text-align:right;color:#b45309">${_wbF2(P)}</td><td style="padding:5px 8px;text-align:right;color:${mc(M)}">${_wbF2(M)}</td><td style="padding:5px 8px;color:${mc(M)}">${_noMarginPct(o,cn)}%</td><td></td></tr></tbody></table></div></div>`;
+  };
+  return `<div style="padding:14px 16px;background:#f1f5f9;min-height:100%">
+    ${_wbHead('no',o['Order No.']||'Order #'+o._id,(o['Project']?_wbChip(o['Project'],'#0369a1','#e0f2fe'):''),`<button onclick="noAddCtnPrompt(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #0f766e;color:#0f766e;background:#fff;border-radius:6px;cursor:pointer">+ Add B/L</button><button onclick="if(confirm('Delete entire order?')){noDel(${o._id})}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${_wbKpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${_wbKpi('Payable',_wbF2(rp.p),'#b45309')}${_wbKpi('Margin',_wbF2(rp.m),rp.m>=0?'#0f766e':'#dc2626')}${_wbKpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#0f766e':'#dc2626')}</div>
-    ${o['Today Status']?_wbSec("Today's status",`<div style="white-space:pre-wrap;font-size:13px">${_noEsc(o['Today Status'])}</div>`):''}
-    ${_wbSec('Containers / B/Ls ('+list.length+')',ctn)}
-    ${_wbSec('Charges &amp; margin — enter fees here',charges)}
-    ${(sur||tags||o['Remark'])?_wbSec('Tags · surcharges · remark',`${tags?`<div style="margin-bottom:6px">${tags}</div>`:''}${sur?`<div style="margin-bottom:6px">${sur}</div>`:''}${o['Remark']?`<div style="white-space:pre-wrap;font-size:12.5px;color:#475569">${_noEsc(o['Remark'])}</div>`:''}`):''}</div>`;
+    ${_wbSec('Order',`<div style="display:flex;flex-wrap:wrap;gap:10px">${_wbL('Project',_wbText('Project|',o['Project']||'',oset('Project'),{ph:'Project'}))}${_wbL('Order No.',_wbText('Order No.|',o['Order No.']||'',oset('Order No.')))}</div>
+      <div style="margin-top:10px">${_wbL("Today's status",_wbArea('Today Status|',o['Today Status']||'',oset('Today Status')),300)}</div>`)}
+    ${list.map(card).join('')}</div>`;
 }
-function wbOpenInOrders(id){ const o=NO.find(x=>x._id===id); if(!o) return; showPage('orders'); const b=document.getElementById('no-search'); if(b){ b.value=o['Order No.']||''; renderOrders(); } }
-// ── TEMU：一个项目 + 日期组 ──
+// ── TEMU：一个项目 + 日期组（列表）──
 function wbDetailCt(key,jobs){
+  if(String(key).startsWith('c:')) return wbDetailCtOne(+String(key).slice(2));
   const g=(jobs||_wbJobs('ct')).find(x=>x.key===key); if(!g) return '';
   const rows=g.rows, arr=rows.filter(r=>r['Actual Arrival']||r['Tracking']==='Arrived').length;
-  const tot=rows.reduce((s,r)=>s+(parseFloat(r['Price'])||0),0), t1=rows.reduce((s,r)=>s+(parseFloat(r['Price T1'])||0),0), sur=rows.reduce((s,r)=>s+(parseFloat(r['Surcharge'])||0),0);
   const th='padding:5px 8px;text-align:left;background:#004D4C;color:#fff;font-size:11px', td='padding:5px 8px;border-bottom:1px solid #eef2f7;font-size:12px;white-space:nowrap';
-  return `<div style="padding:12px 14px;background:#f8fafc">
+  return `<div style="padding:14px 16px;background:#f1f5f9;min-height:100%">
     ${_wbHead('ct',g.row,_wbChip(rows.length+' container'+(rows.length>1?'s':''),'#0369a1','#e0f2fe')+`<span style="color:#64748b;font-size:12px">${_noFmtDate(g.s)} → ${_noFmtDate(g.e)}</span>`)}
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Arrived',arr+'/'+rows.length,'#16a34a')}${_wbKpi('Freight €',_wbF2(tot),'#1d4ed8')}${_wbKpi('T1 €',_wbF2(t1),'#b45309')}${_wbKpi('Surcharge €',_wbF2(sur),'#c2410c')}</div>
-    ${_wbSec('Containers',`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="${th}">Container</th><th style="${th}">Master B/L</th><th style="${th}">Consignee</th><th style="${th}">Dest</th><th style="${th}">Trucker</th><th style="${th}">ETA at Hub</th><th style="${th}">Slot</th><th style="${th}">Arrival</th><th style="${th}">Tracking</th><th style="${th}">Price</th><th style="${th}"></th></tr></thead><tbody>
-      ${rows.map(r=>`<tr><td style="${td};font-weight:700">${_noEsc(r['Container No.']||'')}</td><td style="${td};font-family:monospace">${_noEsc(r['Master B/L']||'')}</td><td style="${td}">${_noEsc(r['Consignee']||'')}</td><td style="${td}">${_noEsc(r['Destination']||'')}</td><td style="${td}">${_noEsc(r['Trucker']||'')}</td><td style="${td}">${_noEsc(r['ETA at Hub']||'')}</td><td style="${td}">${_noEsc(r['Scheduled Slot']||'')}</td><td style="${td}">${_noEsc(r['Actual Arrival']||'')}</td><td style="${td}">${_noEsc(r['Tracking']||'')}</td><td style="${td};text-align:right">${_noEsc(r['Price']||'')}</td><td style="${td}"><button onclick="openEdit(${r._id})" style="padding:2px 9px;font-size:11px;border:1px solid #cbd5e1;background:#fff;border-radius:5px;cursor:pointer">Edit</button></td></tr>`).join('')}</tbody></table></div>`)}</div>`;
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Arrived',arr+'/'+rows.length,'#16a34a')}</div>
+    ${_wbSec('Containers — click one to edit',`<table style="width:100%;border-collapse:collapse"><thead><tr><th style="${th}">Container</th><th style="${th}">Master B/L</th><th style="${th}">Consignee</th><th style="${th}">Slot</th><th style="${th}">Arrival</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr style="cursor:pointer" onclick="wbPick('ct','c:${r._id}')"><td style="${td};font-weight:700;color:#0369a1">${_noEsc(r['Container No.']||'')}</td><td style="${td};font-family:monospace">${_noEsc(r['Master B/L']||'')}</td><td style="${td}">${_noEsc(r['Consignee']||'')}</td><td style="${td}">${_noEsc(r['Scheduled Slot']||'')}</td><td style="${td}">${_noEsc(r['Actual Arrival']||'')}</td></tr>`).join('')}</tbody></table>`)}</div>`;
 }
-// ── 船：把这条记录的全部字段列出来 ──
+// ── TEMU：单个柜子，全部字段可编辑 ──
+function ctSetField(id,f,v){
+  const r=CT.find(x=>x._id===id); if(!r) return;
+  r[f]=(typeof v==='string')?v.trim():v;
+  if(f==='Scheduled Slot') delete r._slotAuto;
+  saveData(); renderCT();
+}
+function wbDetailCtOne(id){
+  const r=CT.find(x=>x._id===id); if(!r) return '';
+  const set=f=>`ctSetField(${id},'${f}',@@)`;
+  const T=(f,o)=>_wbL(f,_wbText(f,r[f]||'',set(f),o));
+  const D=f=>_wbL(f,_wbDate(f,r[f]||'',set(f)),120);
+  const S=(f,opts)=>_wbL(f,_wbSelect(f,r[f]||'',opts,set(f)),150);
+  const pay=['','Pending invoice','Amending','Verifying','Requested','Paid'];
+  const arrived=!!r['Actual Arrival']||r['Tracking']==='Arrived';
+  return `<div style="padding:14px 16px;background:#f1f5f9;min-height:100%">
+    ${_wbHead('ct',r['Container No.']||'Container',(r['Batch / Train']?_wbChip(r['Batch / Train'],'#0369a1','#e0f2fe'):'')+(arrived?_wbChip('Arrived','#15803d','#dcfce7'):_wbChip('On the way','#92400e','#fef3c7')),`<button onclick="if(confirm('Delete this container?')){CT=CT.filter(x=>x._id!==${id});saveData();renderCT();wbClose('ct')}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
+    ${_wbSec('Shipment',`<div style="display:flex;flex-wrap:wrap;gap:10px">${T('Batch / Train',{list:'dl-batch'})}${T('Container No.')}${T('Master B/L')}${T('Consignee',{list:'dl-con'})}${T('Destination',{list:'dl-dest'})}${T('Trucker',{list:'dl-truck'})}${T('Broker',{list:'dl-broker'})}${T('Hub')}</div>`)}
+    ${_wbSec('Dates',`<div style="display:flex;flex-wrap:wrap;gap:10px">${D('ETA in Mala')}${D('ETA at Hub')}${D('T1 Date')}${_wbL('Scheduled Slot',_wbText('Scheduled Slot',r['Scheduled Slot']||'',set('Scheduled Slot'),{ph:'YYYY/MM/DD HH:MM'}),150)}${D('Actual Arrival')}${D('Deadline')}</div>`)}
+    ${_wbSec('Status',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${S('Tracking',['','None','T1','Arrived'])}${S('Trk Confirm',['','Applied','Confirmed'])}<div style="padding-bottom:3px">${_wbChk('CMR','CMR received',r['CMR']==='✅',`ctSetField(${id},'CMR',@@?'✅':'')`,'#0f766e')}</div></div>`)}
+    ${_wbSec('Costs',`<div style="display:flex;flex-wrap:wrap;gap:10px">${T('Pickup Ref')}${T('Price')}${T('Price T1')}${T('Surcharge')}${T('Surcharge Reason')}${S('Payment Status',pay)}${S('T1 Payment Status',pay)}</div>`)}
+    ${_wbSec('Remark',_wbArea('Remark',r['Remark']||'',set('Remark')))}</div>`;
+}
+// ── 船：全部字段可编辑 ──
+function vtSetField(id,f,v){ const r=VT.find(x=>x._id===id); if(!r) return; r[f]=(typeof v==='string')?v.trim():v; saveVT(); renderVT(); }
 function wbDetailVt(id){
   const v=VT.find(x=>x._id===id); if(!v) return '';
-  const keys=Object.keys(v).filter(k=>!/^_/.test(k)&&v[k]!==''&&v[k]!=null&&typeof v[k]!=='object');
+  const known=['Vessel Name','Booking / BC No.','Carrier','Port','POD','ETS (Departure)','ETA (Arrival)','Port Cut-Off','Status','Container Qty','CY'];
+  const bk=Object.keys(v).find(k=>/^Booking/.test(k));
+  const keys=[...new Set([...known.map(k=>(k==='Booking / BC No.'&&bk)?bk:k),...Object.keys(v).filter(k=>!/^_/.test(k)&&typeof v[k]!=='object')])];
+  const set=f=>`vtSetField(${id},'${String(f).replace(/'/g,"\\'")}',@@)`;
+  const field=k=>{
+    const val=v[k]; if(typeof val==='boolean') return `<div style="padding-top:18px">${_wbChk(k,k,val,set(k))}</div>`;
+    if(k==='Status') return _wbL(k,_wbSelect(k,val||'',['','Scheduled','Cut-Off Soon','Cut-Off Passed','Departed','Discharged','TBD'],set(k)),150);
+    if(/ETS|ETA|Cut-Off|Date/i.test(k)) return _wbL(k,_wbDate(k,val||'',set(k)),130);
+    if(/remark|note/i.test(k)) return _wbL(k,_wbArea(k,val||'',set(k)),300);
+    return _wbL(k,_wbText(k,val==null?'':val,set(k)),170);
+  };
   const cn=Array.isArray(v.containers)?v.containers:[];
-  return `<div style="padding:12px 14px;background:#f8fafc">
-    ${_wbHead('vt',v['Vessel Name']||'Vessel',(v['Status']?_wbChip(v['Status'],'#0369a1','#e0f2fe'):'')+`<span style="color:#64748b;font-size:12px">${_noEsc(v['Carrier']||'')}</span>`,`<button onclick="gotoVessel(${v._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #004D4C;color:#004D4C;background:#fff;border-radius:6px;cursor:pointer">✏️ Edit in table</button>`)}
-    ${_wbSec('Booking details',`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 18px">${keys.map(k=>`<div><div style="font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">${_noEsc(k)}</div><div style="font-size:13px;font-weight:600;color:#0f172a;word-break:break-word">${_noEsc(v[k])}</div></div>`).join('')}</div>`)}
+  return `<div style="padding:14px 16px;background:#f1f5f9;min-height:100%">
+    ${_wbHead('vt',v['Vessel Name']||'Vessel',(v['Status']?_wbChip(v['Status'],'#0369a1','#e0f2fe'):'')+`<span style="color:#64748b;font-size:12px">${_noEsc(v['Carrier']||'')}</span>`)}
+    ${_wbSec('Booking details',`<div style="display:flex;flex-wrap:wrap;gap:10px">${keys.map(field).join('')}</div>`)}
     ${cn.length?_wbSec('Containers ('+cn.length+')',`<div style="font-family:monospace;font-size:12px;line-height:1.8">${cn.map(c=>_noEsc(c)).join(' · ')}</div>`):''}</div>`;
 }
-function noDispatchRows(){
-  const out=[];
-  NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
-    const cs=_noContainers(o);
-    (cs.length?cs:[o['Order No.']||'Order']).forEach((cn,i)=>{
-      const pc=_noPc(o,cn);
-      const pcDelivered=!!pc['POD']||/delivered/i.test(pc['Status']||'');
-      out.push({
-        'Container No.':'🧾 '+cn+(o['Order No.']?' · '+o['Order No.']:''),
-        'Order No.':o['Order No.']||'',
-        'Consignee':o['Consignee']||'(no consignee)',
-        'Trucker':o['Trucker']||'',
-        'Scheduled Slot':pc['Delivery Date']||o['Delivery Date']||'',
-        'Actual Arrival':pc['ATA']||((pcDelivered||_noHasSt(o,'Delivered'))?(pc['Delivery Date']||o['Delivery Date']||''):''),
-        'ETA at Hub':'', // orders are scheduled by Delivery Date only — no ETA fallback
-        'Destination':o['Destination']||'',
-        _isOrder:true,_id:-((o._id||0)*1000+i)
-      });
-    });
-  });
-  return out;
+function wbRowClick(e,kind,id){
+  if(e.target.closest('input,button,select,textarea,a,label')) return;
+  const c=e.target.closest('[onclick]'); if(c&&c!==e.currentTarget) return;
+  wbPick(kind,kind==='ct'?'c:'+id:id);
 }
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape') return;
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test((e.target||{}).tagName||'')) return;
+  ['no','ct','vt'].forEach(k=>{ if(_wbS[k].sel!=null) wbClose(k); });
+});
+
 loadNO();
 // Map orders to CT-like rows so dashboard charts can include them (batch = "🧾 Orders")
 function _ordersAsCtRows(){
@@ -14560,9 +13429,6 @@ window.addEventListener('resize', ()=>{ if(_currentPage==='vessels') vtApplyFree
   </button>
   <button onclick="showPage('vessels')" id="mnav-vessels">
     <span class="mnav-icon">🚢</span>Vessels
-  </button>
-  <button onclick="showPage('dispatch')" id="mnav-dispatch">
-    <span class="mnav-icon">🚛</span>Dispatch
   </button>
   <button onclick="showPage('notices')" id="mnav-notices">
     <span class="mnav-icon">🔔</span>Notices
