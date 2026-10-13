@@ -12998,7 +12998,7 @@ function _wbJobs(kind){
       (cs.length?cs:[null]).forEach(cn=>{
         const s0=_noParseDate(_wbFld(o,cn,'At Hub Date'))||_noParseDate(_wbFld(o,cn,'Pick Up Date'))||_noParseDate(_wbFld(o,cn,'ETA'));
         const e0=_noParseDate(_wbFld(o,cn,'Delivery Date'))||_noParseDate(_wbFld(o,cn,'ATA'))||s0;
-        out.push({key:o._id,row:(_wbFld(o,cn,'Trucker')||'').trim()||'(unassigned)',label:(cn||'')+' · '+(o['Order No.']||''),find:(o['Order No.']||'')+' '+(cn||''),s:s0||e0,e:e0||s0,done:_wbDelivered(o,cn)});
+        out.push({key:o._id,row:(_wbFld(o,cn,'Trucker')||'').trim()||'(unassigned)',label:[(o['Project']||'').trim(),o['Order No.']||'',(_wbFld(o,cn,'Consignee')||'').trim()].filter(Boolean).join(' · ')||(cn||''),tip:(cn||'')+' · '+(o['Order No.']||'')+' · '+(_wbFld(o,cn,'Destination')||''),find:(o['Order No.']||'')+' '+(cn||''),s:s0||e0,e:e0||s0,done:_wbDelivered(o,cn)});
       });
     });
   } else if(kind==='ct'){
@@ -13060,7 +13060,7 @@ function wbRender(kind){
   const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], todayI=idx(today);
   const head=days.map((d,i)=>`<div style="width:${DW}px;flex:0 0 ${DW}px;text-align:center;font-size:10px;padding:3px 0;border-left:1px solid #e2e8f0;${i===todayI?'background:#fef3c7;font-weight:800;':(d.getDay()%6===0?'background:#f1f5f9;':'')}">${DW>=40?wk[d.getDay()]+'<br>':''}${d.getDate()}/${d.getMonth()+1}</div>`).join('');
   const body=names.map(nm=>{
-    const lanes=[]; rows[nm].sort((a,b)=>a.si-b.si).forEach(b=>{ let l=lanes.findIndex(end=>end<b.si); if(l<0){ l=lanes.length; lanes.push(-1); } lanes[l]=b.ei; b.lane=l; });
+    const lanes=[]; rows[nm].sort((a,b)=>a.si-b.si).forEach(b=>{ b.w=Math.min(Math.max((b.ei-b.si+1)*DW-4,String(b.label).length*6.4+18),300); b.ee=b.si+Math.ceil((b.w+4)/DW)-1; let l=lanes.findIndex(end=>end<b.si); if(l<0){ l=lanes.length; lanes.push(-1); } lanes[l]=b.ee; b.lane=l; });
     const h=Math.max(1,lanes.length)*26+8;
     const bg=days.map((d,i)=>`<div style="position:absolute;left:${i*DW}px;top:0;bottom:0;width:${DW}px;border-left:1px solid #f1f5f9;${i===todayI?'background:rgba(254,243,199,.55);':(d.getDay()%6===0?'background:#f8fafc;':'')}"></div>`).join('');
     const bs=rows[nm].map(b=>{
@@ -13068,8 +13068,8 @@ function wbRender(kind){
       const col=b.done?'#16a34a':od?'#dc2626':cur?'#0369a1':'#7c3aed';
       const sel=b.key===S.sel;
       const kq=typeof b.key==='number'?b.key:"'"+String(b.key).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"'";
-      return `<div onclick="wbPick('${kind}',${String(kq).replace(/"/g,'&quot;')})" title="${_noEsc(b.label+'\n'+_noFmtDate(b.s)+' → '+_noFmtDate(b.e)+(b.done?' (done)':od?' (overdue)':''))}"
-        style="position:absolute;left:${b.si*DW+2}px;top:${4+b.lane*26}px;width:${(b.ei-b.si+1)*DW-4}px;height:22px;background:${col};color:#fff;border-radius:4px;font-size:10.5px;line-height:22px;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;${sel?'outline:2px solid #0f172a;outline-offset:1px;z-index:2;':'opacity:.92;'}">${_noEsc(b.label)}</div>`;
+      return `<div onclick="wbPick('${kind}',${String(kq).replace(/"/g,'&quot;')})" title="${_noEsc(b.label+(b.tip?'\n'+b.tip:'')+'\n'+_noFmtDate(b.s)+' → '+_noFmtDate(b.e)+(b.done?' (done)':od?' (overdue)':''))}"
+        style="position:absolute;left:${b.si*DW+2}px;top:${4+b.lane*26}px;width:${b.w}px;height:22px;background:${col};color:#fff;border-radius:4px;font-size:10.5px;line-height:22px;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;${sel?'outline:2px solid #0f172a;outline-offset:1px;z-index:2;':'opacity:.92;'}">${_noEsc(b.label)}</div>`;
     }).join('');
     return `<div style="display:flex;border-top:1px solid #e2e8f0"><div style="width:150px;flex:0 0 150px;padding:7px 10px;font-size:12px;font-weight:700;color:${/^\(/.test(nm)?'#94a3b8':'#0369a1'};background:#fafafa;position:sticky;left:0;z-index:3;border-right:1px solid #e2e8f0;overflow:hidden;text-overflow:ellipsis">${_noEsc(nm)}</div>
       <div style="position:relative;width:${N*DW}px;height:${h}px">${bg}${bs}</div></div>`;
