@@ -521,6 +521,11 @@ td.editing .cell-edit{display:block}
 .dash-cat-tab:hover{border-color:#004D4C;color:#004D4C;background:#e8f5f5}
 .dash-cat-tab.active{background:#004D4C;color:#fff;border-color:#004D4C}
 .dash-cat-section{display:none}
+/* Dashboard 精简：只留 KPI / 告警，不显示图表和分类页签 */
+#page-dashboard .charts-row,#page-dashboard .dash-cat-tabs{display:none !important}
+#page-dashboard #dash-cat-time,#page-dashboard #dash-cat-price,#page-dashboard #dash-cat-qty{display:none !important}
+#page-dashboard #dash-cat-delays{display:block !important}
+#page-dashboard .vt-right-card:has(#vt-monthly-list){display:none}
 .dash-cat-section.active{display:block}
 .kpi-row-vt{grid-template-columns:1fr 1fr;margin-bottom:12px}
 .vt-right-card{margin-bottom:12px}
@@ -3830,7 +3835,12 @@ function applySmartETA(id){
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────
+// Dashboard 只保留关键指标：图表默认不画（省掉 ~30 张图的渲染时间）。要恢复图表：把 DASH_CHARTS 改成 true，
+// 并删掉下面 CSS 里 "Dashboard 精简" 那几行。
+const DASH_CHARTS=false;
+const _chartStub=function(){ const noop=()=>{}; return new Proxy({data:{datasets:[],labels:[]},options:{}},{get:(t,k)=>(k in t)?t[k]:noop}); };
 function renderDashboard(){
+  const Chart=DASH_CHARTS?window.Chart:_chartStub;
   // TEMU containers + normal-order pseudo-rows (batch "🧾 Orders") for the chart sections
   const CTD=CT.concat((typeof _ordersAsCtRows==='function')?_ordersAsCtRows():[]);
   renderSmartInsights();
