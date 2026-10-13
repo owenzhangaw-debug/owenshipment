@@ -2321,7 +2321,7 @@ tbody tr:hover{background:#fafbfc}
 <div id="page-orders" class="page">
   <div id="page-notice-orders"></div>
   <div id="page-rem-orders"></div>
-  <div id="no-state-bar" style="display:flex;gap:6px;align-items:center;margin:0 0 6px;font-size:11.5px"></div>
+  <div id="no-batch-progress" style="margin:0 0 10px"></div>
   <div id="wb-no"></div>
   <div class="chart-card" style="padding:14px 16px;margin:0 0 12px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -2363,10 +2363,10 @@ tbody tr:hover{background:#fafbfc}
         <th>ETA</th>
         <th>Delivery Date</th>
         <th>ATA</th>
-        <th style="min-width:160px">Status</th>
         <th style="text-align:right;min-width:92px" title="Receivable (from Charges in the detail drawer)">Receivable</th>
         <th style="text-align:right;min-width:92px" title="Payable (from Charges in the detail drawer)">Payable</th>
         <th style="text-align:right;min-width:88px" title="Receivable − Payable">Margin</th>
+        <th style="min-width:160px">Status</th>
         <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="no-sel-all" onchange="noSelAllVisible(this.checked)" title="Select all visible"/></th>
         <th style="width:32px"></th>
       </tr></thead>
@@ -12581,13 +12581,13 @@ function renderNoBatchProgress(){
     if(cs.length){
       cs.forEach(cn=>{
         const pc=_noPc(o,cn);
-        if(!!(pc['ATA']||o['ATA'])||!!pc['POD']||_noHasStFor(o,cn,'Delivered')) arrived++;
+        if(!!(pc['ATA']||o['ATA'])||!!pc['POD']||_noHasStFor(o,cn,'Delivered')||_noHasStFor(o,cn,'Finished')) arrived++;
         if(pc['T1']||o['T1']) t1Count++;
         const dd=_noDemurrageDays(o,cn);
         if(dd){ demurCount++; if(dd>demurMaxDays) demurMaxDays=dd; }
       });
     } else {
-      if(!!o['ATA']||!!o['POD']||_noHasSt(o,'Delivered')) arrived=1;
+      if(!!o['ATA']||!!o['POD']||_noHasSt(o,'Delivered')||_noHasSt(o,'Finished')) arrived=1;
       const dd=_noDemurrageDays(o,null);
       if(dd){ demurCount=1; demurMaxDays=dd; }
     }
@@ -12704,8 +12704,6 @@ function noBpCardClick(orderName){
     });
   }
 }
-let _noState='ongoing';
-function noSetState(k){ _noState=k; renderOrders(); }
 function renderOrders(){
   wbSoon('no');
   if(!window._noHubsBuilt){ window._noHubsBuilt=true; try{ renderNoHubs(); }catch(e){} }
@@ -12729,15 +12727,6 @@ function renderOrders(){
     const cs=_noContainers(o);
     (cs.length?cs:[null]).forEach(cn=>flat.push({o,cn}));
   });
-  // Ongoing = anything not marked finished (blank status counts as ongoing so nothing slips through)
-  const _fin=({o,cn})=>_noStListFor(o,cn).some(s=>/^(finish(ed)?|delivered|completed?|done|cancel(l)?ed)$/i.test(s));
-  const _nF=flat.filter(_fin).length, _nO=flat.length-_nF;
-  const _bar=document.getElementById('no-state-bar');
-  if(_bar){
-    const pill=(k,l,n,c)=>`<button type="button" onclick="noSetState('${k}')" style="padding:2px 10px;font-size:11px;font-weight:700;border-radius:12px;cursor:pointer;border:1px solid ${c};${_noState===k?`background:${c};color:#fff`:`background:#fff;color:${c}`}">${l} ${n}</button>`;
-    _bar.innerHTML=pill('ongoing','Ongoing',_nO,'#b45309')+pill('finish','Finished',_nF,'#15803d')+pill('all','All',flat.length,'#475569');
-  }
-  if(_noState==='ongoing') flat=flat.filter(r=>!_fin(r)); else if(_noState==='finish') flat=flat.filter(_fin);
   if(filt) flat=flat.filter(({o})=>_noHasSt(o,filt));
   if(qTokens.length){
     flat=flat.filter(({o,cn})=>{
@@ -12824,10 +12813,10 @@ function renderOrders(){
       <td style="${_tx}">${_noEsc(_noFld(o,cn,'ETA')||'')}</td>
       <td style="${_tx}" title="${st&&st.exceeded?'⚠ Free storage exceeded by '+st.byDays+' day(s)':''}">${_noEsc(delivVal)}</td>
       <td style="${_tx}">${_noEsc(ataVal)}</td>
-      <td style="${_tx}">${_statusHtml}</td>
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:#0369a1">${_R?_noEur(_R):''}</span></td>
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:#b45309">${_P?_noEur(_P):''}</span></td>
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:${_M<0?'#dc2626':'#0f766e'}">${_R||_M?_noEur(_M):''}</span></td>
+      <td style="${_tx}">${_statusHtml}</td>
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
       <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
     </tr>`;
