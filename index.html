@@ -13112,9 +13112,11 @@ function wbDetailNo(id){
   const mc=m=>m>0?'#0f766e':m<0?'#dc2626':'#94a3b8';
   const oset=f=>`noSet(${o._id},'${f}',@@)`;
   const miles=cn=>{
-    const steps=[['ETA',_wbFld(o,cn,'ETA')],['At Hub',_wbFld(o,cn,'At Hub Date')],['Pick Up',_wbFld(o,cn,'Pick Up Date')],['Delivery',_wbFld(o,cn,'Delivery Date')],['ATA',_wbFld(o,cn,'ATA')],['POD',_wbFld(o,cn,'POD Date')||(_wbFld(o,cn,'POD')?'✓':'')]];
-    return `<div style="display:flex;margin:8px 0 6px">${steps.map(([n,v],i)=>{ const d=_noParseDate(v), ok=!!v&&(!d||d<=today||n==='POD'), c=v?(ok?'#16a34a':'#f59e0b'):'#cbd5e1';
-      return `<div style="flex:1;text-align:center;position:relative"><div style="height:3px;background:${i?'#cbd5e1':'transparent'};position:absolute;left:0;right:50%;top:7px"></div><div style="height:3px;background:${i<5?'#cbd5e1':'transparent'};position:absolute;left:50%;right:0;top:7px"></div>
+    const steps=[['ETA',_wbFld(o,cn,'ETA')],['At Hub',_wbFld(o,cn,'At Hub Date')],['Pick Up',_wbFld(o,cn,'Pick Up Date')],['Delivery',_wbFld(o,cn,'Delivery Date')],['ATA',_wbFld(o,cn,'ATA')],['POD',_wbFld(o,cn,'POD Date')||(_wbFld(o,cn,'POD')?'✓':'')],['Payment',_wbFld(o,cn,'Payment Status')||''],['Clearance',_wbFld(o,cn,'Clearance Payment')||'']];
+    const isPay=n=>n==='Payment'||n==='Clearance', payOk=v=>v==='Paid'||v==='Requested'||v==='Not needed';
+    let last=-1; steps.forEach(([n,v],i)=>{ if(v&&(!isPay(n)||payOk(v))) last=i; });
+    return `<div style="display:flex;margin:8px 0 6px">${steps.map(([n,v0],i)=>{ const skipped=!v0&&i<last, v=skipped?'✓':v0; const d=_noParseDate(v), ok=!!v&&(isPay(n)?payOk(v):(!d||d<=today||n==='POD')), c=v?(ok?'#16a34a':'#f59e0b'):'#cbd5e1';
+      return `<div style="flex:1;text-align:center;position:relative"><div style="height:3px;background:${i?'#cbd5e1':'transparent'};position:absolute;left:0;right:50%;top:7px"></div><div style="height:3px;background:${i<steps.length-1?'#cbd5e1':'transparent'};position:absolute;left:50%;right:0;top:7px"></div>
       <div style="position:relative;width:15px;height:15px;border-radius:50%;margin:0 auto;background:${v?c:'#fff'};border:2px solid ${c}"></div><div style="font-size:10.5px;font-weight:700;color:#475569;margin-top:3px">${n}</div><div style="font-size:10.5px;color:#64748b">${_noEsc(v||'—')}</div></div>`; }).join('')}</div>`;
   };
   const sec=(t,inner)=>`<div style="margin-top:12px"><div style="font-size:10.5px;font-weight:800;color:#475569;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid #eef2f7">${t}</div>${inner}</div>`;
