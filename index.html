@@ -1969,6 +1969,7 @@ tbody tr:hover{background:#fafbfc}
           <th class="no-sort">Surcharge Reason</th>
           <th class="no-sort">Payment Status</th>
           <th class="no-sort">T1 Payment Status</th>
+          <th class="no-sort">Clearance Payment</th>
           <th onclick="ctSort('Remark')">Remark ↕</th>
           <th class="no-sort"></th>
           <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="ct-sel-all" onchange="ctSelAll(this.checked)" title="Select all" style="width:14px;height:14px;cursor:pointer"/></th>
@@ -2647,6 +2648,7 @@ tbody tr:hover{background:#fafbfc}
       <div class="form-group"><label>Surcharge Reason</label><input type="text" id="f_surcharge_reason"/></div>
       <div class="form-group"><label>Payment Status</label><select id="f_pay_status"><option value="">—</option><option>Paid</option><option>Unpaid</option></select></div>
       <div class="form-group"><label>T1 Payment Status</label><select id="f_t1_pay_status"><option value="">—</option><option>Paid</option><option>Unpaid</option></select></div>
+      <div class="form-group"><label>Clearance Payment</label><select id="f_clr_pay"><option value="">—</option><option>Pending invoice</option><option>Requested</option><option>Paid</option><option>Not needed</option></select></div>
       <div class="form-group full"><label>Remark</label><input type="text" id="f_rmk"/></div>
     </div>
     <div class="modal-btns">
@@ -7099,6 +7101,22 @@ function renderCT(){
           </select></div>`;
         })()}
       </td>
+      <td data-id="${r._id}" data-col="Clearance Payment">
+        ${(()=>{
+          const tv=r['Clearance Payment']||'';
+          const badge=tv==='Pending invoice'?`<span class="ps-pending">Pending Invoice</span>`:tv==='Amending'?`<span class="ps-amending">Amending</span>`:tv==='Verifying'?`<span class="ps-verifying">Verifying</span>`:tv==='Requested'?`<span class="ps-requested">Requested</span>`:tv==='Paid'?`<span class="ps-paid">Paid</span>`:tv==='Not needed'?`<span style="font-size:11px;font-weight:700;color:#64748b;background:#e2e8f0;border-radius:10px;padding:1px 8px">Not needed</span>`:'<span style="color:#ccc">—</span>';
+          return `<div class="cell-view" onclick="startEdit(this)">${badge}</div>
+          <div class="cell-edit"><select onblur="blurEditSelect(this)" onchange="commitEditSelect(this,'Clearance Payment',${r._id})">
+            <option value="" ${!tv?'selected':''}>—</option>
+            <option value="Pending invoice" ${tv==='Pending invoice'?'selected':''}>Pending invoice</option>
+            <option value="Amending" ${tv==='Amending'?'selected':''}>Amending</option>
+            <option value="Verifying" ${tv==='Verifying'?'selected':''}>Verifying</option>
+            <option value="Requested" ${tv==='Requested'?'selected':''}>Requested</option>
+            <option value="Paid" ${tv==='Paid'?'selected':''}>Paid</option>
+            <option value="Not needed" ${tv==='Not needed'?'selected':''}>Not needed</option>
+          </select></div>`;
+        })()}
+      </td>
       ${rmkCell}
       <td style="padding:1px 4px;text-align:center">
         <button class="btn-del-row" onclick="openDel(${r._id})" title="Delete">✕</button>
@@ -8867,6 +8885,7 @@ function openAdd(){
   document.getElementById('f_surcharge_reason').value='';
   document.getElementById('f_pay_status').value='';
   document.getElementById('f_t1_pay_status').value='';
+  document.getElementById('f_clr_pay').value='';
   document.getElementById('f_broker').value='';
   document.getElementById('f_track').value='None';
   document.getElementById('f_cmr').checked=false;
@@ -8900,6 +8919,7 @@ function openEdit(id){
   document.getElementById('f_surcharge_reason').value=r['Surcharge Reason']||'';
   document.getElementById('f_pay_status').value      =r['Payment Status']||'';
   document.getElementById('f_t1_pay_status').value   =r['T1 Payment Status']||'';
+  document.getElementById('f_clr_pay').value         =r['Clearance Payment']||'';
   document.getElementById('f_rmk').value            =r['Remark']||'';
   document.getElementById('f_cmr').checked=(r['CMR']==='✅');
   refreshDLs();
@@ -8916,7 +8936,7 @@ function saveRow(){
     'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Destination':g('f_dest')||'Belgium','Tracking':g('f_track'),
     'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'T1 Date':g('f_t1date'),'Scheduled Slot':g('f_slot'),
     'Actual Arrival':g('f_arr'),'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
-    'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
+    'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Clearance Payment':g('f_clr_pay'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
   };
   // T1 Rule: warn only — do NOT override manually entered slot; skip if already arrived
@@ -9265,7 +9285,7 @@ function exportCSV(){
     'ETA in Mala','Hub','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival','Deadline',
     'Tracking','CMR','Pickup Ref',
     'Price','Price T1','Surcharge','Surcharge Reason',
-    'Payment Status','T1 Payment Status','Remark'
+    'Payment Status','T1 Payment Status','Clearance Payment','Remark'
   ];
   const widths=[16,14,20,16,12,12, 12,12,12,18,14,12, 10,4,12, 8,8,10,16,14,14,22];
   const dataRows=CT.map(r=>headers.map(h=>_cv(r[h])));
@@ -9301,7 +9321,7 @@ function exportVesselXLSX(){
     'ETA in Mala','ETA at Hub','T1 Date','Scheduled Slot','Actual Arrival',
     'Tracking','CMR','Pickup Ref',
     'Price','Price T1','Surcharge','Surcharge Reason',
-    'Payment Status','T1 Payment Status','Remark'
+    'Payment Status','T1 Payment Status','Clearance Payment','Remark'
   ];
   const comboWidths=[
     18,22,10,12,8,
@@ -13108,6 +13128,8 @@ function wbDetailNo(id){
       return `<div style="flex:1;text-align:center;position:relative"><div style="height:3px;background:${i?'#cbd5e1':'transparent'};position:absolute;left:0;right:50%;top:7px"></div><div style="height:3px;background:${i<5?'#cbd5e1':'transparent'};position:absolute;left:50%;right:0;top:7px"></div>
       <div style="position:relative;width:15px;height:15px;border-radius:50%;margin:0 auto;background:${v?c:'#fff'};border:2px solid ${c}"></div><div style="font-size:10.5px;font-weight:700;color:#475569;margin-top:3px">${n}</div><div style="font-size:10.5px;color:#64748b">${_noEsc(v||'—')}</div></div>`; }).join('')}</div>`;
   };
+  const sec=(t,inner)=>`<div style="margin-top:12px"><div style="font-size:10.5px;font-weight:800;color:#475569;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid #eef2f7">${t}</div>${inner}</div>`;
+  const G=(n,inner)=>`<div style="display:grid;grid-template-columns:repeat(${n},minmax(0,1fr));gap:10px">${inner}</div>`;
   const inp='padding:4px 6px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;width:100%;box-sizing:border-box;background:#fff';
   const card=cn=>{
     const ce=ceOf(cn), pc=cn?_noPc(o,cn):{};
@@ -13131,27 +13153,18 @@ function wbDetailNo(id){
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         ${cn?`<input data-k="bl|${ce}" value="${_noEsc(cn)}" onchange="noRenameCtn(${o._id},'${ce}',this.value)" style="${_wbI};width:210px;font-family:monospace;font-weight:700">`:'<b style="color:#94a3b8;font-style:italic">no B/L yet</b>'}
         ${done?_wbChip('Delivered','#15803d','#dcfce7'):_wbChip('On the way','#92400e','#fef3c7')}
+        ${_wbChip('Pay: '+(txt('Payment Status')||'—'),'#475569','#e2e8f0')}${txt('Clearance Payment')?_wbChip('Clearance: '+txt('Clearance Payment'),'#475569','#e2e8f0'):''}
         ${si?(si.exceeded?_wbChip('Storage over by '+si.byDays+'d'+(sf?' · '+_wbF2(sf.fee):''),'#b91c1c','#fee2e2'):_wbChip('Free storage until '+si.expiry,'#0369a1','#e0f2fe')):''}
         ${cn?`<button type="button" onclick="noDelCtn(${o._id},'${ce}')" style="margin-left:auto;border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:6px;padding:3px 10px;font-size:11.5px;cursor:pointer">Remove B/L</button>`:''}</div>
       ${miles(cn)}
-      <div style="display:flex;flex-wrap:wrap;gap:10px">
-        ${_wbL('Consignee',_wbText(kk('Consignee'),txt('Consignee'),set('Consignee'),{list:'dl-con'}))}${_wbL('Destination',_wbText(kk('Destination'),txt('Destination'),set('Destination'),{ph:'country / city'}))}
-        ${_wbL('Trucker',_wbText(kk('Trucker'),txt('Trucker'),set('Trucker'),{list:'dl-truck'}))}${_wbL('Hub',_wbText(kk('Hub'),cn?(pc['Hub']!==undefined?pc['Hub']:(o['Hub']||'')):(o['Hub']||''),set('Hub'),{list:'dl-hub-o',ph:'pick from tariff table'}))}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">
-        ${_wbL('ETA',_wbDate(kk('ETA'),txt('ETA'),set('ETA')),110)}${_wbL('At Hub date',_wbDate(kk('At Hub Date'),cn?(pc['At Hub Date']||''):(o['At Hub Date']||''),set('At Hub Date')),110)}${_wbL('Pick up',_wbDate(kk('Pick Up Date'),txt('Pick Up Date'),set('Pick Up Date')),110)}
-        ${_wbL('Delivery',_wbDate(kk('Delivery Date'),dv('Delivery Date'),set('Delivery Date')),110)}${_wbL('ATA',_wbDate(kk('ATA'),dv('ATA'),set('ATA')),110)}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center">
-        ${_wbChk(kk('Customs Office'),'Customs office',co,set('Customs Office'),'#0f766e')}${_wbChk(kk('At Hub'),'Ready to be picked',cn?!!pc['At Hub']:!!o['Arrived at Hub'],set('At Hub','Arrived at Hub'),'#b45309')}
-        ${_wbChk(kk('T1'),'T1',cn?!!pc['T1']:!!o['T1'],set('T1'),'#1d4ed8')}<span style="width:120px">${_wbDate(kk('T1 Date'),txt('T1 Date'),set('T1 Date'))}</span>
-        ${_wbChk(kk('CC Cleared'),'CC',cn?!!pc['CC Cleared']:!!o['CC Cleared'],set('CC Cleared'),'#0f766e')}<span style="width:120px">${_wbDate(kk('CC Date'),txt('CC Date'),set('CC Date'))}</span>
-        ${_wbChk(kk('POD'),'POD',cn?!!pc['POD']:!!o['POD'],set('POD'),'#15803d')}<span style="width:120px">${_wbDate(kk('POD Date'),txt('POD Date'),set('POD Date'))}</span></div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;align-items:flex-end">
-        <div style="flex:0 0 auto;padding-bottom:3px">${_wbChk(kk('Demurrage'),'Demurrage'+(autoD?' ('+autoD+'d late)':''),dem,set('Demurrage'),'#dc2626')}</div>
-        ${_wbL('Free days',`<input data-k="${kk('Free Storage (Days)')}" type="number" min="0" value="${_noEsc(_noCtnFld(o,cn,'Free Storage (Days)'))}" style="${_wbI}" onchange="${_wbSet(set('Free Storage (Days)'),'this.value')}">`,90)}
-        ${_wbL('Price / day',`<input data-k="${kk('Price per Day')}" type="text" value="${_noEsc(ppdExplicit)}" placeholder="${tiered?'auto (tariff)':'€'}" style="${_wbI}" onchange="${_wbSet(set('Price per Day'),'this.value.trim()')}">`,100)}
-        ${_wbL('Payment status',_wbSelect(kk('Payment Status'),cn?(pc['Payment Status']!==undefined?pc['Payment Status']:(o['Payment Status']||'')):(o['Payment Status']||''),['','Pending invoice','Requested','Paid'],set('Payment Status')),150)}</div>
-      <div style="margin-top:10px">${_wbL('Service',svc,300)}</div><div style="margin-top:8px">${_wbL('Status',stt,300)}</div>
-      <div style="margin-top:8px">${_wbL('Remark',_wbArea(kk('Remark'),cn?(pc['Remark']!==undefined?pc['Remark']:(o['Remark']||'')):(o['Remark']||''),set('Remark')),300)}</div>
+      ${sec('Shipment',G(4,`${_wbL('Consignee',_wbText(kk('Consignee'),txt('Consignee'),set('Consignee'),{list:'dl-con'}),1)}${_wbL('Destination',_wbText(kk('Destination'),txt('Destination'),set('Destination'),{ph:'country / city'}),1)}${_wbL('Trucker',_wbText(kk('Trucker'),txt('Trucker'),set('Trucker'),{list:'dl-truck'}),1)}${_wbL('Hub',_wbText(kk('Hub'),cn?(pc['Hub']!==undefined?pc['Hub']:(o['Hub']||'')):(o['Hub']||''),set('Hub'),{list:'dl-hub-o',ph:'pick from tariff table'}),1)}`))}
+      ${sec('Dates',G(5,`${_wbL('ETA',_wbDate(kk('ETA'),txt('ETA'),set('ETA')),1)}${_wbL('At Hub date',_wbDate(kk('At Hub Date'),cn?(pc['At Hub Date']||''):(o['At Hub Date']||''),set('At Hub Date')),1)}${_wbL('Pick up',_wbDate(kk('Pick Up Date'),txt('Pick Up Date'),set('Pick Up Date')),1)}${_wbL('Delivery',_wbDate(kk('Delivery Date'),dv('Delivery Date'),set('Delivery Date')),1)}${_wbL('ATA',_wbDate(kk('ATA'),dv('ATA'),set('ATA')),1)}`))}
+      ${sec('Status',`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+        ${_wbChk(kk('Customs Office'),'Customs office',co,set('Customs Office'),'#0f766e')}${_wbChk(kk('At Hub'),'Ready to be picked',cn?!!pc['At Hub']:!!o['Arrived at Hub'],set('At Hub','Arrived at Hub'),'#b45309')}${_wbChk(kk('Demurrage'),'Demurrage'+(autoD?' ('+autoD+'d late)':''),dem,set('Demurrage'),'#dc2626')}</div>
+        ${G(3,`<div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('T1'),'T1',cn?!!pc['T1']:!!o['T1'],set('T1'),'#1d4ed8')}${_wbDate(kk('T1 Date'),txt('T1 Date'),set('T1 Date'))}</div><div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('CC Cleared'),'CC',cn?!!pc['CC Cleared']:!!o['CC Cleared'],set('CC Cleared'),'#0f766e')}${_wbDate(kk('CC Date'),txt('CC Date'),set('CC Date'))}</div><div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('POD'),'POD',cn?!!pc['POD']:!!o['POD'],set('POD'),'#15803d')}${_wbDate(kk('POD Date'),txt('POD Date'),set('POD Date'))}</div>`).replace('gap:10px">','gap:10px;align-items:start">')}
+        <div style="margin-top:10px">${G(2,`${_wbL('Service',svc,1)}${_wbL('Status',stt,1)}`)}</div>`)}
+      ${sec('Costs',G(4,`${_wbL('Free days',`<input data-k="${kk('Free Storage (Days)')}" type="number" min="0" value="${_noEsc(_noCtnFld(o,cn,'Free Storage (Days)'))}" style="${_wbI}" onchange="${_wbSet(set('Free Storage (Days)'),'this.value')}">`,1)}${_wbL('Price / day',`<input data-k="${kk('Price per Day')}" type="text" value="${_noEsc(ppdExplicit)}" placeholder="${tiered?'auto (tariff)':'€'}" style="${_wbI}" onchange="${_wbSet(set('Price per Day'),'this.value.trim()')}">`,1)}${_wbL('Payment status',_wbSelect(kk('Payment Status'),txt('Payment Status'),['','Pending invoice','Requested','Paid'],set('Payment Status')),1)}${_wbL('Clearance payment',_wbSelect(kk('Clearance Payment'),txt('Clearance Payment'),['','Pending invoice','Requested','Paid','Not needed'],set('Clearance Payment')),1)}`))}
+      ${sec('Remark',_wbArea(kk('Remark'),txt('Remark'),set('Remark')))}
       ${sur?`<div style="margin-top:8px"><div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:3px">Surcharge tags</div>${sur}</div>`:''}
       <div style="margin-top:12px;border-top:1px dashed #cbd5e1;padding-top:10px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:11.5px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.4px">Charges &amp; margin — enter fees</span>
@@ -13181,8 +13194,8 @@ function wbDetailCt(key,jobs){
   return `<div style="padding:14px 16px;background:#f1f5f9;min-height:100%">
     ${_wbHead('ct',g.row,_wbChip(rows.length+' container'+(rows.length>1?'s':''),'#0369a1','#e0f2fe')+`<span style="color:#64748b;font-size:12px">${_noFmtDate(g.s)} → ${_noFmtDate(g.e)}</span>`)}
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Arrived',arr+'/'+rows.length,'#16a34a')}</div>
-    ${_wbSec('Containers — click one to edit',`<table style="width:100%;border-collapse:collapse"><thead><tr><th style="${th}">Container</th><th style="${th}">Master B/L</th><th style="${th}">Consignee</th><th style="${th}">Slot</th><th style="${th}">Arrival</th></tr></thead><tbody>
-      ${rows.map(r=>`<tr style="cursor:pointer" onclick="wbPick('ct','c:${r._id}')"><td style="${td};font-weight:700;color:#0369a1">${_noEsc(r['Container No.']||'')}</td><td style="${td};font-family:monospace">${_noEsc(r['Master B/L']||'')}</td><td style="${td}">${_noEsc(r['Consignee']||'')}</td><td style="${td}">${_noEsc(r['Scheduled Slot']||'')}</td><td style="${td}">${_noEsc(r['Actual Arrival']||'')}</td></tr>`).join('')}</tbody></table>`)}</div>`;
+    ${_wbSec('Containers — click one to edit',`<table style="width:100%;border-collapse:collapse"><thead><tr><th style="${th}">Container</th><th style="${th}">Master B/L</th><th style="${th}">Consignee</th><th style="${th}">Slot</th><th style="${th}">Arrival</th><th style="${th}">Payment</th><th style="${th}">T1 Payment</th><th style="${th}">Clearance</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr style="cursor:pointer" onclick="wbPick('ct','c:${r._id}')"><td style="${td};font-weight:700;color:#0369a1">${_noEsc(r['Container No.']||'')}</td><td style="${td};font-family:monospace">${_noEsc(r['Master B/L']||'')}</td><td style="${td}">${_noEsc(r['Consignee']||'')}</td><td style="${td}">${_noEsc(r['Scheduled Slot']||'')}</td><td style="${td}">${_noEsc(r['Actual Arrival']||'')}</td><td style="${td}">${_noEsc(r['Payment Status']||'—')}</td><td style="${td}">${_noEsc(r['T1 Payment Status']||'—')}</td><td style="${td}">${_noEsc(r['Clearance Payment']||'—')}</td></tr>`).join('')}</tbody></table>`)}</div>`;
 }
 // ── TEMU：单个柜子，全部字段可编辑 ──
 function ctSetField(id,f,v){
@@ -13204,7 +13217,7 @@ function wbDetailCtOne(id){
     ${_wbSec('Shipment',`<div style="display:flex;flex-wrap:wrap;gap:10px">${T('Batch / Train',{list:'dl-batch'})}${T('Container No.')}${T('Master B/L')}${T('Consignee',{list:'dl-con'})}${T('Destination',{list:'dl-dest'})}${T('Trucker',{list:'dl-truck'})}${T('Broker',{list:'dl-broker'})}${T('Hub')}</div>`)}
     ${_wbSec('Dates',`<div style="display:flex;flex-wrap:wrap;gap:10px">${D('ETA in Mala')}${D('ETA at Hub')}${D('T1 Date')}${_wbL('Scheduled Slot',_wbText('Scheduled Slot',r['Scheduled Slot']||'',set('Scheduled Slot'),{ph:'YYYY/MM/DD HH:MM'}),150)}${D('Actual Arrival')}${D('Deadline')}</div>`)}
     ${_wbSec('Status',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${S('Tracking',['','None','T1','Arrived'])}${S('Trk Confirm',['','Applied','Confirmed'])}<div style="padding-bottom:3px">${_wbChk('CMR','CMR received',r['CMR']==='✅',`ctSetField(${id},'CMR',@@?'✅':'')`,'#0f766e')}</div></div>`)}
-    ${_wbSec('Costs',`<div style="display:flex;flex-wrap:wrap;gap:10px">${T('Pickup Ref')}${T('Price')}${T('Price T1')}${T('Surcharge')}${T('Surcharge Reason')}${S('Payment Status',pay)}${S('T1 Payment Status',pay)}</div>`)}
+    ${_wbSec('Costs',`<div style="display:flex;flex-wrap:wrap;gap:10px">${T('Pickup Ref')}${T('Price')}${T('Price T1')}${T('Surcharge')}${T('Surcharge Reason')}${S('Payment Status',pay)}${S('T1 Payment Status',pay)}${S('Clearance Payment',[...pay,'Not needed'])}</div>`)}
     ${_wbSec('Remark',_wbArea('Remark',r['Remark']||'',set('Remark')))}</div>`;
 }
 // ── 船：全部字段可编辑 ──
