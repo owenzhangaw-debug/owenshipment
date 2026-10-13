@@ -1599,6 +1599,14 @@ tbody tr:hover{background:#fafbfc}
         <button onclick="autoGenerateSlots();closeNavTools()">⚡ Auto Slots</button>
         <button onclick="openSlotEmails();closeNavTools()">📧 Slot Emails</button>
         <button id="sync-btn" onclick="openSync();closeNavTools()">☁ Sync</button>
+        <div class="nav-fx-inline" onclick="event.stopPropagation()">
+          <div class="fx-rates-row" id="fx-rates-row"></div>
+          <div class="fx-input-row"><input class="fx-input" type="number" id="fx-amount" placeholder="Amount" oninput="fxConvert()"/>
+            <select class="fx-sel" id="fx-base" onchange="fxConvert()"><option>USD</option><option>EUR</option><option>CNY</option></select></div>
+          <div class="fx-result" id="fx-result"></div>
+          <div class="fx-totals" id="fx-totals"></div>
+          <div class="fx-updated" id="fx-updated"></div>
+        </div>
       </div>
     </div>
     <input type="file" id="xl-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)"/>
@@ -2614,6 +2622,161 @@ tbody tr:hover{background:#fafbfc}
 <!-- ══════════════════════════════════════════════════════════
      DISPATCH PAGE (Container + Vessel tabs)
 ══════════════════════════════════════════════════════════ -->
+<!-- ADD / EDIT CONTAINER -->
+<div class="overlay" id="modal-overlay">
+  <div class="modal" style="width:700px">
+    <h2 id="modal-title">+ Add Container</h2>
+    <div class="form-grid">
+      <div class="form-group"><label>Container No.</label><input type="text" id="f_no" placeholder="e.g. NEPU4570234"/></div>
+      <div class="form-group"><label>Master B/L</label><input type="text" id="f_bl"/></div>
+      <div class="form-group"><label>Project / Batch</label><input type="text" id="f_batch" list="dl-batch"/></div>
+      <div class="form-group"><label>Consignee</label><input type="text" id="f_con" list="dl-con"/></div>
+      <div class="form-group"><label>Trucker</label><input type="text" id="f_truck" list="dl-truck"/></div>
+      <div class="form-group"><label>Broker</label><input type="text" id="f_broker" list="dl-broker"/></div>
+      <div class="form-group"><label>Destination</label><input type="text" id="f_dest" list="dl-dest" placeholder="Belgium"/></div>
+      <div class="form-group"><label>Tracking</label><select id="f_track"><option>None</option><option>T1</option><option>Arrived</option></select></div>
+      <div class="form-group"><label>ETA in Mala</label><input type="text" id="f_eta_mala"/></div>
+      <div class="form-group"><label>ETA at Hub</label><input type="text" id="f_eta"/></div>
+      <div class="form-group"><label>T1 Date</label><input type="text" id="f_t1date"/></div>
+      <div class="form-group"><label>Scheduled Slot</label><input type="text" id="f_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
+      <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr"/></div>
+      <div class="form-group"><label>Deadline</label><input type="text" id="f_dl"/></div>
+      <div class="form-group"><label>Pickup Ref</label><input type="text" id="f_ref"/></div>
+      <div class="form-group"><label>CMR</label><label style="display:flex;align-items:center;gap:6px;font-weight:600;text-transform:none;letter-spacing:0"><input type="checkbox" id="f_cmr" style="width:auto"/> CMR Received</label></div>
+      <div class="form-group"><label>Price</label><input type="text" id="f_price"/></div>
+      <div class="form-group"><label>Price T1</label><input type="text" id="f_price_t1"/></div>
+      <div class="form-group"><label>Surcharge</label><input type="text" id="f_surcharge"/></div>
+      <div class="form-group"><label>Surcharge Reason</label><input type="text" id="f_surcharge_reason"/></div>
+      <div class="form-group"><label>Payment Status</label><select id="f_pay_status"><option value="">—</option><option>Paid</option><option>Unpaid</option></select></div>
+      <div class="form-group"><label>T1 Payment Status</label><select id="f_t1_pay_status"><option value="">—</option><option>Paid</option><option>Unpaid</option></select></div>
+      <div class="form-group full"><label>Remark</label><input type="text" id="f_rmk"/></div>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="mbtn-save" onclick="saveRow()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK ADD / UPDATE -->
+<div class="overlay" id="bulk-overlay">
+  <div class="modal" style="width:660px">
+    <h2>⊞ Bulk Add Containers</h2>
+    <p style="font-size:12.5px;color:#64748b;margin:-6px 0 12px">Paste container no. / B/L / dates straight from Excel. Existing containers are only updated with the fields you fill in; Project is only needed for new containers.</p>
+    <div class="form-grid">
+      <div class="form-group"><label>Project (required for new containers only)</label><input type="text" id="b_batch" list="dl-batch"/></div>
+      <div class="form-group"><label>Consignee</label><input type="text" id="b_con" list="dl-con"/></div>
+      <div class="form-group"><label>Trucker</label><input type="text" id="b_truck" list="dl-truck"/></div>
+      <div class="form-group"><label>Destination</label><input type="text" id="b_dest" list="dl-dest" placeholder="leave blank = no change / Belgium default for new"/></div>
+      <div class="form-group"><label>Tracking</label><select id="b_track"><option value="">— no change / blank for new —</option><option>None</option><option>T1</option><option>Arrived</option></select></div>
+      <div class="form-group"><label>ETA in Mala</label><input type="text" id="b_eta_mala"/></div>
+      <div class="form-group"><label>ETA at Hub</label><input type="text" id="b_eta"/></div>
+      <div class="form-group"><label>T1 Date</label><input type="text" id="b_t1date"/></div>
+      <div class="form-group"><label>Scheduled Slot</label><input type="text" id="b_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
+      <div class="form-group"><label>Deadline</label><input type="text" id="b_dl"/></div>
+      <div class="form-group"><label>CMR</label><label style="display:flex;align-items:center;gap:6px;font-weight:600;text-transform:none;letter-spacing:0"><input type="checkbox" id="b_cmr" style="width:auto"/> CMR Received</label></div>
+      <div class="form-group full"><label>Paste rows (any column order)</label>
+        <textarea id="b_nos" rows="10" oninput="bulkPreview()" style="font-family:monospace;font-size:12px" placeholder="Paste straight from Excel — any column order…"></textarea>
+        <div id="b_parsed_preview" style="margin-top:6px;font-size:12px"></div></div>
+    </div>
+    <div class="info-box" id="b_ok" style="background:#dcfce7;color:#166534"></div>
+    <div class="info-box" id="b_err" style="background:#fee2e2;color:#991b1b"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeBulk()">Cancel</button>
+      <button class="mbtn-save" onclick="saveBulk()">⊞ Add All</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK PICKUP REF -->
+<div class="overlay" id="bulk-pickup-overlay">
+  <div class="modal" style="width:560px">
+    <h2>Bulk Pickup Ref</h2>
+    <p style="font-size:12.5px;color:#64748b;margin:-6px 0 10px">One per line: <b>Container No.</b> then <b>Pickup Ref</b> (tab / comma / space separated).</p>
+    <div class="form-group"><label>Only this batch (optional)</label><input type="text" id="bulk-pickup-batch" list="dl-batch"/></div>
+    <div class="form-group" style="margin-top:10px"><label>Container / Ref pairs</label><textarea id="bulk-pickup-text" rows="10" style="font-family:monospace;font-size:12px"></textarea></div>
+    <div id="bulk-pickup-result" style="margin-top:8px;font-size:12.5px"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeBulkPickup()">Close</button>
+      <button class="mbtn-save" onclick="applyBulkPickup()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- PASTE SLOTS -->
+<div class="overlay" id="slot-paste-overlay">
+  <div class="modal" style="width:560px">
+    <h2>Paste Slots</h2>
+    <p style="font-size:12.5px;color:#64748b;margin:-6px 0 10px">Lines like <code>08/06/2026 10:00 NEPU4598360 OYTM202604300333</code></p>
+    <textarea id="slot-paste-text" rows="10" style="width:100%;font-family:monospace;font-size:12px"></textarea>
+    <div id="slot-paste-preview" style="margin-top:8px;font-size:12.5px"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeSlotPaste()">Close</button>
+      <button class="mbtn-save" onclick="applySlotPaste()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT EXCEL -->
+<div class="overlay" id="import-overlay">
+  <div class="modal" style="width:700px">
+    <h2>↑ Import Excel</h2>
+    <button class="mbtn-save" onclick="document.getElementById('xl-input').click()" style="margin-bottom:10px">Choose file…</button>
+    <div id="imp-sheet" style="display:none;margin-bottom:10px"><label style="font-size:12px;font-weight:700">Sheet </label>
+      <select id="imp-sheet-sel" onchange="renderImportPreview()"></select></div>
+    <div id="imp-mapinfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:8px"></div>
+    <div id="imp-preview-wrap" style="display:none;overflow:auto;max-height:260px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px">
+      <div id="imp-preview-title" style="padding:6px 10px;font-size:12px;font-weight:700"></div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px"><thead id="imp-head"></thead><tbody id="imp-body"></tbody></table>
+    </div>
+    <div id="imp-opts" style="display:none">
+      <div id="imp-mode-radios" style="display:flex;flex-direction:column;gap:6px">
+        <label style="border:2px solid #43A047;background:#F1F8E9;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12.5px"><input type="radio" name="imp_mode" value="add" checked/> <b>Add new only</b> — skip containers already tracked</label>
+        <label style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12.5px"><input type="radio" name="imp_mode" value="upsert"/> <b>Update + add</b> — merge non-empty fields into existing</label>
+        <label style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12.5px"><input type="radio" name="imp_mode" value="replace"/> <b>Replace all</b> — ⚠ overwrites every container</label>
+      </div>
+    </div>
+    <div class="info-box" id="imp-ok" style="background:#dcfce7;color:#166534"></div>
+    <div class="info-box" id="imp-err" style="background:#fee2e2;color:#991b1b"></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeImport()">Close</button>
+      <button class="mbtn-save" id="imp-btn" style="display:none" onclick="confirmImport()">↑ Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- SLOT EMAILS -->
+<div class="overlay" id="se-overlay">
+  <div class="modal se-modal" style="max-height:92vh;overflow-y:auto">
+    <h2>📧 Slot Emails</h2>
+    <div class="se-toolbar">
+      <label>To</label><input type="text" id="se-recipient" placeholder="Warehouse Team" oninput="buildSlotEmails()"/>
+      <label>From</label><input type="text" id="se-sender" placeholder="Your name" oninput="buildSlotEmails()"/>
+      <label>CC</label><input type="text" id="se-carrier-cc" placeholder="carrier cc emails" oninput="buildSlotEmails()"/>
+      <button id="se-contacts-btn" onclick="seToggleContacts()" style="padding:6px 12px;border:1px solid #bae6fd;background:#f0f9ff;color:#0369a1;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">👥 Contacts</button>
+      <button id="se-copy-all-btn" class="mbtn-cancel" onclick="copyAllSlotEmails()">⎘ Copy All</button>
+    </div>
+    <div id="se-contacts-panel" style="display:none;margin-bottom:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:12px">Consignee contacts</b>
+        <button class="mbtn-cancel" style="font-size:11px;padding:4px 10px" onclick="seAddContact()">+ Add</button></div>
+      <div id="se-contacts-list"></div>
+    </div>
+    <div id="se-batch-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+    <div id="se-body"></div>
+    <div class="modal-btns"><button class="mbtn-cancel" onclick="closeSlotEmails()">Close</button></div>
+  </div>
+</div>
+
+<datalist id="dl-batch"></datalist>
+<datalist id="dl-con"></datalist>
+<datalist id="dl-truck"></datalist>
+<datalist id="dl-broker"></datalist>
+<datalist id="dl-dest"></datalist>
+<datalist id="dl-hub"><option value="Duisburg"></option><option value="Tilburg"></option><option value="Direct"></option></datalist>
+<datalist id="dl-hub-o"></datalist>
+<datalist id="dl-service-o"><option value="Customs"></option><option value="Storage"></option><option value="Unloading"></option><option value="Drop-off"></option></datalist>
+<datalist id="dl-status-o"><option value="Pending"></option><option value="Delivered"></option><option value="Completed"></option></datalist>
+
 <!-- ══ TEMU 轨迹表生成 ══ -->
 <div class="overlay" id="temu-overlay">
   <div class="modal" style="width:760px;max-width:96vw">
