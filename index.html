@@ -12996,9 +12996,9 @@ function _wbJobs(kind){
     NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
       const cs=_noContainers(o);
       (cs.length?cs:[null]).forEach(cn=>{
-        const s0=_noParseDate(_wbFld(o,cn,'At Hub Date'))||_noParseDate(_wbFld(o,cn,'Pick Up Date'))||_noParseDate(_wbFld(o,cn,'ETA'));
-        const e0=_noParseDate(_wbFld(o,cn,'Delivery Date'))||_noParseDate(_wbFld(o,cn,'ATA'))||s0;
-        out.push({key:o._id,row:(_wbFld(o,cn,'Trucker')||'').trim()||'(unassigned)',label:[(o['Project']||'').trim(),o['Order No.']||'',(_wbFld(o,cn,'Consignee')||'').trim()].filter(Boolean).join(' · ')||(cn||''),tip:(cn||'')+' · '+(o['Order No.']||'')+' · '+(_wbFld(o,cn,'Destination')||''),find:(o['Order No.']||'')+' '+(cn||''),s:s0||e0,e:e0||s0,done:_wbDelivered(o,cn)});
+        const ms=[['ETA','ETA'],['Hub','At Hub Date'],['Pick','Pick Up Date'],['Del','Delivery Date'],['ATA','ATA'],['POD','POD Date']].map(([n,f])=>({n,d:_noParseDate(_wbFld(o,cn,f))})).filter(x=>x.d);
+        const s0=ms.length?new Date(Math.min(...ms.map(x=>+x.d))):null, e0=ms.length?new Date(Math.max(...ms.map(x=>+x.d))):null;
+        out.push({key:o._id,row:(_wbFld(o,cn,'Trucker')||'').trim()||'(unassigned)',label:[(o['Project']||'').trim(),o['Order No.']||'',(_wbFld(o,cn,'Consignee')||'').trim()].filter(Boolean).join(' · ')||(cn||''),tip:(cn||'')+' · '+(o['Order No.']||'')+' · '+(_wbFld(o,cn,'Destination')||''),find:(o['Order No.']||'')+' '+(cn||'')+' '+(o['Project']||''),s:s0||e0,e:e0||s0,ms,done:_wbDelivered(o,cn)});
       });
     });
   } else if(kind==='ct'){
@@ -13060,16 +13060,31 @@ function wbRender(kind){
   const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], todayI=idx(today);
   const head=days.map((d,i)=>`<div style="width:${DW}px;flex:0 0 ${DW}px;text-align:center;font-size:10px;padding:3px 0;border-left:1px solid #e2e8f0;${i===todayI?'background:#fef3c7;font-weight:800;':(d.getDay()%6===0?'background:#f1f5f9;':'')}">${DW>=40?wk[d.getDay()]+'<br>':''}${d.getDate()}/${d.getMonth()+1}</div>`).join('');
   const body=names.map(nm=>{
-    const lanes=[]; rows[nm].sort((a,b)=>a.si-b.si).forEach(b=>{ b.w=Math.min(Math.max((b.ei-b.si+1)*DW-4,String(b.label).length*6.4+18),300); b.ee=b.si+Math.ceil((b.w+4)/DW)-1; let l=lanes.findIndex(end=>end<b.si); if(l<0){ l=lanes.length; lanes.push(-1); } lanes[l]=b.ee; b.lane=l; });
-    const h=Math.max(1,lanes.length)*26+8;
+    const lanes=[]; rows[nm].sort((a,b)=>a.si-b.si).forEach(b=>{
+      if(b.ms){ const px=b.ms.map(x=>idx(x.d)).filter(i=>i>=0&&i<N); const a0=Math.min(...px,b.si), a1=Math.max(...px,b.ei);
+        b.left=Math.max(0,a0*DW+DW/2-10); b.w=Math.max((a1-a0)*DW+DW/2+10+46,Math.min(String(b.label).length*6.4+18,420)); b.ee=b.left+b.w; }
+      else { b.w=Math.min(Math.max((b.ei-b.si+1)*DW-4,String(b.label).length*6.4+18),300); b.left=b.si*DW+2; b.ee=b.left+b.w+4; }
+      let l=lanes.findIndex(end=>end<b.left); if(l<0){ l=lanes.length; lanes.push(-1); } lanes[l]=b.ee; b.lane=l; });
+    const LH=kind==='no'?60:26; const h=Math.max(1,lanes.length)*LH+8;
     const bg=days.map((d,i)=>`<div style="position:absolute;left:${i*DW}px;top:0;bottom:0;width:${DW}px;border-left:1px solid #f1f5f9;${i===todayI?'background:rgba(254,243,199,.55);':(d.getDay()%6===0?'background:#f8fafc;':'')}"></div>`).join('');
     const bs=rows[nm].map(b=>{
       const od=b.e<today&&!b.done, cur=b.s<=today&&b.e>=today;
       const col=b.done?'#16a34a':od?'#dc2626':cur?'#0369a1':'#7c3aed';
-      const sel=b.key===S.sel;
       const kq=typeof b.key==='number'?b.key:"'"+String(b.key).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"'";
+      const sel=b.key===S.sel;
+      if(b.ms){
+        const px=i=>i*DW+DW/2, top=4+b.lane*LH;
+        const grp={}; b.ms.forEach(x=>{ const i=idx(x.d); if(i<0||i>=N) return; (grp[i]=grp[i]||[]).push(x); });
+        const gi=Object.keys(grp).map(Number).sort((x,y)=>x-y);
+        const x0=px(Math.max(0,Math.min(...gi,b.si))), x1=px(Math.min(N-1,Math.max(...gi,b.ei)));
+        const nodes=gi.map((i,k)=>{ const g=grp[i], d=g[0].d, past=d<=today||g.some(x=>x.n==='POD'||x.n==='ATA'); const c=past?'#16a34a':'#7c3aed';
+          return `<div style="position:absolute;left:${px(i)-6}px;top:${top+18}px;width:12px;height:12px;border-radius:50%;background:${c};border:2px solid #fff;box-shadow:0 0 0 1px ${c};z-index:2"></div><div style="position:absolute;left:${px(i)-40}px;width:80px;top:${top+33+(k%2)*13}px;text-align:center;font-size:9.5px;line-height:12px;color:#475569;white-space:nowrap"><b style="color:${c}">${g.map(x=>x.n).join('/')}</b> ${d.getDate()}/${d.getMonth()+1}</div>`; }).join('');
+        return `<div onclick="wbPick('${kind}',${String(kq).replace(/"/g,'&quot;')})" title="${_noEsc(b.label+(b.tip?'\n'+b.tip:'')+'\n'+b.ms.map(x=>x.n+' '+_noFmtDate(x.d)).join(' · '))}" style="cursor:pointer">
+          <div style="position:absolute;left:${b.left}px;top:${top}px;max-width:${b.w}px;height:16px;line-height:16px;font-size:11px;font-weight:700;color:${sel?'#fff':col};${sel?'background:'+col+';border-radius:3px;padding:0 5px;':''}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_noEsc(b.label)}</div>
+          <div style="position:absolute;left:${x0}px;width:${Math.max(0,x1-x0)}px;top:${top+23}px;height:3px;background:${col};opacity:.55;border-radius:2px"></div>${nodes}</div>`;
+      }
       return `<div onclick="wbPick('${kind}',${String(kq).replace(/"/g,'&quot;')})" title="${_noEsc(b.label+(b.tip?'\n'+b.tip:'')+'\n'+_noFmtDate(b.s)+' → '+_noFmtDate(b.e)+(b.done?' (done)':od?' (overdue)':''))}"
-        style="position:absolute;left:${b.si*DW+2}px;top:${4+b.lane*26}px;width:${b.w}px;height:22px;background:${col};color:#fff;border-radius:4px;font-size:10.5px;line-height:22px;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;${sel?'outline:2px solid #0f172a;outline-offset:1px;z-index:2;':'opacity:.92;'}">${_noEsc(b.label)}</div>`;
+        style="position:absolute;left:${b.left}px;top:${4+b.lane*LH}px;width:${b.w}px;height:22px;background:${col};color:#fff;border-radius:4px;font-size:10.5px;line-height:22px;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;${sel?'outline:2px solid #0f172a;outline-offset:1px;z-index:2;':'opacity:.92;'}">${_noEsc(b.label)}</div>`;
     }).join('');
     return `<div style="display:flex;border-top:1px solid #e2e8f0"><div style="width:150px;flex:0 0 150px;padding:7px 10px;font-size:12px;font-weight:700;color:${/^\(/.test(nm)?'#94a3b8':'#0369a1'};background:#fafafa;position:sticky;left:0;z-index:3;border-right:1px solid #e2e8f0;overflow:hidden;text-overflow:ellipsis">${_noEsc(nm)}</div>
       <div style="position:relative;width:${N*DW}px;height:${h}px">${bg}${bs}</div></div>`;
