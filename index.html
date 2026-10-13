@@ -5609,9 +5609,9 @@ function renderDashOrders(){
   const td='padding:7px 10px;border-bottom:1px solid #eef2f7;text-align:right';
   mEl.innerHTML=`<div style="font-size:12px;font-weight:800;color:#1e293b;margin:14px 0 6px;letter-spacing:.3px">GROSS MARGIN BY PROJECT <span style="font-weight:500;color:#94a3b8">· receivable − payable from each order's Charges</span></div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:560px">
-    <thead><tr style="background:#f1f5f9;color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:.4px">
-      <th style="padding:7px 10px;text-align:left">Project</th><th style="${td};border-bottom:1px solid #e2e8f0">Orders</th><th style="${td};border-bottom:1px solid #e2e8f0">Ctns</th>
-      <th style="${td};border-bottom:1px solid #e2e8f0">Receivable</th><th style="${td};border-bottom:1px solid #e2e8f0">Payable</th><th style="${td};border-bottom:1px solid #e2e8f0">Margin</th><th style="${td};border-bottom:1px solid #e2e8f0">Margin %</th></tr></thead><tbody>
+    <thead><tr style="font-size:11px;text-transform:uppercase;letter-spacing:.4px">
+      <th style="padding:7px 10px;text-align:left;background:#004D4C;color:#fff">Project</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Orders</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Ctns</th>
+      <th style="${td};background:#004D4C;color:#fff;border-bottom:0">Receivable</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Payable</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Margin</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Margin %</th></tr></thead><tbody>
     ${rows.map(g=>{ const m=g.r-g.p; return `<tr>
       <td style="padding:7px 10px;border-bottom:1px solid #eef2f7;font-weight:700;color:#1e293b">${_noEsc(g.name)}</td>
       <td style="${td}">${g.orders}</td><td style="${td}">${g.ctns}</td>
