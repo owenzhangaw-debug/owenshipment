@@ -1599,14 +1599,6 @@ tbody tr:hover{background:#fafbfc}
         <button onclick="autoGenerateSlots();closeNavTools()">⚡ Auto Slots</button>
         <button onclick="openSlotEmails();closeNavTools()">📧 Slot Emails</button>
         <button id="sync-btn" onclick="openSync();closeNavTools()">☁ Sync</button>
-        <div class="nav-fx-inline" onclick="event.stopPropagation()">
-          <div class="fx-rates-row" id="fx-rates-row"></div>
-          <div class="fx-input-row"><input class="fx-input" type="number" id="fx-amount" placeholder="Amount" oninput="fxConvert()"/>
-            <select class="fx-sel" id="fx-base" onchange="fxConvert()"><option>USD</option><option>EUR</option><option>CNY</option></select></div>
-          <div class="fx-result" id="fx-result"></div>
-          <div class="fx-totals" id="fx-totals"></div>
-          <div class="fx-updated" id="fx-updated"></div>
-        </div>
       </div>
     </div>
     <input type="file" id="xl-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)"/>
@@ -2367,6 +2359,7 @@ tbody tr:hover{background:#fafbfc}
         <th>ATA</th>
         <th style="min-width:160px">Status</th>
         <th style="text-align:right;min-width:92px" title="Receivable (from Charges in the detail drawer)">Receivable</th>
+        <th style="text-align:right;min-width:92px" title="Payable (from Charges in the detail drawer)">Payable</th>
         <th style="text-align:right;min-width:88px" title="Receivable − Payable">Margin</th>
         <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="no-sel-all" onchange="noSelAllVisible(this.checked)" title="Select all visible"/></th>
         <th style="width:32px"></th>
@@ -9610,89 +9603,6 @@ function showImpErr(msg){ const e=document.getElementById('imp-err'); e.textCont
 ['modal-overlay','bulk-overlay','bulk-pickup-overlay','slot-paste-overlay','del-overlay','import-overlay','sync-overlay','be-overlay','vt-add-overlay','notice-edit-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 });
-// ── FX Converter ─────────────────────────────────────────────────
-const LS_FX='owenz_fx_rates_v1';
-let _fxRates={USD:1,EUR:0.92,CNY:7.25}; // fallback rates
-let _fxLoaded=false, _fxUpdated='';
-
-async function fxFetchRates(){
-  try{
-    const cache=localStorage.getItem(LS_FX);
-    if(cache){
-      const c=JSON.parse(cache);
-      if(Date.now()-c.ts<3600000){ // 1 hour cache
-        _fxRates=c.rates; _fxUpdated=c.label; _fxLoaded=true; fxRenderRates(); return;
-      }
-    }
-    const res=await fetch('https://open.er-api.com/v6/latest/USD');
-    const data=await res.json();
-    if(data&&data.rates){
-      _fxRates={USD:1, EUR:+(data.rates.EUR||0.92).toFixed(4), CNY:+(data.rates.CNY||7.25).toFixed(4)};
-      const now=new Date();
-      _fxUpdated='Updated '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-      localStorage.setItem(LS_FX,JSON.stringify({rates:_fxRates,ts:Date.now(),label:_fxUpdated}));
-    }
-  }catch(e){
-    const cache=localStorage.getItem(LS_FX);
-    if(cache){ const c=JSON.parse(cache); _fxRates=c.rates; _fxUpdated=c.label||'Cached'; }
-    else { _fxUpdated='Offline — using estimates'; }
-  }
-  _fxLoaded=true; fxRenderRates();
-}
-
-function fxRenderRates(){
-  const el=document.getElementById('fx-rates-row'); if(!el) return;
-  const pairs=[
-    {from:'USD',to:'EUR',lbl:'1 USD'},
-    {from:'EUR',to:'USD',lbl:'1 EUR'},
-    {from:'USD',to:'CNY',lbl:'1 USD'},
-    {from:'EUR',to:'CNY',lbl:'1 EUR'},
-  ];
-  el.innerHTML=pairs.map(p=>{
-    const rate=(_fxRates[p.to]/_fxRates[p.from]);
-    const sym={USD:'$',EUR:'€',CNY:'¥'};
-    return `<div class="fx-rate-chip"><strong>${sym[p.to]+rate.toFixed(4)}</strong>${p.lbl} → ${p.to}</div>`;
-  }).join('');
-  const upd=document.getElementById('fx-updated'); if(upd) upd.textContent=_fxUpdated;
-  fxConvert();
-  fxRenderTotals();
-}
-
-function fxConvert(){
-  const amtEl=document.getElementById('fx-amount');
-  const baseEl=document.getElementById('fx-base');
-  const resEl=document.getElementById('fx-result');
-  if(!amtEl||!baseEl||!resEl) return;
-  const amt=parseFloat(amtEl.value);
-  const base=baseEl.value;
-  if(!amt||isNaN(amt)){resEl.innerHTML='';return;}
-  const sym={USD:'$',EUR:'€',CNY:'¥'};
-  const targets=['USD','EUR','CNY'].filter(c=>c!==base);
-  resEl.innerHTML=targets.map(to=>{
-    const val=amt*(_fxRates[to]/_fxRates[base]);
-    return `<div class="fx-result-line"><span class="fx-result-ccy">${sym[to]} ${to}</span><span class="fx-result-val">${sym[to]+val.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`;
-  }).join('');
-}
-
-function fxRenderTotals(){
-  const el=document.getElementById('fx-totals'); if(!el) return;
-  const totalUSD=VT.reduce((s,r)=>{const p=parseFloat(r['Price'])||0,sur=parseFloat(r['Surcharge'])||0;return s+p+sur;},0);
-  const totalEUR=VT.reduce((s,r)=>s+(parseFloat(r['Booking Fee'])||0),0);
-  if(!totalUSD&&!totalEUR){el.innerHTML='';return;}
-  const usd2eur=totalUSD*(_fxRates.EUR/_fxRates.USD);
-  const usd2cny=totalUSD*(_fxRates.CNY/_fxRates.USD);
-  const eur2usd=totalEUR*(_fxRates.USD/_fxRates.EUR);
-  const eur2cny=totalEUR*(_fxRates.CNY/_fxRates.EUR);
-  const _n=(sym,v)=>sym+v.toLocaleString('en-US',{maximumFractionDigits:0});
-  el.innerHTML=`<strong>📊 Vessel Totals from VT</strong>
-    ${totalUSD?`<div class="fx-totals-row"><span>Freight (USD)</span><span>$${totalUSD.toLocaleString('en-US',{maximumFractionDigits:0})} → ${_n('€',usd2eur)} / ${_n('¥',usd2cny)}</span></div>`:''}
-    ${totalEUR?`<div class="fx-totals-row"><span>Booking Fees (EUR)</span><span>€${totalEUR.toLocaleString('en-US',{maximumFractionDigits:0})} → ${_n('$',eur2usd)} / ${_n('¥',eur2cny)}</span></div>`:''}`;
-}
-
-function toggleFX(){
-  // FX is now inside the tools panel — just open tools panel
-  toggleNavTools();
-}
 function toggleMobileMore(){
   const m=document.getElementById('mobile-more-menu');
   if(!m) return;
@@ -9715,7 +9625,6 @@ function toggleNavTools(){
   const opening=!panel.classList.contains('open');
   panel.classList.toggle('open');
   if(btn) btn.classList.toggle('open', opening);
-  if(opening){ if(!_fxLoaded) fxFetchRates(); else { fxRenderRates(); fxRenderTotals(); } }
 }
 function closeNavTools(){
   const panel=document.getElementById('nav-tools-panel');
@@ -12250,9 +12159,36 @@ function saveNO(){
   },250);
 }
 function noAdd(){
+  const ps=[...new Set(NO.map(r=>(r['Project']||'').trim()).filter(Boolean))].sort();
+  if(!ps.length){ noAddCreate('',''); return; }
+  const old=document.getElementById('no-add-overlay'); if(old) old.remove();
+  const ov=document.createElement('div'); ov.className='overlay open'; ov.id='no-add-overlay';
+  ov.innerHTML=`<div class="modal" style="width:420px"><h2>+ Add Order</h2>
+    <div class="form-group"><label>Copy from existing project</label>
+      <select id="noa-proj"><option value="">— blank new order —</option>${ps.map(x=>`<option value="${_noEsc(x)}">${_noEsc(x)}</option>`).join('')}</select></div>
+    <div class="form-group" style="margin-top:10px"><label>New Order No.</label><input type="text" id="noa-no" placeholder="Order No."/></div>
+    <div style="font-size:11.5px;color:#64748b;margin-top:8px">Copies project, consignee, destination, trucker, hub etc. Containers, dates and status start empty.</div>
+    <div class="modal-btns"><button class="mbtn-cancel" onclick="document.getElementById('no-add-overlay').remove()">Cancel</button>
+    <button class="mbtn-save" onclick="noAddCreate(document.getElementById('noa-proj').value,document.getElementById('noa-no').value)">Create</button></div></div>`;
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+  const inp=document.getElementById('noa-no'); inp.focus();
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') noAddCreate(document.getElementById('noa-proj').value,inp.value); });
+}
+function noAddCreate(proj,orderNo){
+  const ov=document.getElementById('no-add-overlay'); if(ov) ov.remove();
   const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
     'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'','Customs Office':false,'T1':false,'CC Cleared':false,'POD':false,'Remark':'','Today Status':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
+  o['Order No.']=(orderNo||'').trim();
+  if(proj){
+    const src=NO.find(r=>(r['Project']||'').trim()===proj);
+    if(src){
+      const skip=new Set(['_id','Order No.','Container No.','perCtn','ETA','Delivery Date','ATA','Pickup Date','Status','Arrived at Hub','POD','Customs Office','T1','CC Cleared','Payment Status','Today Status','Surcharges','Remark','At Hub Date']);
+      Object.keys(src).forEach(k=>{ if(!skip.has(k)) o[k]=JSON.parse(JSON.stringify(src[k])); });
+    }
+    o['Project']=proj;
+  }
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -12431,12 +12367,12 @@ function _noIsDeliveredCtn(o,cn){
 function _noIsDeliveredOrder(o){
   return !!((o['ATA']||'').toString().trim()) || !!o['POD'];
 }
-function _noSyncDeliveredCtn(i,cn){
+function _noSyncDeliveredCtn(i,cn){ return; // status is manual now
   const o=NO[i];
   const next=_noStatusForAta(_noStListFor(o,cn),_noIsDeliveredCtn(o,cn));
   if(next) o.perCtn[cn]['Status']=next.join(', ');
 }
-function _noSyncDeliveredOrder(i){
+function _noSyncDeliveredOrder(i){ return; // status is manual now
   const o=NO[i];
   const next=_noStatusForAta(_noStList(o),_noIsDeliveredOrder(o));
   if(next) o['Status']=next.join(', ');
@@ -12445,7 +12381,7 @@ function _noSyncDeliveredOrder(i){
 // One-off tidy-up for rows already saved as "New, Delivered": whenever an ATA
 // is present, drop the leftover progress stage. Idempotent and only touches
 // rows that are genuinely inconsistent.
-function _noNormalizeDelivered(){
+function _noNormalizeDelivered(){ return false; // status is manual now
   let touched=false;
   const fix=(cur,filled,set)=>{
     const list=String(cur||'').split(/\s*[,;\/+]\s*/).map(s=>s.trim()).filter(Boolean);
@@ -12786,11 +12722,11 @@ function renderOrders(){
 
   if(badge) badge.textContent=uniqueOrders.length+' order'+(uniqueOrders.length!==1?'s':'')+' · '+flat.length+' B/L'+(flat.length!==1?'s':'')+(filt?' ('+filt+')':'')+(qTokens.length?' · filtered':'');
   if(!NO.length){
-    body.innerHTML='<tr><td colspan="15" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
+    body.innerHTML='<tr><td colspan="16" style="padding:32px;text-align:center;color:#94a3b8">No orders yet — click <strong>+ Add Order</strong> to create one.</td></tr>';
     return;
   }
   if(!flat.length){
-    body.innerHTML='<tr><td colspan="15" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
+    body.innerHTML='<tr><td colspan="16" style="padding:32px;text-align:center;color:#94a3b8">No orders or containers match your filters.</td></tr>';
     return;
   }
   const _inpCss='font-size:11px;font-weight:500;color:#1e293b;padding:2px 5px;border:none;outline:none;background:transparent;width:100%;box-sizing:border-box';
@@ -12836,10 +12772,10 @@ function renderOrders(){
     const _done=_wbDelivered(o,cn);
     const _tags=_noStListFor(o,cn).map(sv=>`<span style="display:inline-block;padding:1px 7px;font-size:10.5px;font-weight:700;border-radius:10px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'};margin-right:3px">${_noEsc(sv)}</span>`).join('');
     const _dem=_noDemurrageDays(o,cn);
-    const _statusHtml=(_done?'<span style="font-size:10.5px;font-weight:700;color:#15803d;background:#dcfce7;border-radius:10px;padding:1px 7px;margin-right:3px">Delivered</span>':'<span style="font-size:10.5px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:10px;padding:1px 7px;margin-right:3px">On the way</span>')
+    const _statusHtml=''
       +(st&&st.exceeded?`<span title="Free storage exceeded by ${st.byDays}d" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⚠ storage ${st.byDays}d</span>`:'')
       +(_dem?`<span title="ATA ${_dem}d after Delivery Date" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⏱ ${_dem}d</span>`:'')+_tags;
-    const _R=_noReceivable(o,cn), _M=_noMargin(o,cn);
+    const _R=_noReceivable(o,cn), _M=_noMargin(o,cn), _P=_noPayable(o,cn);
     const _tx='padding:8px 10px;white-space:nowrap';
     return `<tr class="${noOrderClass}" data-no-order="${o._id}" onclick="wbRowClick(event,'no',${o._id})" style="${groupBorder}cursor:pointer">
       <td class="fc-1" style="${_tx};font-weight:700;color:#334155">${isFirst?_noEsc(o['Project']||''):''}</td>
@@ -12854,6 +12790,7 @@ function renderOrders(){
       <td style="${_tx}">${_noEsc(ataVal)}</td>
       <td style="${_tx}">${_statusHtml}</td>
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:#0369a1">${_R?_noEur(_R):''}</span></td>
+      <td style="${_tx};text-align:right"><span style="font-weight:700;color:#b45309">${_P?_noEur(_P):''}</span></td>
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:${_M<0?'#dc2626':'#0f766e'}">${_R||_M?_noEur(_M):''}</span></td>
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
       <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
