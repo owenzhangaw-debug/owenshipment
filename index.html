@@ -1601,6 +1601,7 @@ tbody tr:hover{background:#fafbfc}
       </div>
     </div>
     <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))" id="no-dash-kpi-row"></div>
+    <div id="no-dash-margin"></div>
     <div class="charts-row" style="margin-top:4px;grid-template-columns:1fr 1fr">
       <div class="chart-card">
         <h3 onclick="toggleChart(this)">Total Order Amount by Consignee<span class="ch-toggle">▼</span></h3>
@@ -3838,9 +3839,10 @@ function applySmartETA(id){
 // Dashboard 只保留关键指标：图表默认不画（省掉 ~30 张图的渲染时间）。要恢复图表：把 DASH_CHARTS 改成 true，
 // 并删掉下面 CSS 里 "Dashboard 精简" 那几行。
 const DASH_CHARTS=false;
-const _chartStub=function(){ const noop=()=>{}; return new Proxy({data:{datasets:[],labels:[]},options:{}},{get:(t,k)=>(k in t)?t[k]:noop}); };
+const _chartStub=function(){ const mk=()=>new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>''):mk(),apply:()=>mk(),set:()=>true,construct:()=>mk()}); return mk(); };
 function renderDashboard(){
   const Chart=DASH_CHARTS?window.Chart:_chartStub;
+  try{ renderDashOrders(); }catch(e){ console.error('renderDashOrders',e); }
   // TEMU containers + normal-order pseudo-rows (batch "🧾 Orders") for the chart sections
   const CTD=CT.concat((typeof _ordersAsCtRows==='function')?_ordersAsCtRows():[]);
   renderSmartInsights();
@@ -5391,65 +5393,6 @@ function renderDashboard(){
     const _noAll = (typeof NO!=='undefined')?NO:[];
     const _noActive = _noAll.filter(o=>!(typeof _noHasSt==='function'&&_noHasSt(o,'Cancelled')));
 
-    // ── KPI row: quantity, value, lead time, and other logistics-useful metrics ──
-    (function(){
-      const kpiEl=document.getElementById('no-dash-kpi-row');
-      if(!kpiEl) return;
-      let totalContainers=0, totalValue=0, unpaidValue=0, storageExceeded=0, surchargeTotal=0;
-      let leadSum=0, leadCount=0, ageSum=0, ageCount=0;
-      const today=new Date();
-      _noActive.forEach(o=>{
-        const cs=(typeof _noContainers==='function')?_noContainers(o):[];
-        const list=cs.length?cs:[null];
-        const orderVal=(typeof _noOrderTotal==='function')?_noOrderTotal(o):0;
-        totalValue+=orderVal;
-        if((o['Payment Status']||'')!=='Paid') unpaidValue+=orderVal;
-        const etaD=(typeof _noParseDate==='function')?_noParseDate(o['ETA']):null;
-        list.forEach(cn=>{
-          totalContainers++;
-          const pc=(cn&&typeof _noPc==='function')?_noPc(o,cn):{};
-          const delivered=!!(pc['ATA']||o['ATA']||pc['POD']||(typeof _noHasStFor==='function'&&_noHasStFor(o,cn,'Delivered')));
-          const delivDateRaw=pc['ATA']||o['ATA']||pc['Delivery Date']||o['Delivery Date'];
-          const delivD=(typeof _noParseDate==='function')?_noParseDate(delivDateRaw):null;
-          if(etaD&&delivered&&delivD){
-            const d=(delivD-etaD)/864e5;
-            if(d>=0&&d<120){ leadSum+=d; leadCount++; }
-          } else if(etaD&&!delivered){
-            const d=(today-etaD)/864e5;
-            if(d>=0&&d<365){ ageSum+=d; ageCount++; }
-          }
-          if(cn&&typeof _noStorageInfo==='function'){
-            const si=_noStorageInfo(o,cn);
-            if(si&&si.exceeded) storageExceeded++;
-          }
-          if(typeof _noSurcharges==='function'){
-            surchargeTotal+=_noSurcharges(o,cn).reduce((s,x)=>s+(parseFloat(x.fee)||0),0);
-          }
-        });
-      });
-      const avgLead=leadCount?(leadSum/leadCount).toFixed(1):null;
-      const avgAge=ageCount?(ageSum/ageCount).toFixed(1):null;
-      const fmtN=v=>v.toLocaleString('en-US',{maximumFractionDigits:0});
-      kpiEl.innerHTML=`
-        <div class="kpi" style="border-color:#0369a1;cursor:pointer" onclick="showPage('orders')">
-          <div class="kl">Orders</div><div class="kv" style="color:#0369a1">${_noActive.length}</div><div class="ks">${totalContainers} container${totalContainers!==1?'s':''}</div>
-        </div>
-        <div class="kpi" style="border-color:#0f766e;cursor:pointer" onclick="showPage('orders')">
-          <div class="kl">Total Value</div><div class="kv" style="color:#0f766e">${fmtN(totalValue)}</div><div class="ks">Freight + CC + storage + surcharge</div>
-        </div>
-        <div class="kpi" style="border-color:#b45309;cursor:pointer" onclick="showPage('orders')">
-          <div class="kl">Unpaid</div><div class="kv" style="color:#b45309">${fmtN(unpaidValue)}</div><div class="ks">orders not marked Paid</div>
-        </div>
-        <div class="kpi" style="border-color:#7c3aed">
-          <div class="kl">Avg Lead Time</div><div class="kv" style="color:#7c3aed">${avgLead!==null?avgLead+'d':'—'}</div><div class="ks">${avgLead!==null?'ETA → delivered':(avgAge!==null?'avg '+avgAge+'d since ETA, pending':'no data yet')}</div>
-        </div>
-        <div class="kpi" style="border-color:#dc2626;cursor:pointer" onclick="showPage('orders')">
-          <div class="kl">Storage Exceeded</div><div class="kv" style="color:#dc2626">${storageExceeded}</div><div class="ks">containers over free days</div>
-        </div>
-        <div class="kpi" style="border-color:#c2410c;cursor:pointer" onclick="showPage('orders')">
-          <div class="kl">Total Surcharges</div><div class="kv" style="color:#c2410c">${fmtN(surchargeTotal)}</div><div class="ks">storage, waiting fee, customs, etc.</div>
-        </div>`;
-    })();
 
     // Total Order Amount by Consignee
     const amtByCons={};
@@ -5585,6 +5528,101 @@ function renderDashboard(){
   })();
 }
 
+// Dashboard 的 Orders 区：KPI + 按项目的毛利表（独立函数，不受图表代码影响）
+function renderDashOrders(){
+  const _noAll=(typeof NO!=='undefined')?NO:[];
+  const _noActive=_noAll.filter(o=>!(typeof _noHasSt==='function'&&_noHasSt(o,'Cancelled')));
+    // ── KPI row: quantity, value, lead time, and other logistics-useful metrics ──
+    (function(){
+      const kpiEl=document.getElementById('no-dash-kpi-row');
+      if(!kpiEl) return;
+      let totalContainers=0, totalValue=0, unpaidValue=0, storageExceeded=0, surchargeTotal=0;
+      let leadSum=0, leadCount=0, ageSum=0, ageCount=0;
+      const today=new Date();
+      _noActive.forEach(o=>{
+        const cs=(typeof _noContainers==='function')?_noContainers(o):[];
+        const list=cs.length?cs:[null];
+        const orderVal=(typeof _noOrderTotal==='function')?_noOrderTotal(o):0;
+        totalValue+=orderVal;
+        if((o['Payment Status']||'')!=='Paid') unpaidValue+=orderVal;
+        const etaD=(typeof _noParseDate==='function')?_noParseDate(o['ETA']):null;
+        list.forEach(cn=>{
+          totalContainers++;
+          const pc=(cn&&typeof _noPc==='function')?_noPc(o,cn):{};
+          const delivered=!!(pc['ATA']||o['ATA']||pc['POD']||(typeof _noHasStFor==='function'&&_noHasStFor(o,cn,'Delivered')));
+          const delivDateRaw=pc['ATA']||o['ATA']||pc['Delivery Date']||o['Delivery Date'];
+          const delivD=(typeof _noParseDate==='function')?_noParseDate(delivDateRaw):null;
+          if(etaD&&delivered&&delivD){
+            const d=(delivD-etaD)/864e5;
+            if(d>=0&&d<120){ leadSum+=d; leadCount++; }
+          } else if(etaD&&!delivered){
+            const d=(today-etaD)/864e5;
+            if(d>=0&&d<365){ ageSum+=d; ageCount++; }
+          }
+          if(cn&&typeof _noStorageInfo==='function'){
+            const si=_noStorageInfo(o,cn);
+            if(si&&si.exceeded) storageExceeded++;
+          }
+          if(typeof _noSurcharges==='function'){
+            surchargeTotal+=_noSurcharges(o,cn).reduce((s,x)=>s+(parseFloat(x.fee)||0),0);
+          }
+        });
+      });
+      const avgLead=leadCount?(leadSum/leadCount).toFixed(1):null;
+      const avgAge=ageCount?(ageSum/ageCount).toFixed(1):null;
+      const fmtN=v=>v.toLocaleString('en-US',{maximumFractionDigits:0});
+      kpiEl.innerHTML=`
+        <div class="kpi" style="border-color:#0369a1;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Orders</div><div class="kv" style="color:#0369a1">${_noActive.length}</div><div class="ks">${totalContainers} container${totalContainers!==1?'s':''}</div>
+        </div>
+        <div class="kpi" style="border-color:#0f766e;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Total Value</div><div class="kv" style="color:#0f766e">${fmtN(totalValue)}</div><div class="ks">Freight + CC + storage + surcharge</div>
+        </div>
+        <div class="kpi" style="border-color:#b45309;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Unpaid</div><div class="kv" style="color:#b45309">${fmtN(unpaidValue)}</div><div class="ks">orders not marked Paid</div>
+        </div>
+        <div class="kpi" style="border-color:#7c3aed">
+          <div class="kl">Avg Lead Time</div><div class="kv" style="color:#7c3aed">${avgLead!==null?avgLead+'d':'—'}</div><div class="ks">${avgLead!==null?'ETA → delivered':(avgAge!==null?'avg '+avgAge+'d since ETA, pending':'no data yet')}</div>
+        </div>
+        <div class="kpi" style="border-color:#dc2626;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Storage Exceeded</div><div class="kv" style="color:#dc2626">${storageExceeded}</div><div class="ks">containers over free days</div>
+        </div>
+        <div class="kpi" style="border-color:#c2410c;cursor:pointer" onclick="showPage('orders')">
+          <div class="kl">Total Surcharges</div><div class="kv" style="color:#c2410c">${fmtN(surchargeTotal)}</div><div class="ks">storage, waiting fee, customs, etc.</div>
+        </div>`;
+    })();
+
+  // ── 按项目的毛利：应收 − 应付（来自每个订单的 Charges 明细）──
+  const mEl=document.getElementById('no-dash-margin'); if(!mEl) return;
+  const by={};
+  _noActive.forEach(o=>{
+    const k=(o['Project']||'').trim()||'(No project)';
+    const g=by[k]||(by[k]={name:k,orders:0,ctns:0,r:0,p:0});
+    const rp=_noOrderRP(o);
+    g.orders++; g.ctns+=Math.max(_noContainers(o).length,1); g.r+=rp.r; g.p+=rp.p;
+  });
+  const rows=Object.values(by).sort((a,b)=>(b.r-b.p)-(a.r-a.p));
+  const tot=rows.reduce((t,g)=>({orders:t.orders+g.orders,ctns:t.ctns+g.ctns,r:t.r+g.r,p:t.p+g.p}),{orders:0,ctns:0,r:0,p:0});
+  const f=v=>v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const pct=(r,p)=>r?((r-p)/r*100).toFixed(1)+'%':'—';
+  const col=m=>m>0?'#0f766e':m<0?'#dc2626':'#64748b';
+  const td='padding:7px 10px;border-bottom:1px solid #eef2f7;text-align:right';
+  mEl.innerHTML=`<div style="font-size:12px;font-weight:800;color:#1e293b;margin:14px 0 6px;letter-spacing:.3px">GROSS MARGIN BY PROJECT <span style="font-weight:500;color:#94a3b8">· receivable − payable from each order's Charges</span></div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:560px">
+    <thead><tr style="background:#f1f5f9;color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:.4px">
+      <th style="padding:7px 10px;text-align:left">Project</th><th style="${td};border-bottom:1px solid #e2e8f0">Orders</th><th style="${td};border-bottom:1px solid #e2e8f0">Ctns</th>
+      <th style="${td};border-bottom:1px solid #e2e8f0">Receivable</th><th style="${td};border-bottom:1px solid #e2e8f0">Payable</th><th style="${td};border-bottom:1px solid #e2e8f0">Margin</th><th style="${td};border-bottom:1px solid #e2e8f0">Margin %</th></tr></thead><tbody>
+    ${rows.map(g=>{ const m=g.r-g.p; return `<tr>
+      <td style="padding:7px 10px;border-bottom:1px solid #eef2f7;font-weight:700;color:#1e293b">${_noEsc(g.name)}</td>
+      <td style="${td}">${g.orders}</td><td style="${td}">${g.ctns}</td>
+      <td style="${td};color:#1d4ed8">${f(g.r)}</td><td style="${td};color:#b45309">${f(g.p)}</td>
+      <td style="${td};font-weight:800;color:${col(m)}">${f(m)}</td><td style="${td};font-weight:800;color:${col(m)}">${pct(g.r,g.p)}</td></tr>`; }).join('')}
+    <tr style="background:#f8fafc;font-weight:800">
+      <td style="padding:8px 10px">TOTAL</td><td style="${td}">${tot.orders}</td><td style="${td}">${tot.ctns}</td>
+      <td style="${td};color:#1d4ed8">${f(tot.r)}</td><td style="${td};color:#b45309">${f(tot.p)}</td>
+      <td style="${td};color:${col(tot.r-tot.p)}">${f(tot.r-tot.p)}</td><td style="${td};color:${col(tot.r-tot.p)}">${pct(tot.r,tot.p)}</td></tr>
+    </tbody></table></div>`;
+}
 function renderDelayTable(){
   const el = document.getElementById('delay-detail-table'); if(!el) return;
   const mode = delayTblMode||'late';
