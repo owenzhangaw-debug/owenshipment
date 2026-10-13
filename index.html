@@ -2346,6 +2346,7 @@ tbody tr:hover{background:#fafbfc}
     <div id="no-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;margin-top:10px">
       <span id="no-inline-sel-count">0 selected</span>
       <button onclick="openNoBulkEdit()" style="background:#fff;color:#004D4C;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
+      <button onclick="noDelSelected()" style="background:#dc2626;color:#fff;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">🗑 Delete</button>
       <button onclick="noClearSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
     </div>
     <div id="no-storage-alerts"></div>
@@ -12469,6 +12470,14 @@ function noUpdateSelBar(){
   const cnt=document.getElementById('no-inline-sel-count');
   if(cnt) cnt.textContent=noSel.size+' order'+(noSel.size!==1?'s':'')+' selected';
 }
+function noDelSelected(){
+  if(!noSel.size) return;
+  const n=noSel.size;
+  if(!confirm('Delete '+n+' selected order'+(n!==1?'s':'')+' (including all their B/L rows)? This cannot be undone.')) return;
+  NO=NO.filter(r=>!noSel.has(r._id));
+  noSel.forEach(id=>_noOpen.delete(id)); noSel.clear();
+  saveNO(); renderOrders(); noUpdateSelBar();
+}
 function openNoBulkEdit(){
   if(noSel.size===0){ showToast?showToast('Select at least one order first.'):alert('Select at least one order first.'); return; }
   ['nbe_truck','nbe_hub','nbe_ppd','nbe_svc','nbe_status','nbe_remark'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
@@ -12818,7 +12827,7 @@ function renderOrders(){
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:${_M<0?'#dc2626':'#0f766e'}">${_R||_M?_noEur(_M):''}</span></td>
       <td style="${_tx}">${_statusHtml}</td>
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
-      <td style="text-align:center">${isFirst?`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:''}</td>
+      <td style="text-align:center" onclick="event.stopPropagation()">${cn?`<button type="button" onclick="noDelCtn(${o._id},'${ce}')" title="Delete this B/L row" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`}</td>
     </tr>`;
   }).join('');
   // attach typeable date pickers to any newly-rendered date fields (typing YYYY/MM/DD works directly, calendar optional)
