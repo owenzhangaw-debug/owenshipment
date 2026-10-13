@@ -1554,6 +1554,7 @@ tbody tr:hover{background:#fafbfc}
     <button onclick="showPage('notices')">Notices</button>
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('orders')">Orders</button>
+    <button onclick="showPage('workbench')">Workbench</button>
     <button onclick="showPage('vessels')">Vessels</button>
     <button onclick="showPage('dispatch')">Dispatch</button>
     <span class="nav-divider"></span>
@@ -2595,6 +2596,39 @@ tbody tr:hover{background:#fafbfc}
 <!-- ══════════════════════════════════════════════════════════
      DISPATCH PAGE (Container + Vessel tabs)
 ══════════════════════════════════════════════════════════ -->
+<!-- ══ WORKBENCH ══ -->
+<div id="page-workbench" class="page">
+  <style>
+    #wb-body td{padding:6px 8px;border-bottom:1px solid #eef2f7;font-size:12.5px;white-space:nowrap}
+    #wb-table th{background:#004D4C;color:#fff;padding:6px 8px;font-size:11px;text-align:left;position:sticky;top:0;z-index:2}
+    #wb-detail.wb-full{position:fixed;inset:0;z-index:950;background:#f1f5f9;overflow:auto;padding:18px 24px}
+    .wb-panel{background:#fff;border:1px solid #d7dde6;border-radius:6px;margin-bottom:14px;overflow:hidden}
+    .wb-ptitle{padding:7px 12px;font-size:12px;font-weight:800;color:#004D4C;background:#eef4f4;border-bottom:1px solid #d7dde6;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .wb-ptitle input,.wb-ptitle select{padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font-size:12px;background:#fff}
+    .wb-ptitle button{padding:3px 10px;font-size:11.5px;font-weight:700;border:1px solid #cbd5e1;background:#fff;border-radius:5px;cursor:pointer}
+  </style>
+  <h2 style="margin:4px 0 12px;font-size:22px;color:#0f172a">Workbench</h2>
+  <div class="wb-panel">
+    <div class="wb-ptitle">My Orders <span id="wb-count" style="font-weight:600;color:#64748b"></span>
+      <input id="wb-search" type="search" placeholder="Search order, B/L, consignee, trucker, hub…" oninput="clearTimeout(window._wbT);window._wbT=setTimeout(renderWorkbench,180)" style="min-width:260px">
+      <select id="wb-status" onchange="renderWorkbench()"><option value="">All status</option><option value="ongoing">On the way</option><option value="delivered">Delivered</option></select>
+      <select id="wb-project" onchange="renderWorkbench()"></select></div>
+    <div style="max-height:330px;overflow:auto"><table id="wb-table" style="width:100%;border-collapse:collapse"><thead><tr>
+      <th style="width:30px"></th><th>Order No.</th><th>Project</th><th>B/L · Container</th><th>Consignee</th><th>Trucker</th><th>Hub</th><th>ETA</th><th>Delivery</th><th>Status</th><th style="text-align:right">Receivable</th><th style="text-align:right">Margin</th></tr></thead>
+      <tbody id="wb-body"></tbody></table></div>
+  </div>
+  <div class="wb-panel">
+    <div class="wb-ptitle">Trucker Assignments <span id="wb-range" style="font-weight:600;color:#64748b"></span>
+      <span style="margin-left:auto;display:flex;gap:4px"><button onclick="wbSetRange('prev')">◀ Week</button><button onclick="wbSetRange('today')">Today</button><button onclick="wbSetRange('next')">Week ▶</button>
+      <button onclick="wbSetRange('week')">1 week</button><button onclick="wbSetRange('2w')">2 weeks</button><button onclick="wbSetRange('4w')">4 weeks</button></span></div>
+    <div id="wb-gantt"></div>
+  </div>
+  <div class="wb-panel" id="wb-detail">
+    <div class="wb-ptitle">Order Detail</div>
+    <div id="wb-detail-body" style="padding:12px 14px;background:#f8fafc"></div>
+  </div>
+</div>
+
 <div id="page-dispatch" class="page">
   <!-- Tab switcher: 3 Gantt tabs -->
   <div style="display:flex;background:#003534;padding:8px 16px 0;gap:6px">
@@ -3411,6 +3445,7 @@ function showPage(p){
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); }
   if(p==='dispatch'){ switchDispatchTab(_activeDispatchTab||'ct'); }
+  if(p==='workbench'){ renderWorkbench(); }
 }
 function _contextAdd(){
   if(_currentPage==='vessels') openAddVesselModal();
@@ -13998,6 +14033,191 @@ function _noRenderStorageAlerts(rows){
   </div>`;
 }
 // Map orders into dispatch pseudo-rows (used by renderDispatch)
+// ══════════════════════════════════════════════════════════
+// WORKBENCH（参照 Oracle TM Workbench）：订单表 + 卡车时间轴 + 选中订单的「独立页面」详情
+// ══════════════════════════════════════════════════════════
+let _wbSel=null, _wbFrom=null, _wbDays=14;
+const _wbDayMs=864e5;
+function _wbFld(o,cn,f){ const v=_noFld(o,cn,f); return (v==null)?'':v; }
+function _wbDelivered(o,cn){ return !!(_wbFld(o,cn,'ATA')||_wbFld(o,cn,'POD')||(cn&&_noHasStFor(o,cn,'Delivered'))||(!cn&&_noHasSt(o,'Delivered'))); }
+function _wbItems(){
+  const q=((document.getElementById('wb-search')||{}).value||'').trim().toLowerCase();
+  const st=(document.getElementById('wb-status')||{}).value||'';
+  const pj=(document.getElementById('wb-project')||{}).value||'';
+  const out=[];
+  NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
+    if(pj&&(o['Project']||'').trim()!==pj) return;
+    const cs=_noContainers(o);
+    (cs.length?cs:[null]).forEach(cn=>{
+      const done=_wbDelivered(o,cn);
+      if(st==='ongoing'&&done) return;
+      if(st==='delivered'&&!done) return;
+      const hay=[o['Order No.'],o['Project'],cn,o['Consignee'],_wbFld(o,cn,'Trucker'),_wbFld(o,cn,'Hub'),o['Remark']].join(' ').toLowerCase();
+      if(q&&!q.split(/[\s,;、]+/).filter(Boolean).some(t=>hay.includes(t))) return;
+      out.push({o,cn,done});
+    });
+  });
+  return out;
+}
+function _wbCt(n){ return n==null||n===''?'—':n; }
+const _wbF2=v=>(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+function wbSelect(id){ _wbSel=id; renderWorkbench(); }
+function renderWorkbench(){
+  const pe=document.getElementById('wb-project');
+  if(pe){ const cur=pe.value; const ps=[...new Set(NO.map(o=>(o['Project']||'').trim()).filter(Boolean))].sort();
+    pe.innerHTML='<option value="">All projects</option>'+ps.map(p=>`<option${p===cur?' selected':''}>${_noEsc(p)}</option>`).join(''); }
+  const items=_wbItems();
+  if(_wbSel==null||!NO.some(o=>o._id===_wbSel)) _wbSel=items.length?items[0].o._id:null;
+  // ── 1. 订单表 ──
+  const cnt=document.getElementById('wb-count'); if(cnt) cnt.textContent=items.length+' rows · '+new Set(items.map(x=>x.o._id)).size+' orders';
+  const tb=document.getElementById('wb-body');
+  if(tb){
+    let last=null;
+    tb.innerHTML=items.map(({o,cn,done})=>{
+      const first=last!==o._id; last=o._id;
+      const m=_noMargin(o,cn), r=_noReceivable(o,cn);
+      const stl=_noStListFor(o,cn)[0]||(done?'Delivered':'');
+      const sel=o._id===_wbSel;
+      return `<tr onclick="wbSelect(${o._id})" style="cursor:pointer;${sel?'background:#fefce8;':''}${first?'border-top:2px solid #cbd5e1;':''}">
+        <td style="text-align:center"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${done?'#16a34a':'#f59e0b'}" title="${done?'Delivered':'On the way'}"></span></td>
+        <td style="font-weight:700;color:#0369a1">${first?_noEsc(o['Order No.']||'#'+o._id):''}</td>
+        <td>${first?_noEsc(o['Project']||''):''}</td>
+        <td style="font-family:monospace;font-size:11.5px">${_noEsc(cn||'—')}</td>
+        <td>${_noEsc(o['Consignee']||'')}</td><td>${_noEsc(_wbFld(o,cn,'Trucker'))}</td><td>${_noEsc(_wbFld(o,cn,'Hub'))}</td>
+        <td>${_noEsc(_wbFld(o,cn,'ETA'))}</td><td>${_noEsc(_wbFld(o,cn,'Delivery Date'))}</td>
+        <td>${stl?`<span style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;border-radius:10px;padding:1px 8px">${_noEsc(stl)}</span>`:''}</td>
+        <td style="text-align:right">${r?_wbF2(r):''}</td>
+        <td style="text-align:right;font-weight:700;color:${m>0?'#0f766e':m<0?'#dc2626':'#94a3b8'}">${r||m?_wbF2(m):''}</td></tr>`;
+    }).join('')||'<tr><td colspan="12" style="padding:24px;text-align:center;color:#94a3b8">No orders match.</td></tr>';
+  }
+  wbRenderGantt(items);
+  wbRenderDetail(items);
+}
+// ── 2. 卡车时间轴 ──
+function wbSetRange(k){
+  const t=new Date(); t.setHours(0,0,0,0);
+  const mon=new Date(t); mon.setDate(t.getDate()-((t.getDay()+6)%7));
+  if(k==='week'){ _wbFrom=mon; _wbDays=7; }
+  else if(k==='2w'){ _wbFrom=mon; _wbDays=14; }
+  else if(k==='today'){ _wbFrom=new Date(t); _wbFrom.setDate(t.getDate()-2); _wbDays=14; }
+  else if(k==='prev'){ _wbFrom=new Date((_wbFrom||mon).getTime()-7*_wbDayMs); }
+  else if(k==='next'){ _wbFrom=new Date((_wbFrom||mon).getTime()+7*_wbDayMs); }
+  else if(k==='4w'){ _wbDays=28; }
+  renderWorkbench();
+}
+function wbRenderGantt(items){
+  const el=document.getElementById('wb-gantt'); if(!el) return;
+  if(!_wbFrom){ const t=new Date(); t.setHours(0,0,0,0); _wbFrom=new Date(t); _wbFrom.setDate(t.getDate()-((t.getDay()+6)%7)); }
+  const from=new Date(_wbFrom), N=_wbDays, DW=N>16?44:64;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const idx=d=>Math.round((d-from)/_wbDayMs);
+  const bars=[]; let noDate=0;
+  items.forEach(({o,cn,done})=>{
+    const s0=_noParseDate(_wbFld(o,cn,'At Hub Date'))||_noParseDate(_wbFld(o,cn,'Pick Up Date'))||_noParseDate(_wbFld(o,cn,'ETA'));
+    const e0=_noParseDate(_wbFld(o,cn,'Delivery Date'))||_noParseDate(_wbFld(o,cn,'ATA'))||s0;
+    if(!s0&&!e0){ noDate++; return; }
+    let s=s0||e0, e=e0||s0; if(e<s){ const t=s; s=e; e=t; }
+    const si=idx(s), ei=idx(e);
+    if(ei<0||si>=N) return;
+    bars.push({o,cn,done,s,e,si:Math.max(si,0),ei:Math.min(ei,N-1),tr:(_wbFld(o,cn,'Trucker')||'').trim()||'(unassigned)'});
+  });
+  const rows={}; bars.forEach(b=>(rows[b.tr]=rows[b.tr]||[]).push(b));
+  const names=Object.keys(rows).sort((a,b)=>a==='(unassigned)'?1:b==='(unassigned)'?-1:a.localeCompare(b));
+  const days=[...Array(N)].map((_,i)=>new Date(from.getTime()+i*_wbDayMs));
+  const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const todayI=idx(today);
+  const head=days.map((d,i)=>`<div style="width:${DW}px;flex:0 0 ${DW}px;text-align:center;font-size:10.5px;padding:4px 0;border-left:1px solid #e2e8f0;${i===todayI?'background:#fef3c7;font-weight:800;':(d.getDay()%6===0?'background:#f1f5f9;':'')}">${wk[d.getDay()]}<br>${d.getDate()}/${d.getMonth()+1}</div>`).join('');
+  const body=names.map(nm=>{
+    const lanes=[]; rows[nm].sort((a,b)=>a.si-b.si).forEach(b=>{
+      let l=lanes.findIndex(end=>end<b.si); if(l<0){ l=lanes.length; lanes.push(-1); } lanes[l]=b.ei; b.lane=l; });
+    const h=Math.max(1,lanes.length)*26+8;
+    const bg=days.map((d,i)=>`<div style="position:absolute;left:${i*DW}px;top:0;bottom:0;width:${DW}px;border-left:1px solid #f1f5f9;${i===todayI?'background:rgba(254,243,199,.55);':(d.getDay()%6===0?'background:#f8fafc;':'')}"></div>`).join('');
+    const bs=rows[nm].map(b=>{
+      const od=b.e<today&&!b.done, cur=b.s<=today&&b.e>=today;
+      const col=b.done?'#16a34a':od?'#dc2626':cur?'#0369a1':'#7c3aed';
+      const sel=b.o._id===_wbSel;
+      const label=(b.cn||'')+' · '+(b.o['Order No.']||'');
+      return `<div onclick="wbSelect(${b.o._id})" title="${_noEsc(label+'\n'+_noFmtDate(b.s)+' → '+_noFmtDate(b.e)+(b.done?' (delivered)':od?' (overdue)':''))}"
+        style="position:absolute;left:${b.si*DW+2}px;top:${4+b.lane*26}px;width:${(b.ei-b.si+1)*DW-4}px;height:22px;background:${col};color:#fff;border-radius:4px;font-size:10.5px;line-height:22px;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;${sel?'outline:2px solid #0f172a;outline-offset:1px;z-index:2;':'opacity:.92;'}">${_noEsc(label)}</div>`;
+    }).join('');
+    return `<div style="display:flex;border-top:1px solid #e2e8f0"><div style="width:170px;flex:0 0 170px;padding:8px 10px;font-size:12px;font-weight:700;color:${nm==='(unassigned)'?'#94a3b8':'#0369a1'};background:#fafafa;position:sticky;left:0;z-index:3;border-right:1px solid #e2e8f0">${_noEsc(nm)}<div style="font-weight:500;color:#94a3b8;font-size:10.5px">${rows[nm].length} job${rows[nm].length>1?'s':''}</div></div>
+      <div style="position:relative;width:${N*DW}px;height:${h}px">${bg}${bs}</div></div>`;
+  }).join('')||'<div style="padding:22px;text-align:center;color:#94a3b8;font-size:12.5px">No dated jobs in this range.</div>';
+  const lbl=`${_noFmtDate(days[0])} – ${_noFmtDate(days[N-1])}`;
+  const rl=document.getElementById('wb-range'); if(rl) rl.textContent=lbl+(noDate?` · ${noDate} without dates`:'');
+  el.innerHTML=`<div style="overflow-x:auto"><div style="min-width:${170+N*DW}px">
+    <div style="display:flex"><div style="width:170px;flex:0 0 170px;padding:6px 10px;font-size:11px;font-weight:800;color:#475569;background:#f1f5f9;position:sticky;left:0;z-index:3;border-right:1px solid #e2e8f0">TRUCKER</div>${head}</div>${body}</div></div>
+    <div style="display:flex;gap:14px;padding:6px 12px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0">
+      <span><i style="display:inline-block;width:10px;height:10px;background:#0369a1;border-radius:2px"></i> in progress</span><span><i style="display:inline-block;width:10px;height:10px;background:#7c3aed;border-radius:2px"></i> upcoming</span>
+      <span><i style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px"></i> delivered</span><span><i style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px"></i> overdue</span>
+      <span style="margin-left:auto">Bar = At Hub / Pick Up / ETA → Delivery · click a bar to inspect the order</span></div>`;
+}
+// ── 3. 订单「独立页面」详情 ──
+let _wbFull=false;
+function wbToggleFull(){ _wbFull=!_wbFull; const d=document.getElementById('wb-detail'); if(d) d.classList.toggle('wb-full',_wbFull); }
+function wbStep(dir,ids){ const i=ids.indexOf(_wbSel); const n=ids[i+dir]; if(n!=null) wbSelect(n); }
+function wbOpenInOrders(id){
+  const o=NO.find(x=>x._id===id); if(!o) return;
+  showPage('orders'); const b=document.getElementById('no-search'); if(b){ b.value=o['Order No.']||''; renderOrders(); }
+}
+function wbRenderDetail(items){
+  const el=document.getElementById('wb-detail-body'); if(!el) return;
+  const o=NO.find(x=>x._id===_wbSel);
+  if(!o){ el.innerHTML='<div style="padding:30px;text-align:center;color:#94a3b8">Select an order above to inspect it.</div>'; return; }
+  const ids=[...new Set(items.map(x=>x.o._id))];
+  const cs=_noContainers(o), list=cs.length?cs:[null];
+  const rp=_noOrderRP(o);
+  const doneN=list.filter(cn=>_wbDelivered(o,cn)).length;
+  const pct=Math.round(doneN/list.length*100);
+  const chip=(t,c,bg)=>`<span style="font-size:11px;font-weight:700;color:${c};background:${bg};border-radius:10px;padding:2px 9px">${_noEsc(t)}</span>`;
+  const kpi=(l,v,c)=>`<div style="flex:1;min-width:120px;background:#fff;border:1px solid #e2e8f0;border-top:3px solid ${c};border-radius:6px;padding:8px 12px"><div style="font-size:10.5px;color:#64748b;font-weight:700;text-transform:uppercase">${l}</div><div style="font-size:19px;font-weight:800;color:${c}">${v}</div></div>`;
+  const sec=(t,inner)=>`<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-top:12px"><div style="font-size:11.5px;font-weight:800;color:#475569;letter-spacing:.4px;margin-bottom:8px;text-transform:uppercase">${t}</div>${inner}</div>`;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const miles=(cn)=>{
+    const steps=[['ETA',_wbFld(o,cn,'ETA')],['At Hub',_wbFld(o,cn,'At Hub Date')],['Pick Up',_wbFld(o,cn,'Pick Up Date')],['Delivery',_wbFld(o,cn,'Delivery Date')],['ATA',_wbFld(o,cn,'ATA')],['POD',_wbFld(o,cn,'POD Date')||(_wbFld(o,cn,'POD')?'✓':'')]];
+    return `<div style="display:flex;gap:0;margin:8px 0 4px">${steps.map(([n,v],i)=>{
+      const d=_noParseDate(v), ok=!!v&&(!d||d<=today||n==='POD');
+      return `<div style="flex:1;text-align:center;position:relative"><div style="height:3px;background:${i?'#cbd5e1':'transparent'};position:absolute;left:0;right:50%;top:7px"></div><div style="height:3px;background:${i<steps.length-1?'#cbd5e1':'transparent'};position:absolute;left:50%;right:0;top:7px"></div>
+        <div style="position:relative;width:15px;height:15px;border-radius:50%;margin:0 auto;background:${v?(ok?'#16a34a':'#f59e0b'):'#fff'};border:2px solid ${v?(ok?'#16a34a':'#f59e0b'):'#cbd5e1'}"></div>
+        <div style="font-size:10.5px;font-weight:700;color:#475569;margin-top:3px">${n}</div><div style="font-size:10.5px;color:#64748b">${_noEsc(v||'—')}</div></div>`; }).join('')}</div>`;
+  };
+  const ctnCards=list.map(cn=>{
+    const si=cn?_noStorageInfo(o,cn):null, sf=cn?_noStorageFee(o,cn):null;
+    const hub=_wbFld(o,cn,'Hub'), hubT=_noHubByName(hub);
+    const flags=[['T1',_wbFld(o,cn,'T1')],['Customs Office',_wbFld(o,cn,'Customs Office')],['CC Cleared',_wbFld(o,cn,'CC Cleared')],['POD',_wbFld(o,cn,'POD')]]
+      .map(([n,v])=>chip((v?'✔ ':'✕ ')+n,v?'#15803d':'#94a3b8',v?'#dcfce7':'#f1f5f9')).join(' ');
+    const done=_wbDelivered(o,cn);
+    return `<div style="border:1px solid #e2e8f0;border-left:4px solid ${done?'#16a34a':'#f59e0b'};border-radius:6px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-family:monospace;font-size:13px">${_noEsc(cn||'(no B/L yet)')}</b>${done?chip('Delivered','#15803d','#dcfce7'):chip('On the way','#92400e','#fef3c7')}
+        <span style="color:#64748b;font-size:12px">Trucker: <b>${_noEsc(_wbFld(o,cn,'Trucker')||'—')}</b></span><span style="color:#64748b;font-size:12px">Hub: <b>${_noEsc(hub||'—')}</b>${hubT?` <span style="color:#94a3b8">(free ${_noEsc(_noCtnFld(o,cn,'Free Storage (Days)'))}d)</span>`:''}</span>
+        <span style="color:#64748b;font-size:12px">Destination: <b>${_noEsc(_wbFld(o,cn,'Destination')||'—')}</b></span></div>
+      ${miles(cn)}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${flags}${si?(si.exceeded?chip('Storage over by '+si.byDays+'d'+(sf?' · '+_wbF2(sf.fee):''),'#b91c1c','#fee2e2'):chip('Free storage until '+si.expiry,'#0369a1','#e0f2fe')):''}</div></div>`;
+  }).join('');
+  const charges=list.map(cn=>{
+    const ch=_noCharges(o,cn);
+    return `<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:700;margin-bottom:4px">${_noEsc(cn||'Order')}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#004D4C;color:#fff"><th style="padding:5px 8px;text-align:left">Item</th><th style="padding:5px 8px;text-align:right">Receivable</th><th style="padding:5px 8px;text-align:right">Payable</th><th style="padding:5px 8px;text-align:right">Margin</th><th style="padding:5px 8px;text-align:left">Note</th></tr></thead><tbody>
+      ${ch.map(l=>`<tr><td style="padding:5px 8px;border-bottom:1px solid #eef2f7">${_noEsc(l.item)}</td><td style="padding:5px 8px;text-align:right;border-bottom:1px solid #eef2f7">${_wbF2(l.r)}</td><td style="padding:5px 8px;text-align:right;border-bottom:1px solid #eef2f7">${_wbF2(l.p)}</td><td style="padding:5px 8px;text-align:right;border-bottom:1px solid #eef2f7;font-weight:700;color:${(l.r-l.p)>0?'#0f766e':(l.r-l.p)<0?'#dc2626':'#94a3b8'}">${_wbF2(l.r-l.p)}</td><td style="padding:5px 8px;border-bottom:1px solid #eef2f7;color:#64748b">${_noEsc(l.note||'')}</td></tr>`).join('')||'<tr><td colspan="5" style="padding:8px;color:#94a3b8">No charges entered.</td></tr>'}
+      <tr style="font-weight:800;background:#f8fafc"><td style="padding:5px 8px">Total</td><td style="padding:5px 8px;text-align:right">${_wbF2(_noReceivable(o,cn))}</td><td style="padding:5px 8px;text-align:right">${_wbF2(_noPayable(o,cn))}</td><td style="padding:5px 8px;text-align:right">${_wbF2(_noMargin(o,cn))}</td><td style="padding:5px 8px">${_noMarginPct(o,cn)}%</td></tr></tbody></table></div>`;
+  }).join('');
+  const sur=list.map(cn=>_noSurcharges(o,cn).map(x=>chip((cn?cn+': ':'')+x.reason+' '+_wbF2(x.fee),'#9a3412','#ffedd5'))).flat().join(' ');
+  const tags=_noSvcList(o).map(t=>chip(t,'#0369a1','#e0f2fe')).concat(_noStList(o).map(t=>chip(t,'#6d28d9','#ede9fe'))).join(' ');
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <button onclick="wbStep(-1,${JSON.stringify(ids)})" style="padding:3px 10px;border:1px solid #cbd5e1;background:#fff;border-radius:5px;cursor:pointer">◀</button>
+      <button onclick="wbStep(1,${JSON.stringify(ids)})" style="padding:3px 10px;border:1px solid #cbd5e1;background:#fff;border-radius:5px;cursor:pointer">▶</button>
+      <div style="font-size:20px;font-weight:800;color:#0f172a">${_noEsc(o['Order No.']||'Order #'+o._id)}</div>
+      ${o['Project']?chip(o['Project'],'#0369a1','#e0f2fe'):''}<span style="color:#475569;font-size:13px">${_noEsc(o['Consignee']||'')}</span>
+      <div style="margin-left:auto;display:flex;gap:6px"><button onclick="wbOpenInOrders(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #004D4C;color:#004D4C;background:#fff;border-radius:6px;cursor:pointer">✏️ Edit in Orders</button>
+        <button onclick="wbToggleFull()" style="padding:5px 12px;font-size:12px;font-weight:700;background:#004D4C;color:#fff;border:none;border-radius:6px;cursor:pointer">${_wbFull?'⤡ Close full page':'⤢ Full page'}</button></div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+      ${kpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${kpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${kpi('Payable',_wbF2(rp.p),'#b45309')}${kpi('Margin',_wbF2(rp.m),rp.m>=0?'#0f766e':'#dc2626')}${kpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#0f766e':'#dc2626')}</div>
+    ${o['Today Status']?sec('Today\'s status',`<div style="white-space:pre-wrap;font-size:13px">${_noEsc(o['Today Status'])}</div>`):''}
+    ${sec('Containers / B/Ls ('+list.length+')',ctnCards)}
+    ${sec('Charges & margin',charges)}
+    ${(sur||tags||o['Remark'])?sec('Tags · surcharges · remark',`${tags?`<div style="margin-bottom:6px">${tags}</div>`:''}${sur?`<div style="margin-bottom:6px">${sur}</div>`:''}${o['Remark']?`<div style="white-space:pre-wrap;font-size:12.5px;color:#475569">${_noEsc(o['Remark'])}</div>`:''}`):''}`;
+}
 function noDispatchRows(){
   const out=[];
   NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
