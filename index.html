@@ -3297,6 +3297,7 @@ function loadSOC(){
 // ── PAGE NAV ──────────────────────────────────────────────────────
 function showPage(p){
   _currentPage = p;
+  try{ localStorage.setItem('owenz_last_page',p); }catch(e){}
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.remove('active'));
@@ -12820,9 +12821,9 @@ function renderOrders(){
     const atHubDateOnchange=cn?`noSetCtn(${o._id},'${ce}','At Hub Date',this.value.trim())`:`noSet(${o._id},'At Hub Date',this.value.trim())`;
     // 精简只读行：所有可录入的字段都搬到右侧详情抽屉里（点这一行打开）
     const _done=_wbDelivered(o,cn);
-    const _tags=_noStListFor(o,cn).map(sv=>`<span style="display:inline-block;padding:1px 7px;font-size:10.5px;font-weight:700;border-radius:10px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'};margin-right:3px">${_noEsc(sv)}</span>`).join('');
+    const _tags=_noStListFor(o,cn).map(sv=>`<span style="display:block;width:max-content;margin:1px auto;padding:0 6px;line-height:15px;font-size:9.5px;font-weight:700;border-radius:8px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'}">${_noEsc(sv)}</span>`).join('');
     const _dem=_noDemurrageDays(o,cn);
-    const _svcHtml=_noSvcListFor(o,cn).map(sv=>`<span style="display:inline-block;padding:1px 8px;font-size:10.5px;font-weight:800;border-radius:10px;background:#5b21b6;color:#fff;margin:1px 3px 1px 0">${_noEsc(sv)}</span>`).join('');
+    const _svcHtml=_noSvcListFor(o,cn).map(sv=>`<span style="display:block;width:max-content;margin:1px auto;padding:0 6px;font-size:9.5px;line-height:15px;font-weight:800;border-radius:8px;background:#5b21b6;color:#fff">${_noEsc(sv)}</span>`).join('');
     const _statusHtml=''
       +(st&&st.exceeded?`<span title="Free storage exceeded by ${st.byDays}d" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⚠ storage ${st.byDays}d</span>`:'')
       +(_dem?`<span title="ATA ${_dem}d after Delivery Date" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⏱ ${_dem}d</span>`:'')+_tags;
@@ -12830,7 +12831,7 @@ function renderOrders(){
     const _tx='padding:8px 10px;white-space:nowrap';
     return `<tr class="${noOrderClass}" data-no-order="${o._id}" onclick="wbRowClick(event,'no',${o._id})" style="${groupBorder}cursor:pointer">
       <td class="fc-1" style="${_tx};font-weight:700;color:#334155">${isFirst?_noEsc(o['Project']||''):''}</td>
-      <td class="fc-2" style="${_tx};white-space:normal">${_svcHtml}${_statusHtml}</td>
+      <td class="fc-2 no-st-cell" style="${_tx};white-space:normal;padding-top:3px;padding-bottom:3px">${_svcHtml}${_statusHtml}</td>
       <td class="fc-3" style="${_tx};font-weight:700;color:var(--navy)">${isFirst?_noEsc(o['Order No.']||''):''}</td>
       <td class="fc-4" style="${_tx};font-family:monospace;font-weight:600;font-size:12px">${cn?_noEsc(cn):'<span style="color:#cbd5e1;font-style:italic">no B/L yet</span>'}</td>
       <td style="${_tx}">${_noEsc(_noFld(o,cn,'Consignee')||'')}</td>
@@ -13315,6 +13316,17 @@ function _ordersAsCtRows(){
 // ── INITIAL RENDER: dashboard is the default page, render it on load so
 //    vessel panel / KPIs / charts are always current without clicking tabs ──
 try{ renderDashboard(); }catch(e){ console.error('Initial dashboard render failed:', e); }
+// ── Reopen on the page (and scroll position) the user was on before the refresh ──
+try{
+  const _lp=localStorage.getItem('owenz_last_page');
+  if(_lp&&_lp!=='dashboard'&&document.getElementById('page-'+_lp)){
+    showPage(_lp);
+    const _sy=+localStorage.getItem('owenz_last_scroll_'+_lp)||0;
+    if(_sy){ setTimeout(()=>window.scrollTo(0,_sy),250); setTimeout(()=>window.scrollTo(0,_sy),900); }
+  }
+  let _scT=null;
+  window.addEventListener('scroll',()=>{ clearTimeout(_scT); _scT=setTimeout(()=>{ try{ localStorage.setItem('owenz_last_scroll_'+(window._currentPage||_currentPage),String(window.scrollY)); }catch(e){} },200); },{passive:true});
+}catch(e){ console.error('restore last page failed:',e); }
 </script>
 
 <style id="sticky-header-patch">
