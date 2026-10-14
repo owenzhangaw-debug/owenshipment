@@ -12603,31 +12603,35 @@ function renderNoBatchProgress(){
   const groups=NO.map(o=>{
     const cs=_noContainers(o);
     const total=cs.length||1;
-    let arrived=0, t1Count=0, demurCount=0, demurMaxDays=0;
+    let arrived=0, fin=0, t1Count=0, demurCount=0, demurMaxDays=0;
+    const _payOk=v=>/^(requested|paid)$/i.test(String(v||'').trim());
     if(cs.length){
       cs.forEach(cn=>{
         const pc=_noPc(o,cn);
-        if(!!(pc['ATA']||o['ATA'])||!!pc['POD']||_noHasStFor(o,cn,'Delivered')||_noHasStFor(o,cn,'Finished')) arrived++;
+        const _del=!!(pc['ATA']||o['ATA'])||_noHasStFor(o,cn,'Delivered');
+        if(_del||!!pc['POD']||_noHasStFor(o,cn,'Finished')) arrived++;
+        if(_noHasStFor(o,cn,'Finished')||(_del&&_wbFld(o,cn,'POD')&&_payOk(_wbFld(o,cn,'Payment Status')))) fin++;
         if(pc['T1']||o['T1']) t1Count++;
         const dd=_noDemurrageDays(o,cn);
         if(dd){ demurCount++; if(dd>demurMaxDays) demurMaxDays=dd; }
       });
     } else {
       if(!!o['ATA']||!!o['POD']||_noHasSt(o,'Delivered')||_noHasSt(o,'Finished')) arrived=1;
+      if(_noHasSt(o,'Finished')||((o['ATA']||_noHasSt(o,'Delivered'))&&o['POD']&&_payOk(o['Payment Status']))) fin=1;
       const dd=_noDemurrageDays(o,null);
       if(dd){ demurCount=1; demurMaxDays=dd; }
     }
-    return {o,total,arrived,t1Count,demurCount,demurMaxDays};
+    return {o,total,arrived,fin,t1Count,demurCount,demurMaxDays};
   });
   const _moAbbr=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const fmtDt=v=>{ const d=_noParseDate(v); return d?d.getDate()+' '+_moAbbr[d.getMonth()]:''; };
-  const active=groups.filter(g=>g.arrived<g.total).sort((a,b)=>{
+  const active=groups.filter(g=>g.fin<g.total).sort((a,b)=>{
     const da=_noParseDate(_noEffectiveEta(a.o)), db=_noParseDate(_noEffectiveEta(b.o));
     if(da&&db) return da-db;
     if(da) return -1; if(db) return 1;
     return 0;
   });
-  const done=groups.filter(g=>g.arrived===g.total);
+  const done=groups.filter(g=>g.fin===g.total);
   const _curSearch=(document.getElementById('no-search')?.value||'').trim().toLowerCase();
   const _curSearchList=_curSearch?_curSearch.split(/[\s,;、]+/).filter(Boolean):[];
   const renderCard=(g)=>{
@@ -12824,7 +12828,14 @@ function renderOrders(){
     const _tags=_noStListFor(o,cn).map(sv=>`<span style="display:block;width:max-content;margin:1px auto;padding:0 6px;line-height:15px;font-size:9.5px;font-weight:700;border-radius:8px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'}">${_noEsc(sv)}</span>`).join('');
     const _dem=_noDemurrageDays(o,cn);
     const _svcHtml=_noSvcListFor(o,cn).map(sv=>`<span style="display:block;width:max-content;margin:1px auto;padding:0 6px;font-size:9.5px;line-height:15px;font-weight:800;border-radius:8px;background:#5b21b6;color:#fff">${_noEsc(sv)}</span>`).join('');
-    const _statusHtml=''
+    const _isDel=!!(_wbFld(o,cn,'ATA')||(cn?_noHasStFor(o,cn,'Delivered'):_noHasSt(o,'Delivered')));
+    const _alerts=[];
+    if(_isDel){
+      if(!_wbFld(o,cn,'POD')) _alerts.push('POD not ticked');
+      if(!/^(requested|paid)$/i.test(String(_wbFld(o,cn,'Payment Status')||'').trim())) _alerts.push('Payment not requested');
+    }
+    const _alertHtml=_alerts.map(t=>`<span style="display:block;width:max-content;margin:1px auto;padding:0 6px;line-height:15px;font-size:9.5px;font-weight:800;border-radius:8px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca">⚠ ${t}</span>`).join('');
+    const _statusHtml=_alertHtml
       +(st&&st.exceeded?`<span title="Free storage exceeded by ${st.byDays}d" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⚠ storage ${st.byDays}d</span>`:'')
       +(_dem?`<span title="ATA ${_dem}d after Delivery Date" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⏱ ${_dem}d</span>`:'')+_tags;
     const _R=_noReceivable(o,cn), _M=_noMargin(o,cn), _P=_noPayable(o,cn);
