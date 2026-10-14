@@ -2797,7 +2797,7 @@ tbody tr:hover{background:#fafbfc}
 <datalist id="dl-dest"></datalist>
 <datalist id="dl-hub"><option value="Duisburg"></option><option value="Tilburg"></option><option value="Direct"></option></datalist>
 <datalist id="dl-hub-o"></datalist>
-<datalist id="dl-service-o"><option value="LCL"></option><option value="FCL"></option><option value="AIR"></option><option value="CC"></option><option value="T1"></option><option value="DUTIES"></option><option value="SELF CC"></option></datalist>
+<datalist id="dl-service-o"><option value="LCL"></option><option value="FCL"></option><option value="AIR"></option><option value="CC"></option><option value="T1"></option><option value="DUTIES"></option><option value="SELF CC"></option><option value="POA"></option></datalist>
 <datalist id="dl-status-o"><option value="Pending"></option><option value="Delivered"></option><option value="Completed"></option></datalist>
 
 <!-- ══ TEMU 轨迹表生成 ══ -->
@@ -2988,7 +2988,7 @@ tbody tr:hover{background:#fafbfc}
       <div class="form-group"><label>Payment Status</label>
         <select id="nbe_pay"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
       <div class="form-group"><label>Price per Day (€)</label><input type="text" id="nbe_ppd" placeholder="leave blank to skip"/></div>
-      <div class="form-group"><label>Add Service Tag</label><input type="text" id="nbe_svc" list="dl-service-o" placeholder="LCL / FCL / AIR / CC / T1 / DUTIES / SELF CC"/></div>
+      <div class="form-group"><label>Add Service Tag</label><input type="text" id="nbe_svc" list="dl-service-o" placeholder="LCL / FCL / AIR / CC / T1 / DUTIES / SELF CC / POA"/></div>
       <div class="form-group"><label>Add Status Tag</label><input type="text" id="nbe_status" placeholder="e.g. Booked"/></div>
       <div class="form-group full"><label>Remark (overwrites)</label><input type="text" id="nbe_remark" placeholder="leave blank to skip"/></div>
     </div>
@@ -12297,7 +12297,7 @@ function _noHasStFor(o,cn,s){ return _noStListFor(o,cn).some(x=>x.toLowerCase()=
 // Toggling from a container row writes to that container only. The effective
 // list is resolved first, so removing an inherited tag detaches just this
 // container instead of stripping the tag from its siblings.
-const NO_SERVICES=['LCL','FCL','AIR','CC','T1','DUTIES','SELF CC'];
+const NO_SERVICES=['LCL','FCL','AIR','CC','T1','DUTIES','SELF CC','POA'];
 // Only the fixed service tags are allowed (existing odd tags can still be removed by clicking ✕)
 function _noSvcNorm(id,svc,cn){
   svc=(svc||'').trim(); if(!svc) return '';
