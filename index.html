@@ -2378,9 +2378,10 @@ tbody tr:hover{background:#fafbfc}
     <table class="sur-tbl" id="no-table" style="width:100%;min-width:900px">
       <thead><tr>
         <th class="fc-1" style="min-width:110px" title="Project — the order numbers below belong to it">Project</th>
-        <th class="fc-2">Order No.</th>
-        <th class="fc-3">B/L No.</th>
-        <th class="fc-4">Consignee</th>
+        <th class="fc-2" style="min-width:170px" title="What we need to do (Service) + status">Status</th>
+        <th class="fc-3">Order No.</th>
+        <th class="fc-4">B/L No.</th>
+        <th>Consignee</th>
         <th>Destination</th>
         <th>Trucker</th>
         <th>Hub</th>
@@ -2390,7 +2391,6 @@ tbody tr:hover{background:#fafbfc}
         <th style="text-align:right;min-width:92px" title="Receivable (from Charges in the detail drawer)">Receivable</th>
         <th style="text-align:right;min-width:92px" title="Payable (from Charges in the detail drawer)">Payable</th>
         <th style="text-align:right;min-width:88px" title="Receivable − Payable">Margin</th>
-        <th style="min-width:160px">Status</th>
         <th class="no-sort" style="width:32px;text-align:center"><input type="checkbox" id="no-sel-all" onchange="noSelAllVisible(this.checked)" title="Select all visible"/></th>
         <th style="width:32px"></th>
       </tr></thead>
@@ -12822,6 +12822,7 @@ function renderOrders(){
     const _done=_wbDelivered(o,cn);
     const _tags=_noStListFor(o,cn).map(sv=>`<span style="display:inline-block;padding:1px 7px;font-size:10.5px;font-weight:700;border-radius:10px;${NO_ST_STYLE[sv]||'background:#be123c;color:#fff'};margin-right:3px">${_noEsc(sv)}</span>`).join('');
     const _dem=_noDemurrageDays(o,cn);
+    const _svcHtml=_noSvcListFor(o,cn).map(sv=>`<span style="display:inline-block;padding:1px 8px;font-size:10.5px;font-weight:800;border-radius:10px;background:#5b21b6;color:#fff;margin:1px 3px 1px 0">${_noEsc(sv)}</span>`).join('');
     const _statusHtml=''
       +(st&&st.exceeded?`<span title="Free storage exceeded by ${st.byDays}d" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⚠ storage ${st.byDays}d</span>`:'')
       +(_dem?`<span title="ATA ${_dem}d after Delivery Date" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⏱ ${_dem}d</span>`:'')+_tags;
@@ -12829,9 +12830,10 @@ function renderOrders(){
     const _tx='padding:8px 10px;white-space:nowrap';
     return `<tr class="${noOrderClass}" data-no-order="${o._id}" onclick="wbRowClick(event,'no',${o._id})" style="${groupBorder}cursor:pointer">
       <td class="fc-1" style="${_tx};font-weight:700;color:#334155">${isFirst?_noEsc(o['Project']||''):''}</td>
-      <td class="fc-2" style="${_tx};font-weight:700;color:var(--navy)">${isFirst?_noEsc(o['Order No.']||''):''}</td>
-      <td class="fc-3" style="${_tx};font-family:monospace;font-weight:600;font-size:12px">${cn?_noEsc(cn):'<span style="color:#cbd5e1;font-style:italic">no B/L yet</span>'}</td>
-      <td class="fc-4" style="${_tx}">${_noEsc(_noFld(o,cn,'Consignee')||'')}</td>
+      <td class="fc-2" style="${_tx};white-space:normal">${_svcHtml}${_statusHtml}</td>
+      <td class="fc-3" style="${_tx};font-weight:700;color:var(--navy)">${isFirst?_noEsc(o['Order No.']||''):''}</td>
+      <td class="fc-4" style="${_tx};font-family:monospace;font-weight:600;font-size:12px">${cn?_noEsc(cn):'<span style="color:#cbd5e1;font-style:italic">no B/L yet</span>'}</td>
+      <td style="${_tx}">${_noEsc(_noFld(o,cn,'Consignee')||'')}</td>
       <td style="${_tx}">${_noEsc(_noFld(o,cn,'Destination')||'')}</td>
       <td style="${_tx}">${_noEsc(_noFld(o,cn,'Trucker')||'')}</td>
       <td style="${_tx}">${_noEsc(_noCtnHub(o,cn)||'')}</td>
@@ -12841,7 +12843,6 @@ function renderOrders(){
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:#0369a1">${_R?_noEur(_R):''}</span></td>
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:#b45309">${_P?_noEur(_P):''}</span></td>
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:${_M<0?'#dc2626':'#0f766e'}">${_R||_M?_noEur(_M):''}</span></td>
-      <td style="${_tx}">${_statusHtml}</td>
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
       <td style="text-align:center" onclick="event.stopPropagation()">${cn?`<button type="button" onclick="noDelCtn(${o._id},'${ce}')" title="Delete this B/L row" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`}</td>
     </tr>`;
