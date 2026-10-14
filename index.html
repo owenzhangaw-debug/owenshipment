@@ -2797,7 +2797,7 @@ tbody tr:hover{background:#fafbfc}
 <datalist id="dl-dest"></datalist>
 <datalist id="dl-hub"><option value="Duisburg"></option><option value="Tilburg"></option><option value="Direct"></option></datalist>
 <datalist id="dl-hub-o"></datalist>
-<datalist id="dl-service-o"><option value="Customs"></option><option value="Storage"></option><option value="Unloading"></option><option value="Drop-off"></option></datalist>
+<datalist id="dl-service-o"><option value="LCL"></option><option value="FCL"></option><option value="AIR"></option><option value="CC"></option><option value="T1"></option><option value="DUTIES"></option><option value="SELF CC"></option></datalist>
 <datalist id="dl-status-o"><option value="Pending"></option><option value="Delivered"></option><option value="Completed"></option></datalist>
 
 <!-- ══ TEMU 轨迹表生成 ══ -->
@@ -2988,7 +2988,7 @@ tbody tr:hover{background:#fafbfc}
       <div class="form-group"><label>Payment Status</label>
         <select id="nbe_pay"><option value="">— no change —</option><option value="Pending invoice">Pending invoice</option><option value="Requested">Requested</option><option value="Paid">Paid</option></select></div>
       <div class="form-group"><label>Price per Day (€)</label><input type="text" id="nbe_ppd" placeholder="leave blank to skip"/></div>
-      <div class="form-group"><label>Add Service Tag</label><input type="text" id="nbe_svc" placeholder="e.g. FCL Delivery"/></div>
+      <div class="form-group"><label>Add Service Tag</label><input type="text" id="nbe_svc" list="dl-service-o" placeholder="LCL / FCL / AIR / CC / T1 / DUTIES / SELF CC"/></div>
       <div class="form-group"><label>Add Status Tag</label><input type="text" id="nbe_status" placeholder="e.g. Booked"/></div>
       <div class="form-group full"><label>Remark (overwrites)</label><input type="text" id="nbe_remark" placeholder="leave blank to skip"/></div>
     </div>
@@ -12296,8 +12296,19 @@ function _noHasStFor(o,cn,s){ return _noStListFor(o,cn).some(x=>x.toLowerCase()=
 // Toggling from a container row writes to that container only. The effective
 // list is resolved first, so removing an inherited tag detaches just this
 // container instead of stripping the tag from its siblings.
+const NO_SERVICES=['LCL','FCL','AIR','CC','T1','DUTIES','SELF CC'];
+// Only the fixed service tags are allowed (existing odd tags can still be removed by clicking ✕)
+function _noSvcNorm(id,svc,cn){
+  svc=(svc||'').trim(); if(!svc) return '';
+  const hit=NO_SERVICES.find(s=>s.toLowerCase()===svc.toLowerCase());
+  if(hit) return hit;
+  const o=NO.find(r=>r._id===id), cur=o?(cn?_noSvcListFor(o,cn):_noSvcList(o)):[];
+  if(cur.some(s=>s.toLowerCase()===svc.toLowerCase())) return svc;   // removing a legacy tag
+  if(typeof showToast==='function') showToast('Service must be one of: '+NO_SERVICES.join(', '));
+  return '';
+}
 function noToggleServiceCtn(id,cn,svc){
-  svc=(svc||'').trim(); if(!svc) return;
+  svc=_noSvcNorm(id,svc,cn); if(!svc) return;
   if(!cn) return noToggleService(id,svc);
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
   let list=_noSvcListFor(NO[i],cn);
@@ -12324,6 +12335,7 @@ function noToggleStatus(id,st){
   saveNO(); renderOrders();
 }
 function noToggleService(id,svc){
+  svc=_noSvcNorm(id,svc,null); if(!svc) return;
   svc=(svc||'').trim(); if(!svc) return;
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
   let list=_noSvcList(NO[i]);
@@ -12494,7 +12506,7 @@ function openNoBulkEdit(){
 function closeNoBE(){ document.getElementById('no-be-overlay').classList.remove('open'); }
 function applyNoBulkEdit(){
   const g=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
-  const truck=g('nbe_truck'), hub=g('nbe_hub'), ppd=g('nbe_ppd'), svc=g('nbe_svc'), status=g('nbe_status'), remark=g('nbe_remark');
+  const truck=g('nbe_truck'), hub=g('nbe_hub'), ppd=g('nbe_ppd'), svc=(NO_SERVICES.find(s=>s.toLowerCase()===g('nbe_svc').toLowerCase())||''), status=g('nbe_status'), remark=g('nbe_remark');
   const customs=g('nbe_customs'), t1=g('nbe_t1'), pay=g('nbe_pay');
   let count=0;
   NO.forEach(o=>{
