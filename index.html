@@ -11682,7 +11682,7 @@ function updateSelBar(){
   const total=ctSel.size+vtSel.size;
   // Floating bottom bar (kept for vessel selection fallback)
   const bar=document.getElementById('sel-bar');
-  bar.classList.toggle('show', total>0||_currentPage==='containers');
+  bar.classList.toggle('show', total>0);
   document.getElementById('sel-bar-count').textContent=
     (ctSel.size?ctSel.size+' container'+(ctSel.size!==1?'s':''):'')
     +(ctSel.size&&vtSel.size?' + ':'')
