@@ -9008,7 +9008,7 @@ function _bulkClassify(tok){
   const t=(tok||'').trim();
   if(!t) return null;
   if(_BULK_CTN.test(t.toUpperCase())) return {type:'cn',v:t.toUpperCase()};
-  if(_BULK_DATE.test(t)) return {type:'slot',v:t};
+  if(_BULK_DATE.test(t)) return {type:'slot',v:t,time:/\d{1,2}:\d{2}/.test(t)};
   if(t.length>=6 && /\d/.test(t) && !/\s/.test(t)) return {type:'bl',v:t};
   return null;                       // 表头、中文、公司名等一律忽略
 }
@@ -9017,30 +9017,49 @@ function parseBulkPairs(){
   const order=[];                    // 保持柜子出现的先后顺序
   const map=new Map();               // 柜号 -> {cn, bls:[], slot}
   let lastCn=null;
+  const _known=k=>new Map([...new Set(CT.map(r=>(r[k]||'').trim()).filter(Boolean))].map(v=>[v.toLowerCase(),v]));
+  const kCon=_known('Consignee'), kTru=_known('Trucker'), kHub=_known('Hub');
+  (typeof NO_HUBS!=='undefined'?NO_HUBS:[]).forEach(x=>{ if(x&&x.name) kHub.set(String(x.name).trim().toLowerCase(),String(x.name).trim()); });
   lines.forEach(line=>{
     if(!line.trim()) return;
     // 制表符/逗号/分号分列；一格里若有多个提单号再按空格拆
     const cells=line.split(/[\t,;]/).flatMap(c=>
       _BULK_DATE.test(c.trim())?[c.trim()]:c.trim().split(/\s+/));
-    let cn=null, slot=null; const bls=[];
+    let cn=null, slot=null, con='', tru='', hub=''; const bls=[], dts=[];
+    line.split(/[\t,;]/).map(c=>c.trim().toLowerCase()).forEach(c=>{
+      if(!c) return;
+      if(kCon.has(c)) con=kCon.get(c); else if(kTru.has(c)) tru=kTru.get(c); else if(kHub.has(c)) hub=kHub.get(c);
+    });
     cells.forEach(c=>{
       const k=_bulkClassify(c); if(!k) return;
       if(k.type==='cn'&&!cn) cn=k.v;
-      else if(k.type==='slot'&&!slot) slot=k.v;
+      else if(k.type==='slot') dts.push(k);
       else if(k.type==='bl') bls.push(k.v);
       else if(k.type==='cn') bls.push(k.v);   // 同行第二个柜号当提单号处理不合理，忽略
     });
+    // Dates: one lone date = slot (old behaviour). With several, a date WITH a time is the slot,
+    // the rest are, in order, ETA in Mala / ETA at Hub / T1 Date.
+    let etaMala='', etaHub='', t1='';
+    if(dts.length===1) slot=dts[0].v;
+    else if(dts.length>1){
+      const tm=dts.find(d=>d.time); if(tm) slot=tm.v;
+      const rest=dts.filter(d=>!d.time).map(d=>d.v);
+      [etaMala,etaHub,t1]=[rest[0]||'',rest[1]||'',rest[2]||''];
+      if(!tm&&rest.length) { /* no time anywhere → no slot */ }
+    }
     if(!cn) cn=lastCn;               // 合并单元格留下的空柜号
     if(!cn) return;                  // 还没出现过柜号，跳过（多半是表头）
     lastCn=cn;
-    if(!map.has(cn)){ map.set(cn,{cn,bls:[],slot:''}); order.push(cn); }
+    if(!map.has(cn)){ map.set(cn,{cn,bls:[],slot:'',etaMala:'',etaHub:'',t1:'',con:'',tru:'',hub:''}); order.push(cn); }
     const e=map.get(cn);
+    if(etaMala&&!e.etaMala) e.etaMala=etaMala; if(etaHub&&!e.etaHub) e.etaHub=etaHub; if(t1&&!e.t1) e.t1=t1;
+    if(con&&!e.con) e.con=con; if(tru&&!e.tru) e.tru=tru; if(hub&&!e.hub) e.hub=hub;
     bls.forEach(b=>{ if(!e.bls.includes(b)) e.bls.push(b); });
     if(slot&&!e.slot) e.slot=slot;
   });
   return order.map(cn=>{
     const e=map.get(cn);
-    return {cn:e.cn, bl:e.bls.join(' '), slot:e.slot, blCount:e.bls.length};
+    return {cn:e.cn, bl:e.bls.join(' '), slot:e.slot, blCount:e.bls.length, etaMala:e.etaMala, etaHub:e.etaHub, t1:e.t1, con:e.con, tru:e.tru, hub:e.hub};
   });
 }
 function bulkPreview(){
@@ -9098,8 +9117,13 @@ function saveBulk(){
   pairs.forEach(p=>{
     const existing=existMapSave[p.cn];
     const rowSlot=p.slot||sharedSlot;
+    // per-row values from the pasted columns win over the shared form fields
+    const rowTyped={...typed};
+    if(p.etaMala) rowTyped['ETA in Mala']=p.etaMala; if(p.etaHub) rowTyped['ETA at Hub']=p.etaHub; if(p.t1) rowTyped['T1 Date']=p.t1;
+    if(p.con) rowTyped['Consignee']=p.con; if(p.tru) rowTyped['Trucker']=p.tru;
     if(existing){
-      Object.entries(typed).forEach(([k,v])=>{ if(v) existing[k]=v; });
+      Object.entries(rowTyped).forEach(([k,v])=>{ if(v) existing[k]=v; });
+      if(p.hub) existing['Hub']=p.hub;
       if(cmrChecked) existing['CMR']='✅';   // unchecked box never clears an existing CMR flag
       if(p.bl) existing['Master B/L']=p.bl;
       if(rowSlot){ existing['Scheduled Slot']=rowSlot; delete existing._slotAuto; }
@@ -9107,7 +9131,7 @@ function saveBulk(){
     } else {
       // Brand-new container: same typed fields, plus sensible fallback defaults
       // (only used here — never forced onto an existing row above).
-      const shared={...typed,
+      const shared={...rowTyped,'Hub':p.hub||'',
         'Destination':typed['Destination']||'Belgium',
         'CMR':cmrChecked?'✅':'','Actual Arrival':'','Pickup Ref':'','Price':'','Price T1':'',
         'Surcharge':'','Surcharge Reason':'','Payment Status':'','T1 Payment Status':'','Broker':'','Remark':''};
