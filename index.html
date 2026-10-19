@@ -1921,16 +1921,6 @@ tbody tr:hover{background:#fafbfc}
 
   <div class="tbl-card">
     <!-- Inline selection bar — appears inside the card when rows are ticked -->
-    <div id="ct-inline-sel-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#004D4C;color:#fff;border-radius:8px 8px 0 0;padding:9px 16px;font-size:13px;font-weight:600">
-      <span id="ct-inline-sel-count">0 selected</span>
-      <button onclick="openBulk()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Paste containers / B/L / slots / dates from Excel — adds new or updates existing">⊞ Bulk Add</button>
-      <button onclick="autoGenerateSlots()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Auto-generate Scheduled Slots by batch">⚡ Auto Slots</button>
-      <button onclick="openBulkPickup()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Bulk update Pickup Refs from Excel data">Bulk Pickup Ref</button>
-      <button onclick="openBulkEdit()" style="background:#fff;color:#004D4C;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
-      <button onclick="openTemuGen()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Generate the TEMU first-mile tracking sheet from the selected containers">TEMU Tracking</button>
-      <button onclick="openTemuMail()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Agent emails, documents and slot emails for the selected TEMU containers">TEMU Email</button>
-      <button onclick="clearAllSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
-    </div>
     <div class="tbl-top">
       <h3>Container List</h3><span id="ct-count"></span><span id="ct-filter-notice" class="flt-notice"></span>
       
@@ -3326,6 +3316,7 @@ function loadSOC(){
 function showPage(p){
   _currentPage = p;
   try{ localStorage.setItem('owenz_last_page',p); }catch(e){}
+  try{ if(typeof updateSelBar==='function'&&document.getElementById('sel-bar')) updateSelBar(); }catch(e){}
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.remove('active'));
@@ -11691,11 +11682,12 @@ function updateSelBar(){
   const total=ctSel.size+vtSel.size;
   // Floating bottom bar (kept for vessel selection fallback)
   const bar=document.getElementById('sel-bar');
-  bar.classList.toggle('show', total>0);
+  bar.classList.toggle('show', total>0||_currentPage==='containers');
   document.getElementById('sel-bar-count').textContent=
     (ctSel.size?ctSel.size+' container'+(ctSel.size!==1?'s':''):'')
     +(ctSel.size&&vtSel.size?' + ':'')
-    +(vtSel.size?vtSel.size+' vessel'+(vtSel.size!==1?'s':''):'');
+    +(vtSel.size?vtSel.size+' vessel'+(vtSel.size!==1?'s':''):'')
+    ||'0 containers';
   // Inline action bar inside the table card — always visible when rows are ticked
   const inlineBar=document.getElementById('ct-inline-sel-bar');
   if(inlineBar){
