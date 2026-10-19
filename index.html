@@ -1921,23 +1921,19 @@ tbody tr:hover{background:#fafbfc}
 
   <div class="tbl-card">
     <!-- Inline selection bar — appears inside the card when rows are ticked -->
-    <div id="ct-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px 8px 0 0;padding:9px 16px;font-size:13px;font-weight:600">
+    <div id="ct-inline-sel-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#004D4C;color:#fff;border-radius:8px 8px 0 0;padding:9px 16px;font-size:13px;font-weight:600">
       <span id="ct-inline-sel-count">0 selected</span>
+      <button onclick="openBulk()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Paste containers / B/L / slots / dates from Excel — adds new or updates existing">⊞ Bulk Add</button>
+      <button onclick="autoGenerateSlots()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Auto-generate Scheduled Slots by batch">⚡ Auto Slots</button>
+      <button onclick="openBulkPickup()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Bulk update Pickup Refs from Excel data">Bulk Pickup Ref</button>
       <button onclick="openBulkEdit()" style="background:#fff;color:#004D4C;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
       <button onclick="openTemuGen()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Generate the TEMU first-mile tracking sheet from the selected containers">TEMU Tracking</button>
-      <button onclick="openTemuMail()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Generate agent emails for the selected TEMU containers">TEMU Email</button>
+      <button onclick="openTemuMail()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer" title="Agent emails, documents and slot emails for the selected TEMU containers">TEMU Email</button>
       <button onclick="clearAllSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
     </div>
     <div class="tbl-top">
       <h3>Container List</h3><span id="ct-count"></span><span id="ct-filter-notice" class="flt-notice"></span>
-      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-<button onclick="openBulk()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Paste containers / B/L / dates from Excel — add new or update existing">⊞ Bulk Add</button>
-        <button onclick="autoGenerateSlots()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Auto-generate Scheduled Slots by batch">⚡ Auto Slots</button>
-<button onclick="openBulkPickup()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Bulk update Pickup Refs from Excel data">Bulk Pickup Ref</button>
-        <button onclick="openTemuGen()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Generate the TEMU first-mile tracking sheet — one row per Master B/L">TEMU Tracking</button>
-        <button onclick="openTemuMail()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Generate agent emails for the selected TEMU containers">TEMU Email</button>
-        <button onclick="openSlotPaste()" style="padding:4px 12px;font-size:11px;font-weight:600;background:#fff;color:#475569;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer" title="Paste warehouse slot confirmations to update Scheduled Slot + Master B/L">Paste Slots</button>
-      </div>
+      
     </div>
     <div class="tbl-scroll">
       <table id="ct-table">
@@ -2931,6 +2927,9 @@ tbody tr:hover{background:#fafbfc}
 <div class="sel-bar" id="sel-bar">
   <span>Selected: </span>
   <span class="sel-bar-count" id="sel-bar-count">0</span>
+  <button class="btn-be" onclick="openBulk()">⊞ Bulk Add</button>
+  <button class="btn-be" onclick="autoGenerateSlots()">⚡ Auto Slots</button>
+  <button class="btn-be" onclick="openBulkPickup()">Bulk Pickup Ref</button>
   <button class="btn-be" onclick="openBulkEdit()">✏️ Bulk Edit</button>
   <button class="btn-be" onclick="openTemuGen()" title="Generate the TEMU first-mile tracking sheet from the selected containers">TEMU Tracking</button>
   <button class="btn-be" onclick="openTemuMail()" title="Generate agent emails for the selected TEMU containers">TEMU Email</button>
@@ -9024,6 +9023,7 @@ function parseBulkPairs(){
   lines.forEach(line=>{
     if(!line.trim()) return;
     // 制表符/逗号/分号分列；一格里若有多个提单号再按空格拆
+    line=line.replace(/(\d{1,4}[\/\-]\d{1,2}[\/\-]\d{1,4})\s+(\d{1,2}:\d{2})/g,'$1T$2');
     const cells=line.split(/[\t,;]/).flatMap(c=>
       _BULK_DATE.test(c.trim())?[c.trim()]:c.trim().split(/\s+/));
     let cn=null, slot=null, con='', tru='', hub=''; const bls=[], dts=[];
@@ -9048,6 +9048,9 @@ function parseBulkPairs(){
       [etaMala,etaHub,t1]=[rest[0]||'',rest[1]||'',rest[2]||''];
       if(!tm&&rest.length) { /* no time anywhere → no slot */ }
     }
+    if(slot){ slot=slot.replace('T',' ');
+      const dm=slot.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(.*)$/);   // DD/MM/YYYY (or MM/DD if day>12 is in 2nd place)
+      if(dm){ let d=+dm[1], mo=+dm[2]; if(mo>12){ const t=d; d=mo; mo=t; } slot=dm[3]+'/'+mo+'/'+d+dm[4]; } }
     if(!cn) cn=lastCn;               // 合并单元格留下的空柜号
     if(!cn) return;                  // 还没出现过柜号，跳过（多半是表头）
     lastCn=cn;
@@ -11696,7 +11699,7 @@ function updateSelBar(){
   // Inline action bar inside the table card — always visible when rows are ticked
   const inlineBar=document.getElementById('ct-inline-sel-bar');
   if(inlineBar){
-    inlineBar.style.display=ctSel.size>0?'flex':'none';
+    inlineBar.style.display='flex';
     const cnt=document.getElementById('ct-inline-sel-count');
     if(cnt) cnt.textContent=ctSel.size+' container'+(ctSel.size!==1?'s':'')+' selected';
   }
