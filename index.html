@@ -12968,12 +12968,13 @@ function _noStorageInfo(o,cn){
   const pc=_noPc(o,cn);
   const freeDays=parseInt(_noCtnFld(o,cn,'Free Storage (Days)'),10);
   if(!freeDays||freeDays<=0) return null;
-  const atHub=_noParseDate(pc['At Hub Date'])||_noParseDate(o['ETA']);
+  // Storage runs from At Hub Date to Pick Up Date (Delivery Date is only the planned arrival at the warehouse).
+  const hubReal=_noParseDate(pc['At Hub Date']||o['At Hub Date']);
+  const pickup=_noParseDate(pc['Pick Up Date']||o['Pick Up Date']);
+  const atHub=hubReal||(pickup?_noParseDate(o['ETA']):null);
   if(!atHub) return null;
   const expiry=new Date(atHub); expiry.setDate(expiry.getDate()+freeDays);
-  const ata=_noParseDate(pc['ATA']);
-  const delivery=_noParseDate(pc['Delivery Date']||o['Delivery Date']);
-  const compareDate=ata||delivery||new Date(); // already delivered → use ATA; else planned delivery; else today (still sitting at hub)
+  const compareDate=pickup||new Date(); // not picked up yet → still sitting at hub, count to today
   const diffDays=Math.round((compareDate-expiry)/86400000);
   return {expiry:_noFmtDate(expiry), exceeded:diffDays>0, byDays:diffDays>0?diffDays:0};
 }
