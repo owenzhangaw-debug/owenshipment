@@ -12974,7 +12974,10 @@ function _noStorageInfo(o,cn){
   const atHub=hubReal||(pickup?_noParseDate(o['ETA']):null);
   if(!atHub) return null;
   const expiry=new Date(atHub); expiry.setDate(expiry.getDate()+freeDays);
-  const compareDate=pickup||new Date(); // not picked up yet → still sitting at hub, count to today
+  // No Pick Up Date: if the box has already arrived (ATA) it can't still be at the hub → stop the clock at the ATA date;
+  // otherwise it is still sitting at the hub, so count to today.
+  const ataD=_noParseDate(pc['ATA']||o['ATA']);
+  const compareDate=pickup||ataD||new Date();
   const diffDays=Math.round((compareDate-expiry)/86400000);
   return {expiry:_noFmtDate(expiry), exceeded:diffDays>0, byDays:diffDays>0?diffDays:0};
 }
