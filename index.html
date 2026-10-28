@@ -2675,6 +2675,7 @@ tbody tr:hover{background:#fafbfc}
       <div class="form-group"><label>ETA at Hub</label><input type="text" id="f_eta"/></div>
       <div class="form-group"><label>T1 Date</label><input type="text" id="f_t1date"/></div>
       <div class="form-group"><label>Scheduled Slot</label><input type="text" id="f_slot" placeholder="YYYY/MM/DD HH:MM"/></div>
+      <div class="form-group"><label>Slot confirmed</label><label style="display:flex;align-items:center;gap:6px;font-weight:600;text-transform:none;letter-spacing:0"><input type="checkbox" id="f_slot_conf" style="width:auto"/> Confirmed</label></div>
       <div class="form-group"><label>Actual Arrival</label><input type="text" id="f_arr"/></div>
       <div class="form-group"><label>Deadline</label><input type="text" id="f_dl"/></div>
       <div class="form-group"><label>Pickup Ref</label><input type="text" id="f_ref"/></div>
@@ -6882,7 +6883,7 @@ function renderCT(){
       : '<span style="color:#ccc">—</span>';
     const _slotBg = _slotBad?'background:#FEF2F2;':slotIsAuto?'background:#FFFBEB;':'';
     const slotC=`<td data-id="${r._id}" data-col="Scheduled Slot" style="${_slotBg}">
-      <div class="cell-view" onclick="startEdit(this)">${slotDisplay}${_slotBad?`<span onclick="event.stopPropagation();applyCorrectSlot(${r._id})" title="Auto-fix to ${_earliestSugg}" style="margin-left:4px;cursor:pointer;font-size:10px;color:#dc2626;background:#FECACA;border-radius:4px;padding:1px 5px;font-weight:700">Fix→${_earliestSugg}</span>`:''}
+      <div class="cell-view" onclick="startEdit(this)">${slotDisplay}<span title="Slot confirmed? (click to toggle)" onclick="event.stopPropagation();ctToggleSlotConf(${r._id})" style="margin-left:6px;cursor:pointer;font-size:13px">${r['Slot Confirmed']?'✅':'☐'}</span>${_slotBad?`<span onclick="event.stopPropagation();applyCorrectSlot(${r._id})" title="Auto-fix to ${_earliestSugg}" style="margin-left:4px;cursor:pointer;font-size:10px;color:#dc2626;background:#FECACA;border-radius:4px;padding:1px 5px;font-weight:700">Fix→${_earliestSugg}</span>`:''}
       </div>
       <div class="cell-edit"><input type="text" data-fptype="datetime" value="${slotV.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Scheduled Slot',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" placeholder="YYYY/MM/DD HH:MM" style="width:150px"/></div>
     </td>`;
@@ -8919,6 +8920,7 @@ function openAdd(){
   // Init flatpickr on modal date fields
   ['f_eta_mala','f_eta','f_t1date','f_arr','f_dl'].forEach(id=>initFP(id,'date'));
   initFP('f_slot','datetime');
+  document.getElementById('f_slot_conf').checked=false;
   document.getElementById('modal-overlay').classList.add('open');
 }
 function openEdit(id){
@@ -8936,6 +8938,7 @@ function openEdit(id){
   document.getElementById('f_eta').value  =r['ETA at Hub']||'';
   document.getElementById('f_t1date').value=r['T1 Date']||'';
   document.getElementById('f_slot').value =r['Scheduled Slot']||'';
+  document.getElementById('f_slot_conf').checked=!!r['Slot Confirmed'];
   document.getElementById('f_arr').value  =r['Actual Arrival']||'';
   document.getElementById('f_dl').value   =r['Deadline']||'';
   document.getElementById('f_ref').value  =r['Pickup Ref']||'';
@@ -8959,7 +8962,7 @@ function saveRow(){
   const u={
     'Container No.':g('f_no'),'Master B/L':g('f_bl'),'Batch / Train':g('f_batch'),
     'Consignee':g('f_con'),'Trucker':g('f_truck'),'Broker':g('f_broker'),'Destination':g('f_dest')||'Belgium','Tracking':g('f_track'),
-    'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'T1 Date':g('f_t1date'),'Scheduled Slot':g('f_slot'),
+    'ETA in Mala':g('f_eta_mala'),'ETA at Hub':g('f_eta'),'T1 Date':g('f_t1date'),'Scheduled Slot':g('f_slot'),'Slot Confirmed':document.getElementById('f_slot_conf').checked,
     'Actual Arrival':g('f_arr'),'Deadline':g('f_dl'),'Pickup Ref':g('f_ref'),'Price':g('f_price'),'Price T1':g('f_price_t1'),
     'Surcharge':g('f_surcharge'),'Surcharge Reason':g('f_surcharge_reason'),'Payment Status':g('f_pay_status'),'T1 Payment Status':g('f_t1_pay_status'),'Remark':g('f_rmk'),
     'CMR':document.getElementById('f_cmr').checked?'✅':'',
@@ -12256,14 +12259,14 @@ function noAdd(){
 }
 function noAddCreate(proj,orderNo){
   const ov=document.getElementById('no-add-overlay'); if(ov) ov.remove();
-  const o={_id:noNextId++,'Order No.':'','Container No.':'','Consignee':'','Destination':'',
+  const o={_id:noNextId++,_addedAt:new Date().toISOString(),'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
     'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'','Customs Office':false,'T1':false,'CC Cleared':false,'POD':false,'Remark':'','Today Status':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
   o['Order No.']=(orderNo||'').trim();
   if(proj){
     const src=NO.find(r=>(r['Project']||'').trim()===proj);
     if(src){
-      const skip=new Set(['_id','Order No.','Container No.','perCtn','ETA','Delivery Date','ATA','Pickup Date','Status','Arrived at Hub','POD','Customs Office','T1','CC Cleared','Payment Status','Today Status','Surcharges','Remark','At Hub Date']);
+      const skip=new Set(['_id','_addedAt','Order No.','Container No.','perCtn','ETA','Delivery Date','ATA','Pickup Date','Status','Arrived at Hub','POD','Customs Office','T1','CC Cleared','Payment Status','Today Status','Surcharges','Remark','At Hub Date']);
       Object.keys(src).forEach(k=>{ if(!skip.has(k)) o[k]=JSON.parse(JSON.stringify(src[k])); });
     }
     o['Project']=proj;
@@ -12294,6 +12297,65 @@ function noRenameCtn(id,oldCn,newCn){
   saveNO(); renderOrders();
 }
 // Add another container row to an existing order
+
+// ── Booking-appointment email (约仓邮件, Orders only) ──
+const LS_RECIP='owenz_no_recip_v1';
+function _noRecipBook(){ try{ return JSON.parse(localStorage.getItem(LS_RECIP)||'{}'); }catch(e){ return {}; } }
+function _noRecipRemember(o){
+  const k=String(o['Consignee']||'').trim().toLowerCase(); if(!k) return;
+  if(!(o['Recipient']||o['Recipient Email']||o['Recipient Phone'])) return;
+  const b=_noRecipBook(); b[k]={name:o['Recipient']||'',email:o['Recipient Email']||'',phone:o['Recipient Phone']||''};
+  try{ localStorage.setItem(LS_RECIP,JSON.stringify(b)); }catch(e){}
+}
+function _noApptMailBuild(o){
+  const book=_noRecipBook()[String(o['Consignee']||'').trim().toLowerCase()]||{};
+  const name=(o['Recipient']||book.name||'').trim(), to=(o['Recipient Email']||book.email||'').trim(), phone=(o['Recipient Phone']||book.phone||'').trim();
+  const cs=_noContainers(o), list=cs.length?cs:[null];
+  const etas=list.map(cn=>({cn,eta:(cn?_wbFld(o,cn,'ETA'):'')||o['ETA']||'',hub:_noCtnHub(o,cn)}));
+  const uniq=[...new Set(etas.map(x=>x.eta).filter(Boolean))];
+  const etaTxt=uniq.length?uniq.join(' / '):'to be confirmed';
+  const ref=o['Order No.']||('#'+o._id);
+  const subject='Delivery appointment request – '+ref+' – ETA '+etaTxt;
+  const lines=etas.map(x=>'  - '+(x.cn||'(container no. to follow)')+'   ETA: '+(x.eta||'TBC'));
+  const body=['Dear '+(name||'Sir/Madam')+',','',
+   'We would like to book a delivery appointment for the following shipment'+(o['Destination']?' to '+o['Destination']:'')+':','',
+   'Order / reference: '+ref]
+   .concat(o['Consignee']?['Consignee: '+o['Consignee']]:[])
+   .concat(['Container(s):'],lines,['',
+   'Could you please let us know:',
+   '1. Your unloading working hours (days and opening times)?',
+   '2. When you are able to receive the goods (earliest date and time slots available)?','',
+   'If there are any special requirements for delivery (appointment reference, documents, etc.), please let us know as well.','',
+   'Thank you in advance and we look forward to your reply.','','Best regards,']).join('\n');
+  return {to,phone,subject,body};
+}
+function noApptMail(id){
+  const o=NO.find(r=>r._id===id); if(!o) return;
+  _noRecipRemember(o);
+  const m=_noApptMailBuild(o);
+  const old=document.getElementById('no-appt-overlay'); if(old) old.remove();
+  const ov=document.createElement('div'); ov.className='overlay open'; ov.id='no-appt-overlay';
+  ov.innerHTML=`<div class="modal" style="width:680px;max-width:96vw"><h2>✉ Booking email — ${_noEsc(o['Order No.']||'')}</h2>
+    <div class="form-group"><label>To</label><input type="text" id="noap-to" value="${_noEsc(m.to)}" placeholder="Fill 'Recipient email' in the order details"/></div>
+    ${m.phone?`<div style="font-size:12px;color:#64748b;margin:6px 0 0">☎ ${_noEsc(m.phone)}</div>`:''}
+    <div class="form-group" style="margin-top:10px"><label>Subject</label><input type="text" id="noap-sub" value="${_noEsc(m.subject)}"/></div>
+    <div class="form-group" style="margin-top:10px"><label>Body (editable)</label><textarea id="noap-body" rows="15" style="font-family:inherit;font-size:13px">${_noEsc(m.body)}</textarea></div>
+    <div class="modal-btns"><button class="mbtn-cancel" onclick="document.getElementById('no-appt-overlay').remove()">Close</button>
+      <button class="mbtn-cancel" onclick="noApptCopy()">📋 Copy</button>
+      <button class="mbtn-save" onclick="noApptOpen()">Open in mail app</button></div></div>`;
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+function noApptCopy(){
+  const t='Subject: '+document.getElementById('noap-sub').value+'\n\n'+document.getElementById('noap-body').value;
+  const done=()=>{ if(typeof showToast==='function') showToast('✓ Email copied'); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done);
+  else { const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){} ta.remove(); }
+}
+function noApptOpen(){
+  const to=document.getElementById('noap-to').value.trim(), s=document.getElementById('noap-sub').value, b=document.getElementById('noap-body').value;
+  window.location.href='mailto:'+to+'?subject='+encodeURIComponent(s)+'&body='+encodeURIComponent(b);
+}
 function noAddCtnPrompt(id){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
   const cn=((typeof prompt==='function'?prompt('New container number:'):'')||'').trim(); if(!cn) return;
@@ -12306,7 +12368,7 @@ function noAddCtnPrompt(id){
 function noToggle(id){ _noOpen.has(id)?_noOpen.delete(id):_noOpen.add(id); renderOrders(); }
 function noSet(id,field,val){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
-  NO[i][field]=val; if(field==='ATA'||field==='POD') _noSyncDeliveredOrder(i);
+  NO[i][field]=val; if(/^Recipient/.test(field)) _noRecipRemember(NO[i]); if(field==='ATA'||field==='POD') _noSyncDeliveredOrder(i);
   saveNO();
   // Re-render so the progress cards (and everything else on this page reading the field) pick up the
   // change immediately — previously this only happened for 'Status', so an order-level edit (e.g. ETA
@@ -12801,7 +12863,8 @@ function renderOrders(){
   // Flatten to one entry per container FIRST (same unit CT's tracker filters on), then filter —
   // so searching a container number narrows down to just that container, not its whole order.
   let flat=[];
-  NO.forEach(o=>{
+  // Order list: by time added (newest first); orders without a timestamp fall back to id order.
+  [...NO].sort((x,y)=>((Date.parse(y._addedAt)||0)-(Date.parse(x._addedAt)||0))||((y._id||0)-(x._id||0))).forEach(o=>{
     const cs=_noContainers(o);
     (cs.length?cs:[null]).forEach(cn=>flat.push({o,cn}));
   });
@@ -12883,7 +12946,10 @@ function renderOrders(){
       if(!/^(requested|paid)$/i.test(String(_wbFld(o,cn,'Payment Status')||'').trim())) _alerts.push('Payment not requested');
     }
     const _alertHtml=_alerts.map(t=>`<span style="display:block;width:max-content;margin:1px auto;padding:0 6px;line-height:15px;font-size:9.5px;font-weight:800;border-radius:8px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca">⚠ ${t}</span>`).join('');
-    const _statusHtml=_alertHtml
+    const _apT=cn?(pc['Appt Time']!==undefined?pc['Appt Time']:(o['Appt Time']||'')):(o['Appt Time']||'');
+    const _apC=cn?(pc['Appt Confirmed']!==undefined?!!pc['Appt Confirmed']:!!o['Appt Confirmed']):!!o['Appt Confirmed'];
+    const _apHtml=_apT?`<span style="display:block;width:max-content;margin:1px auto;padding:0 6px;line-height:15px;font-size:9.5px;font-weight:700;border-radius:8px;background:${_apC?'#dcfce7':'#fef3c7'};color:${_apC?'#15803d':'#92400e'}">约仓 ${_noEsc(_apT)} ${_apC?'✓':'?'}</span>`:'';
+    const _statusHtml=_apHtml+_alertHtml
       +(st&&st.exceeded?`<span title="Free storage exceeded by ${st.byDays}d" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⚠ storage ${st.byDays}d</span>`:'')
       +(_dem?`<span title="ATA ${_dem}d after Delivery Date" style="font-size:10.5px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:10px;padding:1px 7px;margin-right:3px">⏱ ${_dem}d</span>`:'')+_tags;
     const _R=_noReceivable(o,cn), _M=_noMargin(o,cn), _P=_noPayable(o,cn);
@@ -13255,6 +13321,7 @@ function wbDetailNo(id){
       ${miles(cn)}
       ${sec('Shipment',G(4,`${_wbL('Consignee',_wbText(kk('Consignee'),txt('Consignee'),set('Consignee'),{list:'dl-con'}),1)}${_wbL('Destination',_wbText(kk('Destination'),txt('Destination'),set('Destination'),{ph:'country / city'}),1)}${_wbL('Trucker',_wbText(kk('Trucker'),txt('Trucker'),set('Trucker'),{list:'dl-truck'}),1)}${_wbL('Hub',_wbText(kk('Hub'),cn?(pc['Hub']!==undefined?pc['Hub']:(o['Hub']||'')):(o['Hub']||''),set('Hub'),{list:'dl-hub-o',ph:'pick from tariff table'}),1)}`))}
       ${sec('Dates',G(5,`${_wbL('ETA',_wbDate(kk('ETA'),txt('ETA'),set('ETA')),1)}${_wbL('At Hub date',_wbDate(kk('At Hub Date'),cn?(pc['At Hub Date']||''):(o['At Hub Date']||''),set('At Hub Date')),1)}${_wbL('Pick up',_wbDate(kk('Pick Up Date'),txt('Pick Up Date'),set('Pick Up Date')),1)}${_wbL('Delivery',_wbDate(kk('Delivery Date'),dv('Delivery Date'),set('Delivery Date')),1)}${_wbL('ATA',_wbDate(kk('ATA'),dv('ATA'),set('ATA')),1)}`))}
+      ${sec('Warehouse appointment (约仓)',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${_wbL('Appointment time',_wbText(kk('Appt Time'),txt('Appt Time'),set('Appt Time'),{ph:'YYYY/MM/DD HH:MM'}),180)}<div style="padding-bottom:3px">${_wbChk(kk('Appt Confirmed'),'Confirmed',cn?!!pc['Appt Confirmed']:!!o['Appt Confirmed'],set('Appt Confirmed'),'#1d4ed8')}</div></div>`)}
       ${sec('Status',`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
         ${_wbChk(kk('Customs Office'),'Customs office',co,set('Customs Office'),'#0f766e')}${_wbChk(kk('At Hub'),'Ready to be picked',cn?!!pc['At Hub']:!!o['Arrived at Hub'],set('At Hub','Arrived at Hub'),'#b45309')}${_wbChk(kk('Demurrage'),'Demurrage'+(autoD?' ('+autoD+'d late)':''),dem,set('Demurrage'),'#dc2626')}</div>
         ${G(3,`<div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('T1'),'T1',cn?!!pc['T1']:!!o['T1'],set('T1'),'#1d4ed8')}${_wbDate(kk('T1 Date'),txt('T1 Date'),set('T1 Date'))}</div><div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('CC Cleared'),'CC',cn?!!pc['CC Cleared']:!!o['CC Cleared'],set('CC Cleared'),'#0f766e')}${_wbDate(kk('CC Date'),txt('CC Date'),set('CC Date'))}</div><div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('POD'),'POD',cn?!!pc['POD']:!!o['POD'],set('POD'),'#15803d')}${_wbDate(kk('POD Date'),txt('POD Date'),set('POD Date'))}</div>`).replace('gap:10px">','gap:10px;align-items:start">')}
@@ -13275,9 +13342,10 @@ function wbDetailNo(id){
         <tr style="font-weight:800;background:#f8fafc"><td style="padding:5px 8px">Total</td><td style="padding:5px 8px;text-align:right;color:#1d4ed8">${_wbF2(R)}</td><td style="padding:5px 8px;text-align:right;color:#b45309">${_wbF2(P)}</td><td style="padding:5px 8px;text-align:right;color:${mc(M)}">${_wbF2(M)}</td><td style="padding:5px 8px;color:${mc(M)}">${_noMarginPct(o,cn)}%</td><td></td></tr></tbody></table></div></div>`;
   };
   return `<div style="padding:14px 16px;background:#f1f5f9;min-height:100%">
-    ${_wbHead('no',o['Order No.']||'Order #'+o._id,(o['Project']?_wbChip(o['Project'],'#0369a1','#e0f2fe'):''),`<button onclick="noAddCtnPrompt(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #0f766e;color:#0f766e;background:#fff;border-radius:6px;cursor:pointer">+ Add B/L</button><button onclick="if(confirm('Delete entire order?')){noDel(${o._id})}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
+    ${_wbHead('no',o['Order No.']||'Order #'+o._id,(o['Project']?_wbChip(o['Project'],'#0369a1','#e0f2fe'):''),`<button onclick="noApptMail(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #1d4ed8;color:#1d4ed8;background:#fff;border-radius:6px;cursor:pointer">✉ Booking email</button><button onclick="noAddCtnPrompt(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #0f766e;color:#0f766e;background:#fff;border-radius:6px;cursor:pointer">+ Add B/L</button><button onclick="if(confirm('Delete entire order?')){noDel(${o._id})}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${_wbKpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${_wbKpi('Payable',_wbF2(rp.p),'#b45309')}${_wbKpi('Margin',_wbF2(rp.m),rp.m>=0?'#0f766e':'#dc2626')}${_wbKpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#0f766e':'#dc2626')}</div>
     ${_wbSec('Order',`<div style="display:flex;flex-wrap:wrap;gap:10px">${_wbL('Project',_wbText('Project|',o['Project']||'',oset('Project'),{ph:'Project'}))}${_wbL('Order No.',_wbText('Order No.|',o['Order No.']||'',oset('Order No.')))}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">${_wbL('Recipient (收货方)',_wbText('Recipient|',o['Recipient']||'',oset('Recipient'),{ph:'name / company'}))}${_wbL('Recipient email',_wbText('Recipient Email|',o['Recipient Email']||'',oset('Recipient Email'),{ph:'a@x.com, b@x.com'}))}${_wbL('Recipient phone',_wbText('Recipient Phone|',o['Recipient Phone']||'',oset('Recipient Phone'),{ph:'+32 …'}))}</div>
       <div style="margin-top:10px">${_wbL("Today's status",_wbArea('Today Status|',o['Today Status']||'',oset('Today Status')),300)}</div>`)}
     ${list.map(card).join('')}</div>`;
 }
@@ -13294,6 +13362,7 @@ function wbDetailCt(key,jobs){
       ${rows.map(r=>`<tr style="cursor:pointer" onclick="wbPick('ct','c:${r._id}')"><td style="${td};font-weight:700;color:#0369a1">${_noEsc(r['Container No.']||'')}</td><td style="${td};font-family:monospace">${_noEsc(r['Master B/L']||'')}</td><td style="${td}">${_noEsc(r['Consignee']||'')}</td><td style="${td}">${_noEsc(r['Scheduled Slot']||'')}</td><td style="${td}">${_noEsc(r['Actual Arrival']||'')}</td><td style="${td}">${_noEsc(r['Payment Status']||'—')}</td><td style="${td}">${_noEsc(r['T1 Payment Status']||'—')}</td></tr>`).join('')}</tbody></table>`)}</div>`;
 }
 // ── TEMU：单个柜子，全部字段可编辑 ──
+function ctToggleSlotConf(id){ const r=CT.find(x=>x._id===id); if(!r) return; r['Slot Confirmed']=!r['Slot Confirmed']; saveData(); renderCT(); }
 function ctSetField(id,f,v){
   const r=CT.find(x=>x._id===id); if(!r) return;
   r[f]=(typeof v==='string')?v.trim():v;
@@ -13312,7 +13381,7 @@ function wbDetailCtOne(id){
     ${_wbHead('ct',r['Container No.']||'Container',(r['Batch / Train']?_wbChip(r['Batch / Train'],'#0369a1','#e0f2fe'):'')+(arrived?_wbChip('Arrived','#15803d','#dcfce7'):_wbChip('On the way','#92400e','#fef3c7')),`<button onclick="if(confirm('Delete this container?')){CT=CT.filter(x=>x._id!==${id});saveData();renderCT();wbClose('ct')}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
     ${_wbSec('Shipment',`<div style="display:flex;flex-wrap:wrap;gap:10px">${T('Batch / Train',{list:'dl-batch'})}${T('Container No.')}${T('Master B/L')}${T('Consignee',{list:'dl-con'})}${T('Destination',{list:'dl-dest'})}${T('Trucker',{list:'dl-truck'})}${T('Broker',{list:'dl-broker'})}${T('Hub')}</div>`)}
     ${_wbSec('Dates',`<div style="display:flex;flex-wrap:wrap;gap:10px">${D('ETA in Mala')}${D('ETA at Hub')}${D('T1 Date')}${_wbL('Scheduled Slot',_wbText('Scheduled Slot',r['Scheduled Slot']||'',set('Scheduled Slot'),{ph:'YYYY/MM/DD HH:MM'}),150)}${D('Actual Arrival')}${D('Deadline')}</div>`)}
-    ${_wbSec('Status',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${S('Tracking',['','None','T1','Arrived'])}${S('Trk Confirm',['','Applied','Confirmed'])}<div style="padding-bottom:3px">${_wbChk('CMR','CMR received',r['CMR']==='✅',`ctSetField(${id},'CMR',@@?'✅':'')`,'#0f766e')}</div></div>`)}
+    ${_wbSec('Status',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${S('Tracking',['','None','T1','Arrived'])}${S('Trk Confirm',['','Applied','Confirmed'])}<div style="padding-bottom:3px">${_wbChk('Slot Confirmed','Slot confirmed',!!r['Slot Confirmed'],`ctSetField(${id},'Slot Confirmed',@@)`,'#1d4ed8')}</div><div style="padding-bottom:3px">${_wbChk('CMR','CMR received',r['CMR']==='✅',`ctSetField(${id},'CMR',@@?'✅':'')`,'#0f766e')}</div></div>`)}
     ${_wbSec('Costs',`<div style="display:flex;flex-wrap:wrap;gap:10px">${T('Pickup Ref')}${T('Price')}${T('Price T1')}${T('Surcharge')}${T('Surcharge Reason')}${S('Payment Status',pay)}${S('T1 Payment Status',pay)}</div>`)}
     ${_wbSec('Remark',_wbArea('Remark',r['Remark']||'',set('Remark')))}</div>`;
 }
