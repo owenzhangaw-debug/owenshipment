@@ -5488,15 +5488,12 @@ function renderDashOrders(){
     (function(){
       const kpiEl=document.getElementById('no-dash-kpi-row');
       if(!kpiEl) return;
-      let totalContainers=0, totalValue=0, unpaidValue=0, storageExceeded=0, surchargeTotal=0;
+      const _sd={LCL:[0,0],FCL:[0,0]}; let totalContainers=0, arr7=0, etaLate=0, podMiss=0, payMiss=0;
       let leadSum=0, leadCount=0, ageSum=0, ageCount=0;
       const today=new Date();
       _noActive.forEach(o=>{
         const cs=(typeof _noContainers==='function')?_noContainers(o):[];
         const list=cs.length?cs:[null];
-        const orderVal=(typeof _noOrderTotal==='function')?_noOrderTotal(o):0;
-        totalValue+=orderVal;
-        if((o['Payment Status']||'')!=='Paid') unpaidValue+=orderVal;
         const etaD=(typeof _noParseDate==='function')?_noParseDate(o['ETA']):null;
         list.forEach(cn=>{
           totalContainers++;
@@ -5511,12 +5508,18 @@ function renderDashOrders(){
             const d=(today-etaD)/864e5;
             if(d>=0&&d<365){ ageSum+=d; ageCount++; }
           }
-          if(cn&&typeof _noStorageInfo==='function'){
-            const si=_noStorageInfo(o,cn);
-            if(si&&si.exceeded) storageExceeded++;
-          }
-          if(typeof _noSurcharges==='function'){
-            surchargeTotal+=_noSurcharges(o,cn).reduce((s,x)=>s+(parseFloat(x.fee)||0),0);
+          { const _sv=_noSvcList(o).map(s=>s.toUpperCase()); const _k=_sv.includes('LCL')?'LCL':(_sv.includes('FCL')?'FCL':null);
+            const _a=_noParseDate(pc['ATA']||o['ATA']), _dv=_noParseDate((pc['Delivery Date']!==undefined&&pc['Delivery Date']!=='')?pc['Delivery Date']:o['Delivery Date']);
+            if(_k&&_a&&_dv){ const d=(_dv-_a)/864e5; if(d>=0&&d<120){ _sd[_k][0]+=d; _sd[_k][1]++; } } }
+          const _e=(typeof _noParseDate==='function')?_noParseDate((pc['ETA']!==undefined&&pc['ETA']!=='')?pc['ETA']:o['ETA']):null;
+          const _arrived=!!(pc['ATA']||o['ATA']);
+          const _td=new Date(); _td.setHours(0,0,0,0);
+          if(!_arrived&&!delivered&&_e){ const dd=Math.round((_e-_td)/864e5); if(dd>=0&&dd<=7) arr7++; else if(dd<0) etaLate++; }
+          if(delivered){
+            const _pod=(pc['POD']!==undefined)?pc['POD']:o['POD'];
+            if(!_pod) podMiss++;
+            const _ps=o['Payment Status']||'';
+            if(!_ps) payMiss++;
           }
         });
       });
@@ -5527,21 +5530,13 @@ function renderDashOrders(){
         <div class="kpi" style="border-color:#0369a1;cursor:pointer" onclick="showPage('orders')">
           <div class="kl">Orders</div><div class="kv" style="color:#0369a1">${_noActive.length}</div><div class="ks">${totalContainers} container${totalContainers!==1?'s':''}</div>
         </div>
-        <div class="kpi" style="border-color:#0f766e;cursor:pointer" onclick="showPage('orders')">
-          <div class="kl">Total Value</div><div class="kv" style="color:#0f766e">${fmtN(totalValue)}</div><div class="ks">Freight + CC + storage + surcharge</div>
-        </div>
-        <div class="kpi" style="border-color:#b45309;cursor:pointer" onclick="showPage('orders')">
-          <div class="kl">Unpaid</div><div class="kv" style="color:#b45309">${fmtN(unpaidValue)}</div><div class="ks">orders not marked Paid</div>
-        </div>
         <div class="kpi" style="border-color:#7c3aed">
-          <div class="kl">Avg Lead Time</div><div class="kv" style="color:#7c3aed">${avgLead!==null?avgLead+'d':'—'}</div><div class="ks">${avgLead!==null?'ETA → delivered':(avgAge!==null?'avg '+avgAge+'d since ETA, pending':'no data yet')}</div>
+          <div class="kl">LCL · Station → Delivery</div><div class="kv" style="color:#7c3aed">${_sd.LCL[1]?(_sd.LCL[0]/_sd.LCL[1]).toFixed(1)+'d':'—'}</div><div class="ks">avg ATA → delivery · ${_sd.LCL[1]} container${_sd.LCL[1]!==1?'s':''}</div>
         </div>
-        <div class="kpi" style="border-color:#dc2626;cursor:pointer" onclick="showPage('orders')">
-          <div class="kl">Storage Exceeded</div><div class="kv" style="color:#dc2626">${storageExceeded}</div><div class="ks">containers over free days</div>
+        <div class="kpi" style="border-color:#6d28d9">
+          <div class="kl">FCL · Station → Delivery</div><div class="kv" style="color:#6d28d9">${_sd.FCL[1]?(_sd.FCL[0]/_sd.FCL[1]).toFixed(1)+'d':'—'}</div><div class="ks">avg ATA → delivery · ${_sd.FCL[1]} container${_sd.FCL[1]!==1?'s':''}</div>
         </div>
-        <div class="kpi" style="border-color:#c2410c;cursor:pointer" onclick="showPage('orders')">
-          <div class="kl">Total Surcharges</div><div class="kv" style="color:#c2410c">${fmtN(surchargeTotal)}</div><div class="ks">storage, waiting fee, customs, etc.</div>
-        </div>`;
+`;
     })();
 
   // ── 按项目的毛利：应收 − 应付（来自每个订单的 Charges 明细）──
