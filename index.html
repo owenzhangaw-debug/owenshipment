@@ -5508,7 +5508,7 @@ function renderDashOrders(){
             const d=(today-etaD)/864e5;
             if(d>=0&&d<365){ ageSum+=d; ageCount++; }
           }
-          { const _sv=_noSvcList(o).map(s=>s.toUpperCase()); const _k=_sv.includes('LCL')?'LCL':(_sv.includes('FCL')?'FCL':null);
+          { const _sv=_noSvcList(o).map(s=>s.toUpperCase()); const _k=_sv.some(s=>/\bLCL\b/.test(s))?'LCL':(_sv.some(s=>/\bFCL\b/.test(s))?'FCL':null);
             const _a=_noParseDate(pc['At Hub Date']||o['At Hub Date']), _dv=_noParseDate(pc['Pick Up Date']||o['Pick Up Date'])||_noParseDate(pc['ATA']||o['ATA']);
             if(_k&&_a&&_dv){ const d=(_dv-_a)/864e5; if(d>=0&&d<120){ _sd[_k][0]+=d; _sd[_k][1]++; } } }
           const _e=(typeof _noParseDate==='function')?_noParseDate((pc['ETA']!==undefined&&pc['ETA']!=='')?pc['ETA']:o['ETA']):null;
