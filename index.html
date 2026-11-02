@@ -12389,7 +12389,7 @@ function _dpItems(){
       const ac=cn?(_noPc(o,cn)['Appt Confirmed']!==undefined?_noPc(o,cn)['Appt Confirmed']:o['Appt Confirmed']):o['Appt Confirmed'];
       const _g=f=>{ const v=_noFld(o,cn,f); return (v!=null&&v!=='')?v:(o[f]||''); };
       const _hd=_noParseDate(_g('At Hub Date')); const _t0=new Date(); _t0.setHours(0,0,0,0);
-      out.push({src:'Order',svc:_noSvcList(o),d,hubcol:_hd?(_noFmtDate(_hd)+' / '+Math.round((_t0-_hd)/864e5)+'d'):'',time:_dpTime(at)||'',dd:String(_g('Delivery Date')||''),cn:cn||'',ref:o['Order No.']||'',who:_g('Consignee'),dest:_g('Destination'),
+      out.push({src:'Order',svc:_noSvcListFor(o,cn),d,hubcol:_hd?(_noFmtDate(_hd)+' / '+Math.round((_t0-_hd)/864e5)+'d'):'',time:_dpTime(at)||'',dd:String(_g('Delivery Date')||''),cn:cn||'',ref:o['Order No.']||'',who:_g('Consignee'),dest:_g('Destination'),
         trucker:(cn&&_noPc(o,cn)['Trucker'])||o['Trucker']||'',done:!!(_noFld(o,cn,'ATA')||(typeof _noHasSt==='function'&&_noHasSt(o,'Delivered'))),conf:!!ac,note:o['Project']||''});
     });
   });
