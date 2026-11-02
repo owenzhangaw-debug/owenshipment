@@ -13210,6 +13210,15 @@ function _noRenderStorageAlerts(rows){
 //   订单详情里的 Charges / Margin 就是录入费用的地方
 // ══════════════════════════════════════════════════════════
 const _wbS={no:{sel:null,from:null,days:14,open:true},ct:{sel:null,from:null,days:28,open:true},vt:{sel:null,from:null,days:28,open:true}};
+
+function wbResizeStart(e,kind){
+  const el=document.getElementById('wb-'+kind+'-scroll'); if(!el) return;
+  e.preventDefault();
+  const y0=(e.touches?e.touches[0].clientY:e.clientY), h0=el.offsetHeight;
+  const mv=ev=>{ const y=(ev.touches?ev.touches[0].clientY:ev.clientY); el.style.height=Math.max(150,Math.min(window.innerHeight*2,h0+y-y0))+'px'; };
+  const up=()=>{ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); try{ localStorage.setItem('owenz_wb_h_'+kind,el.offsetHeight); }catch(_){} };
+  document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up); document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up);
+}
 const _wbCfg={no:{title:'Trucker Assignments',rowLbl:'TRUCKER'},ct:{title:'Project Assignments',rowLbl:'PROJECT'},vt:{title:'Vessel Schedule',rowLbl:'CARRIER'}};
 const _wbDayMs=864e5;
 const _wbF2=v=>(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -13328,8 +13337,9 @@ function wbRender(kind){
       <span style="margin-left:auto;display:flex;gap:4px"><button style="${btn}" onclick="wbSetRange('${kind}','prev')">◀</button><button style="${btn}" onclick="wbSetRange('${kind}','today')">Today</button><button style="${btn}" onclick="wbSetRange('${kind}','next')">▶</button>
         <button style="${btn}" onclick="wbSetRange('${kind}',7)">1w</button><button style="${btn}" onclick="wbSetRange('${kind}',14)">2w</button><button style="${btn}" onclick="wbSetRange('${kind}',28)">4w</button><button style="${btn}" onclick="wbSetRange('${kind}',42)">6w</button></span>`:''}
     </div>
-    ${S.open?`<div title="Drag the bottom-right corner to resize" style="overflow:auto;resize:vertical;min-height:200px;max-height:92vh;height:${+localStorage.getItem('owenz_wb_h_'+kind)||560}px" onmouseup="try{localStorage.setItem('owenz_wb_h_${kind}',this.offsetHeight)}catch(e){}"><div style="min-width:${150+N*DW}px">
+    ${S.open?`<div id="wb-${kind}-scroll" style="overflow:auto;min-height:150px;height:${+localStorage.getItem('owenz_wb_h_'+kind)||560}px"><div style="min-width:${150+N*DW}px">
       <div style="display:flex;position:sticky;top:0;z-index:4;background:#fff"><div style="width:150px;flex:0 0 150px;padding:6px 10px;font-size:11px;font-weight:800;color:#475569;background:#f1f5f9;position:sticky;left:0;z-index:5;border-right:1px solid #e2e8f0">${cfg.rowLbl}</div>${head}</div>${body}</div></div>
+      <div title="Drag to resize" onmousedown="wbResizeStart(event,'${kind}')" ontouchstart="wbResizeStart(event,'${kind}')" style="height:14px;cursor:ns-resize;background:#e2e8f0;border-top:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center;user-select:none;touch-action:none"><span style="width:44px;height:4px;border-radius:2px;background:#94a3b8"></span></div>
       <div style="display:flex;gap:14px;padding:5px 12px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;flex-wrap:wrap">
         <span><i style="display:inline-block;width:10px;height:10px;background:#0369a1;border-radius:2px"></i> in progress</span><span><i style="display:inline-block;width:10px;height:10px;background:#7c3aed;border-radius:2px"></i> upcoming</span>
         <span><i style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px"></i> done</span><span><i style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px"></i> overdue</span><span style="margin-left:auto">click a bar to inspect</span></div>`:''}
