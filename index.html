@@ -13328,7 +13328,7 @@ function wbRender(kind){
       <span style="margin-left:auto;display:flex;gap:4px"><button style="${btn}" onclick="wbSetRange('${kind}','prev')">◀</button><button style="${btn}" onclick="wbSetRange('${kind}','today')">Today</button><button style="${btn}" onclick="wbSetRange('${kind}','next')">▶</button>
         <button style="${btn}" onclick="wbSetRange('${kind}',7)">1w</button><button style="${btn}" onclick="wbSetRange('${kind}',14)">2w</button><button style="${btn}" onclick="wbSetRange('${kind}',28)">4w</button><button style="${btn}" onclick="wbSetRange('${kind}',42)">6w</button></span>`:''}
     </div>
-    ${S.open?`<div style="overflow:auto;max-height:340px"><div style="min-width:${150+N*DW}px">
+    ${S.open?`<div title="Drag the bottom-right corner to resize" style="overflow:auto;resize:vertical;min-height:200px;max-height:92vh;height:${+localStorage.getItem('owenz_wb_h_'+kind)||560}px" onmouseup="try{localStorage.setItem('owenz_wb_h_${kind}',this.offsetHeight)}catch(e){}"><div style="min-width:${150+N*DW}px">
       <div style="display:flex;position:sticky;top:0;z-index:4;background:#fff"><div style="width:150px;flex:0 0 150px;padding:6px 10px;font-size:11px;font-weight:800;color:#475569;background:#f1f5f9;position:sticky;left:0;z-index:5;border-right:1px solid #e2e8f0">${cfg.rowLbl}</div>${head}</div>${body}</div></div>
       <div style="display:flex;gap:14px;padding:5px 12px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;flex-wrap:wrap">
         <span><i style="display:inline-block;width:10px;height:10px;background:#0369a1;border-radius:2px"></i> in progress</span><span><i style="display:inline-block;width:10px;height:10px;background:#7c3aed;border-radius:2px"></i> upcoming</span>
