@@ -1917,7 +1917,7 @@ tbody tr:hover{background:#fafbfc}
   </div>
 
   <div style="margin:0 0 8px">
-    <input type="text" id="f-search" placeholder="🔍  Search container, B/L, remark… paste multiple with commas" oninput="ctSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+    <input type="text" id="f-search" placeholder="🔍  Search" oninput="ctSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
   </div>
 
   <div class="tbl-card">
@@ -2362,7 +2362,7 @@ tbody tr:hover{background:#fafbfc}
   <div id="wb-no"></div>
   <div class="chart-card" style="padding:14px 16px;margin:0 0 12px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <h3 style="margin:0">📦 Container Orders <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:6px">normal orders — separate from TEMU</span></h3>
+      <h3 style="margin:0">📦 Container Orders</h3>
       <span id="no-count-badge" style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;border-radius:8px;padding:2px 8px"></span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <select id="no-status-filter" onchange="renderOrders()" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px">
@@ -2378,7 +2378,7 @@ tbody tr:hover{background:#fafbfc}
       </div>
     </div>
     <div style="margin-top:10px">
-      <input type="search" id="no-search" placeholder="🔍  Search order no., container, consignee, trucker, hub, remark… — a container number narrows to just that container" oninput="noSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
+      <input type="search" id="no-search" placeholder="🔍  Search" oninput="noSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
     </div>
     <div id="no-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;margin-top:10px">
       <span id="no-inline-sel-count">0 selected</span>
@@ -2520,7 +2520,7 @@ tbody tr:hover{background:#fafbfc}
   </div>
 
   <div style="margin:0 0 8px">
-    <input type="text" id="vt-f-search" placeholder="🔍  Search vessel, booking, port, container no…" oninput="vtSearchSoon(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+    <input type="text" id="vt-f-search" placeholder="🔍  Search" oninput="vtSearchSoon(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
     <span id="vt-search-msg" class="vt-search-msg" style="display:block;margin-top:4px;padding-left:4px"></span>
   </div>
   <div class="tbl-card">
@@ -5889,8 +5889,7 @@ function getCTRowsExcept(excludeId){
       if(to&&d>to) return false;
     }
     if(qTokens.length){
-      const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
-               r['Batch / Train'],r['Pickup Ref'],r['Remark']].join(' ').toLowerCase();
+      const h=Object.keys(r).filter(k=>k!=='_id'&&k[0]!=='_').map(k=>r[k]).filter(v=>v!=null&&v!==''&&v!==false).map(v=>typeof v==='object'?JSON.stringify(v):String(v)).join(' ').toLowerCase();
       if(!qTokens.some(t=>h.includes(t))) return false;
     }
     return true;
@@ -5951,8 +5950,7 @@ function getCTRows(){
       if(to&&d>to) return false;
     }
     if(qTokens.length){
-      const h=[r['Container No.'],r['Master B/L'],r['Consignee'],r['Trucker'],
-               r['Batch / Train'],r['Pickup Ref'],r['Remark']].join(' ').toLowerCase();
+      const h=Object.keys(r).filter(k=>k!=='_id'&&k[0]!=='_').map(k=>r[k]).filter(v=>v!=null&&v!==''&&v!==false).map(v=>typeof v==='object'?JSON.stringify(v):String(v)).join(' ').toLowerCase();
       // Match if ANY token found (supports pasting multiple container/BL numbers)
       if(!qTokens.some(t=>h.includes(t))) return false;
     }
@@ -7929,7 +7927,7 @@ function renderVT(){
       if(to&&d>to) return false;
     }
     if(_vtTokens.length){
-      const haystack=[r['CY'],r['Port'],r['POD'],r['Carrier'],r['Booking / BC No.'],r['Vessel Name'],r['Order No.'],r['Remark'],...(Array.isArray(r.containers)?r.containers:[])].filter(Boolean).join(' ').toLowerCase();
+      const haystack=Object.keys(r).filter(k=>k!=='_id'&&k[0]!=='_').map(k=>r[k]).filter(v=>v!=null&&v!==''&&v!==false).map(v=>typeof v==='object'?JSON.stringify(v):String(v)).join(' ').toLowerCase();
       if(!_vtTokens.every(t=>haystack.includes(t))) return false;
     }
     return true;
@@ -12950,8 +12948,12 @@ function renderOrders(){
   if(filt) flat=flat.filter(({o})=>_noHasSt(o,filt));
   if(qTokens.length){
     flat=flat.filter(({o,cn})=>{
-      const h=[cn||'',o['Order No.'],o['Consignee'],o['Destination'],o['Hub'],o['Trucker'],
-               o['Service Type'],o['Status'],o['Payment Status'],o['Remark']].join(' ').toLowerCase();
+      // search every field of the order, plus this container's own overrides (not the other containers' numbers)
+      const _pc=cn?_noPc(o,cn):{};
+      const _vals=[cn||''];
+      Object.keys(o).forEach(k=>{ if(k==='_id'||k==='_addedAt'||k==='perCtn'||k==='Container No.') return; const v=o[k]; if(v==null||v===''||v===false) return; _vals.push(typeof v==='object'?JSON.stringify(v):String(v)); });
+      Object.keys(_pc).forEach(k=>{ const v=_pc[k]; if(v==null||v===''||v===false) return; _vals.push(typeof v==='object'?JSON.stringify(v):String(v)); });
+      const h=_vals.join(' ').toLowerCase();
       return qTokens.some(t=>h.includes(t));
     });
   }
