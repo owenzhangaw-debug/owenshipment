@@ -12264,20 +12264,31 @@ function noAdd(){
       ${fld('con','Consignee','','dl-con')}${fld('dest','Destination','Belgium','dl-dest')}
       ${fld('truck','Trucker','','dl-truck')}${fld('hub','Hub','','dl-hub-o')}
       ${fld('svc','Service (comma separated)','FCL, T1','dl-service-o')}${fld('eta','ETA','YYYY/MM/DD')}
-      ${fld('price','Price','')}${fld('free','Free days','')}
+      ${fld('free','Free days','')}<div></div>
       ${fld('rcp','Recipient / company','')}${fld('mail','Recipient email (several allowed)','a@x.com, b@x.com')}
     </div>
+    <div style="margin-top:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><label style="margin:0;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#64748b">Charges (per B/L)</label><button type="button" onclick="noaChAdd()" style="margin-left:auto;padding:3px 12px;font-size:12px;font-weight:700;border:1px solid #0f766e;color:#0f766e;background:#fff;border-radius:6px;cursor:pointer">+ Add item</button></div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 28px;gap:6px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;padding:0 2px"><span>Item</span><span>Receivable</span><span>Payable</span><span></span></div>
+      <div id="noa-ch"></div></div>
     <div style="font-size:11.5px;color:#64748b;margin-top:8px">Everything you fill in here applies to all the B/Ls listed above; edit any single B/L afterwards in the order details.</div>
     <div class="modal-btns"><button class="mbtn-cancel" onclick="document.getElementById('no-add-overlay').remove()">Cancel</button>
     <button class="mbtn-save" onclick="noAddSubmit()">Create</button></div></div>`;
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
-  document.getElementById('noa-proj').focus();
+  noaChAdd('Freight'); document.getElementById('noa-proj').focus();
+}
+function noaChAdd(item){
+  const box=document.getElementById('noa-ch'); if(!box) return;
+  const r=document.createElement('div'); r.className='noa-chrow'; r.style.cssText='display:grid;grid-template-columns:1.4fr 1fr 1fr 28px;gap:6px;margin-top:4px';
+  const st='padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:100%;box-sizing:border-box';
+  r.innerHTML=`<select style="${st}">${NO_CHARGE_ITEMS.map(v=>`<option ${v===item?'selected':''}>${v}</option>`).join('')}</select><input type="text" inputmode="decimal" placeholder="0.00" style="${st};text-align:right"><input type="text" inputmode="decimal" placeholder="0.00" style="${st};text-align:right"><button type="button" onclick="this.parentNode.remove()" style="border:none;background:none;color:#dc2626;cursor:pointer;font-size:16px">✕</button>`;
+  box.appendChild(r);
 }
 function noAddSubmit(){
   const g=id=>(document.getElementById('noa-'+id)||{}).value||'';
   const svc=g('svc').split(/[,;+]/).map(s=>s.trim()).filter(Boolean).map(s=>NO_SERVICES.find(x=>x.toLowerCase()===s.toLowerCase())||s.toUpperCase());
-  noAddCreate(g('proj').trim(),g('no'),g('cn'),{'Consignee':g('con'),'Destination':g('dest'),'Trucker':g('truck'),'Hub':g('hub'),'Service Type':svc.join(', '),'ETA':g('eta'),'Price':g('price'),'Free Storage (Days)':g('free'),'Recipient':g('rcp'),'Recipient Email':g('mail')});
+  const charges=[...document.querySelectorAll('#noa-ch .noa-chrow')].map(r=>{ const c=r.children; return {item:c[0].value,r:_noN(c[1].value),p:_noN(c[2].value),note:''}; }).filter(x=>x.r||x.p);
+  noAddCreate(g('proj').trim(),g('no'),g('cn'),{'Consignee':g('con'),'Destination':g('dest'),'Trucker':g('truck'),'Hub':g('hub'),'Service Type':svc.join(', '),'ETA':g('eta'),'Free Storage (Days)':g('free'),'Recipient':g('rcp'),'Recipient Email':g('mail'),'Charges':charges.length?charges:''});
 }
 function noAddCreate(proj,orderNo,ctns,vals){
   const ov=document.getElementById('no-add-overlay'); if(ov) ov.remove();
@@ -12294,7 +12305,7 @@ function noAddCreate(proj,orderNo,ctns,vals){
     }
     o['Project']=proj;
   }
-  Object.entries(vals||{}).forEach(([k,v])=>{ if(String(v||'').trim()) o[k]=String(v).trim(); });
+  Object.entries(vals||{}).forEach(([k,v])=>{ if(Array.isArray(v)){ if(v.length) o[k]=v; } else if(String(v||'').trim()) o[k]=String(v).trim(); });
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
