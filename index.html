@@ -13020,6 +13020,7 @@ function renderOrders(){
     const _svcHtml=_noSvcListFor(o,cn).map(sv=>`<span style="display:block;width:max-content;margin:1px auto;padding:0 6px;font-size:9.5px;line-height:15px;font-weight:800;border-radius:8px;background:#5b21b6;color:#fff">${_noEsc(sv)}</span>`).join('');
     const _isDel=!!(_wbFld(o,cn,'ATA')||(cn?_noHasStFor(o,cn,'Delivered'):_noHasSt(o,'Delivered')));
     const _alerts=[];
+    { const _dm=_noDocsDue(o,cn); if(_dm.length) _alerts.push('Docs missing: '+_dm.map(x=>x[1]).join(', ')); }
     if(_isDel){
       if(!_wbFld(o,cn,'POD')) _alerts.push('POD not ticked');
       if(!/^(requested|paid)$/i.test(String(_wbFld(o,cn,'Payment Status')||'').trim())) _alerts.push('Payment not requested');
@@ -13200,6 +13201,14 @@ function _noNextEta(o){ // earliest ETA among containers that have not arrived y
 // Docs: each item is '' (not received) / 'yes' (provided ✓) / 'na' (not needed ✕). Only blank items are chased.
 const NO_DOCS=[['Doc BL','B/L'],['Doc Invoice','Invoice'],['Doc POA','POA'],['Doc PickupInst','Pick up instruction'],['Doc Storage','Storage standard']];
 function _noDocsNeeded(o){ return NO_DOCS.filter(([f])=>!o[f]); } // = items still not received
+// Docs still missing for this container's order when ETA is within 7 days (shown in the order row / details, not in the reminder panel)
+function _noDocsDue(o,cn){
+  if(cn===undefined) cn=null;
+  if(cn&&(_wbDelivered(o,cn)||_wbFld(o,cn,'Delivery Date'))) return [];
+  if(!cn&&!_noActiveCtns(o).length) return [];
+  const d=_noParseDate(_wbFld(o,cn,'ETA')); if(!d) return [];
+  return Math.round((d-_noToday())/864e5)<=7?_noDocsNeeded(o):[];
+}
 function noDocCycle(id,f){ const o=NO.find(r=>r._id===id); if(!o) return; const v=o[f]||''; noSet(id,f,v===''?'yes':v==='yes'?'na':''); }
 function noDocSet(id,f,v){ noSet(id,f,v); }
 let _noRemAck=new Set(); try{ _noRemAck=new Set(JSON.parse(localStorage.getItem('owenz_no_rem_ack')||'[]')); }catch(e){}
@@ -13212,8 +13221,6 @@ function _noRemItems(){
     const e=_noNextEta(o); if(!e) return;
     const days=Math.round((e.d-today)/864e5), etaTxt='ETA '+e.v+(days<0?' ('+(-days)+'d ago)':days===0?' (today)':' (in '+days+'d)');
     // 2) docs chase: ≤7 days reminder, ≤3 days urgent
-    const miss=_noDocsNeeded(o);
-    if(miss.length&&days<=7) add(days<=3?'red':'amber','docs',(days<=3?'🚨 URGENT — ':'')+'Docs not complete ('+miss.map(m=>m[1]).join(', ')+'): '+etaTxt,{boxes:miss,push:days<=3,sig:days<=3?'u':'w',ord:days<=3?1:3});
     // contact consignee: once an email is on file and nobody has been contacted yet
     if(!o['Consignee Contacted']&&(String(o['Recipient Email']||'').trim()||(_noRecipBook()[String(o['Consignee']||'').trim().toLowerCase()]||{}).email)) add('amber','contact','Contact consignee: ask clearance location (office + code) and unloading hours',{mail:true,ord:3,sig:'c'});
     // short free days (taken from the container's own Free days field)
@@ -13512,7 +13519,7 @@ function wbDetailNo(id){
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${_wbKpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${_wbKpi('Payable',_wbF2(rp.p),'#b45309')}${_wbKpi('Margin',_wbF2(rp.m),rp.m>=0?'#0f766e':'#dc2626')}${_wbKpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#0f766e':'#dc2626')}</div>
     ${_wbSec('Order',`<div style="display:flex;flex-wrap:wrap;gap:10px">${_wbL('Project',_wbText('Project|',o['Project']||'',oset('Project'),{ph:'Project'}))}${_wbL('Order No.',_wbText('Order No.|',o['Order No.']||'',oset('Order No.')))}</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">${_wbL('Recipient (收货方)',_wbText('Recipient|',o['Recipient']||'',oset('Recipient'),{ph:'name / company'}))}${_wbL('Recipient email',_wbText('Recipient Email|',o['Recipient Email']||'',oset('Recipient Email'),{ph:'a@x.com, b@x.com'}))}${_wbL('Recipient phone',_wbText('Recipient Phone|',o['Recipient Phone']||'',oset('Recipient Phone'),{ph:'+32 …'}))}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px"><span style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase">Docs</span>${NO_DOCS.map(([f,l])=>{ const v=o[f]||'', c=v==='yes'?'#16a34a':v==='na'?'#64748b':'#94a3b8'; return `<button type="button" onclick="noDocCycle(${o._id},'${f}')" title="Click: ✓ provided → ✕ not needed → blank (not received)" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid ${v?c:'#e2e8f0'};border-radius:16px;background:${v==='yes'?'#f0fdf4':v==='na'?'#f1f5f9':'#fff'};color:${c};font-size:12.5px;font-weight:700;cursor:pointer"><span style="font-size:14px;width:14px;text-align:center">${v==='yes'?'✓':v==='na'?'✕':'○'}</span>${l}</button>`; }).join('')}<span style="font-size:11px;color:#94a3b8">✓ provided · ✕ not needed · ○ not received</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px"><span style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase">Docs</span>${NO_DOCS.map(([f,l])=>{ const v=o[f]||'', c=v==='yes'?'#16a34a':v==='na'?'#64748b':'#94a3b8'; return `<button type="button" onclick="noDocCycle(${o._id},'${f}')" title="Click: ✓ provided → ✕ not needed → blank (not received)" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid ${v?c:'#e2e8f0'};border-radius:16px;background:${v==='yes'?'#f0fdf4':v==='na'?'#f1f5f9':'#fff'};color:${c};font-size:12.5px;font-weight:700;cursor:pointer"><span style="font-size:14px;width:14px;text-align:center">${v==='yes'?'✓':v==='na'?'✕':'○'}</span>${l}</button>`; }).join('')}<span style="font-size:11px;color:#94a3b8">✓ provided · ✕ not needed · ○ not received</span>${_noDocsDue(o,_noContainers(o)[0]||null).length?`<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#b91c1c">⚠ Missing: ${_noDocsDue(o,_noContainers(o)[0]||null).map(x=>x[1]).join(', ')}</div>`:''}</div>
       <div style="margin-top:10px"><div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;margin-bottom:4px">Pickup procedure (提货流程)</div>${_wbArea('Pickup Procedure|',o['Pickup Procedure']||'',oset('Pickup Procedure'))}</div>
       <div style="margin-top:10px">${_wbL("Today's status",_wbArea('Today Status|',o['Today Status']||'',oset('Today Status')),300)}</div>`)}
     ${list.map(card).join('')}</div>`;
