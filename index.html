@@ -12231,8 +12231,7 @@ function renderNoHubs(){
       <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.note)}" onchange="noHubSet(${h.id},'note',this.value)"/></td>
       <td style="padding:4px;text-align:center"><span onclick="noHubDel(${h.id})" style="color:#dc2626;cursor:pointer;font-weight:700" title="Delete">✕</span></td>
     </tr>`).join('')}
-    </tbody></table></div>
-    <div style="font-size:11px;color:#94a3b8;margin-top:6px">Tiers: "5:20" = day 5 onward is 20/day until the next tier. A container's own Free days / €/d entered in the Demurrage column overrides the tariff.</div>`;
+    </tbody></table></div>`;
   noHubRefreshDL();
 }
 const _noOpen=new Set();
