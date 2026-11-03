@@ -12252,27 +12252,28 @@ function saveNO(){
 }
 function noAdd(){
   const ps=[...new Set(NO.map(r=>(r['Project']||'').trim()).filter(Boolean))].sort();
-  if(!ps.length){ noAddCreate('',''); return; }
   const old=document.getElementById('no-add-overlay'); if(old) old.remove();
   const ov=document.createElement('div'); ov.className='overlay open'; ov.id='no-add-overlay';
-  ov.innerHTML=`<div class="modal" style="width:420px"><h2>+ Add Order</h2>
+  ov.innerHTML=`<div class="modal" style="width:480px"><h2>+ Add Order</h2>
     <div class="form-group"><label>Copy from existing project</label>
       <select id="noa-proj"><option value="">— blank new order —</option>${ps.map(x=>`<option value="${_noEsc(x)}">${_noEsc(x)}</option>`).join('')}</select></div>
     <div class="form-group" style="margin-top:10px"><label>New Order No.</label><input type="text" id="noa-no" placeholder="Order No."/></div>
+    <div class="form-group" style="margin-top:10px"><label>B/L / container numbers (optional — paste several: one per line, or separated by comma / space)</label><textarea id="noa-cn" rows="4" placeholder="HHXU3516890&#10;HHXU3517514&#10;HHXU3517474"></textarea></div>
     <div style="font-size:11.5px;color:#64748b;margin-top:8px">Copies project, consignee, destination, trucker, hub etc. Containers, dates and status start empty.</div>
     <div class="modal-btns"><button class="mbtn-cancel" onclick="document.getElementById('no-add-overlay').remove()">Cancel</button>
-    <button class="mbtn-save" onclick="noAddCreate(document.getElementById('noa-proj').value,document.getElementById('noa-no').value)">Create</button></div></div>`;
+    <button class="mbtn-save" onclick="noAddCreate(document.getElementById('noa-proj').value,document.getElementById('noa-no').value,document.getElementById('noa-cn').value)">Create</button></div></div>`;
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
   const inp=document.getElementById('noa-no'); inp.focus();
-  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') noAddCreate(document.getElementById('noa-proj').value,inp.value); });
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') noAddCreate(document.getElementById('noa-proj').value,inp.value,document.getElementById('noa-cn').value); });
 }
-function noAddCreate(proj,orderNo){
+function noAddCreate(proj,orderNo,ctns){
   const ov=document.getElementById('no-add-overlay'); if(ov) ov.remove();
   const o={_id:noNextId++,_addedAt:new Date().toISOString(),'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
     'Price':'','CC':'','Payment Status':'','Service Type':'','Status':'','Customs Office':false,'T1':false,'CC Cleared':false,'POD':false,'Remark':'','Today Status':'','Free Storage (Days)':'','Price per Day':'','Surcharges':[]};
   o['Order No.']=(orderNo||'').trim();
+  { const _l=[...new Set(String(ctns||'').split(/[\s,;]+/).map(s=>s.trim()).filter(Boolean))]; if(_l.length) o['Container No.']=_l.join('\n'); }
   if(proj){
     const src=NO.find(r=>(r['Project']||'').trim()===proj);
     if(src){
@@ -12319,16 +12320,18 @@ function _noRecipRemember(o){
 }
 function _noApptMailBuild(o){
   const book=_noRecipBook()[String(o['Consignee']||'').trim().toLowerCase()]||{};
-  const name=(o['Recipient']||book.name||'').trim(), to=(o['Recipient Email']||book.email||'').trim(), phone=(o['Recipient Phone']||book.phone||'').trim();
+  const name=(o['Recipient']||book.name||'').trim(), to=String(o['Recipient Email']||book.email||'').split(/[\s,;]+/).map(s=>s.trim()).filter(Boolean).join(', '), phone=(o['Recipient Phone']||book.phone||'').trim();
   const cs=_noContainers(o), list=cs.length?cs:[null];
   const etas=list.map(cn=>({cn,eta:(cn?_wbFld(o,cn,'ETA'):'')||o['ETA']||'',hub:_noCtnHub(o,cn)}));
   const uniq=[...new Set(etas.map(x=>x.eta).filter(Boolean))];
   const etaTxt=uniq.length?uniq.join(' / '):'to be confirmed';
   const ref=o['Order No.']||('#'+o._id);
-  const subject='Clearance location & unloading hours – '+ref;
-  const cl=cs.length?' ('+cs.join(', ')+')':'';
-  const body=['Dear '+(name||'Sir/Madam')+',','',
-   'Regarding shipment '+ref+cl+(uniq.length?', ETA '+etaTxt:'')+': could you please let us know the customs clearance location (customs office name and code) and the warehouse unloading working hours?','',
+  const subject=ref+(cs.length?' // '+cs.join(', '):'');
+  const _svMap={'LCL':'delivery','FCL':'delivery','AIR':'air freight','CC':'customs clearance','SELF CC':'customs clearance','T1':'T1','DUTIES':'duties','POA':'POA'};
+  const _sv=[]; cs.concat([null]).forEach(cn=>_noSvcListFor(o,cn).forEach(s=>{ const m=_svMap[String(s).toUpperCase()]||String(s).toLowerCase(); if(!_sv.includes(m)) _sv.push(m); }));
+  const _svTxt=_sv.length?(_sv.length>1?_sv.slice(0,-1).join(', ')+' and '+_sv[_sv.length-1]:_sv[0]):'';
+  const body=['Dear ,','',
+   'We are responsible for the '+(_svTxt?_svTxt+' of ':'handling of ')+'shipment '+ref+(cs.length?' ('+cs.join(', ')+')':'')+(uniq.length?', ETA '+etaTxt:'')+'. Could you please let us know the customs clearance location (customs office name and code) and the warehouse unloading working hours?','',
    'Thank you and best regards,'].join('\n');
   return {to,phone,subject,body};
 }
@@ -12435,10 +12438,12 @@ function dpCopy(){
 }
 function noAddCtnPrompt(id){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
-  const cn=((typeof prompt==='function'?prompt('New container number:'):'')||'').trim(); if(!cn) return;
+  const raw=((typeof prompt==='function'?prompt('New B/L / container number(s) — several allowed, separated by comma, space or new line:'):'')||'');
+  const add=[...new Set(raw.split(/[\s,;]+/).map(s=>s.trim()).filter(Boolean))]; if(!add.length) return;
   const cs=_noContainers(NO[i]);
-  if(cs.includes(cn)){ alert('That container is already on this order.'); return; }
-  cs.push(cn);
+  const fresh=add.filter(c=>!cs.includes(c));
+  if(!fresh.length){ alert('Already on this order.'); return; }
+  fresh.forEach(c=>cs.push(c));
   NO[i]['Container No.']=cs.join('\n');
   saveNO(); renderOrders();
 }
@@ -13520,7 +13525,7 @@ function wbDetailNo(id){
     ${_wbHead('no',o['Order No.']||'Order #'+o._id,(o['Project']?_wbChip(o['Project'],'#0369a1','#e0f2fe'):''),`<button onclick="noApptMail(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #1d4ed8;color:#1d4ed8;background:#fff;border-radius:6px;cursor:pointer">✉ Booking email</button><button onclick="noAddCtnPrompt(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #0f766e;color:#0f766e;background:#fff;border-radius:6px;cursor:pointer">+ Add B/L</button><button onclick="if(confirm('Delete entire order?')){noDel(${o._id})}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${_wbKpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${_wbKpi('Payable',_wbF2(rp.p),'#b45309')}${_wbKpi('Margin',_wbF2(rp.m),rp.m>=0?'#0f766e':'#dc2626')}${_wbKpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#0f766e':'#dc2626')}</div>
     ${_wbSec('Order',`<div style="display:flex;flex-wrap:wrap;gap:10px">${_wbL('Project',_wbText('Project|',o['Project']||'',oset('Project'),{ph:'Project'}))}${_wbL('Order No.',_wbText('Order No.|',o['Order No.']||'',oset('Order No.')))}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">${_wbL('Recipient (收货方)',_wbText('Recipient|',o['Recipient']||'',oset('Recipient'),{ph:'name / company'}))}${_wbL('Recipient email',_wbText('Recipient Email|',o['Recipient Email']||'',oset('Recipient Email'),{ph:'a@x.com, b@x.com'}))}${_wbL('Recipient phone',_wbText('Recipient Phone|',o['Recipient Phone']||'',oset('Recipient Phone'),{ph:'+32 …'}))}</div>
+      <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px;margin-top:10px">${_wbL('Recipient (收货方 / company)',_wbArea('Recipient|',o['Recipient']||'',oset('Recipient')))}${_wbL('Recipient email (several: comma / new line)',_wbArea('Recipient Email|',o['Recipient Email']||'',oset('Recipient Email')))}${_wbL('Recipient phone',_wbText('Recipient Phone|',o['Recipient Phone']||'',oset('Recipient Phone'),{ph:'+32 …'}))}</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px"><span style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase">Docs</span>${NO_DOCS.map(([f,l])=>{ const v=o[f]||'', c=v==='yes'?'#16a34a':v==='na'?'#64748b':'#94a3b8'; return `<button type="button" onclick="noDocCycle(${o._id},'${f}')" title="Click: ✓ provided → ✕ not needed → blank (not received)" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid ${v?c:'#e2e8f0'};border-radius:16px;background:${v==='yes'?'#f0fdf4':v==='na'?'#f1f5f9':'#fff'};color:${c};font-size:12.5px;font-weight:700;cursor:pointer"><span style="font-size:14px;width:14px;text-align:center">${v==='yes'?'✓':v==='na'?'✕':'○'}</span>${l}</button>`; }).join('')}<span style="font-size:11px;color:#94a3b8">✓ provided · ✕ not needed · ○ not received</span>${_noDocsDue(o,_noContainers(o)[0]||null).length?`<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#b91c1c">⚠ Missing: ${_noDocsDue(o,_noContainers(o)[0]||null).map(x=>x[1]).join(', ')}</div>`:''}</div>
       <div style="margin-top:10px"><div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;margin-bottom:4px">Pickup procedure (提货流程)</div>${_wbArea('Pickup Procedure|',o['Pickup Procedure']||'',oset('Pickup Procedure'))}</div>
       <div style="margin-top:10px">${_wbL("Today's status",_wbArea('Today Status|',o['Today Status']||'',oset('Today Status')),300)}</div>`)}
