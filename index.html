@@ -12254,20 +12254,32 @@ function noAdd(){
   const ps=[...new Set(NO.map(r=>(r['Project']||'').trim()).filter(Boolean))].sort();
   const old=document.getElementById('no-add-overlay'); if(old) old.remove();
   const ov=document.createElement('div'); ov.className='overlay open'; ov.id='no-add-overlay';
-  ov.innerHTML=`<div class="modal" style="width:480px"><h2>+ Add Order</h2>
-    <div class="form-group"><label>Copy from existing project</label>
-      <select id="noa-proj"><option value="">— blank new order —</option>${ps.map(x=>`<option value="${_noEsc(x)}">${_noEsc(x)}</option>`).join('')}</select></div>
-    <div class="form-group" style="margin-top:10px"><label>New Order No.</label><input type="text" id="noa-no" placeholder="Order No."/></div>
-    <div class="form-group" style="margin-top:10px"><label>B/L / container numbers (optional — paste several: one per line, or separated by comma / space)</label><textarea id="noa-cn" rows="4" placeholder="HHXU3516890&#10;HHXU3517514&#10;HHXU3517474"></textarea></div>
-    <div style="font-size:11.5px;color:#64748b;margin-top:8px">Copies project, consignee, destination, trucker, hub etc. Containers, dates and status start empty.</div>
+  const fld=(id,label,ph,list,wide)=>`<div class="form-group" style="${wide?'grid-column:1/-1':''}"><label>${label}</label><input type="text" id="noa-${id}" ${list?`list="${list}"`:''} placeholder="${ph||''}"/></div>`;
+  ov.innerHTML=`<div class="modal" style="width:680px;max-width:96vw;max-height:94vh;overflow:auto"><h2>+ Add Order</h2>
+    <datalist id="noa-dl-proj">${ps.map(x=>`<option value="${_noEsc(x)}">`).join('')}</datalist>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 14px">
+      ${fld('proj','Project (pick an existing one to copy its info)','Project','noa-dl-proj')}
+      ${fld('no','Order No.','Order No.')}
+      <div class="form-group" style="grid-column:1/-1"><label>B/L / container numbers — paste several (one per line, or comma / space separated)</label><textarea id="noa-cn" rows="3" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:13px" placeholder="HHXU3516890&#10;HHXU3517514"></textarea></div>
+      ${fld('con','Consignee','','dl-con')}${fld('dest','Destination','Belgium','dl-dest')}
+      ${fld('truck','Trucker','','dl-truck')}${fld('hub','Hub','','dl-hub-o')}
+      ${fld('svc','Service (comma separated)','FCL, T1','dl-service-o')}${fld('eta','ETA','YYYY/MM/DD')}
+      ${fld('price','Price','')}${fld('free','Free days','')}
+      ${fld('rcp','Recipient / company','')}${fld('mail','Recipient email (several allowed)','a@x.com, b@x.com')}
+    </div>
+    <div style="font-size:11.5px;color:#64748b;margin-top:8px">Everything you fill in here applies to all the B/Ls listed above; edit any single B/L afterwards in the order details.</div>
     <div class="modal-btns"><button class="mbtn-cancel" onclick="document.getElementById('no-add-overlay').remove()">Cancel</button>
-    <button class="mbtn-save" onclick="noAddCreate(document.getElementById('noa-proj').value,document.getElementById('noa-no').value,document.getElementById('noa-cn').value)">Create</button></div></div>`;
+    <button class="mbtn-save" onclick="noAddSubmit()">Create</button></div></div>`;
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
-  const inp=document.getElementById('noa-no'); inp.focus();
-  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') noAddCreate(document.getElementById('noa-proj').value,inp.value,document.getElementById('noa-cn').value); });
+  document.getElementById('noa-proj').focus();
 }
-function noAddCreate(proj,orderNo,ctns){
+function noAddSubmit(){
+  const g=id=>(document.getElementById('noa-'+id)||{}).value||'';
+  const svc=g('svc').split(/[,;+]/).map(s=>s.trim()).filter(Boolean).map(s=>NO_SERVICES.find(x=>x.toLowerCase()===s.toLowerCase())||s.toUpperCase());
+  noAddCreate(g('proj').trim(),g('no'),g('cn'),{'Consignee':g('con'),'Destination':g('dest'),'Trucker':g('truck'),'Hub':g('hub'),'Service Type':svc.join(', '),'ETA':g('eta'),'Price':g('price'),'Free Storage (Days)':g('free'),'Recipient':g('rcp'),'Recipient Email':g('mail')});
+}
+function noAddCreate(proj,orderNo,ctns,vals){
   const ov=document.getElementById('no-add-overlay'); if(ov) ov.remove();
   const o={_id:noNextId++,_addedAt:new Date().toISOString(),'Order No.':'','Container No.':'','Consignee':'','Destination':'',
     'Hub':'','Arrived at Hub':false,'Pickup Location':'','Pickup Date':'','ETA':'','Delivery Date':'','ATA':'','Trucker':'',
@@ -12282,6 +12294,7 @@ function noAddCreate(proj,orderNo,ctns){
     }
     o['Project']=proj;
   }
+  Object.entries(vals||{}).forEach(([k,v])=>{ if(String(v||'').trim()) o[k]=String(v).trim(); });
   NO.unshift(o); _noOpen.add(o._id); saveNO(); renderOrders();
 }
 function noDel(id){ if(!confirm('Delete this order?')) return; NO=NO.filter(r=>r._id!==id); _noOpen.delete(id); saveNO(); renderOrders(); }
@@ -13437,7 +13450,7 @@ function wbRender(kind){
     const d=document.getElementById('wb-'+kind+'-detail');
     let html='';
     try{ html=kind==='no'?wbDetailNo(S.sel):kind==='ct'?wbDetailCt(S.sel,jobs):wbDetailVt(S.sel); }catch(e){ console.error(e); }
-    if(!html){ S.sel=null; d.style.display='none'; } else { d.innerHTML=html; d.scrollTop=_scr; if(typeof _noBindLazyDates==='function') _noBindLazyDates(d); if(_foc){ const t=[...d.querySelectorAll('[data-k]')].find(x=>x.dataset.k===_foc.k); if(t){ t.focus(); try{ if(_foc.s!=null&&t.setSelectionRange) t.setSelectionRange(_foc.s,_foc.e); }catch(e){} } } }
+    if(!html){ S.sel=null; d.style.display='none'; } else { d.innerHTML=html; d.querySelectorAll('textarea.wb-ag').forEach(_noAutoGrow); d.scrollTop=_scr; if(typeof _noBindLazyDates==='function') _noBindLazyDates(d); if(_foc){ const t=[...d.querySelectorAll('[data-k]')].find(x=>x.dataset.k===_foc.k); if(t){ t.focus(); try{ if(_foc.s!=null&&t.setSelectionRange) t.setSelectionRange(_foc.s,_foc.e); }catch(e){} } } }
   }
 }
 const _wbChip=(t,c,bg)=>`<span style="font-size:11px;font-weight:700;color:${c};background:${bg};border-radius:10px;padding:2px 9px">${_noEsc(t)}</span>`;
@@ -13451,6 +13464,7 @@ const _wbSet=(setter,v)=>setter.replace('@@',v);
 function _wbText(k,val,setter,o){ o=o||{}; return `<input data-k="${_noEsc(k)}" ${o.list?`list="${o.list}"`:''} type="text" value="${_noEsc(val)}" placeholder="${_noEsc(o.ph||'')}" style="${_wbI}" onchange="${_wbSet(setter,'this.value.trim()')}" onkeydown="if(event.key==='Enter')this.blur()">`; }
 function _wbDate(k,val,setter){ return `<input data-k="${_noEsc(k)}" class="no-fp-date" data-fptype="date" type="text" value="${_noEsc(val)}" placeholder="YYYY/MM/DD" style="${_wbI}" onblur="if(this.value.trim()!==this.defaultValue){${_wbSet(setter,'this.value.trim()')}}" onkeydown="if(event.key==='Enter'||event.key==='Escape')this.blur()">`; }
 function _wbSelect(k,val,opts,setter){ const os=opts.includes(val)?opts:[val,...opts]; return `<select data-k="${_noEsc(k)}" style="${_wbI}" onchange="${_wbSet(setter,'this.value')}">${os.map(v=>`<option value="${_noEsc(v)}" ${v===val?'selected':''}>${_noEsc(v||'—')}</option>`).join('')}</select>`; }
+function _wbAgArea(k,val,setter,ph){ return `<textarea class="wb-ag" data-k="${_noEsc(k)}" rows="1" placeholder="${_noEsc(ph||'')}" style="${_wbI};resize:none;overflow:hidden;font-family:inherit;min-height:32px;line-height:1.35" oninput="_noAutoGrow(this)" onchange="${_wbSet(setter,'this.value')}">${_noEsc(val)}</textarea>`; }
 function _wbArea(k,val,setter){ return `<textarea data-k="${_noEsc(k)}" rows="2" style="${_wbI};resize:vertical;font-family:inherit" onchange="${_wbSet(setter,'this.value')}">${_noEsc(val)}</textarea>`; }
 function _wbChk(k,label,on,setter,color){ return `<label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:${on?(color||'#0f766e'):'#64748b'};cursor:pointer;padding:4px 10px;border:1px solid ${on?(color||'#0f766e'):'#e2e8f0'};border-radius:16px;background:${on?'#f0fdfa':'#fff'}"><input data-k="${_noEsc(k)}" type="checkbox" ${on?'checked':''} onchange="${_wbSet(setter,'this.checked')}" style="width:15px;height:15px;accent-color:${color||'#0f766e'};margin:0">${label}</label>`; }
 // ── 订单详情：全部字段都在这里录入 ──
@@ -13525,7 +13539,7 @@ function wbDetailNo(id){
     ${_wbHead('no',o['Order No.']||'Order #'+o._id,(o['Project']?_wbChip(o['Project'],'#0369a1','#e0f2fe'):''),`<button onclick="noApptMail(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #1d4ed8;color:#1d4ed8;background:#fff;border-radius:6px;cursor:pointer">✉ Booking email</button><button onclick="noAddCtnPrompt(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #0f766e;color:#0f766e;background:#fff;border-radius:6px;cursor:pointer">+ Add B/L</button><button onclick="if(confirm('Delete entire order?')){noDel(${o._id})}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${_wbKpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${_wbKpi('Payable',_wbF2(rp.p),'#b45309')}${_wbKpi('Margin',_wbF2(rp.m),rp.m>=0?'#0f766e':'#dc2626')}${_wbKpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#0f766e':'#dc2626')}</div>
     ${_wbSec('Order',`<div style="display:flex;flex-wrap:wrap;gap:10px">${_wbL('Project',_wbText('Project|',o['Project']||'',oset('Project'),{ph:'Project'}))}${_wbL('Order No.',_wbText('Order No.|',o['Order No.']||'',oset('Order No.')))}</div>
-      <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px;margin-top:10px">${_wbL('Recipient (收货方 / company)',_wbArea('Recipient|',o['Recipient']||'',oset('Recipient')))}${_wbL('Recipient email (several: comma / new line)',_wbArea('Recipient Email|',o['Recipient Email']||'',oset('Recipient Email')))}${_wbL('Recipient phone',_wbText('Recipient Phone|',o['Recipient Phone']||'',oset('Recipient Phone'),{ph:'+32 …'}))}</div>
+      <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px;margin-top:10px;align-items:start">${_wbL('Recipient / company',_wbAgArea('Recipient|',o['Recipient']||'',oset('Recipient'),'company, address…'))}${_wbL('Recipient email',_wbAgArea('Recipient Email|',o['Recipient Email']||'',oset('Recipient Email'),'a@x.com, b@x.com'))}${_wbL('Phone',_wbAgArea('Recipient Phone|',o['Recipient Phone']||'',oset('Recipient Phone'),'+32 …'))}</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px"><span style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase">Docs</span>${NO_DOCS.map(([f,l])=>{ const v=o[f]||'', c=v==='yes'?'#16a34a':v==='na'?'#64748b':'#94a3b8'; return `<button type="button" onclick="noDocCycle(${o._id},'${f}')" title="Click: ✓ provided → ✕ not needed → blank (not received)" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid ${v?c:'#e2e8f0'};border-radius:16px;background:${v==='yes'?'#f0fdf4':v==='na'?'#f1f5f9':'#fff'};color:${c};font-size:12.5px;font-weight:700;cursor:pointer"><span style="font-size:14px;width:14px;text-align:center">${v==='yes'?'✓':v==='na'?'✕':'○'}</span>${l}</button>`; }).join('')}<span style="font-size:11px;color:#94a3b8">✓ provided · ✕ not needed · ○ not received</span>${_noDocsDue(o,_noContainers(o)[0]||null).length?`<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#b91c1c">⚠ Missing: ${_noDocsDue(o,_noContainers(o)[0]||null).map(x=>x[1]).join(', ')}</div>`:''}</div>
       <div style="margin-top:10px"><div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;margin-bottom:4px">Pickup procedure (提货流程)</div>${_wbArea('Pickup Procedure|',o['Pickup Procedure']||'',oset('Pickup Procedure'))}</div>
       <div style="margin-top:10px">${_wbL("Today's status",_wbArea('Today Status|',o['Today Status']||'',oset('Today Status')),300)}</div>`)}
