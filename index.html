@@ -13172,7 +13172,7 @@ try{ _noEtaDismissed=new Set(JSON.parse(localStorage.getItem('owenz_no_eta_dismi
 function noEtaDismiss(key,on){
   if(on) _noEtaDismissed.add(key); else _noEtaDismissed.delete(key);
   try{ localStorage.setItem('owenz_no_eta_dismissed',JSON.stringify([..._noEtaDismissed])); }catch(e){}
-  _noRenderStorageAlerts(window._noAlertRows||[]);
+  noRenderSoon();
 }
 function _noEtaSoon(o){
   const cs=_noContainers(o);
@@ -13190,7 +13190,83 @@ function _noEtaSoon(o){
   });
   return best;
 }
+// ══ Order reminder engine (Orders only) ═══════════════════════════════════
+// Rules: (1) clearance info required on new orders, (2) ETA-driven chasing (docs, holidays, short free days),
+// (3) pre-arrival checklist + free-storage expiry. Items are re-computed on every render; nothing relies on memory.
+// Pickup procedure: free-text order field; a pickup-request reminder (with push) appears 3 days before ETA.
+function _noToday(){ const t=new Date(); t.setHours(0,0,0,0); return t; }
+function _noActiveCtns(o){ const cs=_noContainers(o); return (cs.length?cs:[null]).filter(cn=>!_wbDelivered(o,cn)); }
+function _noNextEta(o){ // earliest ETA among containers that have not arrived yet
+  let best=null;
+  _noActiveCtns(o).forEach(cn=>{ const d=_noParseDate(_wbFld(o,cn,'ETA')); if(d&&(!best||d<best.d)) best={d,v:_wbFld(o,cn,'ETA')}; });
+  return best;
+}
+function _noDocsNeeded(o){
+  const sv=new Set(); _noContainers(o).concat([null]).forEach(cn=>_noSvcListFor(o,cn).forEach(s=>sv.add(s.toUpperCase())));
+  const none=!sv.size, out=[];
+  if(none||sv.has('POA')) out.push(['Docs POA','POA']);
+  if(none||sv.has('T1')) out.push(['Docs T1','T1']);
+  return out;
+}
+let _noRemAck=new Set(); try{ _noRemAck=new Set(JSON.parse(localStorage.getItem('owenz_no_rem_ack')||'[]')); }catch(e){}
+function noRemAck(key,on){ if(on) _noRemAck.add(key); else _noRemAck.delete(key); try{ localStorage.setItem('owenz_no_rem_ack',JSON.stringify([..._noRemAck])); }catch(e){} noRenderSoon(); }
+function _noRemItems(){
+  const items=[], today=_noToday();
+  NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
+    if(!_noActiveCtns(o).length) return;
+    const ref=o['Order No.']||('#'+o._id), add=(lv,rule,text,x)=>items.push(Object.assign({o,ref,lv,rule,text,key:o._id+'|'+rule+'|'+((x&&x.sig)||'')},x||{}));
+    const e=_noNextEta(o); if(!e) return;
+    const days=Math.round((e.d-today)/864e5), etaTxt='ETA '+e.v+(days<0?' ('+(-days)+'d ago)':days===0?' (today)':' (in '+days+'d)');
+    // 2) docs chase: ≤7 days reminder, ≤3 days urgent
+    const miss=_noDocsNeeded(o).filter(([f])=>!o[f]);
+    if(miss.length&&days<=7) add(days<=3?'red':'amber','docs',(days<=3?'🚨 URGENT — ':'')+'Docs not complete ('+miss.map(m=>m[1]).join(', ')+'): '+etaTxt,{boxes:miss,push:days<=3,sig:days<=3?'u':'w',ord:days<=3?1:3});
+    // short free days (taken from the container's own Free days field)
+    if(days>=0&&days<=21){
+      let free=null; _noActiveCtns(o).forEach(cn=>{ const f=parseInt(_noCtnFld(o,cn,'Free Storage (Days)'),10); if(f>0&&(free===null||f<free)) free=f; });
+      if(free!==null&&free<5) add('amber','free','Only '+free+' free storage day'+(free!==1?'s':'')+' · '+etaTxt,{dismiss:true,sig:'f'+free,ord:5});
+    }
+    // pickup request: 3 days before ETA, shows the procedure typed in the order
+    if(days<=3&&days>=-1){ const pp=String(o['Pickup Procedure']||'').trim();
+      add(days<=1?'red':'amber','pick','Submit pickup request — '+etaTxt+(pp?' · Procedure: '+pp.replace(/\s*\n\s*/g,' → '):' · (no pickup procedure entered)'),{dismiss:true,push:true,sig:'p'+e.v,ord:2}); }
+  });
+  // free-storage expiry: remind the day before (and on the day) while the box is still at the hub
+  NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{
+    _noActiveCtns(o).forEach(cn=>{ if(!cn) return;
+      if(_noParseDate(_wbFld(o,cn,'Pick Up Date'))) return;
+      const si=_noStorageInfo(o,cn); if(!si||si.exceeded) return;
+      const left=Math.round((_noParseDate(si.expiry)-today)/864e5);
+      if(left>=0&&left<=1) items.push({o,ref:o['Order No.']||('#'+o._id),lv:'red',rule:'exp',key:o._id+'|exp|'+cn+si.expiry,text:'Free storage '+(left===0?'expires TODAY':'expires tomorrow')+' ('+si.expiry+') — '+cn,ord:1,push:true});
+    });
+  });
+  const lvRank={red:0,amber:1};
+  return items.filter(x=>!(x.dismiss&&_noRemAck.has(x.key))).sort((a,b)=>(lvRank[a.lv]-lvRank[b.lv])||((a.ord||9)-(b.ord||9)));
+}
+function noRemToggle(){ const k='owenz_no_rem_open'; try{ localStorage.setItem(k,localStorage.getItem(k)==='0'?'1':'0'); }catch(e){} noRenderSoon(); }
+function noRemEnablePush(){ if(typeof Notification==='undefined') return alert('This browser does not support notifications.'); Notification.requestPermission().then(()=>noRenderSoon()); }
+function _noRemPush(items){
+  if(typeof Notification==='undefined'||Notification.permission!=='granted') return;
+  let seen=[]; try{ seen=JSON.parse(localStorage.getItem('owenz_no_rem_pushed')||'[]'); }catch(e){}
+  const S=new Set(seen); let n=0;
+  items.filter(x=>x.push&&!S.has(x.key)).forEach(x=>{ try{ new Notification('Order '+x.ref,{body:x.text.replace(/<[^>]+>/g,'')}); }catch(e){} S.add(x.key); n++; });
+  if(n) try{ localStorage.setItem('owenz_no_rem_pushed',JSON.stringify([...S].slice(-500))); }catch(e){}
+}
 function _noRenderStorageAlerts(rows){
+  const el=document.getElementById('no-storage-alerts'); if(!el) return;
+  const items=_noRemItems();
+  if(!items.length){ el.innerHTML=''; return; }
+  const open=localStorage.getItem('owenz_no_rem_open')!=='0', nr=items.filter(x=>x.lv==='red').length;
+  const col={red:['#fef2f2','#fecaca','#b91c1c'],amber:['#fffbeb','#fde68a','#92400e']};
+  const pushBtn=(typeof Notification!=='undefined'&&Notification.permission==='default')?`<button onclick="event.stopPropagation();noRemEnablePush()" style="margin-left:auto;padding:2px 10px;font-size:11px;font-weight:700;border:1px solid #92400e;color:#92400e;background:#fff;border-radius:6px;cursor:pointer">🔔 Enable push</button>`:'';
+  const row=x=>{ const c=col[x.lv];
+    const boxes=(x.boxes||[]).map(([f,l])=>`<label style="display:inline-flex;align-items:center;gap:4px;margin-left:10px;font-weight:600;cursor:pointer"><input type="checkbox" onchange="noSet(${x.o._id},'${f}',this.checked)" style="width:14px;height:14px;cursor:pointer">${l}</label>`).join('');
+    const dis=x.dismiss?`<label style="margin-left:auto;font-size:11px;color:#64748b;cursor:pointer;white-space:nowrap"><input type="checkbox" onchange="noRemAck('${x.key.replace(/'/g,"\\'")}',this.checked)" style="width:13px;height:13px;vertical-align:middle"> got it</label>`:'';
+    return `<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:5px 10px;margin-top:4px;border:1px solid ${c[1]};border-left:4px solid ${c[2]};border-radius:6px;background:${c[0]};color:${c[2]};font-size:12.5px"><b style="cursor:pointer;text-decoration:underline" onclick="wbPick('no',${x.o._id})">${_noEsc(x.ref)}</b><span>${_noEsc(x.text)}</span>${boxes}${dis}</div>`; };
+  el.innerHTML=`<div style="margin-top:10px;border:1px solid #fde68a;border-radius:8px;background:#fff;padding:8px 10px">
+    <div onclick="noRemToggle()" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;font-size:12.5px;color:#92400e"><span>${open?'▾':'▸'}</span><span>🔔 Order reminders · ${items.length}</span>${nr?`<span style="background:#dc2626;color:#fff;border-radius:10px;padding:0 8px;font-size:11px">${nr} urgent</span>`:''}${pushBtn}</div>
+    ${open?items.map(row).join(''):''}</div>`;
+  _noRemPush(items);
+}
+function _noRenderStorageAlertsOld(rows){
   const el=document.getElementById('no-storage-alerts'); if(!el) return;
   window._noAlertRows=rows;
   const hits=[];
@@ -13439,6 +13515,8 @@ function wbDetailNo(id){
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${_wbKpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${_wbKpi('Payable',_wbF2(rp.p),'#b45309')}${_wbKpi('Margin',_wbF2(rp.m),rp.m>=0?'#0f766e':'#dc2626')}${_wbKpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#0f766e':'#dc2626')}</div>
     ${_wbSec('Order',`<div style="display:flex;flex-wrap:wrap;gap:10px">${_wbL('Project',_wbText('Project|',o['Project']||'',oset('Project'),{ph:'Project'}))}${_wbL('Order No.',_wbText('Order No.|',o['Order No.']||'',oset('Order No.')))}</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">${_wbL('Recipient (收货方)',_wbText('Recipient|',o['Recipient']||'',oset('Recipient'),{ph:'name / company'}))}${_wbL('Recipient email',_wbText('Recipient Email|',o['Recipient Email']||'',oset('Recipient Email'),{ph:'a@x.com, b@x.com'}))}${_wbL('Recipient phone',_wbText('Recipient Phone|',o['Recipient Phone']||'',oset('Recipient Phone'),{ph:'+32 …'}))}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px"><span style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase">Docs received</span>${_noDocsNeeded(o).map(([f,l])=>_wbChk(f+'|',l,!!o[f],oset(f),'#1d4ed8')).join('')}</div>
+      <div style="margin-top:10px"><div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;margin-bottom:4px">Pickup procedure (提货流程)</div>${_wbArea('Pickup Procedure|',o['Pickup Procedure']||'',oset('Pickup Procedure'))}</div>
       <div style="margin-top:10px">${_wbL("Today's status",_wbArea('Today Status|',o['Today Status']||'',oset('Today Status')),300)}</div>`)}
     ${list.map(card).join('')}</div>`;
 }
