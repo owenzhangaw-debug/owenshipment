@@ -14219,8 +14219,57 @@ function renderQuotes(){
       <div style="font-size:13px;line-height:1.7"><b>说明：</b>预计堆存 = (预计停留天数 − 免堆天数) × 日费率；预期额外 = 出现率 × 每次平均金额，相当于每票预留的“保险费”。利润率按报价算：成本 €500、利润 10% → 报价 €555.6。<br><span style="color:var(--muted)">Expected storage = (days at hub − free days) × daily rate; expected extras = chance × average amount — a reserve on every job, like an insurance premium. Margin is on the quote: cost €500 at 10% → €555.6.</span>
 </div></div></div>
   <div id="ct-trk-score"></div>
+  <div id="no-trk-score"></div>
 `;
   try{ renderCtTrkScore(); }catch(e){ console.error(e); }
+  try{ renderNoTrkScore(); }catch(e){ console.error(e); }
+}
+
+
+// ── Orders: weighted trucker score (no minimum volume; every B/L / 40HQ in Orders counts) ──
+const OTS_KEY='owenz_no_trkscore_v1'; let OTS={wp:50,wo:30,wx:20,open:1,ov:{}};
+try{ Object.assign(OTS,JSON.parse(localStorage.getItem(OTS_KEY)||'{}')); }catch(e){}
+function otsSave(){ try{ localStorage.setItem(OTS_KEY,JSON.stringify(OTS)); }catch(e){} renderNoTrkScore(); }
+function otsSet(k,v){ OTS[k]=parseFloat(v)||0; otsSave(); }
+function otsOv(t,f,v){ OTS.ov=OTS.ov||{}; const o=OTS.ov[t]||(OTS.ov[t]={}); if(String(v).trim()==='') delete o[f]; else o[f]=parseFloat(v); if(!Object.keys(o).length) delete OTS.ov[t]; otsSave(); }
+function otsReset(){ if(!confirm('Clear all edited values? · 清除所有手动修改的数值？')) return; OTS.ov={}; otsSave(); }
+function renderNoTrkScore(){
+  const el=document.getElementById('no-trk-score'); if(!el) return;
+  const B=[];
+  (typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{ const cs=_noContainers(o); (cs.length?cs:[null]).forEach(cn=>{
+    const t=String(_wbFld(o,cn,'Trucker')||'').trim(); if(!t) return;
+    const ch=_noCharges(o,cn), fr=ch.filter(l=>l.item==='Freight').reduce((s,l)=>s+_noN(l.p),0);
+    const x=ch.filter(l=>QX_ITEMS.includes(l.item)).reduce((s,l)=>s+_noN(l.p),0)+_noSurcharges(o,cn).reduce((s,q)=>s+_noN(q.fee),0);
+    const dd=_noParseDate(_wbFld(o,cn,'Delivery Date')), ata=_noParseDate(_wbFld(o,cn,'ATA'));
+    B.push({t,dest:String(_wbFld(o,cn,'Destination')||'').trim().toLowerCase(),fr,x,ot:(dd&&ata)?(ata<=dd?1:0):null}); }); });
+  // destination averages, only where at least 2 truckers have a price → a real comparison
+  const dm={}; B.filter(b=>b.fr>0&&b.dest).forEach(b=>{ const e=dm[b.dest]||(dm[b.dest]={s:0,n:0,tr:new Set()}); e.s+=b.fr; e.n++; e.tr.add(b.t); });
+  const dAvg={}; Object.keys(dm).forEach(k=>{ if(dm[k].tr.size>=2) dAvg[k]=dm[k].s/dm[k].n; });
+  const g={}; B.forEach(b=>(g[b.t]=g[b.t]||[]).push(b));
+  const T=Object.keys(g).map(t=>{ const xs=g[t], o=(OTS.ov||{})[t]||{};
+    const pr=xs.filter(b=>b.fr>0), avgFr=pr.length?pr.reduce((s,b)=>s+b.fr,0)/pr.length:null;
+    const cmp=pr.filter(b=>dAvg[b.dest]), idx=cmp.length?cmp.reduce((s,b)=>s+b.fr/dAvg[b.dest],0)/cmp.length:null;
+    const ref=(avgFr&&idx)?avgFr/idx:null;
+    const ot=xs.map(b=>b.ot).filter(v=>v!=null), onT=ot.length?ot.reduce((a,b)=>a+b,0)/ot.length:null, xr=xs.filter(b=>b.x>0).length/xs.length;
+    return {t,n:xs.length,o,avgFr,idx,nCmp:cmp.length,onT,nOt:ot.length,xr,
+      eIdx:o.price!=null?(ref?o.price/ref:null):idx, eOn:o.onT!=null?o.onT/100:onT, eX:o.xr!=null?o.xr/100:xr};
+  });
+  const minIdx=Math.min(...T.map(x=>x.eIdx).filter(v=>v!=null&&v>0),1), W=(OTS.wp+OTS.wo+OTS.wx)||1;
+  T.forEach(x=>{ const pS=(x.eIdx!=null&&x.eIdx>0)?minIdx/x.eIdx:0.5, oS=x.eOn!=null?x.eOn:0.5; x.score=(OTS.wp*pS+OTS.wo*oS+OTS.wx*(1-x.eX))/W*100; });
+  T.sort((a,b)=>b.score-a.score);
+  const inp=(k,lab)=>`<label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:4px">${lab}<input type="number" value="${OTS[k]}" onchange="otsSet('${k}',this.value)" style="width:56px;padding:3px 6px;border:1px solid var(--border);border-radius:6px"></label>`;
+  const td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace);border-bottom:1px solid #eef4fa;white-space:nowrap', th='padding:6px 8px;text-align:right;white-space:nowrap;line-height:1.25';
+  el.innerHTML=`<div class="chart-card" style="margin:0 0 12px;padding:12px 16px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="if(event.target.tagName!=='INPUT'){ OTS.open=OTS.open?0:1; otsSave(); }"><h3 style="margin:0">${OTS.open?'▾':'▸'} Orders 卡车公司评分 · Orders trucker score</h3>
+      <span style="margin-left:auto;display:inline-flex;gap:10px;flex-wrap:wrap" onclick="event.stopPropagation()">${inp('wp','价格 Price %')}${inp('wo','准时 On time %')}${inp('wx','少额外 Few extras %')}</span></div>
+    ${OTS.open?`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="${th};text-align:left">#</th><th style="${th};text-align:left">卡车公司 Trucker</th><th style="${th}">B/L / 柜数<br><span style="font-weight:400;font-size:11px">B/Ls (40HQ)</span></th><th style="${th}">平均运费<br><span style="font-weight:400;font-size:11px">Avg freight</span></th><th style="${th}">价格指数<br><span style="font-weight:400;font-size:11px">Price index (vs same destination)</span></th><th style="${th}">准时率<br><span style="font-weight:400;font-size:11px">On time</span></th><th style="${th}">额外费用率<br><span style="font-weight:400;font-size:11px">Extra rate</span></th><th style="${th}">总分<br><span style="font-weight:400;font-size:11px">Score</span></th></tr></thead><tbody>
+      ${T.map((x,i)=>{ const tq=x.t.replace(/'/g,"\\'"), ed=(f,val,auto,suf,w)=>`<input type="number" step="any" value="${val!=null?val:''}" placeholder="${auto}" onchange="otsOv('${tq}','${f}',this.value)" style="width:${w||70}px;text-align:right;padding:2px 5px;border:1px solid ${val!=null?'#056dae':'var(--border)'};border-radius:5px;font-family:inherit">${suf||''}`;
+        return `<tr><td style="padding:5px 8px;border-bottom:1px solid #eef4fa">${i+1}</td><td style="padding:5px 8px;font-weight:600;border-bottom:1px solid #eef4fa">${_noEsc(x.t)}</td><td style="${td}">${x.n}</td>
+        <td style="${td}">€ ${ed('price',x.o.price,x.avgFr!=null?_qF(x.avgFr):'—','',72)}</td>
+        <td style="${td}">${x.eIdx!=null?_qF(x.eIdx*100)+'%':'—'} <span style="color:var(--muted);font-size:11px">(${x.nCmp})</span></td>
+        <td style="${td}">${ed('onT',x.o.onT,x.onT!=null?_qF(x.onT*100):'—',' %',60)} <span style="color:var(--muted);font-size:11px">(${x.nOt})</span></td><td style="${td}">${ed('xr',x.o.xr,_qF(x.xr*100),' %',56)}</td><td style="${td};font-weight:700;color:#056dae">${_qF(x.score)}</td></tr>`; }).join('')||`<tr><td colspan="8" style="padding:8px;color:var(--muted)">No data</td></tr>`}</tbody></table></div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">不设最少柜数，Orders 里每个 B/L（40HQ）都计入。平均运费 = Charges 里 Freight 的应付。散单距离不同，所以<b>价格指数只和同一目的地比</b>：只用至少有 2 家公司都跑过的目的地（括号内为可比较的票数），100% = 该目的地平均，越低越便宜；没有可比较目的地的显示 —，价格分按 0.5 计。准时 = ATA ≤ Delivery Date；额外费用率 = 有额外费用（Waiting、Storage、Other 等或附加费）的 B/L 比例。灰色数字都可以改，填了（蓝框）就用你的数。<span style="color:#056dae;cursor:pointer;text-decoration:underline" onclick="otsReset()">清除手动修改</span><br>
+      No minimum volume — every B/L (40HQ) in Orders counts. Avg freight = Freight payable in Charges. Because distances differ, the price index only compares the same destination, using destinations served by at least 2 truckers (comparable B/Ls in brackets). On time = ATA ≤ Delivery Date; extra rate = share of B/Ls with extra costs. Grey numbers can be edited.</div>`:''}</div>`;
 }
 
 // ── Lead-time stages per B/L (auto from dates, or typed in) ──
@@ -14323,7 +14372,7 @@ function renderCtTrkScore(){
   const dest=r=>{ const d=String(r['Destination']||'').trim(); if(d) return d; const m=cd[cK(r)]; return m?Object.entries(m).sort((a,b)=>b[1]-a[1])[0][0]:'Other'; };
   const dp={}; rows.forEach(r=>{ const p=parseFloat(r['Price']); if(p>0) (dp[dest(r)]=dp[dest(r)]||[]).push(p); });
   const dAvg={}; Object.keys(dp).forEach(k=>dAvg[k]=dp[k].reduce((a,b)=>a+b,0)/dp[k].length);
-  const D=Object.keys(dp).sort((a,b)=>dp[b].length-dp[a].length);
+  const D=Object.keys(dp).filter(d=>d!=='Other').sort((a,b)=>dp[b].length-dp[a].length);
   const g={}; rows.forEach(r=>(g[String(r['Trucker']).trim()]=g[String(r['Trucker']).trim()]||[]).push(r));
   const day=v=>{ const d=parseDate(String(v||'')); if(d){ d.setHours(0,0,0,0); return d; } return null; };
   if(!(CTS.minN>=0)) CTS.minN=20;
@@ -14352,7 +14401,7 @@ function renderCtTrkScore(){
         <td style="${td}">${x.eIdx!=null?_qF(x.eIdx*100)+'%':'—'}</td>
         <td style="${td}">${ed('onT',x.o.onT,x.onT!=null?_qF(x.onT*100):'—',' %',60)} <span style="color:var(--muted);font-size:11px">(${x.nOt})</span></td><td style="${td}">${ed('xr',x.o.xr,_qF(x.xr*100),' %',56)}</td><td style="${td};font-weight:700;color:#056dae">${_qF(x.score)}</td></tr>`; }).join('')}</tbody></table></div>
       ${few.length?`<div style="font-size:12px;color:var(--muted);margin-top:6px">柜数少于 ${CTS.minN} 的不评分 · Not scored (< ${CTS.minN} containers)：${few.map(t=>_noEsc(t)+' ('+g[t].length+')').join(', ')}</div>`:''}
-      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">价格按<b>目的地分开</b>比较：每个目的地一列，显示该公司在这个目的地的平均价（括号内为柜数），表头是所有公司在该目的地的平均价。Destination 没填的柜子，按同一收货人最常去的目的地归类。<b>价格指数</b> = 该公司各目的地价格 ÷ 该目的地平均价，按柜数加权（100% = 平均，越低越便宜）；价格分 = 最便宜者的指数 ÷ 自己的指数。<br>总分 = 价格分 × ${CTS.wp}% + 准时率 × ${CTS.wo}% + (1 − 额外费用率) × ${CTS.wx}%。准时 = 实际到达日 ≤ 预约 slot 日；额外费用率 = 有 Surcharge 的柜子比例；缺数据按 0.5 计。所有灰色数字都可以改，填了（蓝框）就用你的数。<span style="color:#056dae;cursor:pointer;text-decoration:underline" onclick="ctsReset()">清除手动修改</span><br>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">价格按<b>目的地分开</b>比较：每个目的地一列，显示该公司在这个目的地的平均价（括号内为柜数），表头是所有公司在该目的地的平均价。Destination 没填的柜子，按同一收货人最常去的目的地归类；仍无法判断目的地的不参与价格比较。<b>价格指数</b> = 该公司各目的地价格 ÷ 该目的地平均价，按柜数加权（100% = 平均，越低越便宜）；价格分 = 最便宜者的指数 ÷ 自己的指数。<br>总分 = 价格分 × ${CTS.wp}% + 准时率 × ${CTS.wo}% + (1 − 额外费用率) × ${CTS.wx}%。准时 = 实际到达日 ≤ 预约 slot 日；额外费用率 = 有 Surcharge 的柜子比例；缺数据按 0.5 计。所有灰色数字都可以改，填了（蓝框）就用你的数。<span style="color:#056dae;cursor:pointer;text-decoration:underline" onclick="ctsReset()">清除手动修改</span><br>
       Prices are compared <b>per destination</b>: one column per destination with this trucker's average price there (container count in brackets); the header shows the average of all truckers. Containers without a Destination take the most common destination of the same consignee. Price index = trucker's price ÷ destination average, weighted by containers. Score = price score × ${CTS.wp}% + on-slot × ${CTS.wo}% + (1 − extra rate) × ${CTS.wx}%. Grey numbers can be edited; a typed number (blue box) is used instead.</div>`:''}</div>`;
 }
 </script>
