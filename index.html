@@ -11348,7 +11348,7 @@ function _noFld(o,cn,f){
 function _noSetFld(id,cn,f,v){ if(cn) noSetCtn(id,cn,f,v); else noSet(id,f,v); }
 
 // ── 费用明细：动态行，下拉挑项目 ──────────────────────────────────────────
-const NO_CHARGE_ITEMS=['Freight','CC','T1','Docs','Handling fee','Forklift','Airport fee','Terminal charges','Storage','Waiting','Other'];
+const NO_CHARGE_ITEMS=['Freight','CC','T1','Docs','Handling fee','Forklift','Airport fee','Terminal charges','Terminal transfer','Duties','Storage','Waiting','Other'];
 
 // 没存过 Charges 的订单，从原有字段推出默认几行，历史数据不丢
 function _noDefaultCharges(o,cn){
@@ -14166,7 +14166,7 @@ try{ Object.assign(QC,JSON.parse(localStorage.getItem(QC_KEY)||'{}')); }catch(e)
 function qtSave(){ try{ localStorage.setItem(QT_KEY,JSON.stringify(QT)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
 function qcSet(k,v){ QC[k]=(typeof QC[k]==='number')?(parseFloat(v)||0):v; try{ localStorage.setItem(QC_KEY,JSON.stringify(QC)); }catch(e){} renderQuotes(); }
 const _qF=(v,dp)=>(v==null||isNaN(v))?'—':(+v).toLocaleString('en-US',{minimumFractionDigits:dp||0,maximumFractionDigits:dp||0});
-const QX_ITEMS=['Storage','Waiting','Forklift','Terminal charges','Airport fee','Other'];
+const QX_ITEMS=['Storage','Waiting','Forklift','Terminal charges','Terminal transfer','Duties','Airport fee','Other'];
 function _qCalc(){
   const st=Math.max(0,QC.dwell-QC.free)*QC.rate, xp=QC.xRate/100*QC.xAvg;
   const cost=QC.freight+QC.other+(QC.inclSt?st:0)+xp, m=Math.min(QC.margin,95)/100, quote=cost/(1-m);
@@ -14270,13 +14270,13 @@ function renderExtraPareto(){
   const el=document.getElementById('dash-extra-pareto'); if(!el) return;
   const g={};
   // only main categories; free-text notes / reasons are mapped into them and shown in the details
-  const CAT=s=>{ const t=String(s||'').toLowerCase(); if(/wait/.test(t)) return 'Waiting'; if(/stor|堆存/.test(t)) return 'Storage'; if(/fork|叉车/.test(t)) return 'Forklift'; if(/terminal|场站/.test(t)) return 'Terminal charges'; if(/airport|机场/.test(t)) return 'Airport fee'; if(/unload|卸货/.test(t)) return 'Unloading'; if(/ata|delay|延误/.test(t)) return 'ATA delayed'; return 'Other'; };
+  const CAT=s=>{ const t=String(s||'').toLowerCase(); if(/wait/.test(t)) return 'Waiting'; if(/stor|堆存/.test(t)) return 'Storage'; if(/fork|叉车/.test(t)) return 'Forklift'; if(/terminal\s*transfer|转场|倒箱/.test(t)) return 'Terminal transfer'; if(/dut|代缴|关税|税/.test(t)) return 'Duties'; if(/terminal|场站/.test(t)) return 'Terminal charges'; if(/airport|机场/.test(t)) return 'Airport fee'; if(/unload|卸货/.test(t)) return 'Unloading'; if(/ata|delay|延误/.test(t)) return 'ATA delayed'; return 'Other'; };
   const add=(r,v,src,ref)=>{ if(!(v>0)) return; const raw=CAT(r), k=raw.toLowerCase();
     const e=g[k]||(g[k]={k,labels:{},n:0,sum:0,src:{},refs:[]}); e.labels[raw]=(e.labels[raw]||0)+1; e.n++; e.sum+=v; e.src[src]=(e.src[src]||0)+v; e.refs.push(Object.assign({src,v},ref)); };
   (typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{ const cs=_noContainers(o); (cs.length?cs:[null]).forEach(cn=>{
     const ref={id:o._id,cn:cn||'',no:o['Order No.']||('#'+o._id),proj:o['Project']||''};
     const ch=Array.isArray(_noFld(o,cn,'Charges'))?_noFld(o,cn,'Charges'):[];
-    ch.filter(l=>QX_ITEMS.includes(l.item)&&_noN(l.p)>0).forEach(l=>add(l.item,_noN(l.p),'Orders',Object.assign({note:l.note||''},ref)));
+    ch.filter(l=>QX_ITEMS.includes(l.item)&&_noN(l.p)>0).forEach(l=>{ let it=l.item; if(it==='Other'){ const c=CAT(l.note); if(c==='Terminal transfer'||c==='Duties') it=c; } add(it,_noN(l.p),'Orders',Object.assign({note:l.note||''},ref)); });
     _noSurcharges(o,cn).forEach(t=>add(t.reason,_noN(t.fee),'Orders',Object.assign({note:t.reason||''},ref))); }); });
   (typeof CT!=='undefined'?CT:[]).forEach(r=>add(r['Surcharge Reason']||'other',parseFloat(r['Surcharge']),'TEMU',{ctn:r['Container No.']||'',batch:r['Batch / Train']||'',ctId:r._id,note:r['Surcharge Reason']||''}));
   const rows=Object.values(g).map(e=>Object.assign(e,{label:Object.entries(e.labels).sort((a,b)=>b[1]-a[1])[0][0]})).sort((a,b)=>b.sum-a.sum), tot=rows.reduce((s,r)=>s+r.sum,0);
