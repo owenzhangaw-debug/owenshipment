@@ -1596,7 +1596,7 @@ tbody tr:hover{background:#fafbfc}
     <button onclick="showPage('orders')">Orders</button>
     <button onclick="showPage('dispatch')">Dispatch</button>
     <button onclick="showPage('vessels')">Vessels</button>
-    <button onclick="showPage('models')">Models</button>
+    <button onclick="showPage('models')">模型 Models</button>
     <span class="nav-divider"></span>
     <div class="hb-sec">Tools</div>
     <!-- Tools dropdown -->
@@ -14146,7 +14146,7 @@ h2,h3{text-transform:none!important;letter-spacing:.01em!important}
 // ══ QUANT MODELS (Orders data) ═══════════════════════════════════════════════
 // M1 storage-risk pricing · M2 trucker / hub scorecard · M3 newsvendor truck booking · M4 compound-Poisson node risk
 const QM_KEY='owenz_qm_cfg_v1';
-let QM={k:0.15,alpha:0.95,spotPrem:80,waitDays:2,dayRate:30,cancelFee:50,sevDays:3,penalty:0,defFree:3,defRate:30,hubMap:{},sel:''};
+let QM={k:0.15,alpha:0.95,spotPrem:80,waitDays:2,dayRate:30,cancelFee:50,sevDays:3,penalty:0,ourShare:10,defFree:3,defRate:30,hubMap:{},sel:''};
 try{ Object.assign(QM,JSON.parse(localStorage.getItem(QM_KEY)||'{}')); }catch(e){}
 function qmSet(k,v){ QM[k]=(typeof QM[k]==='number')?(parseFloat(v)||0):v; try{ localStorage.setItem(QM_KEY,JSON.stringify(QM)); }catch(e){} renderModels(); }
 function qmSetHub(hub,id){ QM.hubMap[hub]=id; try{ localStorage.setItem(QM_KEY,JSON.stringify(QM)); }catch(e){} renderModels(); }
@@ -14195,7 +14195,8 @@ function _qmHubStats(obs){
     const E=_qmMean(fees), V=_qmQ(fees,QM.alpha), C=_qmCVaR(fees,QM.alpha);
     // value of one more free day: E[fee | free] − E[fee | free+1]
     let v1=0; if(hub){ const t=_qmTariff(hub); if(t&&_noHubTiers(t).length){ const t2=Object.assign({},t,{free:(parseInt(t.free,10)||0)+1}); v1=E-_qmMean(D.map(d=>d<=t2.free?0:_noHubFee(t2,d-t2.free))); } else v1=E-_qmMean(D.map(d=>Math.max(0,d-free-1)*QM.defRate)); }
-    return {hub,n:D.length,free,mean:_qmMean(D),sd:_qmSd(D),p50:_qmQ(D,.5),p90:_qmQ(D,.9),pOver:D.filter(d=>d>free).length/(D.length||1),E,V,C,prem:E+QM.k*(C-E),v1,D,fees};
+    const sh=(QM.ourShare||0)/100;
+    return {hub,n:D.length,free,mean:_qmMean(D),sd:_qmSd(D),p50:_qmQ(D,.5),p90:_qmQ(D,.9),pOver:D.filter(d=>d>free).length/(D.length||1),E,V,C,ours:E*sh,prem:sh*(E+QM.k*(C-E)),v1,D,fees};
   };
   const rows=Object.keys(g).sort((a,b)=>g[b].length-g[a].length).map(h=>st(h,g[h]));
   return {rows,all:st(null,all)};
@@ -14205,7 +14206,7 @@ function _qmTrk(obs){
   const g={}; obs.forEach(x=>(g[x.trk]=g[x.trk]||[]).push(x));
   return Object.keys(g).map(t=>{
     const xs=g[t], dd=xs.filter(x=>x.d!=null), D=dd.map(x=>x.d).sort((a,b)=>a-b);
-    const fees=dd.map(x=>_qmFee(x.hub,x.d)), onT=dd.filter(x=>x.d<=_qmFree(x.hub)).length;
+    const fees=dd.map(x=>_qmFee(x.hub,x.d)*(QM.ourShare||0)/100), onT=dd.filter(x=>x.d<=_qmFree(x.hub)).length;
     const mg=xs.filter(x=>x.r||x.p).map(x=>x.r-x.p);
     const ef=_qmMean(fees), m=_qmMean(mg);
     return {t,n:xs.length,nd:D.length,mean:_qmMean(D),sd:_qmSd(D),p90:_qmQ(D,.9),onTime:dd.length?onT/dd.length:null,ef,margin:mg.length?m:null,adj:mg.length?m-ef:null};
@@ -14229,7 +14230,7 @@ function _qmNode(obs){
   return Object.keys(g).map(h=>{
     const xs=g[h], free=_qmFree(h);
     const ev=xs.filter(x=>x.d>free+QM.sevDays);
-    const sev=ev.map(x=>_qmFee(h,x.d)+QM.penalty*Math.max(0,x.d-free));
+    const sev=ev.map(x=>_qmFee(h,x.d)*(QM.ourShare||0)/100+QM.penalty*Math.max(0,x.d-free));
     const lam=ev.length/months, u=_qmRng(12345+h.length*97), sims=[];
     for(let i=0;i<10000;i++){ const n=sev.length?_qmPois(lam*12,u):0; let s=0; for(let j=0;j<n;j++) s+=sev[Math.floor(u()*sev.length)]; sims.push(s); }
     sims.sort((a,b)=>a-b);
@@ -14242,69 +14243,86 @@ function qmExpFeeFor(hub){ try{ const hs=_qmHubStats(_qmObs()); const r=hs.rows.
 function renderModels(){
   const el=document.getElementById('qm-body'); if(!el) return;
   const obs=_qmObs(), hs=_qmHubStats(obs), trk=_qmTrk(obs), weeks=_qmWeeks(obs), node=_qmNode(obs);
-  const a=Math.round(QM.alpha*100), th='padding:6px 8px;text-align:right;white-space:nowrap', td='padding:6px 8px;text-align:right;font-family:var(--f-num,monospace);white-space:nowrap;border-bottom:1px solid #eef4fa', tl='padding:6px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid #eef4fa';
-  const inp=(k,lab,step,w)=>`<label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">${lab}<input type="number" step="${step||1}" value="${QM[k]}" onchange="qmSet('${k}',this.value)" style="width:${w||110}px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"></label>`;
-  const theory=(t,html)=>`<details style="margin-top:6px"><summary style="cursor:pointer;font-size:13px;color:var(--blue,#056dae);font-weight:600">${t}</summary><div style="font-size:13px;line-height:1.7;color:var(--text);padding:8px 2px 2px">${html}</div></details>`;
-  const fx=s=>`<div style="font-family:var(--f-num,monospace);background:#eef4fa;border-radius:6px;padding:8px 10px;margin:6px 0;white-space:pre-wrap">${s}</div>`;
-  const sheet=(t,sub,inner)=>`<div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0 0 2px">${t}</h3><div style="font-size:12px;color:var(--muted);margin-bottom:10px">${sub}</div>${inner}</div>`;
+  const sh=QM.ourShare||0, bad=Math.round((1-QM.alpha)*100);
+  const th='padding:6px 8px;text-align:right;white-space:nowrap;vertical-align:bottom;line-height:1.25', td='padding:6px 8px;text-align:right;font-family:var(--f-num,monospace);white-space:nowrap;border-bottom:1px solid #eef4fa', tl='padding:6px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid #eef4fa';
+  const H=(zh,en,left)=>`<th style="${th}${left?';text-align:left':''}">${zh}<br><span style="font-weight:400;font-size:11px">${en}</span></th>`;
+  const inp=(k,zh,en,step,w)=>`<label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);line-height:1.3">${zh}<span style="font-size:11px">${en}</span><input type="number" step="${step||1}" value="${QM[k]}" onchange="qmSet('${k}',this.value)" style="width:${w||120}px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"></label>`;
+  const box=(zh,en)=>`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;line-height:1.7;margin:4px 0 10px"><div>${zh}</div><div style="color:var(--muted)">${en}</div></div>`;
+  const theory=(zh,en,f)=>`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:13px;color:var(--blue,#056dae);font-weight:600">公式与说明 · Formula &amp; explanation</summary>
+    <div style="font-family:var(--f-num,monospace);background:#eef4fa;border-radius:6px;padding:8px 10px;margin:8px 0;white-space:pre-wrap;font-size:12.5px">${f}</div>${box(zh,en)}</details>`;
+  const sheet=(zh,en,lead_zh,lead_en,inner)=>`<div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0">${zh}</h3><div style="font-size:13px;color:var(--muted);margin-bottom:6px">${en}</div>${box(lead_zh,lead_en)}${inner}</div>`;
   const nD=obs.filter(x=>x.d!=null).length;
-  const hubOpts=h=>`<select onchange="qmSetHub('${h.replace(/'/g,"\\'")}',this.value)" style="padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;max-width:190px"><option value="">auto: ${_noEsc((_qmTariff(h)||{}).name||'flat default')}</option>${NO_HUBS.map(x=>`<option value="${x.id}" ${String(QM.hubMap[h])===String(x.id)?'selected':''}>${_noEsc(x.name)}</option>`).join('')}<option value="flat" ${QM.hubMap[h]==='flat'?'selected':''}>flat default</option></select>`;
-  // histogram
+  const hubOpts=h=>`<select onchange="qmSetHub('${h.replace(/'/g,"\\'")}',this.value)" style="padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;max-width:170px"><option value="">自动 auto: ${_noEsc((_qmTariff(h)||{}).name||'默认 default')}</option>${NO_HUBS.map(x=>`<option value="${x.id}" ${String(QM.hubMap[h])===String(x.id)?'selected':''}>${_noEsc(x.name)}</option>`).join('')}<option value="flat" ${QM.hubMap[h]==='flat'?'selected':''}>默认费率 default</option></select>`;
+  const small=n=>n<5?' <span style="color:#a86c12;font-size:11px">样本少 small n</span>':'';
   const selRow=hs.rows.find(r=>r.hub===QM.sel)||hs.all;
   const hist=(()=>{ const D=selRow.D; if(!D.length) return ''; const mx=Math.max(...D), c=[...Array(mx+1)].map((_,i)=>D.filter(d=>d===i).length), top=Math.max(...c);
-    return `<div style="display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:8px">${c.map((v,i)=>`<div title="${i} days: ${v}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%"><div style="font-size:10px;color:var(--muted)">${v||''}</div><div style="width:100%;height:${v/top*90}%;background:${i>selRow.free?'#b8392c':'#056dae'};border-radius:3px 3px 0 0;min-height:${v?2:0}px"></div><div style="font-size:10px;color:var(--muted)">${i}</div></div>`).join('')}</div><div style="font-size:11px;color:var(--muted)">Dwell days at hub (${_noEsc(selRow.hub||'all hubs')}) · red = beyond ${selRow.free} free days</div>`; })();
+    return `<div style="display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:10px">${c.map((v,i)=>`<div title="${i}d: ${v}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%"><div style="font-size:10px;color:var(--muted)">${v||''}</div><div style="width:100%;height:${v/top*90}%;background:${i>selRow.free?'#b8392c':'#056dae'};border-radius:3px 3px 0 0;min-height:${v?2:0}px"></div><div style="font-size:10px;color:var(--muted)">${i}</div></div>`).join('')}</div>
+      <div style="font-size:11px;color:var(--muted)">${_noEsc(selRow.hub||'全部场站 all hubs')}：每根柱 = 停了几天的柜子数量；红色 = 超过 ${selRow.free} 天免堆期 · each bar = number of B/Ls that stayed that many days; red = beyond free days. 点表格行可切换场站 · click a row to switch hub.</div>`; })();
+  const ex=hs.rows.find(r=>r.n>=5&&r.E>0)||hs.all;
 
   el.innerHTML=`
-  <div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0 0 6px">Settings</h3>
-    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">${inp('alpha','Confidence α',0.01,90)}${inp('k','Risk loading k',0.05,90)}${inp('defFree','Default free days',1,90)}${inp('defRate','Default €/day',1,90)}
-    <div style="font-size:12px;color:var(--muted);margin-left:auto">Data: <b style="color:var(--text)">${obs.length}</b> B/Ls · <b style="color:var(--text)">${nD}</b> with At Hub + Pick Up/ATA</div></div></div>
+  <div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0">设置 · Settings</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-top:8px">
+      ${inp('ourShare','我方承担堆存费比例 %','Share of storage we pay %',5)}${inp('alpha','坏情况取最贵的','Bad case = top',0.01,90)}${inp('k','风险加价系数 k','Risk loading k',0.05,90)}${inp('defFree','默认免堆天数','Default free days',1,90)}${inp('defRate','默认日费率 €','Default €/day',1,90)}
+      <div style="font-size:12px;color:var(--muted);margin-left:auto;text-align:right">数据 Data：<b style="color:var(--text)">${obs.length}</b> 个 B/L，其中 <b style="color:var(--text)">${nD}</b> 个有到站和提柜日期<br>${nD} B/Ls have both At Hub and Pick Up/ATA dates</div></div>
+    ${box(`堆存费一般由客户承担，只有我们的原因（比如没及时派车）才由我们付。<b>我方承担比例</b>就是你估计“由我们造成”的那部分，默认 10%。设为 0% 表示全部由客户承担。“坏情况”填 0.95 表示取最贵的 ${bad}% 柜子。`,
+      `Storage is normally charged to the customer; we only pay when the delay is our fault (e.g. no truck in time). <b>Share we pay</b> is your estimate of that part, default 10%. Set 0% if the customer always pays. “Bad case” 0.95 = the most expensive ${bad}% of B/Ls.`)}</div>
 
-  ${sheet('Model 1 · Storage risk pricing (free days as an option)','Expected storage fee, tail risk and the risk premium to add to the quote — per hub, from your own dwell history',`
-    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="${th};text-align:left">Hub</th><th style="${th};text-align:left">Tariff</th><th style="${th}">n</th><th style="${th}">Free</th><th style="${th}">Mean dwell</th><th style="${th}">P50 / P90</th><th style="${th}">P(D&gt;free)</th><th style="${th}">E[Fee]</th><th style="${th}">VaR${a}</th><th style="${th}">CVaR${a}</th><th style="${th}">Risk premium</th><th style="${th}">+1 free day worth</th></tr></thead><tbody>
-    ${hs.rows.map(r=>`<tr style="cursor:pointer;${r.hub===QM.sel?'background:#eef4fa':''}" onclick="qmSet('sel','${r.hub.replace(/'/g,"\\'")}')"><td style="${tl};font-weight:600">${_noEsc(r.hub)}${r.n<5?' <span style="color:#a86c12;font-size:11px">small n</span>':''}</td><td style="${tl}" onclick="event.stopPropagation()">${hubOpts(r.hub)}</td><td style="${td}">${r.n}</td><td style="${td}">${r.free}</td><td style="${td}">${_qmF(r.mean,1)}d</td><td style="${td}">${r.p50} / ${r.p90}d</td><td style="${td}">${_qmF(r.pOver*100)}%</td><td style="${td}">€${_qmF(r.E)}</td><td style="${td}">€${_qmF(r.V)}</td><td style="${td}">€${_qmF(r.C)}</td><td style="${td};font-weight:700;color:#056dae">€${_qmF(r.prem)}</td><td style="${td}">€${_qmF(r.v1)}</td></tr>`).join('')}
-    <tr style="font-weight:700;background:#f7fafd"><td style="${tl}">All hubs</td><td style="${tl}">—</td><td style="${td}">${hs.all.n}</td><td style="${td}">${QM.defFree}</td><td style="${td}">${_qmF(hs.all.mean,1)}d</td><td style="${td}">${hs.all.p50} / ${hs.all.p90}d</td><td style="${td}">${_qmF(hs.all.pOver*100)}%</td><td style="${td}">€${_qmF(hs.all.E)}</td><td style="${td}">€${_qmF(hs.all.V)}</td><td style="${td}">€${_qmF(hs.all.C)}</td><td style="${td};color:#056dae">€${_qmF(hs.all.prem)}</td><td style="${td}">—</td></tr></tbody></table></div>
+  ${sheet('模型 1 · 堆存费预估','Model 1 · Storage fee forecast',
+    `<b>一句话：</b>根据过去每个场站的提柜速度，算出一个柜子在那里<b>平均会产生多少堆存费</b>、<b>坏的时候会到多少</b>。<br><b>怎么用：</b>①报价或接单时提前告诉客户“这个场站一般会产生约 €X 堆存费”，避免事后争议；②“我们承担”那列是按责任比例算出的我方成本，可以加进报价。`,
+    `<b>In one line:</b> from how fast containers were picked up at each hub in the past, estimate the <b>average storage fee</b> per B/L and how high it gets <b>in a bad case</b>.<br><b>Use it to:</b> ① tell the customer up front “this hub usually costs about €X storage”; ② the “we pay” column is our own expected cost at your share — add it to the quote.`,
+    `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${H('场站','Hub',1)}${H('费率','Tariff',1)}${H('柜数','B/Ls')}${H('免堆','Free days')}${H('平均停留','Avg stay')}${H('超免堆概率','Chance over free')}${H('客户平均付','Customer pays avg')}${H('坏情况','Bad case')}${H('我们平均付','We pay avg')}${H('建议加价','Add to quote')}${H('多一天免堆值','+1 free day')}</tr></thead><tbody>
+    ${hs.rows.map(r=>`<tr style="cursor:pointer;${r.hub===QM.sel?'background:#eef4fa':''}" onclick="qmSet('sel','${r.hub.replace(/'/g,"\\'")}')"><td style="${tl};font-weight:600">${_noEsc(r.hub)}${small(r.n)}</td><td style="${tl}" onclick="event.stopPropagation()">${hubOpts(r.hub)}</td><td style="${td}">${r.n}</td><td style="${td}">${r.free}</td><td style="${td}">${_qmF(r.mean,1)}d</td><td style="${td}">${_qmF(r.pOver*100)}%</td><td style="${td}">€${_qmF(r.E)}</td><td style="${td}">€${_qmF(r.C)}</td><td style="${td}">€${_qmF(r.ours)}</td><td style="${td};font-weight:700;color:#056dae">€${_qmF(r.prem)}</td><td style="${td}">€${_qmF(r.v1)}</td></tr>`).join('')}
+    <tr style="font-weight:700;background:#f7fafd"><td style="${tl}">全部 All</td><td style="${tl}">—</td><td style="${td}">${hs.all.n}</td><td style="${td}">${QM.defFree}</td><td style="${td}">${_qmF(hs.all.mean,1)}d</td><td style="${td}">${_qmF(hs.all.pOver*100)}%</td><td style="${td}">€${_qmF(hs.all.E)}</td><td style="${td}">€${_qmF(hs.all.C)}</td><td style="${td}">€${_qmF(hs.all.ours)}</td><td style="${td};color:#056dae">€${_qmF(hs.all.prem)}</td><td style="${td}">—</td></tr></tbody></table></div>
     ${hist}
-    ${theory('Formula & theory',`免堆期本质上是场站免费送你的一个<b>等待期权</b>：在免堆期内提柜，成本为 0；超过之后按阶梯日费率付费。货物在场站的停留天数 D 是随机的，所以堆存费是一个随机变量，可以像期权一样<b>定价</b>。
-      ${fx('Fee(d)   = Σ_{t=free+1..d} rate(t)          // 场站阶梯费率\nE[Fee]   = (1/n) Σ_i Fee(d_i)                 // 用你自己的历史停留天数（经验分布）\nVaR_α    = Fee 分布的 α 分位数\nCVaR_α   = E[ Fee | Fee ≥ VaR_α ]             // 最差 (1-α) 情况下的平均损失\nPremium  = E[Fee] + k · (CVaR_α − E[Fee])     // 报价应加的风险费')}
-      <b>E[Fee]</b> 是每柜平均要付的堆存费，不收就是你替客户承担。<b>CVaR</b> 衡量尾部：碰上清关卡住、收货人不收货时一柜会亏多少。<b>k</b> 是你愿意为尾部风险收取的比例（0 = 只收期望，1 = 按最坏情况收），通常 0.1–0.2。
-      <b>+1 free day worth</b> = E[Fee | free] − E[Fee | free+1]，即多争取一天免堆期的价值，可以用来跟场站谈判或比较场站。
-      停留天数 D = Pick Up Date − At Hub Date（没有 Pick Up 时用 ATA）。场站费率取自 Orders 页的场站表（可在 Tariff 列手动指定），没有匹配时用上方默认免堆期和日费率。样本少于 5 柜的场站结果仅供参考。`)}`)}
+    ${theory(`<b>举例（${_noEsc(ex.hub||'全部场站')}）：</b>过去 ${ex.n} 个柜平均停 ${_qmF(ex.mean,1)} 天，有 ${_qmF(ex.pOver*100)}% 超过免堆期。把每个柜的堆存费算出来取平均 = <b>€${_qmF(ex.E)}</b>，这是客户平均要付的。最贵的 ${bad}% 柜子平均 €${_qmF(ex.C)}，这是“坏情况”。我们承担 ${sh}%，平均 €${_qmF(ex.ours)}。<br>
+      <b>多一天免堆值：</b>如果场站多给一天免堆期，平均能省多少钱。可以拿去跟场站谈，或比较两个场站。<br>
+      <b>说明：</b>停留天数 = 提柜日 − 到站日（没有提柜日就用 ATA）。费率来自 Orders 页的场站表，没匹配上的用默认费率，可在“费率”列手动选。样本少于 5 个柜的场站只能参考。`,
+      `<b>Example (${_noEsc(ex.hub||'all hubs')}):</b> ${ex.n} past B/Ls stayed ${_qmF(ex.mean,1)} days on average, ${_qmF(ex.pOver*100)}% went over the free days. The average of their storage fees = <b>€${_qmF(ex.E)}</b> — what the customer pays on average. The most expensive ${bad}% averaged €${_qmF(ex.C)} — the bad case. At our ${sh}% share we pay €${_qmF(ex.ours)} on average.<br>
+      <b>+1 free day:</b> how much one extra free day would save on average — useful when negotiating with or comparing hubs.<br>
+      <b>Notes:</b> stay = Pick Up − At Hub (ATA if no pick-up). Tariffs come from the hub table on the Orders page; unmatched hubs use the default rate (pick one in the Tariff column). Hubs with fewer than 5 B/Ls are indicative only.`,
+      `堆存费 Storage fee   = 超过免堆期的每一天的日费率相加      sum of the daily rates after the free days\n客户平均付 Avg        = 所有历史柜子堆存费的平均            average over past B/Ls\n坏情况 Bad case       = 最贵的 ${bad}% 柜子的平均              average of the most expensive ${bad}%\n我们平均付 We pay     = 客户平均付 × ${sh}%\n建议加价 Add to quote = ${sh}% × [ 平均 + k × (坏情况 − 平均) ]     k = ${QM.k}`)}`)}
 
-  ${sheet('Model 2 · Trucker scorecard (risk-adjusted margin)','A cheap trucker who picks up late is expensive: margin per B/L minus the storage cost his dwell time generates',`
-    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="${th};text-align:left">Trucker</th><th style="${th}">B/Ls</th><th style="${th}">with dwell</th><th style="${th}">Mean dwell</th><th style="${th}">σ</th><th style="${th}">P90</th><th style="${th}">On-time (≤ free)</th><th style="${th}">Margin / B/L</th><th style="${th}">Storage / B/L</th><th style="${th}">Risk-adj. margin</th></tr></thead><tbody>
-    ${trk.map(r=>`<tr><td style="${tl};font-weight:600">${_noEsc(r.t)}${r.nd<5?' <span style="color:#a86c12;font-size:11px">small n</span>':''}</td><td style="${td}">${r.n}</td><td style="${td}">${r.nd}</td><td style="${td}">${r.nd?_qmF(r.mean,1)+'d':'—'}</td><td style="${td}">${r.nd>1?_qmF(r.sd,1):'—'}</td><td style="${td}">${r.nd?r.p90+'d':'—'}</td><td style="${td}">${r.onTime==null?'—':_qmF(r.onTime*100)+'%'}</td><td style="${td}">${r.margin==null?'—':'€'+_qmF(r.margin)}</td><td style="${td}">€${_qmF(r.ef)}</td><td style="${td};font-weight:700;color:${r.adj==null?'inherit':r.adj<0?'#b8392c':'#1d7a4b'}">${r.adj==null?'—':'€'+_qmF(r.adj)}</td></tr>`).join('')}</tbody></table></div>
-    ${theory('Formula & theory',`采购不能只比报价。每个卡车公司的提柜速度不同，慢的会让柜子在场站多停几天，产生堆存费——这是报价里看不到的<b>隐性成本</b>。
-      ${fx('Margin/BL       = Receivable − Payable           // 来自订单 Charges\nStorage/BL      = mean_i Fee(hub_i, d_i)          // 该卡车公司经手柜子的实际堆存成本\nRisk-adj margin = Margin/BL − Storage/BL\nOn-time         = P(d ≤ free days)')}
-      σ（标准差）衡量<b>稳定性</b>：均值相同的两家，σ 小的更可预测，更适合放长期合约量；σ 大的适合放现货、做补充运力。
-      注意：停留时间不全是卡车公司的责任（清关、收货人约仓也会拖），所以这是线索而非结论；同一家公司如果在系统里有两种写法（如 ADAMPOL / Adampol），会被分成两行，请统一名称。`)}`)}
+  ${sheet('模型 2 · 卡车公司评分','Model 2 · Trucker scorecard',
+    `<b>一句话：</b>比较卡车公司不能只看报价，还要看他们<b>提柜快不快、稳不稳</b>。<br><b>怎么用：</b>“准时率”= 在免堆期内提走的比例；“波动”越小越可靠，适合给长期量；“扣风险后毛利”= 每柜毛利减去我们可能承担的堆存费，按它排序。`,
+    `<b>In one line:</b> don't compare truckers on price alone — also on <b>how fast and how consistently</b> they pick up.<br><b>Use it:</b> “On time” = share picked up within free days; lower “Spread” = more reliable, good for contract volume; “Margin after risk” = margin per B/L minus the storage we may have to pay. The table is sorted by it.`,
+    `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${H('卡车公司','Trucker',1)}${H('B/L 数','B/Ls')}${H('有日期','With dates')}${H('平均停留','Avg stay')}${H('波动','Spread (σ)')}${H('10 个里最慢的 1 个','Slowest 10%')}${H('准时率','On time')}${H('每柜毛利','Margin / B/L')}${H('我们承担堆存','Our storage / B/L')}${H('扣风险后毛利','Margin after risk')}</tr></thead><tbody>
+    ${trk.map(r=>`<tr><td style="${tl};font-weight:600">${_noEsc(r.t)}${small(r.nd)}</td><td style="${td}">${r.n}</td><td style="${td}">${r.nd}</td><td style="${td}">${r.nd?_qmF(r.mean,1)+'d':'—'}</td><td style="${td}">${r.nd>1?_qmF(r.sd,1)+'d':'—'}</td><td style="${td}">${r.nd?r.p90+'d':'—'}</td><td style="${td}">${r.onTime==null?'—':_qmF(r.onTime*100)+'%'}</td><td style="${td}">${r.margin==null?'—':'€'+_qmF(r.margin)}</td><td style="${td}">€${_qmF(r.ef)}</td><td style="${td};font-weight:700;color:${r.adj==null?'inherit':r.adj<0?'#b8392c':'#1d7a4b'}">${r.adj==null?'—':'€'+_qmF(r.adj)}</td></tr>`).join('')}</tbody></table></div>
+    ${theory(`<b>波动（标准差 σ）：</b>表示停留天数忽长忽短的程度。两家平均都是 4 天，一家总是 3–5 天（σ 小），一家有时 1 天有时 10 天（σ 大），前者更好安排。<br><b>注意：</b>停留时间不全是卡车公司的原因，清关、收货人约仓也会拖；同一家公司写法不同（如 ADAMPOL / Adampol）会被分成两行，请统一名称。`,
+      `<b>Spread (standard deviation σ):</b> how much the stay varies. Two truckers both average 4 days: one is always 3–5 days (small σ), the other 1–10 days (large σ) — the first is easier to plan.<br><b>Note:</b> a long stay is not always the trucker's fault (customs, consignee booking also delay); the same company spelled two ways (ADAMPOL / Adampol) shows as two rows — please unify names.`,
+      `每柜毛利 Margin/BL         = 应收 − 应付 (订单 Charges)      Receivable − Payable\n我们承担堆存 Our storage    = 该公司经手柜子的平均堆存费 × ${sh}%\n扣风险后毛利 After risk     = 每柜毛利 − 我们承担堆存\n准时率 On time             = 停留天数 ≤ 免堆期 的比例`)}`)}
 
-  ${(()=>{ const W=weeks.slice().sort((x,y)=>x-y), Cu=QM.spotPrem+QM.waitDays*QM.dayRate, Co=QM.cancelFee, CR=Cu/((Cu+Co)||1), Q=_qmQ(W,CR);
+  ${(()=>{ const W=weeks.slice().sort((x,y)=>x-y), Cu=QM.spotPrem+QM.waitDays*QM.dayRate*sh/100, Co=QM.cancelFee, CR=Cu/((Cu+Co)||1), Q=_qmQ(W,CR);
     const cost=q=>_qmMean(weeks.map(dm=>Cu*Math.max(0,dm-q)+Co*Math.max(0,q-dm)));
-    const maxW=W.length?W[W.length-1]:0, qs=[...Array(maxW+1)].map((_,q)=>({q,c:cost(q)})), best=qs.reduce((b,x)=>x.c<b.c?x:b,qs[0]||{q:0,c:0}), top=Math.max(...qs.map(x=>x.c),1);
-    return sheet('Model 3 · Truck booking — newsvendor model','How many trucks to pre-book per week before you know the exact arrivals',`
-    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">${inp('spotPrem','Spot − contract (€/truck)')}${inp('waitDays','Extra days waiting for a spot truck',0.5)}${inp('dayRate','Storage €/day')}${inp('cancelFee','Cancel / idle fee (€)')}</div>
-    <div class="kpi-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px">
-      <div class="kpi"><div class="kl">Under-booking cost Cu</div><div class="kv">€${_qmF(Cu)}</div><div class="ks">spot premium + waiting</div></div>
-      <div class="kpi"><div class="kl">Over-booking cost Co</div><div class="kv">€${_qmF(Co)}</div><div class="ks">cancel / idle</div></div>
-      <div class="kpi"><div class="kl">Critical ratio</div><div class="kv">${_qmF(CR*100)}%</div><div class="ks">Cu / (Cu + Co)</div></div>
-      <div class="kpi"><div class="kl">Pre-book Q*</div><div class="kv" style="color:#056dae">${Q}</div><div class="ks">trucks / week (avg ${_qmF(_qmMean(weeks),1)})</div></div>
-      <div class="kpi"><div class="kl">Expected weekly cost at Q*</div><div class="kv">€${_qmF(cost(Q))}</div><div class="ks">vs €${_qmF(cost(Math.round(_qmMean(weeks))))} if you book the average</div></div></div>
-    <div style="display:flex;align-items:flex-end;gap:2px;height:90px;margin-top:12px">${qs.map(x=>`<div title="Q=${x.q}: €${_qmF(x.c)}" style="flex:1;height:${x.c/top*100}%;background:${x.q===Q?'#056dae':'#c9dff0'};border-radius:2px 2px 0 0"></div>`).join('')}</div>
-    <div style="font-size:11px;color:var(--muted)">Expected weekly cost by number of pre-booked trucks Q (0 → ${maxW}); dark bar = Q*. Based on ${weeks.length} weeks of arrivals.</div>
-    ${theory('Formula & theory',`提前锁车就像在不知道需求的情况下进货：锁多了要付取消费，锁少了要临时叫高价现货车、柜子还会多停几天。这正是运筹学里的<b>报童模型</b>。
-      ${fx('Cu  = (现货价 − 合约价) + 等车天数 × 日堆存费      // 少锁一辆的代价\nCo  = 取消费 / 空驶费                             // 多锁一辆的代价\nCR  = Cu / (Cu + Co)                              // 临界比\nQ*  = F⁻¹(CR)                                     // 每周到柜量分布的 CR 分位数\nE[Cost(Q)] = Cu·E[(D−Q)⁺] + Co·E[(Q−D)⁺]')}
-      直觉：少锁的代价越大（旺季现货贵、场站日费高），CR 越高，就应该锁得比平均需求<b>更多</b>；取消费越高，就应该锁得更少。F 是你历史上每周到站的柜量（按 At Hub Date 所在周统计，含零到柜的周）。下方柱状图显示不同锁车量对应的预期成本，最低点就是 Q*。`)}`); })()}
+    const maxW=W.length?W[W.length-1]:0, qs=[...Array(maxW+1)].map((_,q)=>({q,c:cost(q)})), top=Math.max(...qs.map(x=>x.c),1), avgQ=Math.round(_qmMean(weeks));
+    return sheet('模型 3 · 每周提前订几辆车','Model 3 · How many trucks to pre-book per week',
+    `<b>一句话：</b>提前订车便宜但订多了要付取消费，临时叫车贵。这个模型告诉你<b>每周提前订几辆最省钱</b>。<br><b>怎么用：</b>填上现货比合约贵多少、取消一辆要多少钱，系统用过去每周的到柜量算出最省钱的数量。`,
+    `<b>In one line:</b> pre-booking is cheaper, but unused bookings cost a cancel fee and last-minute trucks are expensive. This tells you <b>how many trucks to pre-book per week</b> for the lowest cost.<br><b>Use it:</b> enter how much more a spot truck costs and the cancel fee; it uses your past weekly arrivals to find the cheapest number.`,
+    `<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">${inp('spotPrem','临时叫车比预订贵 €','Spot − contract €/truck')}${inp('waitDays','临时叫车多等几天','Extra days waiting for spot',0.5)}${inp('dayRate','堆存日费率 €','Storage €/day')}${inp('cancelFee','取消/空跑一辆 €','Cancel / idle fee €')}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px">
+      <div class="kpi"><div class="kl">少订一辆的代价 · Cost of 1 too few</div><div class="kv">€${_qmF(Cu)}</div></div>
+      <div class="kpi"><div class="kl">多订一辆的代价 · Cost of 1 too many</div><div class="kv">€${_qmF(Co)}</div></div>
+      <div class="kpi"><div class="kl">覆盖比例 · Cover level</div><div class="kv">${_qmF(CR*100)}%</div><div class="ks">订到能覆盖 ${_qmF(CR*100)}% 的周 · enough for ${_qmF(CR*100)}% of weeks</div></div>
+      <div class="kpi"><div class="kl">建议每周预订 · Pre-book per week</div><div class="kv" style="color:#056dae">${Q} 辆 trucks</div><div class="ks">平均到柜 avg arrivals ${_qmF(_qmMean(weeks),1)}</div></div>
+      <div class="kpi"><div class="kl">每周预计成本 · Expected cost / week</div><div class="kv">€${_qmF(cost(Q))}</div><div class="ks">按平均值订 if booking avg (${avgQ}): €${_qmF(cost(avgQ))}</div></div></div>
+    <div style="display:flex;align-items:flex-end;gap:2px;height:90px;margin-top:12px">${qs.map(x=>`<div title="${x.q}: €${_qmF(x.c)}" style="flex:1;height:${x.c/top*100}%;background:${x.q===Q?'#056dae':'#c9dff0'};border-radius:2px 2px 0 0"></div>`).join('')}</div>
+    <div style="font-size:11px;color:var(--muted)">横轴 = 每周预订 0 → ${maxW} 辆，柱高 = 预计每周多花的钱，深色 = 最省钱的数量（基于 ${weeks.length} 周数据）· x = trucks pre-booked 0 → ${maxW}, height = expected weekly extra cost, dark = cheapest (from ${weeks.length} weeks)</div>
+    ${theory(`<b>道理：</b>少订一辆要付 €${_qmF(Cu)}，多订一辆要付 €${_qmF(Co)}。少订更贵，所以宁可多订一点：订到能覆盖 <b>${_qmF(CR*100)}%</b> 的周就最划算，而不是按平均数订。过去每周到柜量排好序，取第 ${_qmF(CR*100)}% 位置的数，就是 <b>${Q}</b> 辆。<br>少订的代价里只算了我们承担的 ${sh}% 堆存费，因为其余由客户付。取消费越高，越应该少订。`,
+      `<b>Why:</b> one truck too few costs €${_qmF(Cu)}, one too many costs €${_qmF(Co)}. Too few is pricier, so book a bit more than average: cover <b>${_qmF(CR*100)}%</b> of weeks. Sort past weekly arrivals and take the value at the ${_qmF(CR*100)}% position: <b>${Q}</b> trucks.<br>The “too few” cost only counts our ${sh}% share of storage, since the customer pays the rest. A higher cancel fee means booking fewer.`,
+      `少订一辆 Cost too few  Cu = 临时车贵的钱 + 多等天数 × 日费率 × ${sh}%\n多订一辆 Cost too many Co = 取消费\n覆盖比例 Cover level    = Cu / (Cu + Co)\n建议预订 Pre-book       = 过去每周到柜量里第 [覆盖比例] 位置的数   (newsvendor model)`)}`); })()}
 
-  ${sheet('Model 4 · Node disruption risk — compound Poisson (Monte Carlo 10,000 runs)','How often a hub produces a severe delay, how much each one costs, and the yearly tail loss',`
-    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">${inp('sevDays','Severe = days beyond free ≥',1)}${inp('penalty','Extra penalty €/day late (claims, idle staff)')}</div>
-    <div style="overflow-x:auto;margin-top:10px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="${th};text-align:left">Hub</th><th style="${th}">B/Ls</th><th style="${th}">Severe events</th><th style="${th}">λ / month</th><th style="${th}">Avg loss / event</th><th style="${th}">Expected loss / yr</th><th style="${th}">VaR${a} / yr</th><th style="${th}">CVaR${a} / yr</th></tr></thead><tbody>
-    ${node.map(r=>`<tr><td style="${tl};font-weight:600">${_noEsc(r.h)}</td><td style="${td}">${r.n}</td><td style="${td}">${r.ev}</td><td style="${td}">${_qmF(r.lam,2)}</td><td style="${td}">€${_qmF(r.Lbar)}</td><td style="${td}">€${_qmF(r.EL)}</td><td style="${td}">€${_qmF(r.V)}</td><td style="${td};font-weight:700;color:#b8392c">€${_qmF(r.C)}</td></tr>`).join('')||`<tr><td colspan="8" style="${tl}">No data yet</td></tr>`}</tbody></table></div>
-    ${theory('Formula & theory',`物流风险是<b>肥尾</b>的：平时都顺，一旦罢工、塞港、清关卡住，就是一大笔。平均值会严重低估这种风险，所以用<b>复合泊松模型</b>分开估计“多久发生一次”和“每次损失多少”。
-      ${fx('事件      = 停留天数 > 免堆期 + 阈值 的柜子\nλ         = 事件数 / 观察月数                    // 频率（泊松参数）\nN_year    ~ Poisson(12 λ)\nL_i       = Fee(d_i) + 罚金 × 超期天数              // 强度：从历史事件中有放回抽样\nS_year    = Σ_{i=1..N} L_i                          // 年度总损失\nEL = E[S]，VaR_α = S 的 α 分位数，CVaR_α = E[S | S ≥ VaR_α]')}
-      每个场站模拟 10,000 年：先按泊松分布抽一年发生几次事件，再从该场站历史的严重延误损失里随机抽取每次的金额，加总得到一年的损失。<b>Expected loss</b> 是长期平均，应摊进该场站的报价；<b>CVaR</b> 是坏年份的平均损失，用来决定要不要换节点、买保险或在合同里转嫁（如超期费由收货人承担）。
-      比较两个节点时用：真实成本 = 基础运费 + 预期损失/柜 + k × 尾部风险/柜，而不是只比基础运费。罚金参数可填停线索赔、仓库空等人工等额外损失。数据越多（建议 ≥ 6 个月）越可靠。`)}`)}`;
+  ${sheet('模型 4 · 场站风险','Model 4 · Hub risk',
+    `<b>一句话：</b>看每个场站<b>多久出一次严重延误</b>、<b>每次亏多少</b>，模拟一万年算出一年平均亏多少、坏年份亏多少。<br><b>怎么用：</b>两个场站报价接近时，选“一年平均亏损”和“坏年份”更低的；坏年份很高的场站，合同里要写清超期费由谁承担。`,
+    `<b>In one line:</b> for each hub, <b>how often a serious delay happens</b> and <b>what each one costs us</b>; 10,000 simulated years give the average yearly loss and a bad year.<br><b>Use it:</b> when two hubs cost about the same, pick the one with lower yearly and bad-year loss; for hubs with a high bad year, make sure the contract says who pays overtime storage.`,
+    `<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">${inp('sevDays','超过免堆几天算严重','Serious = days beyond free ≥',1)}${inp('penalty','每晚一天额外损失 €','Extra loss €/day late')}</div>
+    <div style="overflow-x:auto;margin-top:10px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${H('场站','Hub',1)}${H('柜数','B/Ls')}${H('严重延误次数','Serious delays')}${H('每月几次','Per month')}${H('每次我们亏','Our loss / time')}${H('一年平均亏','Avg loss / year')}${H('坏年份','Bad year')}</tr></thead><tbody>
+    ${node.map(r=>`<tr><td style="${tl};font-weight:600">${_noEsc(r.h)}</td><td style="${td}">${r.n}</td><td style="${td}">${r.ev}</td><td style="${td}">${_qmF(r.lam,2)}</td><td style="${td}">€${_qmF(r.Lbar)}</td><td style="${td}">€${_qmF(r.EL)}</td><td style="${td};font-weight:700;color:#b8392c">€${_qmF(r.C)}</td></tr>`).join('')||`<tr><td colspan="7" style="${tl}">暂无数据 No data yet</td></tr>`}</tbody></table></div>
+    ${theory(`<b>为什么不用平均数：</b>物流平时都顺，偶尔一次大延误就亏很多，平均数会把这种风险“摊薄”。所以分开算两件事：①多久发生一次（每月几次）；②每次亏多少（从这个场站过去的严重延误里取）。然后电脑随机模拟一万年，每年先抽“发生几次”，再抽“每次多少”，加起来就是这一年的损失。<br><b>一年平均亏</b> = 一万年的平均，可以摊进这个场站的报价；<b>坏年份</b> = 最差 ${bad}% 年份的平均。<br>每次的损失 = 堆存费 × 我方承担 ${sh}% + 每晚一天的额外损失（如停线索赔、仓库空等）。数据越多越准，建议至少 6 个月。`,
+      `<b>Why not the average:</b> things usually run fine, then one big delay costs a lot — an average hides that. So we estimate two things separately: ① how often it happens (per month); ② how much each one costs (taken from this hub's past serious delays). The computer then simulates 10,000 years: each year it draws how many delays happen and how much each costs, and adds them up.<br><b>Avg loss / year</b> = average of the 10,000 years — spread it into this hub's quote; <b>Bad year</b> = average of the worst ${bad}% years.<br>Loss per delay = storage × our ${sh}% share + extra loss per late day (claims, idle warehouse staff). More data = more reliable; 6+ months recommended.`,
+      `严重延误 Serious delay = 停留天数 > 免堆期 + ${QM.sevDays} 天\n每月几次 Per month λ    = 严重延误次数 ÷ 观察月数\n每次亏 Loss per delay   = 堆存费 × ${sh}% + 额外损失 × 超期天数\n一年损失 Yearly loss    = 随机次数 (Poisson, 平均 12λ) × 随机每次损失，模拟 10,000 年\n一年平均亏 = 平均值   坏年份 Bad year = 最差 ${bad}% 年份的平均`)}`)}`;
 }
 </script>
+
 
 <script>
 // ── Every pop-up: Esc closes it, and a ✕ button sits in its top-left corner ──
