@@ -14269,31 +14269,33 @@ let _parOpen=null, _parRows=[];
 function renderExtraPareto(){
   const el=document.getElementById('dash-extra-pareto'); if(!el) return;
   const g={};
-  const add=(r,v,src,ref)=>{ if(!(v>0)) return; const raw=String(r||'Other').trim()||'Other', k=raw.toLowerCase().replace(/\s+/g,' ');
+  // only main categories; free-text notes / reasons are mapped into them and shown in the details
+  const CAT=s=>{ const t=String(s||'').toLowerCase(); if(/wait/.test(t)) return 'Waiting'; if(/stor|堆存/.test(t)) return 'Storage'; if(/fork|叉车/.test(t)) return 'Forklift'; if(/terminal|场站/.test(t)) return 'Terminal charges'; if(/airport|机场/.test(t)) return 'Airport fee'; if(/unload|卸货/.test(t)) return 'Unloading'; if(/ata|delay|延误/.test(t)) return 'ATA delayed'; return 'Other'; };
+  const add=(r,v,src,ref)=>{ if(!(v>0)) return; const raw=CAT(r), k=raw.toLowerCase();
     const e=g[k]||(g[k]={k,labels:{},n:0,sum:0,src:{},refs:[]}); e.labels[raw]=(e.labels[raw]||0)+1; e.n++; e.sum+=v; e.src[src]=(e.src[src]||0)+v; e.refs.push(Object.assign({src,v},ref)); };
   (typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{ const cs=_noContainers(o); (cs.length?cs:[null]).forEach(cn=>{
     const ref={id:o._id,cn:cn||'',no:o['Order No.']||('#'+o._id),proj:o['Project']||''};
     const ch=Array.isArray(_noFld(o,cn,'Charges'))?_noFld(o,cn,'Charges'):[];
-    ch.filter(l=>QX_ITEMS.includes(l.item)&&_noN(l.p)>0).forEach(l=>add(l.item==='Other'&&l.note?l.note:l.item,_noN(l.p),'Orders',ref));
-    _noSurcharges(o,cn).forEach(t=>add(t.reason,_noN(t.fee),'Orders',ref)); }); });
-  (typeof CT!=='undefined'?CT:[]).forEach(r=>add(r['Surcharge Reason']||'other',parseFloat(r['Surcharge']),'TEMU',{ctn:r['Container No.']||'',batch:r['Batch / Train']||'',ctId:r._id}));
+    ch.filter(l=>QX_ITEMS.includes(l.item)&&_noN(l.p)>0).forEach(l=>add(l.item,_noN(l.p),'Orders',Object.assign({note:l.note||''},ref)));
+    _noSurcharges(o,cn).forEach(t=>add(t.reason,_noN(t.fee),'Orders',Object.assign({note:t.reason||''},ref))); }); });
+  (typeof CT!=='undefined'?CT:[]).forEach(r=>add(r['Surcharge Reason']||'other',parseFloat(r['Surcharge']),'TEMU',{ctn:r['Container No.']||'',batch:r['Batch / Train']||'',ctId:r._id,note:r['Surcharge Reason']||''}));
   const rows=Object.values(g).map(e=>Object.assign(e,{label:Object.entries(e.labels).sort((a,b)=>b[1]-a[1])[0][0]})).sort((a,b)=>b.sum-a.sum), tot=rows.reduce((s,r)=>s+r.sum,0);
   _parRows=rows;
   if(!rows.length){ el.innerHTML=''; return; }
   let cum=0; const top=rows[0].sum, td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)';
   el.innerHTML=`<div class="chart-card" style="margin:12px 0"><h3 style="margin:0">额外费用排行 · Extra costs by reason (Pareto)</h3>
-    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">共 €${_qF(tot)}。蓝色行加起来约占 80% —— 先解决这几个原因。点一行展开明细，点订单号或柜号直接跳转。 · Total €${_qF(tot)}. Blue rows ≈ 80% of the money. Click a row for details, click an order / container to jump there.</div>
+    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">共 €${_qF(tot)}。蓝色行加起来约占 80% —— 先解决这几个原因。只按大类统计，具体备注在展开的明细里。点一行展开，点订单号或柜号直接跳转。 · Total €${_qF(tot)}. Blue rows ≈ 80% of the money. Click a row for details, click an order / container to jump there.</div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="padding:6px 8px;text-align:left">原因 Reason</th><th style="padding:6px 8px;text-align:right">次数 Times</th><th style="padding:6px 8px;text-align:right">金额 Amount</th><th style="padding:6px 8px;text-align:right">占比 Share</th><th style="padding:6px 8px;text-align:right">累计 Cumulative</th><th style="padding:6px 8px;text-align:left;width:30%"></th><th style="padding:6px 8px;text-align:left">来源 Source</th></tr></thead><tbody>
     ${rows.map((r,ri)=>{ const pre=cum; cum+=r.sum; const vital=pre/tot<0.8, open=_parOpen===r.k;
-      const byOrder={}; r.refs.filter(x=>x.src==='Orders').forEach(x=>{ const k=x.id+'|'+x.cn; (byOrder[k]=byOrder[k]||Object.assign({},x,{v:0})).v+=x.v; });
+      const byOrder={}; r.refs.filter(x=>x.src==='Orders').forEach(x=>{ const k=x.id+'|'+x.cn; const e=(byOrder[k]=byOrder[k]||Object.assign({},x,{v:0,notes:[]})); e.v+=x.v; if(x.note&&!e.notes.includes(x.note)) e.notes.push(x.note); });
       const ords=Object.values(byOrder).sort((a,b)=>b.v-a.v), temu=r.refs.filter(x=>x.src==='TEMU').sort((a,b)=>b.v-a.v);
       const link='color:#056dae;cursor:pointer;text-decoration:underline';
       const det=open?`<tr><td colspan="7" style="padding:8px 12px 12px;background:#f7fafd;border-bottom:1px solid #d9e1ec">
         ${ords.length?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><b style="font-size:12px">Orders (${ords.length})</b><button class="btn" style="border:1px solid var(--border);background:#fff;padding:2px 8px;font-size:12px" onclick="parGo(${ri},'Orders')">在 Orders 中筛选全部 · Filter all in Orders</button></div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px">${ords.map(x=>`<span><span style="${link}" onclick="parOpenOrder(${x.id})">${_noEsc(x.no)}</span>${x.cn?' · '+_noEsc(x.cn):''}${x.proj?' <span style="color:var(--muted)">'+_noEsc(x.proj)+'</span>':''} <b style="font-family:var(--f-num,monospace)">€${_qF(x.v)}</b></span>`).join('')}</div>`:''}
+          <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px">${ords.map(x=>`<span><span style="${link}" onclick="parOpenOrder(${x.id})">${_noEsc(x.no)}</span>${x.cn?' · '+_noEsc(x.cn):''}${x.proj?' <span style="color:var(--muted)">'+_noEsc(x.proj)+'</span>':''}${x.notes.length?' <i style="color:#a86c12">'+_noEsc(x.notes.join(' / '))+'</i>':''} <b style="font-family:var(--f-num,monospace)">€${_qF(x.v)}</b></span>`).join('')}</div>`:''}
         ${temu.length?`<div style="display:flex;align-items:center;gap:10px;margin:${ords.length?'10px':'0'} 0 4px"><b style="font-size:12px">TEMU (${temu.length})</b><button class="btn" style="border:1px solid var(--border);background:#fff;padding:2px 8px;font-size:12px" onclick="parGo(${ri},'TEMU')">在 TEMU 中筛选全部 · Filter all in TEMU</button></div>
           <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px">${temu.map(x=>`<span><span style="${link}" onclick="parOpenCtn('${_noEsc(x.ctn).replace(/'/g,'')}')">${_noEsc(x.ctn)}</span>${x.batch?' <span style="color:var(--muted)">'+_noEsc(x.batch)+'</span>':''} <b style="font-family:var(--f-num,monospace)">€${_qF(x.v)}</b></span>`).join('')}</div>`:''}</td></tr>`:'';
-      return `<tr style="cursor:pointer;${vital?'background:#eef4fa':''}" onclick="parToggle('${r.k.replace(/'/g,"\\'")}')"><td style="padding:5px 8px;font-weight:${vital?700:400}">${open?'▾':'▸'} ${_noEsc(r.label)}${Object.keys(r.labels).length>1?' <span style="font-size:11px;color:var(--muted);font-weight:400">('+Object.keys(r.labels).length+' spellings)</span>':''}</td><td style="${td}">${r.n}</td><td style="${td}">€${_qF(r.sum)}</td><td style="${td}">${_qF(r.sum/tot*100,1)}%</td><td style="${td}">${_qF(cum/tot*100,1)}%</td>
+      return `<tr style="cursor:pointer;${vital?'background:#eef4fa':''}" onclick="parToggle('${r.k.replace(/'/g,"\\'")}')"><td style="padding:5px 8px;font-weight:${vital?700:400}">${open?'▾':'▸'} ${_noEsc(r.label)}</td><td style="${td}">${r.n}</td><td style="${td}">€${_qF(r.sum)}</td><td style="${td}">${_qF(r.sum/tot*100,1)}%</td><td style="${td}">${_qF(cum/tot*100,1)}%</td>
         <td style="padding:5px 8px"><div style="height:10px;border-radius:3px;background:${vital?'#056dae':'#c9dff0'};width:${r.sum/top*100}%"></div></td><td style="padding:5px 8px;font-size:12px;color:var(--muted)">${Object.entries(r.src).map(([s,v])=>s+' €'+_qF(v)).join(' · ')}</td></tr>${det}`; }).join('')}</tbody></table></div></div>`;
 }
 function parToggle(k){ _parOpen=_parOpen===k?null:k; renderExtraPareto(); }
@@ -14307,7 +14309,7 @@ function parGo(ri,src){
 }
 
 // ── TEMU: weighted trucker score ──
-const CTS_KEY='owenz_ct_trkscore_v1'; let CTS={wp:50,wo:30,wx:20,open:1,ov:{}};
+const CTS_KEY='owenz_ct_trkscore_v1'; let CTS={wp:50,wo:30,wx:20,open:1,ov:{},minN:20};
 try{ Object.assign(CTS,JSON.parse(localStorage.getItem(CTS_KEY)||'{}')); }catch(e){}
 function ctsSet(k,v){ CTS[k]=parseFloat(v)||0; try{ localStorage.setItem(CTS_KEY,JSON.stringify(CTS)); }catch(e){} renderCtTrkScore(); }
 function ctsOv(t,f,v){ CTS.ov=CTS.ov||{}; const o=CTS.ov[t]||(CTS.ov[t]={}); if(String(v).trim()==='') delete o[f]; else o[f]=parseFloat(v); if(!Object.keys(o).length) delete CTS.ov[t]; try{ localStorage.setItem(CTS_KEY,JSON.stringify(CTS)); }catch(e){} renderCtTrkScore(); }
@@ -14320,7 +14322,9 @@ function renderCtTrkScore(){
   const lAvg={}; Object.keys(lp).forEach(k=>lAvg[k]=lp[k].reduce((a,b)=>a+b,0)/lp[k].length);
   const g={}; rows.forEach(r=>(g[String(r['Trucker']).trim()]=g[String(r['Trucker']).trim()]||[]).push(r));
   const day=v=>{ const d=parseDate(String(v||'')); if(d){ d.setHours(0,0,0,0); return d; } return null; };
-  const T=Object.keys(g).map(t=>{ const xs=g[t];
+  if(!(CTS.minN>=0)) CTS.minN=20;
+  const few=Object.keys(g).filter(t=>g[t].length<CTS.minN).sort((a,b)=>g[b].length-g[a].length);
+  const T=Object.keys(g).filter(t=>g[t].length>=CTS.minN).map(t=>{ const xs=g[t];
     const pi=xs.map(r=>{ const p=parseFloat(r['Price']), a=lAvg[lane(r)]; return (p>0&&a)?p/a:null; }).filter(v=>v!=null);
     const ot=xs.map(r=>{ const s=day(r['Scheduled Slot']), a=day(r['Actual Arrival']); return (s&&a)?(a<=s?1:0):null; }).filter(v=>v!=null);
     const xr=xs.filter(r=>parseFloat(r['Surcharge'])>0).length/xs.length;
@@ -14340,12 +14344,13 @@ function renderCtTrkScore(){
   const td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace);border-bottom:1px solid #eef4fa;white-space:nowrap';
   el.innerHTML=`<div class="chart-card" style="margin:0 0 12px;padding:12px 16px">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="if(event.target.tagName!=='INPUT') ctsSet('open',${CTS.open?0:1})"><h3 style="margin:0">${CTS.open?'▾':'▸'} TEMU 卡车公司评分 · TEMU trucker score</h3>
-      <span style="margin-left:auto;display:inline-flex;gap:10px;flex-wrap:wrap" onclick="event.stopPropagation()">${inp('wp','价格 Price %')}${inp('wo','准时 On time %')}${inp('wx','少额外 Few extras %')}</span></div>
+      <span style="margin-left:auto;display:inline-flex;gap:10px;flex-wrap:wrap" onclick="event.stopPropagation()">${inp('minN','最少柜数 Min ctns')}${inp('wp','价格 Price %')}${inp('wo','准时 On time %')}${inp('wx','少额外 Few extras %')}</span></div>
     ${CTS.open?`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="padding:6px 8px;text-align:left">#</th><th style="padding:6px 8px;text-align:left">卡车公司 Trucker</th><th style="padding:6px 8px;text-align:right">柜数 Ctns</th><th style="padding:6px 8px;text-align:right">平均价 Avg price</th><th style="padding:6px 8px;text-align:right">价格指数 Price index</th><th style="padding:6px 8px;text-align:right">准时率 On slot</th><th style="padding:6px 8px;text-align:right">额外费用率 Extra rate</th><th style="padding:6px 8px;text-align:right">总分 Score</th></tr></thead><tbody>
       ${T.map((x,i)=>{ const tq=x.t.replace(/'/g,"\\'"), ed=(f,val,auto,suf)=>`<input type="number" step="any" value="${val!=null?val:''}" placeholder="${auto}" onchange="ctsOv('${tq}','${f}',this.value)" style="width:78px;text-align:right;padding:2px 5px;border:1px solid ${val!=null?'#056dae':'var(--border)'};border-radius:5px;font-family:inherit">${suf||''}`;
-        return `<tr><td style="padding:5px 8px;border-bottom:1px solid #eef4fa">${i+1}</td><td style="padding:5px 8px;font-weight:600;border-bottom:1px solid #eef4fa">${_noEsc(x.t)}${x.n<5?' <span style="color:#a86c12;font-size:11px">small n</span>':''}</td><td style="${td}">${x.n}</td>
+        return `<tr><td style="padding:5px 8px;border-bottom:1px solid #eef4fa">${i+1}</td><td style="padding:5px 8px;font-weight:600;border-bottom:1px solid #eef4fa">${_noEsc(x.t)}</td><td style="${td}">${x.n}</td>
         <td style="${td}">€ ${ed('price',x.o.price,x.price!=null?_qF(x.price):'—')}</td><td style="${td}">${x.eIdx!=null?_qF(x.eIdx*100)+'%':'—'}</td>
         <td style="${td}">${ed('onT',x.o.onT,x.onT!=null?_qF(x.onT*100):'—',' %')} <span style="color:var(--muted);font-size:11px">(${x.nOt})</span></td><td style="${td}">${ed('xr',x.o.xr,_qF(x.xr*100),' %')}</td><td style="${td};font-weight:700;color:#056dae">${_qF(x.score)}</td></tr>`; }).join('')}</tbody></table></div>
+      ${few.length?`<div style="font-size:12px;color:var(--muted);margin-top:6px">柜数少于 ${CTS.minN} 的不评分 · Not scored (< ${CTS.minN} containers)：${few.map(t=>_noEsc(t)+' ('+g[t].length+')').join(', ')}</div>`:''}
       <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">总分 = 价格分 × ${CTS.wp}% + 准时率 × ${CTS.wo}% + (1 − 额外费用率) × ${CTS.wx}%（满分 100）。价格指数 = 该公司价格 ÷ 同目的地平均价（100% = 平均，低于 100% 更便宜），价格分 = 最便宜者的指数 ÷ 自己的指数。准时 = 实际到达日 ≤ 预约 slot 日（括号内为有两个日期的柜数）。额外费用率 = 有 Surcharge 的柜子比例。缺数据的项按 0.5 计。<b>价格、准时率、额外费用率都可以直接改</b>：灰色是系统自动算的数，填了数字（蓝框）就用你的数。<span style="color:#056dae;cursor:pointer;text-decoration:underline" onclick="ctsReset()">清除手动修改</span><br>Score = price score × ${CTS.wp}% + on-slot rate × ${CTS.wo}% + (1 − extra rate) × ${CTS.wx}%. Price index = trucker's price ÷ average price for the same destination; on slot = Actual Arrival ≤ Scheduled Slot day; extra rate = share of containers with a surcharge. Missing data counts as 0.5. Price, on-slot and extra rate can be edited: grey = automatic value, a typed number (blue box) is used instead.</div>`:''}</div>`;
 }
 </script>
