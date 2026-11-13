@@ -1595,6 +1595,7 @@ tbody tr:hover{background:#fafbfc}
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('orders')">Orders</button>
     <button onclick="showPage('dispatch')">Dispatch</button>
+    <button onclick="showPage('quotes')">Quotes 报价</button>
     <button onclick="showPage('vessels')">Vessels</button>
     <span class="nav-divider"></span>
     <div class="hb-sec">Tools</div>
@@ -1640,6 +1641,7 @@ tbody tr:hover{background:#fafbfc}
     </div>
     <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))" id="no-dash-kpi-row"></div>
     <div id="no-dash-margin"></div>
+    <div id="dash-extra-pareto"></div>
     <div class="charts-row" style="margin-top:4px;grid-template-columns:1fr 1fr">
       <div class="chart-card">
         <h3 onclick="toggleChart(this)">Total Order Amount by Consignee<span class="ch-toggle">▼</span></h3>
@@ -1923,6 +1925,7 @@ tbody tr:hover{background:#fafbfc}
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
+  <div id="ct-trk-score"></div>
   <div style="margin:0 0 8px">
     <input type="text" id="f-search" placeholder="🔍  Search" oninput="ctSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#056dae'" onblur="this.style.borderColor='#d1d5db'"/>
   </div>
@@ -2453,6 +2456,10 @@ tbody tr:hover{background:#fafbfc}
   </div>
   <div id="dp-summary" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px"></div>
   <div id="dp-body"></div>
+</div>
+
+<div id="page-quotes" class="page">
+  <div id="qt-body"></div>
 </div>
 
 <div id="page-vessels" class="page">
@@ -3383,6 +3390,8 @@ function showPage(p){
   if(p==='vessels'){ renderVT(); renderSOC(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); setTimeout(vtApplyFreezeColumns,50); }
   if(p==='planning'){ rcpRender(); }
   if(p==='dispatch'){ renderDispatch(); }
+  if(p==='quotes'){ renderQuotes(); }
+  if(p==='containers'){ try{ renderCtTrkScore(); }catch(e){} }
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); }
 }
@@ -5504,6 +5513,7 @@ function renderDashboard(){
 
 // Dashboard 的 Orders 区：KPI + 按项目的毛利表（独立函数，不受图表代码影响）
 function renderDashOrders(){
+  try{ if(typeof renderExtraPareto==='function') renderExtraPareto(); }catch(e){ console.error(e); }
   const _noAll=(typeof NO!=='undefined')?NO:[];
   const _noActive=_noAll.filter(o=>!(typeof _noHasSt==='function'&&_noHasSt(o,'Cancelled')));
     // ── KPI row: quantity, value, lead time, and other logistics-useful metrics ──
@@ -10539,7 +10549,7 @@ async function pushToCloud(manual=false){
     const res=await fetch(JBIN+'/'+bin,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),NO_HUBS,_dlReasons,_bpTrainDates,_ts:Date.now()})
+      body:JSON.stringify({CT,VT,FB,NOTICES,SOC_YARDS,REMINDERS,NO:(typeof NO!=='undefined'?NO:[]),NO_HUBS,QUOTES:(typeof QT!=='undefined'?QT:[]),_dlReasons,_bpTrainDates,_ts:Date.now()})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     _lastPushTs = Date.now();
@@ -10596,6 +10606,7 @@ async function pullFromCloud(manual=false){
     if(rec&&rec.FB){ FB=rec.FB; localStorage.setItem(FB_KEY,JSON.stringify(FB)); }
     if(rec&&Array.isArray(rec.NO)){ NO=rec.NO; noNextId=Math.max(0,...NO.map(r=>r._id||0))+1; localStorage.setItem(LS_NO,JSON.stringify(NO)); if(typeof renderOrders==='function') renderOrders(); }
     if(rec&&Array.isArray(rec.NO_HUBS)&&rec.NO_HUBS.length){ NO_HUBS=rec.NO_HUBS; try{ localStorage.setItem(LS_NO_HUBS,JSON.stringify(NO_HUBS)); }catch(e){} if(typeof renderNoHubs==='function') renderNoHubs(); }
+    if(rec&&Array.isArray(rec.QUOTES)&&typeof QT!=='undefined'){ QT=rec.QUOTES; try{ localStorage.setItem(QT_KEY,JSON.stringify(QT)); }catch(e){} }
     if(rec&&rec.SOC_YARDS){ SOC_YARDS=rec.SOC_YARDS; localStorage.setItem(SOC_KEY,JSON.stringify(SOC_YARDS)); }
     if(rec&&Array.isArray(rec.NOTICES)){ NOTICES=rec.NOTICES; localStorage.setItem(NOTICES_KEY,JSON.stringify(NOTICES)); renderNotices(); renderPageNotices(); }
     if(rec&&Array.isArray(rec.REMINDERS)){ REMINDERS=rec.REMINDERS; _remNextId=Math.max(0,...REMINDERS.map(r=>r.id||0))+1; localStorage.setItem(REM_KEY,JSON.stringify(REMINDERS)); if(typeof remRender==='function') remRender(); }
@@ -12528,7 +12539,7 @@ function noAddCtnPrompt(id){
 function noToggle(id){ _noOpen.has(id)?_noOpen.delete(id):_noOpen.add(id); renderOrders(); }
 function noSet(id,field,val){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
-  NO[i][field]=val; if(/^Recipient/.test(field)) _noRecipRemember(NO[i]); if(field==='ATA'||field==='POD') _noSyncDeliveredOrder(i);
+  NO[i][field]=val; if(field==='Payment Status'&&typeof _noPayAutoDates==='function') _noPayAutoDates(NO[i],val); if(/^Recipient/.test(field)) _noRecipRemember(NO[i]); if(field==='ATA'||field==='POD') _noSyncDeliveredOrder(i);
   saveNO();
   // Re-render so the progress cards (and everything else on this page reading the field) pick up the
   // change immediately — previously this only happened for 'Status', so an order-level edit (e.g. ETA
@@ -12730,6 +12741,7 @@ function noSetCtn(id,cn,field,val){
   NO[i].perCtn=NO[i].perCtn||{};
   NO[i].perCtn[cn]=NO[i].perCtn[cn]||{};
   NO[i].perCtn[cn][field]=val;
+  if(field==='Payment Status'&&typeof _noPayAutoDates==='function') _noPayAutoDates(NO[i].perCtn[cn],val);
   if(field==='ATA'||field==='POD') _noSyncDeliveredCtn(i,cn);
   saveNO(); noRenderSoon();
 }
@@ -13580,6 +13592,7 @@ function wbDetailNo(id){
       ${miles(cn)}
       ${sec('Shipment',G(4,`${_wbL('Consignee',_wbText(kk('Consignee'),txt('Consignee'),set('Consignee'),{list:'dl-con'}),1)}${_wbL('Destination',_wbText(kk('Destination'),txt('Destination'),set('Destination'),{ph:'country / city'}),1)}${_wbL('Trucker',_wbText(kk('Trucker'),txt('Trucker'),set('Trucker'),{list:'dl-truck'}),1)}${_wbL('Hub',_wbText(kk('Hub'),cn?(pc['Hub']!==undefined?pc['Hub']:(o['Hub']||'')):(o['Hub']||''),set('Hub'),{list:'dl-hub-o',ph:'pick from tariff table'}),1)}`))}
       ${sec('Dates',G(5,`${_wbL('ETA',_wbDate(kk('ETA'),txt('ETA'),set('ETA')),1)}${_wbL('At Hub date',_wbDate(kk('At Hub Date'),cn?(pc['At Hub Date']||''):(o['At Hub Date']||''),set('At Hub Date')),1)}${_wbL('Pick up',_wbDate(kk('Pick Up Date'),txt('Pick Up Date'),set('Pick Up Date')),1)}${_wbL('Delivery',_wbDate(kk('Delivery Date'),dv('Delivery Date'),set('Delivery Date')),1)}${_wbL('ATA',_wbDate(kk('ATA'),dv('ATA'),set('ATA')),1)}`))}
+      ${sec('环节耗时 · Lead time by stage',_noLtHtml(o,cn,kk,set,txt))}
       ${sec('Warehouse appointment (约仓)',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${_wbL('Appointment time',_wbText(kk('Appt Time'),txt('Appt Time'),set('Appt Time'),{ph:'YYYY/MM/DD HH:MM'}),180)}<div style="padding-bottom:3px">${_wbChk(kk('Appt Confirmed'),'Confirmed',cn?!!pc['Appt Confirmed']:!!o['Appt Confirmed'],set('Appt Confirmed'),'#1d4ed8')}</div></div>`)}
       ${sec('Status',`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
         ${_wbChk(kk('Customs Office'),'Customs office',co,set('Customs Office'),'#056dae')}${_wbChk(kk('At Hub'),'Ready to be picked',cn?!!pc['At Hub']:!!o['Arrived at Hub'],set('At Hub','Arrived at Hub'),'#b45309')}${_wbChk(kk('Demurrage'),'Demurrage'+(autoD?' ('+autoD+'d late)':''),dem,set('Demurrage'),'#dc2626')}</div>
@@ -14143,6 +14156,166 @@ h2,h3{text-transform:none!important;letter-spacing:.01em!important}
 
 
 
+
+<script>
+// ══ QUOTES (risk-reserved quote calculator + quote log / win-rate) · LEAD TIME · EXTRA-COST PARETO · TEMU TRUCKER SCORE ══
+const QT_KEY='owenz_quotes_v1', QC_KEY='owenz_qcalc_v1';
+let QT=[]; try{ QT=JSON.parse(localStorage.getItem(QT_KEY)||'[]'); }catch(e){}
+let QC={freight:0,other:0,dwell:0,free:3,rate:30,inclSt:1,xRate:0,xAvg:0,margin:8,cust:'',route:''};
+try{ Object.assign(QC,JSON.parse(localStorage.getItem(QC_KEY)||'{}')); }catch(e){}
+function qtSave(){ try{ localStorage.setItem(QT_KEY,JSON.stringify(QT)); }catch(e){} if(typeof cloudAutoSave==='function') cloudAutoSave(); }
+function qcSet(k,v){ QC[k]=(typeof QC[k]==='number')?(parseFloat(v)||0):v; try{ localStorage.setItem(QC_KEY,JSON.stringify(QC)); }catch(e){} renderQuotes(); }
+const _qF=(v,dp)=>(v==null||isNaN(v))?'—':(+v).toLocaleString('en-US',{minimumFractionDigits:dp||0,maximumFractionDigits:dp||0});
+const QX_ITEMS=['Storage','Waiting','Forklift','Terminal charges','Airport fee','Other'];
+function _qCalc(){
+  const st=Math.max(0,QC.dwell-QC.free)*QC.rate, xp=QC.xRate/100*QC.xAvg;
+  const cost=QC.freight+QC.other+(QC.inclSt?st:0)+xp, m=Math.min(QC.margin,95)/100, quote=cost/(1-m);
+  return {st,xp,cost,quote,profit:quote-cost};
+}
+// history reference from Orders: how often extras happen and how big they are
+function _qExtraHist(){
+  let n=0,w=0,sum=0;
+  (typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{ const cs=_noContainers(o); (cs.length?cs:[null]).forEach(cn=>{
+    n++; const ch=Array.isArray(_noFld(o,cn,'Charges'))?_noFld(o,cn,'Charges'):[];
+    const x=ch.filter(l=>QX_ITEMS.includes(l.item)).reduce((s,l)=>s+_noN(l.p),0)+_noSurcharges(o,cn).reduce((s,t)=>s+_noN(t.fee),0);
+    if(x>0){ w++; sum+=x; } }); });
+  return {n,rate:n?w/n*100:0,avg:w?sum/w:0};
+}
+function qtAdd(){
+  const c=_qCalc(); if(!(c.cost>0)) return alert('Enter the costs first · 先输入成本');
+  QT.unshift({id:Date.now(),date:new Date().toISOString().slice(0,10),cust:QC.cust,route:QC.route,cost:Math.round(c.cost*100)/100,quote:Math.round(c.quote*100)/100,status:'Pending',reason:'',note:''});
+  qtSave(); renderQuotes();
+}
+function qtSet(id,f,v){ const q=QT.find(x=>x.id===id); if(!q) return; q[f]=(f==='cost'||f==='quote')?(parseFloat(v)||0):v; if(f==='status'&&v!=='Lost') q.reason=''; qtSave(); renderQuotes(); }
+function qtDel(id){ if(!confirm('Delete this quote? · 删除这条报价？')) return; QT=QT.filter(x=>x.id!==id); qtSave(); renderQuotes(); }
+function renderQuotes(){
+  const el=document.getElementById('qt-body'); if(!el) return;
+  const c=_qCalc(), hist=_qExtraHist();
+  const inp=(k,zh,en,step,type)=>`<label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);line-height:1.3">${zh}<span style="font-size:11px">${en}</span><input type="${type||'number'}" step="${step||1}" value="${_noEsc(QC[k])}" onchange="qcSet('${k}',this.value)" style="width:${type?'200px':'120px'};padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"></label>`;
+  const row=(zh,en,v,strong)=>`<tr><td style="padding:5px 8px;${strong?'font-weight:700':''}">${zh} <span style="color:var(--muted);font-size:12px">${en}</span></td><td style="padding:5px 8px;text-align:right;font-family:var(--f-num,monospace);${strong?'font-weight:700;color:#056dae':''}">€${_qF(v,2)}</td></tr>`;
+  const decided=QT.filter(q=>q.status==='Won'||q.status==='Lost'), mk=q=>q.cost>0?(q.quote-q.cost)/q.cost*100:0;
+  const bins=[[0,5],[5,10],[10,15],[15,20],[20,1e9]].map(([a,b])=>{ const xs=decided.filter(q=>mk(q)>=a&&mk(q)<b), won=xs.filter(q=>q.status==='Won').length, wr=xs.length?won/xs.length:0, am=xs.length?xs.reduce((s,q)=>s+mk(q),0)/xs.length:(a+Math.min(b,a+5))/2;
+    return {lab:b>1e8?`≥ ${a}%`:`${a}–${b}%`,n:xs.length,won,wr,am,ev:am*wr}; });
+  const best=bins.filter(b=>b.n>=3).reduce((x,b)=>!x||b.ev>x.ev?b:x,null);
+  const reasons={}; QT.filter(q=>q.status==='Lost').forEach(q=>{ const r=q.reason||'(not given)'; reasons[r]=(reasons[r]||0)+1; });
+  const th='padding:6px 8px;text-align:right;white-space:nowrap;line-height:1.25', td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace);white-space:nowrap;border-bottom:1px solid #eef4fa', tl='padding:5px 8px;text-align:left;border-bottom:1px solid #eef4fa';
+  const H=(zh,en,l)=>`<th style="${th}${l?';text-align:left':''}">${zh}<br><span style="font-weight:400;font-size:11px">${en}</span></th>`;
+  const sel=(id,f,v,opts)=>`<select onchange="qtSet(${id},'${f}',this.value)" style="padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">${opts.map(([val,lab])=>`<option value="${val}" ${v===val?'selected':''}>${lab}</option>`).join('')}</select>`;
+  el.innerHTML=`
+  <div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0">报价计算 · Quote calculator</h3>
+    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 12px">报价 = (正常成本 + 预计堆存 + 预期额外费用) ÷ (1 − 利润率) · Quote = (normal cost + expected storage + expected extras) ÷ (1 − margin)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+      ${inp('cust','客户','Customer',1,'text')}${inp('route','线路 / 说明','Route / description',1,'text')}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:10px">
+      ${inp('freight','运费 €','Freight €')}${inp('other','其他成本 € (T1/清关/操作)','Other cost € (T1/CC/handling)')}
+      ${inp('dwell','预计停留天数','Expected days at hub',1)}${inp('free','免堆天数','Free days',1)}${inp('rate','堆存日费率 €','Storage €/day')}
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding-bottom:8px"><input type="checkbox" ${QC.inclSt?'checked':''} onchange="qcSet('inclSt',this.checked?1:0)">堆存计入报价 Include storage</label></div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:10px">
+      ${inp('xRate','额外费用出现率 %','Chance of extras %',1)}${inp('xAvg','每次额外平均 €','Avg extra when it happens €')}${inp('margin','目标利润率 %','Target margin %',0.5)}
+      <div style="font-size:12px;color:var(--muted);padding-bottom:6px">历史参考 History (Orders, ${hist.n} B/Ls)：出现率 rate <b>${_qF(hist.rate)}%</b> · 每次平均 avg <b>€${_qF(hist.avg)}</b> <button class="btn" style="border:1px solid var(--border);background:#fff;padding:2px 8px;font-size:12px" onclick="qcSet('xRate',${Math.round(hist.rate)});qcSet('xAvg',${Math.round(hist.avg)})">使用 Use</button></div></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:14px;align-items:start">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        ${row('运费','Freight',QC.freight)}${row('其他成本','Other cost',QC.other)}
+        ${row('预计堆存','Expected storage'+(QC.inclSt?'':' (not included)'),c.st)}${row('预期额外','Expected extras = '+_qF(QC.xRate)+'% × €'+_qF(QC.xAvg),c.xp)}
+        ${row('总成本','Total cost',c.cost,1)}${row('利润','Profit ('+_qF(QC.margin,1)+'%)',c.profit)}${row('建议报价','Quote',c.quote,1)}</table>
+      <div style="font-size:13px;line-height:1.7"><b>说明：</b>预计堆存 = (预计停留天数 − 免堆天数) × 日费率；预期额外 = 出现率 × 每次平均金额，相当于每票预留的“保险费”。利润率按报价算：成本 €500、利润 10% → 报价 €555.6。<br><span style="color:var(--muted)">Expected storage = (days at hub − free days) × daily rate; expected extras = chance × average amount — a reserve on every job, like an insurance premium. Margin is on the quote: cost €500 at 10% → €555.6.</span>
+        <div style="margin-top:10px"><button class="btn btn-green" onclick="qtAdd()">+ 保存到报价记录 Save to quote log</button></div></div></div></div>
+
+  <div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0">报价记录 · Quote log</h3>
+    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">每条报价出结果后改成“成交 / 丢单”，丢单写原因。数据越多，下面的成交率分析越准。 · Mark each quote Won / Lost when you know, with a reason when lost.</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${H('日期','Date',1)}${H('客户','Customer',1)}${H('线路','Route',1)}${H('成本','Cost')}${H('报价','Quote')}${H('加价率','Markup')}${H('结果','Result',1)}${H('丢单原因','Lost reason',1)}${H('备注','Note',1)}<th></th></tr></thead><tbody>
+    ${QT.map(q=>`<tr><td style="${tl}">${_noEsc(q.date)}</td><td style="${tl}">${_noEsc(q.cust)}</td><td style="${tl}">${_noEsc(q.route)}</td>
+      <td style="${td}"><input value="${q.cost}" onchange="qtSet(${q.id},'cost',this.value)" style="width:80px;text-align:right;border:1px solid var(--border);border-radius:5px;padding:2px 5px"></td>
+      <td style="${td}"><input value="${q.quote}" onchange="qtSet(${q.id},'quote',this.value)" style="width:80px;text-align:right;border:1px solid var(--border);border-radius:5px;padding:2px 5px"></td>
+      <td style="${td}">${_qF(mk(q),1)}%</td>
+      <td style="${tl}">${sel(q.id,'status',q.status,[['Pending','待定 Pending'],['Won','成交 Won'],['Lost','丢单 Lost']])}</td>
+      <td style="${tl}">${q.status==='Lost'?sel(q.id,'reason',q.reason,[['','—'],['Price','价格 Price'],['Transit time','时效 Transit time'],['Service','服务 Service'],['No reply','没回复 No reply'],['Other','其他 Other']]):''}</td>
+      <td style="${tl}"><input value="${_noEsc(q.note||'')}" onchange="qtSet(${q.id},'note',this.value)" style="width:150px;border:1px solid var(--border);border-radius:5px;padding:2px 5px"></td>
+      <td style="${tl}"><span onclick="qtDel(${q.id})" style="color:#b8392c;cursor:pointer">✕</span></td></tr>`).join('')||`<tr><td colspan="10" style="${tl};color:var(--muted)">还没有报价记录 · No quotes yet — use “Save to quote log” above.</td></tr>`}</tbody></table></div></div>
+
+  <div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0">成交率分析 · Win-rate analysis</h3>
+    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">期望利润 = 加价率 × 成交率。加价太低赚得少，太高接不到单，中间某一档最划算。 · Expected profit = markup × win rate — too low earns little, too high wins nothing.</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${H('加价区间','Markup band',1)}${H('已出结果','Decided')}${H('成交','Won')}${H('成交率','Win rate')}${H('平均加价','Avg markup')}${H('每 €100 成本的期望利润','Expected profit per €100 cost')}</tr></thead><tbody>
+    ${bins.map(b=>`<tr style="${best&&b===best?'background:#eef4fa;font-weight:700':''}"><td style="${tl}">${b.lab}${best&&b===best?' ★':''}</td><td style="${td}">${b.n}</td><td style="${td}">${b.won}</td><td style="${td}">${b.n?_qF(b.wr*100)+'%':'—'}</td><td style="${td}">${b.n?_qF(b.am,1)+'%':'—'}</td><td style="${td}">${b.n?'€'+_qF(b.ev,2):'—'}</td></tr>`).join('')}</tbody></table></div>
+    <div style="font-size:12.5px;margin-top:8px">${best?`★ 目前最划算的加价区间：<b>${best.lab}</b>（每 €100 成本期望赚 €${_qF(best.ev,2)}）· Best band so far: <b>${best.lab}</b>`:`<span style="color:var(--muted)">每个区间至少要有 3 条已出结果的报价才会给出建议（现在共 ${decided.length} 条）。· Needs at least 3 decided quotes in a band (${decided.length} so far).</span>`}</div>
+    ${Object.keys(reasons).length?`<div style="font-size:12.5px;margin-top:6px">丢单原因 Lost reasons：${Object.entries(reasons).sort((a,b)=>b[1]-a[1]).map(([r,n])=>`<b>${_noEsc(r)}</b> ${n}`).join(' · ')}</div>`:''}
+    <div style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">加价率 = (报价 − 成本) ÷ 成本。如果丢单原因多是“价格”，说明报高了；多是“时效 / 服务”，降价没用，要改服务。 · Markup = (quote − cost) ÷ cost. Mostly “price” losses → you quote too high; mostly “transit time / service” → cutting price won't help.</div></div>`;
+}
+
+// ── Lead-time stages per B/L (auto from dates, or typed in) ──
+const NO_LT=[['LT1','ETA → 到站','ETA → At hub','ETA','At Hub Date'],['LT2','到站 → 提柜','At hub → Pick up','At Hub Date','Pick Up Date'],['LT3','提柜 → 送达','Pick up → Delivered','Pick Up Date','ATA'],['LT4','送达 → POD','Delivered → POD','ATA','POD Date'],['LT5','POD → 开票','POD → Invoice','POD Date','Invoice Date'],['LT6','开票 → 收款','Invoice → Paid','Invoice Date','Paid Date']];
+function _noLtAuto(o,cn,a,b){ const x=_noParseDate(_wbFld(o,cn,a)), y=_noParseDate(_wbFld(o,cn,b)); return (x&&y)?Math.round((y-x)/864e5):null; }
+function _noLtVal(o,cn,s){ const ov=_wbFld(o,cn,s[0]); return (ov!==''&&ov!=null&&!isNaN(parseFloat(ov)))?parseFloat(ov):_noLtAuto(o,cn,s[3],s[4]); }
+function _noLtHtml(o,cn,kk,set,txt){
+  let tot=0,any=false, mx=null;
+  const vals=NO_LT.map(s=>{ const v=_noLtVal(o,cn,s); if(v!=null){ tot+=v; any=true; if(mx===null||v>mx.v) mx={s,v}; } return v; });
+  const cell=(s,i)=>{ const auto=_noLtAuto(o,cn,s[3],s[4]), ov=txt(s[0]);
+    return `<div style="min-width:0"><div style="font-size:10.5px;font-weight:700;color:#475569;line-height:1.2">${s[1]}<br><span style="font-weight:400;color:#94a3b8">${s[2]}</span></div>
+      <input data-k="${kk(s[0])}" type="number" step="1" value="${_noEsc(ov)}" placeholder="${auto==null?'—':'auto '+auto}" onchange="${_wbSet(set(s[0]),'this.value')}" style="${_wbI};margin-top:3px;${mx&&mx.s===s?'border-color:#b8392c;color:#b8392c;font-weight:700':''}"></div>`; };
+  return `<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) 80px;gap:8px;align-items:end">${NO_LT.map(cell).join('')}
+    <div style="text-align:right"><div style="font-size:10.5px;font-weight:700;color:#475569">合计 Total</div><div style="font-size:18px;font-weight:700;font-family:var(--f-num,monospace)">${any?tot+'d':'—'}</div></div></div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px">${_wbL('开票日 Invoice date',_wbDate(kk('Invoice Date'),txt('Invoice Date'),set('Invoice Date')),1)}${_wbL('收款日 Paid date',_wbDate(kk('Paid Date'),txt('Paid Date'),set('Paid Date')),1)}
+    <div style="grid-column:span 2;font-size:11px;color:#94a3b8;align-self:center">灰色 auto = 按日期自动算的天数，填数字可覆盖；红框 = 最长的环节。付款状态改成 Requested / Paid 时自动填开票日 / 收款日。· Grey “auto” = days from the dates; type a number to override. Red = longest stage.</div></div>`;
+}
+function _noTodayStr(){ const t=new Date(); return t.getFullYear()+'/'+String(t.getMonth()+1).padStart(2,'0')+'/'+String(t.getDate()).padStart(2,'0'); }
+function _noPayAutoDates(tgt,val){
+  const v=String(val||'').toLowerCase();
+  if((v==='requested'||v==='paid')&&!tgt['Invoice Date']) tgt['Invoice Date']=_noTodayStr();
+  if(v==='paid'&&!tgt['Paid Date']) tgt['Paid Date']=_noTodayStr();
+}
+
+// ── Dashboard: extra-cost Pareto (Orders + TEMU) ──
+function renderExtraPareto(){
+  const el=document.getElementById('dash-extra-pareto'); if(!el) return;
+  const g={}; const add=(r,v,src)=>{ if(!(v>0)) return; const k=String(r||'Other').trim()||'Other'; const e=g[k]||(g[k]={k,n:0,sum:0,src:{}}); e.n++; e.sum+=v; e.src[src]=(e.src[src]||0)+v; };
+  (typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{ const cs=_noContainers(o); (cs.length?cs:[null]).forEach(cn=>{
+    const ch=Array.isArray(_noFld(o,cn,'Charges'))?_noFld(o,cn,'Charges'):[];
+    ch.filter(l=>QX_ITEMS.includes(l.item)&&_noN(l.p)>0).forEach(l=>add(l.item==='Other'&&l.note?l.note:l.item,_noN(l.p),'Orders'));
+    _noSurcharges(o,cn).forEach(t=>add(t.reason,_noN(t.fee),'Orders')); }); });
+  (typeof CT!=='undefined'?CT:[]).forEach(r=>add(r['Surcharge Reason']||'other',parseFloat(r['Surcharge']),'TEMU'));
+  const rows=Object.values(g).sort((a,b)=>b.sum-a.sum), tot=rows.reduce((s,r)=>s+r.sum,0);
+  if(!rows.length){ el.innerHTML=''; return; }
+  let cum=0; const top=rows[0].sum;
+  el.innerHTML=`<div class="chart-card" style="margin:12px 0"><h3 style="margin:0">额外费用排行 · Extra costs by reason (Pareto)</h3>
+    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">共 €${_qF(tot)}。蓝色行加起来约占 80% —— 先解决这几个原因，效果最大。 · Total €${_qF(tot)}. Blue rows ≈ 80% of the money — fix these first.</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="padding:6px 8px;text-align:left">原因 Reason</th><th style="padding:6px 8px;text-align:right">次数 Times</th><th style="padding:6px 8px;text-align:right">金额 Amount</th><th style="padding:6px 8px;text-align:right">占比 Share</th><th style="padding:6px 8px;text-align:right">累计 Cumulative</th><th style="padding:6px 8px;text-align:left;width:32%"></th><th style="padding:6px 8px;text-align:left">来源 Source</th></tr></thead><tbody>
+    ${rows.map(r=>{ const pre=cum; cum+=r.sum; const vital=pre/tot<0.8;
+      return `<tr style="${vital?'background:#eef4fa':''}"><td style="padding:5px 8px;font-weight:${vital?700:400}">${_noEsc(r.k)}</td><td style="padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)">${r.n}</td><td style="padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)">€${_qF(r.sum)}</td><td style="padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)">${_qF(r.sum/tot*100,1)}%</td><td style="padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)">${_qF(cum/tot*100,1)}%</td>
+        <td style="padding:5px 8px"><div style="height:10px;border-radius:3px;background:${vital?'#056dae':'#c9dff0'};width:${r.sum/top*100}%"></div></td><td style="padding:5px 8px;font-size:12px;color:var(--muted)">${Object.entries(r.src).map(([s,v])=>s+' €'+_qF(v)).join(' · ')}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+}
+
+// ── TEMU: weighted trucker score ──
+const CTS_KEY='owenz_ct_trkscore_v1'; let CTS={wp:50,wo:30,wx:20,open:1};
+try{ Object.assign(CTS,JSON.parse(localStorage.getItem(CTS_KEY)||'{}')); }catch(e){}
+function ctsSet(k,v){ CTS[k]=parseFloat(v)||0; try{ localStorage.setItem(CTS_KEY,JSON.stringify(CTS)); }catch(e){} renderCtTrkScore(); }
+function renderCtTrkScore(){
+  const el=document.getElementById('ct-trk-score'); if(!el) return;
+  const rows=(typeof CT!=='undefined'?CT:[]).filter(r=>String(r['Trucker']||'').trim());
+  const lane=r=>(String(r['Destination']||'').trim()||String(r['Consignee']||'').trim()).toLowerCase().replace(/\s+/g,'');
+  const lp={}; rows.forEach(r=>{ const p=parseFloat(r['Price']); if(p>0) (lp[lane(r)]=lp[lane(r)]||[]).push(p); });
+  const lAvg={}; Object.keys(lp).forEach(k=>lAvg[k]=lp[k].reduce((a,b)=>a+b,0)/lp[k].length);
+  const g={}; rows.forEach(r=>(g[String(r['Trucker']).trim()]=g[String(r['Trucker']).trim()]||[]).push(r));
+  const day=v=>{ const d=parseDate(String(v||'')); if(d){ d.setHours(0,0,0,0); return d; } return null; };
+  const T=Object.keys(g).map(t=>{ const xs=g[t];
+    const pi=xs.map(r=>{ const p=parseFloat(r['Price']), a=lAvg[lane(r)]; return (p>0&&a)?p/a:null; }).filter(v=>v!=null);
+    const ot=xs.map(r=>{ const s=day(r['Scheduled Slot']), a=day(r['Actual Arrival']); return (s&&a)?(a<=s?1:0):null; }).filter(v=>v!=null);
+    const xr=xs.filter(r=>parseFloat(r['Surcharge'])>0).length/xs.length;
+    const ps=xs.map(r=>parseFloat(r['Price'])).filter(p=>p>0);
+    return {t,n:xs.length,price:ps.length?ps.reduce((a,b)=>a+b,0)/ps.length:null,pIdx:pi.length?pi.reduce((a,b)=>a+b,0)/pi.length:null,onT:ot.length?ot.reduce((a,b)=>a+b,0)/ot.length:null,nOt:ot.length,xr};
+  });
+  const minIdx=Math.min(...T.map(x=>x.pIdx).filter(v=>v!=null),1), W=(CTS.wp+CTS.wo+CTS.wx)||1;
+  T.forEach(x=>{ const pS=x.pIdx!=null?minIdx/x.pIdx:0.5, oS=x.onT!=null?x.onT:0.5; x.pS=pS; x.score=(CTS.wp*pS+CTS.wo*oS+CTS.wx*(1-x.xr))/W*100; });
+  T.sort((a,b)=>b.score-a.score);
+  const inp=(k,lab)=>`<label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:4px">${lab}<input type="number" value="${CTS[k]}" onchange="ctsSet('${k}',this.value)" style="width:56px;padding:3px 6px;border:1px solid var(--border);border-radius:6px"></label>`;
+  const td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace);border-bottom:1px solid #eef4fa;white-space:nowrap';
+  el.innerHTML=`<div class="chart-card" style="margin:0 0 12px;padding:12px 16px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="if(event.target.tagName!=='INPUT') ctsSet('open',${CTS.open?0:1})"><h3 style="margin:0">${CTS.open?'▾':'▸'} 卡车公司评分 · Trucker score</h3>
+      <span style="margin-left:auto;display:inline-flex;gap:10px;flex-wrap:wrap" onclick="event.stopPropagation()">${inp('wp','价格 Price %')}${inp('wo','准时 On time %')}${inp('wx','少额外 Few extras %')}</span></div>
+    ${CTS.open?`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="padding:6px 8px;text-align:left">#</th><th style="padding:6px 8px;text-align:left">卡车公司 Trucker</th><th style="padding:6px 8px;text-align:right">柜数 Ctns</th><th style="padding:6px 8px;text-align:right">平均价 Avg price</th><th style="padding:6px 8px;text-align:right">价格指数 Price index</th><th style="padding:6px 8px;text-align:right">准时率 On slot</th><th style="padding:6px 8px;text-align:right">额外费用率 Extra rate</th><th style="padding:6px 8px;text-align:right">总分 Score</th></tr></thead><tbody>
+      ${T.map((x,i)=>`<tr><td style="padding:5px 8px;border-bottom:1px solid #eef4fa">${i+1}</td><td style="padding:5px 8px;font-weight:600;border-bottom:1px solid #eef4fa">${_noEsc(x.t)}${x.n<5?' <span style="color:#a86c12;font-size:11px">small n</span>':''}</td><td style="${td}">${x.n}</td><td style="${td}">${x.price!=null?'€'+_qF(x.price):'—'}</td><td style="${td}">${x.pIdx!=null?_qF(x.pIdx*100)+'%':'—'}</td><td style="${td}">${x.onT!=null?_qF(x.onT*100)+'%':'—'} <span style="color:var(--muted);font-size:11px">(${x.nOt})</span></td><td style="${td}">${_qF(x.xr*100)}%</td><td style="${td};font-weight:700;color:#056dae">${_qF(x.score)}</td></tr>`).join('')}</tbody></table></div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">总分 = 价格分 × ${CTS.wp}% + 准时率 × ${CTS.wo}% + (1 − 额外费用率) × ${CTS.wx}%（满分 100）。价格指数 = 该公司价格 ÷ 同目的地平均价（100% = 平均，低于 100% 更便宜），价格分 = 最便宜者的指数 ÷ 自己的指数。准时 = 实际到达日 ≤ 预约 slot 日（括号内为有两个日期的柜数）。额外费用率 = 有 Surcharge 的柜子比例。缺数据的项按 0.5 计。<br>Score = price score × ${CTS.wp}% + on-slot rate × ${CTS.wo}% + (1 − extra rate) × ${CTS.wx}%. Price index = trucker's price ÷ average price for the same destination; on slot = Actual Arrival ≤ Scheduled Slot day; extra rate = share of containers with a surcharge. Missing data counts as 0.5.</div>`:''}</div>`;
+}
+</script>
 
 <script>
 // ── Every pop-up: Esc closes it, and a ✕ button sits in its top-left corner ──
