@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="OZ Logistics"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="application-name" content="OZ Logistics"/>
-<meta name="theme-color" content="#004D4C"/>
+<meta name="theme-color" content="#f3f6fa"/>
 <meta name="description" content="Owen Zhang Freight & Logistics Dashboard"/>
 <!-- Inline web app manifest -->
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22OZ%20Logistics%22%2C%22short_name%22%3A%22OZ%20Logistics%22%2C%22description%22%3A%22Owen%20Zhang%20Freight%20%26%20Logistics%20Dashboard%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%23004D4C%22%2C%22orientation%22%3A%22portrait-primary%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%270%200%20100%20100%2527%253E%253Crect%2520width%3D%27100%27%2520height%3D%27100%27%2520rx%3D%2720%27%2520fill%3D%27%23004D4C%27%2F%253E%253Ctext%2520y%3D%27.9em%27%2520font-size%3D%2770%27%2520x%3D%2715%27%253E%25F0%259F%259A%25A2%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D"/>
@@ -27,11 +27,18 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>
+// Offline / blocked-CDN guard: the app still opens (without charts / calendar pop-ups) when the libraries cannot load.
+if(typeof Chart==='undefined'){ window.Chart=function(){ return {destroy(){},update(){},resize(){},data:{datasets:[],labels:[]},options:{}}; }; window.Chart.register=function(){}; window.Chart.defaults={set(){},font:{},plugins:{legend:{labels:{}},tooltip:{},datalabels:{}},scale:{grid:{}},scales:{}}; }
+if(typeof flatpickr==='undefined'){ window.flatpickr=function(){ return {destroy(){},setDate(){},open(){},close(){},set(){}}; }; }
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 :root{
-  --navy:#004D4C;   /* Cathay Pacific green (dark) */
-  --blue:#004D4C;   /* Cathay Pacific green */
+  --navy:#056dae;   /* Cathay Pacific green (dark) */
+  --blue:#056dae;   /* Cathay Pacific green */
   --bg:#F1F5F9;     /* slate-100 */
   --card:#FFFFFF;
   --border:#E2E8F0; /* slate-200 */
@@ -46,7 +53,7 @@
 body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px;-webkit-font-smoothing:antialiased}
 
 /* ── HEADER ── */
-header{background:#004D4C;color:#fff;
+header{background:#056dae;color:#fff;
   padding:0 28px;display:flex;align-items:stretch;justify-content:space-between;
   box-shadow:0 1px 0 rgba(255,255,255,.06)}
 .brand{font-size:15px;font-weight:700;padding:16px 0;white-space:nowrap;letter-spacing:-.2px;color:#fff}
@@ -95,14 +102,14 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 /* SMART INSIGHTS PANEL */
 /* SURCHARGE SUMMARY TABLE */
 .sur-tbl{width:100%;border-collapse:collapse;font-size:11px}
-.sur-tbl th{background:#004D4C;color:#fff;padding:4px 7px;font-size:10px;font-weight:600;text-align:left;letter-spacing:.3px;white-space:nowrap;height:24px}
+.sur-tbl th{background:#056dae;color:#fff;padding:4px 7px;font-size:10px;font-weight:600;text-align:left;letter-spacing:.3px;white-space:nowrap;height:24px}
 .sur-tbl td{padding:0;border-bottom:1px solid #D8D8D8;border-right:1px solid #EBEBEB;vertical-align:middle}
-.sur-tbl tbody tr:hover td{background:#EFF7F7}
+.sur-tbl tbody tr:hover td{background:#f5f9fd}
 /* order-based alternating via JS class instead of nth-child */
-.sur-tbl tr.no-odd-order td{background:#F5FAF9}
-.sur-tbl tr.no-odd-order:hover td{background:#EFF7F7}
-.sur-tbl tr.no-odd-order td.fc-1,.sur-tbl tr.no-odd-order td.fc-2,.sur-tbl tr.no-odd-order td.fc-3{background:#F5FAF9}
-.sur-tbl tr.no-odd-order:hover td.fc-1,.sur-tbl tr.no-odd-order:hover td.fc-2,.sur-tbl tr.no-odd-order:hover td.fc-3{background:#EFF7F7}
+.sur-tbl tr.no-odd-order td{background:#f7fafd}
+.sur-tbl tr.no-odd-order:hover td{background:#f5f9fd}
+.sur-tbl tr.no-odd-order td.fc-1,.sur-tbl tr.no-odd-order td.fc-2,.sur-tbl tr.no-odd-order td.fc-3{background:#f7fafd}
+.sur-tbl tr.no-odd-order:hover td.fc-1,.sur-tbl tr.no-odd-order:hover td.fc-2,.sur-tbl tr.no-odd-order:hover td.fc-3{background:#f5f9fd}
 /* Orders 表：放宽行高/字号，输入更舒服 */
 #no-table th{font-size:11px;padding:6px 10px}
 #no-table tbody td{padding:5px 3px !important}
@@ -112,22 +119,22 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 #no-table textarea.no-autogrow{min-width:140px !important}
 #no-table input.no-dem-in{min-width:0 !important;padding:6px 4px !important;font-size:13px !important;text-align:center}
 #no-table input[type=text],#no-table select{min-width:110px}
-#no-table textarea.no-autogrow:hover,#no-table input[type=text]:hover{background:rgba(15,118,110,.06) !important}
+#no-table textarea.no-autogrow:hover,#no-table input[type=text]:hover{background:rgba(5,109,174,.06) !important}
 #no-table textarea.no-autogrow:focus,#no-table input[type=text]:focus,#no-table input[type=number]:focus,#no-table select:focus{
-  background:#fff !important;box-shadow:0 0 0 2px #0f766e inset !important}
+  background:#fff !important;box-shadow:0 0 0 2px #056dae inset !important}
 .sur-amt{font-weight:800;color:#DB2777}
 /* UNDELIVERED BATCH TABLE */
 .ud-tbl{width:100%;border-collapse:collapse;font-size:11px}
-.ud-tbl th{background:#004D4C;color:#fff;padding:4px 8px;text-align:left;font-weight:600;font-size:10px;white-space:nowrap;letter-spacing:.3px;height:24px}
+.ud-tbl th{background:#056dae;color:#fff;padding:4px 8px;text-align:left;font-weight:600;font-size:10px;white-space:nowrap;letter-spacing:.3px;height:24px}
 .ud-tbl td{padding:3px 8px;border-bottom:1px solid #DEDEDE;border-right:1px solid #EBEBEB;vertical-align:middle}
-.ud-tbl tbody tr:hover td{background:#EFF7F7;cursor:pointer}
-.ud-tbl tbody tr:nth-child(even) td{background:#F5FAF9}
-.ud-tbl tbody tr:nth-child(even):hover td{background:#EFF7F7}
+.ud-tbl tbody tr:hover td{background:#f5f9fd;cursor:pointer}
+.ud-tbl tbody tr:nth-child(even) td{background:#f7fafd}
+.ud-tbl tbody tr:nth-child(even):hover td{background:#f5f9fd}
 .ud-bar-wrap{display:flex;align-items:center;gap:8px;min-width:160px}
 .ud-bar-bg{flex:1;background:#E2E8F0;border-radius:4px;height:6px;overflow:hidden}
 .ud-bar-fill{height:6px;border-radius:4px;transition:width .3s}
 .ud-pill{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
-.ud-pill-none{background:#E0EFEF;color:#003A3A}
+.ud-pill-none{background:#eef4fa;color:#002d72}
 .ud-pill-t1{background:#FFFBEB;color:#B45309}
 .ud-pill-arr{background:#ECFDF5;color:#059669}
 .smart-panel{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
@@ -142,7 +149,7 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 /* Hint badges */
 .cell-hint{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;
   border-radius:5px;padding:1px 7px;white-space:nowrap;cursor:pointer}
-.hint-slot{background:#E0EFEF;color:#003A3A;border:1px dashed #4D9E9E}
+.hint-slot{background:#eef4fa;color:#002d72;border:1px dashed #4D9E9E}
 .as-batch-opt{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);
   border-radius:8px;cursor:pointer;font-size:13px;transition:background .12s}
 .as-batch-opt:hover{background:#F8FAFC}
@@ -164,7 +171,7 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 .kv{font-size:26px;font-weight:800;letter-spacing:-.5px}
 .ks{font-size:11px;color:var(--muted);margin-top:3px}
 .kpi.k-arr{border-color:#10B981}.kpi.k-arr .kv{color:#059669}
-.kpi.k-t1 {border-color:#004D4C}.kpi.k-t1  .kv{color:#003A3A}
+.kpi.k-t1 {border-color:#056dae}.kpi.k-t1  .kv{color:#002d72}
 .kpi.k-hi {border-color:#F59E0B}.kpi.k-hi  .kv{color:#B45309}
 
 /* CHART */
@@ -186,11 +193,11 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 .fg label{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600}
 select,input[type=text]{border:1px solid var(--border);border-radius:7px;padding:5px 9px;
   font-size:12px;color:var(--text);background:#fff;outline:none;min-width:120px;transition:border-color .15s}
-select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,77,76,.12)}
+select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(5,109,174,.12)}
 .ml{margin-left:auto}
-.btn-reset{background:#E0EFEF;color:#003A3A;padding:6px 13px;border:none;
+.btn-reset{background:#eef4fa;color:#002d72;padding:6px 13px;border:none;
   border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}
-.btn-reset:hover{background:#B8E3E3}
+.btn-reset:hover{background:#c9dff0}
 
 /* MULTI-SELECT DROPDOWNS */
 .ms-wrap{position:relative;display:inline-flex;flex-direction:column;gap:3px}
@@ -200,7 +207,7 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,77
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;font-family:inherit;transition:border-color .15s}
 .ms-btn::after{content:'▾';position:absolute;right:8px;top:50%;transform:translateY(-50%);
   pointer-events:none;color:var(--muted);font-size:11px}
-.ms-btn.has-sel{border-color:var(--blue);background:#E0EFEF;font-weight:600;color:var(--blue)}
+.ms-btn.has-sel{border-color:var(--blue);background:#eef4fa;font-weight:600;color:var(--blue)}
 .ms-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:9999;
   background:#fff;border:1px solid var(--border);border-radius:10px;padding:5px 0;
   min-width:170px;max-height:260px;overflow-y:auto;
@@ -218,16 +225,16 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,77
 #ct-count,#vt-count{font-size:11px;color:var(--muted);font-weight:500}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:11px}
-thead tr{background:#004D4C;color:#fff}
+thead tr{background:#056dae;color:#fff}
 thead th{padding:4px 8px;text-align:left;font-weight:600;font-size:10px;
   letter-spacing:.3px;white-space:nowrap;user-select:none;cursor:pointer;height:26px}
 thead th:hover{background:#005857}
 thead th.no-sort{cursor:default}
-thead th.no-sort:hover{background:#004D4C}
+thead th.no-sort:hover{background:#056dae}
 tbody tr{border-bottom:1px solid #D8D8D8}
-tbody tr:hover td{background:#EFF7F7}
-tbody tr:nth-child(even) td{background:#F5FAF9}
-tbody tr:nth-child(even):hover td{background:#EFF7F7}
+tbody tr:hover td{background:#f5f9fd}
+tbody tr:nth-child(even) td{background:#f7fafd}
+tbody tr:nth-child(even):hover td{background:#f5f9fd}
 tbody td{border-right:1px solid #EBEBEB}
 tbody tr.hi-missing{background:var(--hi)}
 tbody tr.hi-missing:hover td{background:#FFF3C4}
@@ -262,10 +269,10 @@ tbody tr.hi-emergency-watch td.fc-1,tbody tr.hi-emergency-watch td.fc-2,tbody tr
 tbody td{padding:0;vertical-align:middle;position:relative}
 /* ── Frozen columns ── */
 th.fc-1,td.fc-1,th.fc-2,td.fc-2,th.fc-3,td.fc-3,th.fc-4,td.fc-4{position:sticky;z-index:3}
-thead th.fc-1,thead th.fc-2,thead th.fc-3,thead th.fc-4{z-index:20;top:0;background:#004D4C}
+thead th.fc-1,thead th.fc-2,thead th.fc-3,thead th.fc-4{z-index:20;top:0;background:#056dae}
 td.fc-1,td.fc-2,td.fc-3,td.fc-4{background:#fff}
-tbody tr:nth-child(even) td.fc-1,tbody tr:nth-child(even) td.fc-2,tbody tr:nth-child(even) td.fc-3,tbody tr:nth-child(even) td.fc-4{background:#F5FAF9}
-tbody tr:nth-child(even):hover td.fc-1,tbody tr:nth-child(even):hover td.fc-2,tbody tr:nth-child(even):hover td.fc-3,tbody tr:nth-child(even):hover td.fc-4{background:#EFF7F7}
+tbody tr:nth-child(even) td.fc-1,tbody tr:nth-child(even) td.fc-2,tbody tr:nth-child(even) td.fc-3,tbody tr:nth-child(even) td.fc-4{background:#f7fafd}
+tbody tr:nth-child(even):hover td.fc-1,tbody tr:nth-child(even):hover td.fc-2,tbody tr:nth-child(even):hover td.fc-3,tbody tr:nth-child(even):hover td.fc-4{background:#f5f9fd}
 /* Master B/L column wraps to keep table narrow */
 th.fc-3,td.fc-3{max-width:170px}
 td.fc-3 .cell-view{white-space:normal;flex-direction:column;align-items:flex-start;gap:1px;padding-top:3px;padding-bottom:3px}
@@ -281,12 +288,12 @@ tbody tr.hi-missing td.fc-3,tbody tr.hi-missing td.fc-4{background:var(--hi)}
 .ps-verifying{background:#E3F2FD;color:#0D47A1;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .ps-requested{background:#ECFDF5;color:#065F46;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .ps-paid{background:#1E293B;color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
-.broker-wispex{display:inline-block;background:#E0EFEF;color:#003A3A;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
+.broker-wispex{display:inline-block;background:#eef4fa;color:#002d72;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 .broker-self{display:inline-block;background:#ECFDF5;color:#065F46;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700}
 
 /* INLINE EDIT CELLS */
 .cell-view{padding:3px 7px;min-height:22px;display:flex;align-items:center;white-space:nowrap;cursor:pointer;min-width:40px;font-size:11px}
-.cell-view:hover{background:rgba(0,77,76,.08);border-radius:3px}
+.cell-view:hover{background:rgba(5,109,174,.08);border-radius:3px}
 .cell-edit{display:none;padding:0 2px}
 .cell-edit input,.cell-edit select{width:100%;border:none;border-bottom:2px solid var(--blue);border-radius:0;
   padding:2px 5px;font-size:11px;background:transparent;outline:none}
@@ -295,7 +302,7 @@ td.editing .cell-edit{display:block}
 
 /* Tracking badge */
 .track-t1{display:inline-block;padding:2px 9px;border-radius:20px;
-  background:#E0EFEF;color:#003A3A;font-weight:700;font-size:11px;border:1px solid #80BFBF}
+  background:#eef4fa;color:#002d72;font-weight:700;font-size:11px;border:1px solid #80BFBF}
 .track-arr{display:inline-block;padding:2px 9px;border-radius:20px;
   background:#ECFDF5;color:#059669;font-weight:700;font-size:11px;border:1px solid #6EE7B7}
 .track-none{display:inline-block;padding:2px 9px;border-radius:20px;
@@ -320,7 +327,7 @@ td.editing .cell-edit{display:block}
 .vt-containers-row.open{display:table-row}
 .vt-containers-cell{padding:8px 14px 12px 44px;background:#F8FAFC;border-bottom:2px solid #E2E8F0}
 .vt-cn-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;min-height:24px}
-.vt-cn-tag{display:inline-flex;align-items:center;gap:3px;background:#E0EFEF;color:#003A3A;
+.vt-cn-tag{display:inline-flex;align-items:center;gap:3px;background:#eef4fa;color:#002d72;
   border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap}
 .vt-cn-tag .vt-cn-rm{background:none;border:none;cursor:pointer;color:#4D9E9E;font-size:12px;
   line-height:1;padding:0 0 0 3px;margin:0}
@@ -376,21 +383,21 @@ td.editing .cell-edit{display:block}
 .vt-hist-add button:hover{opacity:.85}
 /* ── Reminder Widget ── */
 .rem-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07)}
-.rem-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#004D4C;cursor:pointer;user-select:none}
+.rem-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#056dae;cursor:pointer;user-select:none}
 .rem-header-title{font-size:12px;font-weight:700;color:#fff;letter-spacing:.6px;text-transform:uppercase;flex:1}
 .rem-badge{background:#f59e0b;color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;min-width:20px;text-align:center}
 .rem-body{padding:12px 14px 14px}
 .rem-input-row{display:flex;gap:7px;margin-bottom:10px}
 .rem-input{flex:1;min-width:0;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#f8fafc;outline:none;transition:border-color .15s,box-shadow .15s;color:#1e293b}
-.rem-input:focus{border-color:#004D4C;background:#fff;box-shadow:0 0 0 3px rgba(0,77,76,.08)}
+.rem-input:focus{border-color:#056dae;background:#fff;box-shadow:0 0 0 3px rgba(5,109,174,.08)}
 .rem-cat-sel{padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:600;background:#f8fafc;color:#374151;cursor:pointer;outline:none;transition:border-color .15s}
-.rem-cat-sel:focus{border-color:#004D4C}
-.rem-add-btn{padding:8px 16px;background:#004D4C;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s}
-.rem-add-btn:hover{background:#00635f}
+.rem-cat-sel:focus{border-color:#056dae}
+.rem-add-btn{padding:8px 16px;background:#056dae;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s}
+.rem-add-btn:hover{background:#045c93}
 .rem-filter-bar{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
 .rem-ftab{font-size:11px;font-weight:600;padding:4px 12px;border:1.5px solid #e2e8f0;border-radius:20px;background:#fff;color:#64748b;cursor:pointer;transition:all .15s;white-space:nowrap}
 .rem-ftab:hover:not(.active){background:#f1f5f9;border-color:#cbd5e1}
-.rem-ftab.active{background:#004D4C;color:#fff;border-color:#004D4C}
+.rem-ftab.active{background:#056dae;color:#fff;border-color:#056dae}
 .rem-list{display:flex;flex-direction:column;gap:6px}
 .rem-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#fff;border:1px solid #f1f5f9;border-left:3px solid #94a3b8;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s,border-color .15s;position:relative}
 .rem-item:hover{box-shadow:0 3px 10px rgba(0,0,0,.09);border-color:#e2e8f0}
@@ -399,7 +406,7 @@ td.editing .cell-edit{display:block}
 .rem-item[data-cat=vessel]{border-left-color:#8b5cf6}
 .rem-item[data-cat=payment]{border-left-color:#10b981}
 .rem-item[data-cat=other]{border-left-color:#f59e0b}
-.rem-cb{width:16px;height:16px;margin-top:3px;cursor:pointer;accent-color:#004D4C;flex-shrink:0}
+.rem-cb{width:16px;height:16px;margin-top:3px;cursor:pointer;accent-color:#056dae;flex-shrink:0}
 .rem-cat-tag{font-size:10px;font-weight:700;border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0;margin-top:2px;letter-spacing:.2px}
 .rem-cat-tag.container{background:#eff6ff;color:#2563eb}
 .rem-cat-tag.vessel{background:#f5f3ff;color:#7c3aed}
@@ -446,7 +453,7 @@ td.editing .cell-edit{display:block}
 .form-group label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
 .form-group input,.form-group select{border:1px solid var(--border);border-radius:8px;
   padding:8px 11px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s}
-.form-group input:focus,.form-group select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,77,76,.12)}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(5,109,174,.12)}
 .modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;
   padding-top:14px;border-top:1px solid var(--border)}
 .mbtn-save{background:var(--navy);color:#fff;padding:8px 20px;border:none;
@@ -512,14 +519,14 @@ td.editing .cell-edit{display:block}
 .dash-col-hdr{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
   padding:8px 14px;border-radius:9px 9px 0 0;margin-bottom:12px;
   display:flex;align-items:center;gap:6px}
-.dash-col-hdr-ct{background:#E0EFEF;color:#002E2E;border-bottom:2px solid #004D4C}
+.dash-col-hdr-ct{background:#eef4fa;color:#002E2E;border-bottom:2px solid #056dae}
 .dash-col-hdr-vt{background:#F5F3FF;color:#5B21B6;border-bottom:2px solid #7C3AED}
 .kpi-row-ct{grid-template-columns:repeat(4,1fr);margin-bottom:12px}
 /* ── Dashboard Chart Category Tabs ── */
 .dash-cat-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
 .dash-cat-tab{font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;border:1.5px solid #d1d5db;background:#f9fafb;color:#6b7280;cursor:pointer;transition:all .15s;letter-spacing:.3px}
-.dash-cat-tab:hover{border-color:#004D4C;color:#004D4C;background:#e8f5f5}
-.dash-cat-tab.active{background:#004D4C;color:#fff;border-color:#004D4C}
+.dash-cat-tab:hover{border-color:#056dae;color:#056dae;background:#e8f5f5}
+.dash-cat-tab.active{background:#056dae;color:#fff;border-color:#056dae}
 .dash-cat-section{display:none}
 /* Dashboard 精简：只留 KPI / 告警，不显示图表和分类页签 */
 #page-dashboard .charts-row,#page-dashboard .dash-cat-tabs{display:none !important}
@@ -788,20 +795,20 @@ td.editing .cell-edit{display:block}
 .bel-input-row label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 .bel-clear-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--muted);cursor:pointer}
 .bel-clear-btn:hover{border-color:#999;color:var(--text)}
-.bel-anchor-badge{font-size:10px;font-weight:700;background:#E0EFEF;color:#004D4C;border-radius:10px;padding:2px 8px;border:1px solid #004D4C}
+.bel-anchor-badge{font-size:10px;font-weight:700;background:#eef4fa;color:#056dae;border-radius:10px;padding:2px 8px;border:1px solid #056dae}
 /* horizontal pipeline */
 .bel-pipeline-wrap{overflow-x:auto;padding-bottom:6px}
 .bel-pipeline{display:flex;align-items:flex-start;min-width:700px;padding:10px 0 6px}
 .bel-node{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;text-align:center;padding:0 4px}
 .bel-icon-wrap{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,.13);flex-shrink:0;border:3px solid transparent;position:relative;z-index:1}
-.bel-icon-wrap.bel-anchor-node{box-shadow:0 0 0 3px #004D4C,0 3px 10px rgba(0,0,0,.18)}
+.bel-icon-wrap.bel-anchor-node{box-shadow:0 0 0 3px #056dae,0 3px 10px rgba(0,0,0,.18)}
 .bel-node-name{font-size:11px;font-weight:700;color:var(--text);margin-top:8px;line-height:1.3;max-width:90px}
 .bel-node-d{font-size:22px;font-weight:900;margin-top:4px;line-height:1}
 .bel-node-date{font-size:11px;font-weight:700;color:#555;margin-top:3px;min-height:15px}
 .bel-node-sub{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4}
 .bel-node-input{width:88px;border:1px dashed #ccc;border-radius:5px;padding:3px 4px;font-size:10px;font-weight:600;color:#555;background:#fafafa;text-align:center;margin-top:6px;cursor:pointer;transition:border .15s,background .15s}
-.bel-node-input:focus{border:1px solid #004D4C;background:#fff;outline:none;color:#000}
-.bel-node-input.bel-anchor-input{border:1px solid #004D4C;background:#E0EFEF;color:#004D4C;font-weight:800}
+.bel-node-input:focus{border:1px solid #056dae;background:#fff;outline:none;color:#000}
+.bel-node-input.bel-anchor-input{border:1px solid #056dae;background:#eef4fa;color:#056dae;font-weight:800}
 .bel-arrow{display:flex;align-items:center;padding-top:18px;color:#bbb;flex-shrink:0;font-size:18px;margin:0 -2px}
 /* bottom info bar */
 .bel-info-bar{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
@@ -883,8 +890,8 @@ td.editing .cell-edit{display:block}
 .ct-exp-cell{padding:10px 18px 14px 32px;background:#f0f9ff;border-bottom:2px solid #bae6fd}
 /* Column Date Filter Button */
 .cdf-btn{display:inline-block;margin-left:4px;font-size:10px;color:#94a3b8;cursor:pointer;padding:0 2px;border-radius:3px;line-height:1;vertical-align:middle;transition:color .15s,background .15s}
-.cdf-btn:hover{color:#004D4C;background:rgba(0,77,76,.08)}
-.cdf-btn.cdf-active{color:#fff;background:#004D4C;border-radius:3px}
+.cdf-btn:hover{color:#056dae;background:rgba(5,109,174,.08)}
+.cdf-btn.cdf-active{color:#fff;background:#056dae;border-radius:3px}
 .ct-sh-title{font-size:10px;font-weight:800;color:#0369a1;letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .ct-sh-empty{font-size:11px;color:#94a3b8;margin-bottom:8px}
 .ct-sh-entry{display:flex;align-items:center;gap:7px;padding:5px 9px;background:#fff;border:1px solid #e0f2fe;border-radius:7px;margin-bottom:5px;font-size:11px;flex-wrap:wrap}
@@ -906,16 +913,16 @@ td.editing .cell-edit{display:block}
 .ct-sh-badge{font-size:9px;font-weight:700;color:#0284c7;background:#e0f2fe;padding:1px 5px;border-radius:8px;margin-left:2px;vertical-align:middle}
 /* ── Important Notice Board ── */
 .notice-board-wrap{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e2e8f0;margin:0 0 18px;overflow:hidden}
-.nb-header{display:flex;align-items:center;gap:10px;padding:13px 18px;background:linear-gradient(135deg,#004D4C,#006b6a);color:#fff;font-size:13px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.nb-header{display:flex;align-items:center;gap:10px;padding:13px 18px;background:linear-gradient(135deg,#056dae,#045c93);color:#fff;font-size:13px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
 .nb-add-btn{margin-left:auto;font-size:11px;font-weight:700;padding:5px 14px;border:1.5px solid rgba(255,255,255,.55);background:rgba(255,255,255,.13);color:#fff;border-radius:7px;cursor:pointer;white-space:nowrap;transition:background .15s}
 .nb-add-btn:hover{background:rgba(255,255,255,.28)}
 .nb-filter-tab{font-size:11px;font-weight:600;padding:4px 12px;border:1.5px solid #e2e8f0;border-radius:20px;background:#fff;color:#64748b;cursor:pointer;transition:all .15s;white-space:nowrap}
-.nb-filter-tab:hover{border-color:#004D4C;color:#004D4C}
-.nb-filter-tab.active{background:#004D4C;color:#fff;border-color:#004D4C}
+.nb-filter-tab:hover{border-color:#056dae;color:#056dae}
+.nb-filter-tab.active{background:#056dae;color:#fff;border-color:#056dae}
 .nb-form{padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e8edf2}
 .nb-select{width:100%;border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;font-size:13px;color:#1e293b;background:#fff;margin-bottom:8px;cursor:pointer}
 .nb-textarea{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:7px;padding:8px 12px;font-size:13px;font-family:inherit;resize:vertical;min-height:58px;outline:none;transition:border-color .15s}
-.nb-textarea:focus{border-color:#004D4C}
+.nb-textarea:focus{border-color:#056dae}
 #notice-list{padding:10px 16px 14px}
 .ni{display:flex;align-items:flex-start;gap:11px;padding:10px 12px;border-radius:9px;margin-bottom:8px;flex-wrap:wrap}
 .ni:last-child{margin-bottom:2px}
@@ -939,11 +946,11 @@ td.editing .cell-edit{display:block}
 .page-notice-strip .ni{margin-bottom:0;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 /* ── Dashboard Trucker Reviews ── */
 .tr-review-section{margin-top:20px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #e2e8f0;overflow:hidden}
-.tr-review-hdr{background:linear-gradient(135deg,#004D4C,#006b6a);color:#fff;padding:12px 20px;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.tr-review-hdr{background:linear-gradient(135deg,#056dae,#045c93);color:#fff;padding:12px 20px;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
 .tr-review-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0;padding:0}
 .tr-review-card{padding:16px 18px;border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;position:relative}
 .tr-review-card:last-child{border-right:none}
-.tr-review-name{font-size:14px;font-weight:800;color:#004D4C;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tr-review-name{font-size:14px;font-weight:800;color:#056dae;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tr-review-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
 .tr-chip{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;white-space:nowrap}
 .tr-chip-vol{background:#e0f2fe;color:#0369a1}
@@ -969,10 +976,10 @@ td.editing .cell-edit{display:block}
 .fb-star.on{opacity:1}
 .fb-star:hover{transform:scale(1.25)}
 .fb-note{width:100%;box-sizing:border-box;border:1px solid #dde3ee;border-radius:7px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;color:#334;background:#fff;transition:border-color .2s}
-.fb-note:focus{outline:none;border-color:#004D4C}
+.fb-note:focus{outline:none;border-color:#056dae}
 .fb-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
-.fb-save-btn{font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#004D4C;color:#fff;cursor:pointer;font-weight:700;transition:background .2s}
-.fb-save-btn:hover{background:#006b6a}
+.fb-save-btn{font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#056dae;color:#fff;cursor:pointer;font-weight:700;transition:background .2s}
+.fb-save-btn:hover{background:#045c93}
 .fb-saved-badge{font-size:10px;color:#2e7d32;font-weight:700;display:none}
 .fb-autograde-btn{font-size:11px;padding:4px 11px;border-radius:6px;border:1.5px solid #7c3aed;background:linear-gradient(135deg,#ede9fe,#f5f3ff);color:#6d28d9;cursor:pointer;font-weight:700;transition:background .2s,transform .1s;letter-spacing:.1px}
 .fb-autograde-btn:hover{background:linear-gradient(135deg,#ddd6fe,#ede9fe);transform:translateY(-1px)}
@@ -983,7 +990,7 @@ td.editing .cell-edit{display:block}
 .fb-aspect-row{display:flex;align-items:center;gap:8px}
 .fb-aspect-lbl{font-size:11px;font-weight:700;color:#555;min-width:110px;white-space:nowrap}
 .fb-aspect-note{width:100%;box-sizing:border-box;border:1px solid #dde3ee;border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;color:#334;background:#fff;transition:border-color .2s;resize:vertical;min-height:48px}
-.fb-aspect-note:focus{outline:none;border-color:#004D4C}
+.fb-aspect-note:focus{outline:none;border-color:#056dae}
 .fb-empty{text-align:center;padding:40px;color:#aaa;font-size:14px}
 .fb-tag-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .fb-tag{font-size:10px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:1px 7px}
@@ -994,7 +1001,7 @@ td.editing .cell-edit{display:block}
 .soc-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .soc-section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
 .soc-yards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.soc-yard-card{background:var(--card);border-radius:var(--rad);padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid #004D4C}
+.soc-yard-card{background:var(--card);border-radius:var(--rad);padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid #056dae}
 .soc-yard-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .soc-yard-hdr-left{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;flex:1}
 .soc-yard-name{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.3px}
@@ -1042,7 +1049,7 @@ body { background: var(--bg); letter-spacing: -.01px; }
 
 /* ── Header ── */
 header {
-  background: linear-gradient(135deg, #003534 0%, #004D4C 55%, #006060 100%);
+  background: linear-gradient(135deg, #002d72 0%, #056dae 55%, #006060 100%);
   padding: 0 28px;
   box-shadow: 0 1px 0 rgba(255,255,255,.07), 0 3px 16px rgba(0,0,0,.22);
   border-bottom: 1px solid rgba(255,255,255,.07);
@@ -1073,7 +1080,7 @@ nav button {
 nav button:hover { background: rgba(255,255,255,.06); }
 nav button.active {
   color: #fff;
-  border-bottom-color: #5DD8D0;
+  border-bottom-color: #7fb4dc;
   background: rgba(255,255,255,.06);
 }
 .nav-divider {
@@ -1112,7 +1119,7 @@ nav button.active {
   top: calc(100% + 4px);
   right: 0;
   min-width: 200px;
-  background: #1a3433;
+  background: #002d72;
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 12px;
   padding: 6px;
@@ -1206,7 +1213,7 @@ main { padding: 22px 26px; }
 
 /* ── Table ── */
 thead tr {
-  background: linear-gradient(180deg, #005C5B 0%, #004D4C 100%);
+  background: linear-gradient(180deg, #005C5B 0%, #056dae 100%);
 }
 thead th {
   padding: 4px 8px;
@@ -1215,7 +1222,7 @@ thead th {
   height: 26px;
 }
 tbody tr { border-bottom: 1px solid #DEDEDE; }
-tbody tr:hover td { background: #EFF7F7; }
+tbody tr:hover td { background: #f5f9fd; }
 .cell-view { padding: 3px 7px; min-height: 22px; font-size: 11px; }
 
 /* ── Inputs & selects ── */
@@ -1229,7 +1236,7 @@ select, input[type=text] {
 }
 select:focus, input:focus {
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(0,77,76,.1);
+  box-shadow: 0 0 0 3px rgba(5,109,174,.1);
 }
 
 /* ── Buttons ── */
@@ -1242,11 +1249,11 @@ select:focus, input:focus {
   transition: all .15s;
 }
 .btn-blue {
-  background: #004D4C;
+  background: #056dae;
   color: #fff;
-  box-shadow: 0 2px 6px rgba(0,77,76,.35);
+  box-shadow: 0 2px 6px rgba(5,109,174,.35);
 }
-.btn-blue:hover { background: #005C5B; box-shadow: 0 4px 12px rgba(0,77,76,.4); transform: translateY(-1px); }
+.btn-blue:hover { background: #005C5B; box-shadow: 0 4px 12px rgba(5,109,174,.4); transform: translateY(-1px); }
 .btn-green {
   background: #059669;
   box-shadow: 0 2px 6px rgba(5,150,105,.3);
@@ -1282,7 +1289,7 @@ select:focus, input:focus {
   box-shadow: 0 2px 6px rgba(0,0,0,.15);
   transition: background .15s, box-shadow .15s, transform .1s;
 }
-.mbtn-save:hover { background: #00635f; box-shadow: 0 4px 12px rgba(0,0,0,.2); transform: translateY(-1px); }
+.mbtn-save:hover { background: #045c93; box-shadow: 0 4px 12px rgba(0,0,0,.2); transform: translateY(-1px); }
 .mbtn-cancel { border-radius: 9px; padding: 9px 16px; font-size: 13px; }
 .modal-btns { padding-top: 16px; margin-top: 20px; }
 .confirm-inner { border-radius: 18px; padding: 32px; box-shadow: var(--shadow-lg); }
@@ -1380,7 +1387,7 @@ thead th{letter-spacing:.03em}
 
 /* ── 列头筛选行（参考图：表头下方每列一个输入框）── */
 thead tr.cf-row td{
-  position:sticky;background:#004D4C;padding:3px 4px 4px;z-index:19;
+  position:sticky;background:#056dae;padding:3px 4px 4px;z-index:19;
   border-top:1px solid rgba(255,255,255,.13);
 }
 thead tr.cf-row td.fc-1,thead tr.cf-row td.fc-2,
@@ -1411,7 +1418,7 @@ tr.no-fee-row.cf-hidden,tr.cf-hidden{display:none !important}
   color:#94A3B8;font-size:8px;line-height:1;
   transition:color .12s,background .12s;
 }
-.cf-arrow:hover{color:#004D4C;background:rgba(0,77,76,.07)}
+.cf-arrow:hover{color:#056dae;background:rgba(5,109,174,.07)}
 .cf-cell.on .cf-arrow{border-left-color:#F3DFA8}
 .cf-dd{
   position:fixed;z-index:9999;width:260px;background:#fff;
@@ -1430,7 +1437,7 @@ tr.no-fee-row.cf-hidden,tr.cf-hidden{display:none !important}
   border:1px solid #CBD5E1;background:#fff;color:#475569;
 }
 .cf-dd-btns button:hover{background:#F1F5F9}
-.cf-dd-btns .cf-dd-ok{background:#004D4C;color:#fff;border-color:#004D4C}
+.cf-dd-btns .cf-dd-ok{background:#056dae;color:#fff;border-color:#056dae}
 
 /* 7) 导航：去掉胶囊感，改成下划线式的老派页签 */
 nav button{letter-spacing:.06em;text-transform:uppercase}
@@ -1442,7 +1449,7 @@ td.nf-td{padding:0!important;background:#F7F9FA!important;border-top:1px solid #
 .nf-title{font-size:11px;font-weight:800;color:#334155;letter-spacing:.06em}
 .nf-lbl{font-size:11px;color:#64748b}
 .nf-mini{width:56px;padding:2px 5px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff;margin-left:3px}
-.nf-add{margin-left:auto;padding:3px 8px;font-size:11.5px;font-weight:700;border:1px solid #0f766e;background:#fff;color:#0f766e;cursor:pointer}
+.nf-add{margin-left:auto;padding:3px 8px;font-size:11.5px;font-weight:700;border:1px solid #056dae;background:#fff;color:#056dae;cursor:pointer}
 .nf-grid{display:grid;grid-template-columns:112px 112px 112px 100px minmax(140px,1fr) 26px;background:#fff;border:1px solid #dbe3e8;align-items:stretch}
 .nf-h{background:#EDF2F5!important;color:#64748b!important;font-size:9.5px;font-weight:800;letter-spacing:.07em;padding:5px 8px;border-bottom:1px solid #dbe3e8;display:flex;align-items:center}
 .nf-c{padding:3px 8px;border-bottom:1px solid #F0F4F6;display:flex;align-items:center;min-height:26px;min-width:0;overflow:hidden}
@@ -1450,7 +1457,7 @@ td.nf-td{padding:0!important;background:#F7F9FA!important;border-top:1px solid #
 .nf-x{justify-content:center;padding:0}
 .nf-x button{border:none;background:none;color:#dc2626;cursor:pointer;font-size:13px;line-height:1;padding:0 3px}
 .nf-num{flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box;text-align:right;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1!important;background:#fff!important;color:#0F172A!important;outline:none}
-.nf-num:focus{border-color:#0f766e!important}
+.nf-num:focus{border-color:#056dae!important}
 .nf-note{flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box;padding:2px 6px;font-size:11.5px;border:1px solid #cbd5e1!important;background:#fff!important;color:#0F172A!important;outline:none}
 .nf-sel{flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box;padding:2px 4px;font-size:11.5px;border:1px solid #cbd5e1;background:#fff;color:#0F172A}
 .nf-tot{background:#F7F9FA!important;border-top:2px solid #cbd5e1;border-bottom:none;font-weight:800;color:#1e293b;font-size:12px}
@@ -1506,7 +1513,7 @@ body{
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
 }
 /* ── Header & nav: flat, pill navigation ── */
-header{background:#0b3736;box-shadow:none;border-bottom:1px solid rgba(255,255,255,.06)}
+header{background:#002d72;box-shadow:none;border-bottom:1px solid rgba(255,255,255,.06)}
 nav button{border-radius:999px;padding:7px 15px;margin:0 1px;font-weight:600;letter-spacing:.1px;
   color:#fff;border-bottom:none!important;transition:background .15s,color .15s}
 nav button:hover{background:rgba(255,255,255,.08);color:#fff}
@@ -1531,8 +1538,8 @@ nav button.active{background:rgba(255,255,255,.18);color:#fff;border-bottom:none
 .btn{border-radius:10px;font-weight:600;letter-spacing:.1px;box-shadow:none}
 .btn:hover{opacity:.92;transform:none}
 input[type=text],input[type=search],input[type=date],input[type=number],select,textarea{
-  border-radius:10px;accent-color:#0f766e;outline-color:#0f766e}
-input:focus,select:focus,textarea:focus{outline:2px solid rgba(15,118,110,.25);outline-offset:0;border-color:#0f766e!important}
+  border-radius:10px;accent-color:#056dae;outline-color:#056dae}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(5,109,174,.25);outline-offset:0;border-color:#056dae!important}
 /* ── Tables: airy rows (header colors untouched — dark headers stay white) ── */
 th{letter-spacing:.4px}
 tbody tr{transition:background .1s}
@@ -1559,7 +1566,7 @@ tbody tr:hover{background:#fafbfc}
   #hb-title{display:inline;font-size:13px;font-weight:600;color:rgba(255,255,255,.7);padding-left:10px;border-left:1px solid rgba(255,255,255,.25)}
   .hb-left .brand{padding:0}
   .hb-left{padding:8px 0}
-  #desktop-nav{display:none;position:absolute;top:100%;left:20px;flex-direction:column;background:#1a3433;min-width:250px;padding:8px;z-index:9999;border-radius:12px;box-shadow:0 16px 44px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12)}
+  #desktop-nav{display:none;position:absolute;top:100%;left:20px;flex-direction:column;background:#002d72;min-width:250px;padding:8px;z-index:9999;border-radius:12px;box-shadow:0 16px 44px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12)}
   #desktop-nav.open{display:flex}
   #desktop-nav>button{width:100%;text-align:left;padding:10px 14px;font-size:13.5px;border:none;border-radius:8px;color:rgba(255,255,255,.85);height:auto}
   #desktop-nav>button:hover{background:rgba(255,255,255,.1);color:#fff}
@@ -1917,7 +1924,7 @@ tbody tr:hover{background:#fafbfc}
   </div>
 
   <div style="margin:0 0 8px">
-    <input type="text" id="f-search" placeholder="🔍  Search" oninput="ctSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+    <input type="text" id="f-search" placeholder="🔍  Search" oninput="ctSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#056dae'" onblur="this.style.borderColor='#d1d5db'"/>
   </div>
 
   <div class="tbl-card">
@@ -2388,15 +2395,15 @@ tbody tr:hover{background:#fafbfc}
           <option value="Delivered">Delivered</option>
           <option value="Cancelled">Cancelled</option>
         </select>
-        <button onclick="noAdd()" style="padding:5px 14px;font-size:12px;font-weight:700;background:var(--navy,#004D4C);color:#fff;border:none;border-radius:7px;cursor:pointer">+ Add Order</button>
+        <button onclick="noAdd()" style="padding:5px 14px;font-size:12px;font-weight:700;background:var(--navy,#056dae);color:#fff;border:none;border-radius:7px;cursor:pointer">+ Add Order</button>
       </div>
     </div>
     <div style="margin-top:10px">
-      <input type="search" id="no-search" placeholder="🔍  Search" oninput="noSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#0f766e'" onblur="this.style.borderColor='#d1d5db'"/>
+      <input type="search" id="no-search" placeholder="🔍  Search" oninput="noSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b" onfocus="this.style.borderColor='#056dae'" onblur="this.style.borderColor='#d1d5db'"/>
     </div>
-    <div id="no-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#004D4C;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;margin-top:10px">
+    <div id="no-inline-sel-bar" style="display:none;align-items:center;gap:10px;background:#056dae;color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;margin-top:10px">
       <span id="no-inline-sel-count">0 selected</span>
-      <button onclick="openNoBulkEdit()" style="background:#fff;color:#004D4C;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
+      <button onclick="openNoBulkEdit()" style="background:#fff;color:#056dae;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">✏️ Bulk Edit</button>
       <button onclick="noDelSelected()" style="background:#dc2626;color:#fff;border:none;border-radius:16px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer">🗑 Delete</button>
       <button onclick="noClearSel()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">✕ Clear</button>
     </div>
@@ -2438,7 +2445,7 @@ tbody tr:hover{background:#fafbfc}
     <select id="dp-trucker" onchange="renderDispatch()" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px"><option value="">All truckers</option></select>
     <select id="dp-src" onchange="renderDispatch()" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px"><option value="">TEMU + Orders</option><option value="TEMU">TEMU only</option><option value="Order">Orders only</option></select>
     <label style="font-size:13px;color:#475569;display:flex;gap:5px;align-items:center"><input type="checkbox" id="dp-done" onchange="renderDispatch()"> Show delivered</label>
-    <button onclick="dpCopy()" style="padding:6px 12px;border:1px solid #0f766e;color:#0f766e;background:#fff;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">📋 Copy</button>
+    <button onclick="dpCopy()" style="padding:6px 12px;border:1px solid #056dae;color:#056dae;background:#fff;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">📋 Copy</button>
   </div>
   <div id="dp-summary" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px"></div>
   <div id="dp-body"></div>
@@ -2534,7 +2541,7 @@ tbody tr:hover{background:#fafbfc}
   </div>
 
   <div style="margin:0 0 8px">
-    <input type="text" id="vt-f-search" placeholder="🔍  Search" oninput="vtSearchSoon(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#004D4C'" onblur="this.style.borderColor='#d1d5db'"/>
+    <input type="text" id="vt-f-search" placeholder="🔍  Search" oninput="vtSearchSoon(this.value)" onkeydown="if(event.key==='Escape'){this.value='';vtCombinedSearch('');}" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#056dae'" onblur="this.style.borderColor='#d1d5db'"/>
     <span id="vt-search-msg" class="vt-search-msg" style="display:block;margin-top:4px;padding-left:4px"></span>
   </div>
   <div class="tbl-card">
@@ -2544,7 +2551,7 @@ tbody tr:hover{background:#fafbfc}
         <label style="padding:6px 14px;background:#1d4ed8;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" title="Import vessels from CSV">
           ⬆ Import CSV<input type="file" accept=".csv" style="display:none" onchange="vtImportCSV(this)">
         </label>
-        <button onclick="vtExportCSV()" style="padding:6px 14px;background:#0f766e;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" title="Export all vessel data to CSV">⬇ Export CSV</button>
+        <button onclick="vtExportCSV()" style="padding:6px 14px;background:#056dae;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" title="Export all vessel data to CSV">⬇ Export CSV</button>
       </div>
     </div>
     <div class="tbl-scroll">
@@ -2552,11 +2559,11 @@ tbody tr:hover{background:#fafbfc}
         <thead>
           <!-- Group header row -->
           <tr class="vt-group-hdr">
-            <th colspan="18" style="border:none;background:#003534;padding:0;position:sticky;left:0;z-index:21"></th>
+            <th colspan="18" style="border:none;background:#002d72;padding:0;position:sticky;left:0;z-index:21"></th>
             <th colspan="2" class="vt-gh-ocean">🚢 Ocean Freight</th>
             <th colspan="2" class="vt-gh-booking">📋 Forwarder Fee</th>
             <th colspan="3" class="vt-gh-customs">🛂 Customs Clearance</th>
-            <th colspan="4" style="border:none;background:#003534;padding:0"></th>
+            <th colspan="4" style="border:none;background:#002d72;padding:0"></th>
           </tr>
           <!-- Column header row -->
           <tr>
@@ -2887,7 +2894,7 @@ tbody tr:hover{background:#fafbfc}
       Copy the text into your mail client; attachments still go on manually. The greeting is left blank on purpose.</p>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button type="button" id="tm-tab-slot" onclick="tmSetType('slot')"
-        style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #004D4C;background:#004D4C;color:#fff;cursor:pointer">Book delivery slot</button>
+        style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #056dae;background:#056dae;color:#fff;cursor:pointer">Book delivery slot</button>
       <button type="button" id="tm-tab-docs" onclick="tmSetType('docs')"
         style="padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;background:#fff;color:#475569;cursor:pointer">Send documents</button>
       <button type="button" onclick="closeTemuMail();openSlotEmails()"
@@ -3056,26 +3063,26 @@ tbody tr:hover{background:#fafbfc}
     <h2>🚢 Add New Vessel</h2>
 
     <!-- Auto Scan section -->
-    <div style="margin-bottom:16px;padding:13px 14px;background:#F0F9F9;border-radius:9px;border:1px solid #B8E3E3">
-      <div style="font-size:11px;font-weight:700;color:#004D4C;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">🔍 Auto Scan Booking Confirmation</div>
+    <div style="margin-bottom:16px;padding:13px 14px;background:#F0F9F9;border-radius:9px;border:1px solid #c9dff0">
+      <div style="font-size:11px;font-weight:700;color:#056dae;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">🔍 Auto Scan Booking Confirmation</div>
       <!-- PDF drop zone -->
       <div id="vta-pdf-drop" onclick="document.getElementById('vta-pdf-input').click()"
-        style="border:2px dashed #B8E3E3;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#fff;margin-bottom:10px;transition:border-color .2s,background .2s"
-        ondragover="event.preventDefault();this.style.borderColor='#004D4C';this.style.background='#E0EFEF'"
-        ondragleave="this.style.borderColor='#B8E3E3';this.style.background='#fff'"
-        ondrop="event.preventDefault();this.style.borderColor='#B8E3E3';this.style.background='#fff';vtLoadPDF(event.dataTransfer.files[0])">
+        style="border:2px dashed #c9dff0;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#fff;margin-bottom:10px;transition:border-color .2s,background .2s"
+        ondragover="event.preventDefault();this.style.borderColor='#056dae';this.style.background='#eef4fa'"
+        ondragleave="this.style.borderColor='#c9dff0';this.style.background='#fff'"
+        ondrop="event.preventDefault();this.style.borderColor='#c9dff0';this.style.background='#fff';vtLoadPDF(event.dataTransfer.files[0])">
         <div style="font-size:22px;margin-bottom:4px">📄</div>
-        <div style="font-size:12px;font-weight:600;color:#004D4C">Drop booking confirmation PDF here</div>
+        <div style="font-size:12px;font-weight:600;color:#056dae">Drop booking confirmation PDF here</div>
         <div style="font-size:11px;color:#6b7280;margin-top:2px">or click to browse</div>
         <input type="file" id="vta-pdf-input" accept=".pdf" style="display:none" onchange="vtLoadPDF(this.files[0])"/>
       </div>
       <div style="font-size:11px;color:#6b7280;text-align:center;margin-bottom:8px">— or paste text below —</div>
       <textarea id="vta-scan-text" rows="3"
         placeholder="Paste booking confirmation text (email, copied PDF text, any format)…"
-        style="width:100%;box-sizing:border-box;border:1px solid #B8E3E3;border-radius:7px;padding:9px;font-size:12px;resize:vertical;font-family:inherit;background:#fff;color:#1e293b;outline:none"></textarea>
+        style="width:100%;box-sizing:border-box;border:1px solid #c9dff0;border-radius:7px;padding:9px;font-size:12px;resize:vertical;font-family:inherit;background:#fff;color:#1e293b;outline:none"></textarea>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
         <button onclick="vtScanBooking()"
-          style="padding:6px 16px;background:#004D4C;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.2px">🔍 Scan &amp; Auto-fill</button>
+          style="padding:6px 16px;background:#056dae;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.2px">🔍 Scan &amp; Auto-fill</button>
         <span id="vta-scan-result" style="font-size:11px;color:#6b7280"></span>
       </div>
     </div>
@@ -3152,7 +3159,7 @@ tbody tr:hover{background:#fafbfc}
 <!-- NOTICE EDIT MODAL -->
 <div class="overlay" id="notice-edit-overlay">
   <div class="modal-inner" style="max-width:640px;width:92vw;border-radius:16px;overflow:hidden;box-shadow:0 24px 64px rgba(0,30,30,.35);background:#fff">
-    <div style="background:linear-gradient(135deg,#003534 0%,#0f766e 100%);padding:16px 22px;display:flex;align-items:center;gap:10px">
+    <div style="background:linear-gradient(135deg,#002d72 0%,#056dae 100%);padding:16px 22px;display:flex;align-items:center;gap:10px">
       <span style="font-size:20px;background:rgba(255,255,255,.15);border-radius:10px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center">✏️</span>
       <div>
         <div style="color:#fff;font-size:15px;font-weight:800;letter-spacing:.3px">Edit Notice</div>
@@ -3162,16 +3169,16 @@ tbody tr:hover{background:#fafbfc}
     <div class="modal-body" style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;background:#fafcfc">
       <div style="display:flex;gap:12px">
         <div style="flex:1;display:flex;flex-direction:column;gap:5px">
-          <label style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px">Level</label>
-          <select id="ne-level" class="nb-select" style="margin:0;padding:9px 12px;border:1.5px solid #d7e3e2;border-radius:10px;font-size:13px;font-weight:600;background:#fff;cursor:pointer">
+          <label style="font-size:10px;font-weight:800;color:#056dae;text-transform:uppercase;letter-spacing:.6px">Level</label>
+          <select id="ne-level" class="nb-select" style="margin:0;padding:9px 12px;border:1.5px solid #d9e1ec;border-radius:10px;font-size:13px;font-weight:600;background:#fff;cursor:pointer">
             <option value="info">ℹ️  Info</option>
             <option value="warn">⚠️  Warning</option>
             <option value="urgent">🚨  Urgent</option>
           </select>
         </div>
         <div style="flex:1;display:flex;flex-direction:column;gap:5px">
-          <label style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px">Show On Page</label>
-          <select id="ne-cat" class="nb-select" style="margin:0;padding:9px 12px;border:1.5px solid #d7e3e2;border-radius:10px;font-size:13px;font-weight:600;background:#fff;cursor:pointer">
+          <label style="font-size:10px;font-weight:800;color:#056dae;text-transform:uppercase;letter-spacing:.6px">Show On Page</label>
+          <select id="ne-cat" class="nb-select" style="margin:0;padding:9px 12px;border:1.5px solid #d9e1ec;border-radius:10px;font-size:13px;font-weight:600;background:#fff;cursor:pointer">
             <option value="all">📋 All Pages</option>
             <option value="vessels">🚢 Vessels Only</option>
             <option value="containers">📦 Containers Only</option>
@@ -3180,12 +3187,12 @@ tbody tr:hover{background:#fafbfc}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px">
-        <label style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:.6px">Notice Text</label>
-        <textarea id="ne-text" class="nb-textarea" rows="10" placeholder="Notice text…" style="min-height:190px;resize:vertical;font-size:14px;line-height:1.6;padding:12px 14px;border:1.5px solid #d7e3e2;border-radius:12px;background:#fff;font-family:inherit;color:#1e293b"></textarea>
+        <label style="font-size:10px;font-weight:800;color:#056dae;text-transform:uppercase;letter-spacing:.6px">Notice Text</label>
+        <textarea id="ne-text" class="nb-textarea" rows="10" placeholder="Notice text…" style="min-height:190px;resize:vertical;font-size:14px;line-height:1.6;padding:12px 14px;border:1.5px solid #d9e1ec;border-radius:12px;background:#fff;font-family:inherit;color:#1e293b"></textarea>
       </div>
     </div>
     <div class="modal-btns" style="padding:14px 22px 18px;display:flex;gap:10px;background:#fafcfc;border-top:1px solid #eef2f2">
-      <button onclick="noticeSaveEdit()" style="flex:1;padding:11px;font-size:13.5px;font-weight:800;background:linear-gradient(135deg,#0f766e,#0d9488);color:#fff;border:none;border-radius:11px;cursor:pointer;box-shadow:0 4px 12px rgba(15,118,110,.35);letter-spacing:.3px">💾 Save Changes</button>
+      <button onclick="noticeSaveEdit()" style="flex:1;padding:11px;font-size:13.5px;font-weight:800;background:linear-gradient(135deg,#056dae,#056dae);color:#fff;border:none;border-radius:11px;cursor:pointer;box-shadow:0 4px 12px rgba(5,109,174,.35);letter-spacing:.3px">💾 Save Changes</button>
       <button onclick="noticeCloseEditModal()" style="padding:11px 22px;font-size:13.5px;font-weight:700;background:#fff;color:#475569;border:1.5px solid #e2e8f0;border-radius:11px;cursor:pointer">Cancel</button>
       <button onclick="noticeDeleteFromModal()" style="padding:11px 18px;font-size:13.5px;font-weight:700;background:#fff;color:#dc2626;border:1.5px solid #fecaca;border-radius:11px;cursor:pointer">🗑 Delete</button>
     </div>
@@ -3714,7 +3721,7 @@ function renderSmartInsights(){
       action:'_filter_overdue'
     },
     d.needsSlot.length&&{
-      icon:'📅', count:d.needsSlot.length, color:'#004D4C', bg:'#E0EFEF',
+      icon:'📅', count:d.needsSlot.length, color:'#056dae', bg:'#eef4fa',
       label:'Slot Estimation', desc:`ETA set, avg lead ${d.avgLead}d → see table hints`,
       action:'_filter_needsslot'
     },
@@ -4354,7 +4361,7 @@ function renderDashboard(){
 
   // Per-trucker × batch grouped bars
   const allBatchesForSE=[...new Set(slotEtaFull.map(x=>x.batch))].sort();
-  const truckerBatchPalette=['#004D4C','#43A047','#F9A825','#e53935','#7B1FA2','#00838F','#E64A19','#5D4037'];
+  const truckerBatchPalette=['#056dae','#43A047','#F9A825','#e53935','#7B1FA2','#00838F','#E64A19','#5D4037'];
   const seTruckerBatchDs=seTruckerKeys.map((trucker,ti)=>{
     const data=allBatchesForSE.map(batch=>{
       const items=slotEtaFull.filter(x=>x.trucker===trucker&&x.batch===batch);
@@ -4908,9 +4915,9 @@ function renderDashboard(){
         const [y,m]=mk.split('-'); const cur=mk===nowMk;
         const {vessels,qty}=byMonth[mk];
         const pct=Math.round(qty/maxQty*100);
-        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;${cur?'background:#f0fdfa;border-radius:6px;padding-left:6px;padding-right:6px':''}">
-          <span style="min-width:64px;font-weight:${cur?'800':'600'};color:${cur?'#0f766e':'var(--navy)'}">${MN[+m-1]} ${y}${cur?' •':''}</span>
-          <div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${cur?'#0f766e':'#7B1FA2'};border-radius:4px"></div></div>
+        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;${cur?'background:#f0f7fd;border-radius:6px;padding-left:6px;padding-right:6px':''}">
+          <span style="min-width:64px;font-weight:${cur?'800':'600'};color:${cur?'#056dae':'var(--navy)'}">${MN[+m-1]} ${y}${cur?' •':''}</span>
+          <div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${cur?'#056dae':'#7B1FA2'};border-radius:4px"></div></div>
           <span style="min-width:88px;text-align:right;font-size:11px"><strong>${qty||0}</strong> ctns · ${vessels} bkg${vessels!==1?'s':''}</span>
         </div>`;
       }).join('');
@@ -5372,7 +5379,7 @@ function renderDashboard(){
     if(_oacEl && amtKeys.length){
       window.ordersAmountConsigneeChart=new Chart(_oacEl,{
         type:'bar',
-        data:{labels:amtKeys,datasets:[{label:'Order Total',data:amtKeys.map(k=>+amtByCons[k].toFixed(2)),backgroundColor:'#0f766e',borderRadius:5}]},
+        data:{labels:amtKeys,datasets:[{label:'Order Total',data:amtKeys.map(k=>+amtByCons[k].toFixed(2)),backgroundColor:'#056dae',borderRadius:5}]},
         options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
           layout:{padding:{right:55}},
           plugins:{legend:{display:false},
@@ -5425,7 +5432,7 @@ function renderDashboard(){
     if(_ovmEl && moKeys.length){
       window.ordersValueMonthChart=new Chart(_ovmEl,{
         type:'bar',
-        data:{labels:moLabels,datasets:[{label:'Containers',data:moKeys.map(k=>cntByMonth[k]),backgroundColor:'#0f766e',borderRadius:5}]},
+        data:{labels:moLabels,datasets:[{label:'Containers',data:moKeys.map(k=>cntByMonth[k]),backgroundColor:'#056dae',borderRadius:5}]},
         options:{responsive:true,maintainAspectRatio:false,
           plugins:{legend:{display:false},
             datalabels:{display:true,anchor:'end',align:'end',font:{size:11,weight:'700'},color:'#374151'},
@@ -5566,13 +5573,13 @@ function renderDashOrders(){
   const tot=rows.reduce((t,g)=>({orders:t.orders+g.orders,ctns:t.ctns+g.ctns,r:t.r+g.r,p:t.p+g.p}),{orders:0,ctns:0,r:0,p:0});
   const f=v=>v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const pct=(r,p)=>r?((r-p)/r*100).toFixed(1)+'%':'—';
-  const col=m=>m>0?'#0f766e':m<0?'#dc2626':'#64748b';
+  const col=m=>m>0?'#056dae':m<0?'#dc2626':'#64748b';
   const td='padding:7px 10px;border-bottom:1px solid #eef2f7;text-align:right';
   mEl.innerHTML=`<div style="font-size:12px;font-weight:800;color:#1e293b;margin:14px 0 6px;letter-spacing:.3px">GROSS MARGIN BY PROJECT <span style="font-weight:500;color:#94a3b8">· receivable − payable from each order's Charges</span></div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:560px">
     <thead><tr style="font-size:11px;text-transform:uppercase;letter-spacing:.4px">
-      <th style="padding:7px 10px;text-align:left;background:#004D4C;color:#fff">Project</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Orders</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Ctns</th>
-      <th style="${td};background:#004D4C;color:#fff;border-bottom:0">Receivable</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Payable</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Margin</th><th style="${td};background:#004D4C;color:#fff;border-bottom:0">Margin %</th></tr></thead><tbody>
+      <th style="padding:7px 10px;text-align:left;background:#056dae;color:#fff">Project</th><th style="${td};background:#056dae;color:#fff;border-bottom:0">Orders</th><th style="${td};background:#056dae;color:#fff;border-bottom:0">Ctns</th>
+      <th style="${td};background:#056dae;color:#fff;border-bottom:0">Receivable</th><th style="${td};background:#056dae;color:#fff;border-bottom:0">Payable</th><th style="${td};background:#056dae;color:#fff;border-bottom:0">Margin</th><th style="${td};background:#056dae;color:#fff;border-bottom:0">Margin %</th></tr></thead><tbody>
     ${rows.map(g=>{ const m=g.r-g.p; return `<tr>
       <td style="padding:7px 10px;border-bottom:1px solid #eef2f7;font-weight:700;color:#1e293b">${_noEsc(g.name)}</td>
       <td style="${td}">${g.orders}</td><td style="${td}">${g.ctns}</td>
@@ -6257,7 +6264,7 @@ function rcpOpenEdit(hub, wk, autoQty, cellEl){
   popup.style.cssText=`position:fixed;z-index:9999;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,0.45);min-width:210px;left:${left}px;top:${top}px`;
   const hubName=RCP_HUB_EN[hub]||hub;
   popup.innerHTML=`
-    <div style="font-size:11px;color:#5DD8D0;font-weight:800;margin-bottom:4px">${hubName} · ${wk}</div>
+    <div style="font-size:11px;color:#7fb4dc;font-weight:800;margin-bottom:4px">${hubName} · ${wk}</div>
     <div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Auto from VT: <strong style="color:#fbbf24">${autoQty} units</strong>${manualVal!==undefined?` · <span style="color:#fb923c">manual: ${manualVal}</span>`:''}</div>
     <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
       <span style="font-size:11px;color:#94a3b8">🚢 Booked:</span>
@@ -6340,7 +6347,7 @@ function rcpRender(){
     const isExpanded=rcpExpandedHub===h;
     const pct=totalArr>0?Math.min(100,Math.round(totalBooked/totalArr*100)):0;
     const barColor=urgent?'#f59e0b':overBooked?'#0ea5e9':'#22c55e';
-    const borderColor=isExpanded?'#003534':urgent?'#fca5a5':'#bbf7d0';
+    const borderColor=isExpanded?'#002d72':urgent?'#fca5a5':'#bbf7d0';
     const shadow=isExpanded?'box-shadow:0 4px 16px rgba(0,53,52,0.15)':'';
     const statusLine=urgent
       ?`<div style="font-size:12px;font-weight:800;color:#dc2626;margin-top:4px">📦 ${stock} in stock — need to book</div>`
@@ -6349,8 +6356,8 @@ function rcpRender(){
         :(totalArr>0?`<div style="font-size:12px;font-weight:800;color:#16a34a;margin-top:4px">✅ All containers planned</div>`:'');
     html+=`<div onclick="rcpToggleHub('${h}')" style="background:${isExpanded?'#f0fdfc':'#fff'};border:${isExpanded?'2.5px':'1.5px'} solid ${borderColor};border-radius:12px;padding:12px 14px;cursor:pointer;user-select:none;transition:all .15s;${shadow}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-weight:900;font-size:14px;color:#003534">${RCP_HUB_EN[h]}</div>
-        <div style="font-size:13px;color:${isExpanded?'#003534':'#94a3b8'}">${isExpanded?'▲':'▼'}</div>
+        <div style="font-weight:900;font-size:14px;color:#002d72">${RCP_HUB_EN[h]}</div>
+        <div style="font-size:13px;color:${isExpanded?'#002d72':'#94a3b8'}">${isExpanded?'▲':'▼'}</div>
       </div>
       <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:2px">
         <span style="font-size:26px;font-weight:900;color:#1e293b;line-height:1">${totalArr}</span>
@@ -6370,8 +6377,8 @@ function rcpRender(){
   if(rcpExpandedHub && hubTotals[rcpExpandedHub]){
     const h=rcpExpandedHub;
     const hubName=RCP_HUB_EN[h];
-    html+=`<div style="background:#fff;border:2px solid #003534;border-radius:12px;margin-bottom:16px;overflow:hidden">
-      <div style="background:#003534;color:#5DD8D0;padding:10px 16px;font-weight:800;font-size:13px;display:flex;justify-content:space-between;align-items:center">
+    html+=`<div style="background:#fff;border:2px solid #002d72;border-radius:12px;margin-bottom:16px;overflow:hidden">
+      <div style="background:#002d72;color:#7fb4dc;padding:10px 16px;font-weight:800;font-size:13px;display:flex;justify-content:space-between;align-items:center">
         <span>📊 ${hubName} — Weekly Breakdown</span>
         <span style="font-size:11px;color:#94a3b8;font-weight:400">Click any row to edit booking</span>
       </div>
@@ -6407,7 +6414,7 @@ function rcpRender(){
         :`<span style="color:#cbd5e1">—</span>`;
 
       html+=`<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9;cursor:pointer" onclick="rcpOpenEdit('${h}','${wk}',${bk.autoQty},this)" title="Click to edit booking">
-        <td style="padding:8px 14px;white-space:nowrap;font-weight:${isCur?'800':'500'};color:${isCur?'#003534':'#334155'}">
+        <td style="padding:8px 14px;white-space:nowrap;font-weight:${isCur?'800':'500'};color:${isCur?'#002d72':'#334155'}">
           ${isCur?'<span style="font-size:9px;background:#22c55e;color:#fff;border-radius:3px;padding:1px 4px;margin-right:4px;vertical-align:middle">NOW</span>':''}
           ${rcpWeekLabel(wk)}
         </td>
@@ -6424,7 +6431,7 @@ function rcpRender(){
     const finalStockColor=stock>0?'#dc2626':stock<0?'#0369a1':'#16a34a';
     const finalStockLabel=stock>0?`📦 ${stock} in stock`:stock<0?`✅ ${Math.abs(stock)} ahead`:`✅ 0`;
     html+=`<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:800">
-      <td style="padding:9px 14px;color:#003534">TOTAL</td>
+      <td style="padding:9px 14px;color:#002d72">TOTAL</td>
       <td colspan="2" style="padding:9px 12px;text-align:center;color:#475569;font-size:11px">see above</td>
       <td style="padding:9px 12px;text-align:center;font-size:14px;color:#1e293b">${totalArr}</td>
       <td style="padding:9px 12px;text-align:center;color:#92400e">${totalBooked}</td>
@@ -6446,7 +6453,7 @@ function rcpRender(){
   // ── Weekly table ──────────────────────────────────────────────────
   html+=`<div style="overflow-x:auto"><table style="border-collapse:separate;border-spacing:0;width:100%;font-size:12px;min-width:500px">
   <thead>
-    <tr style="background:#003534;color:#5DD8D0">
+    <tr style="background:#002d72;color:#7fb4dc">
       <th style="padding:10px 14px;text-align:left;font-weight:700;white-space:nowrap;border-radius:8px 0 0 0;min-width:110px">Week</th>
       ${activeHubs.map((h,i)=>`<th style="padding:10px 12px;text-align:center;font-weight:700${i===activeHubs.length-1?';border-radius:0 8px 0 0':''}">${RCP_HUB_EN[h]}</th>`).join('')}
     </tr>
@@ -6476,7 +6483,7 @@ function rcpRender(){
       const stockLabel=stock>0?`📦 ${stock} in stock (need to book)`
         :stock<0?`✅ Pre-booked ${Math.abs(stock)} ahead`
         :`✅ Stock = 0 (perfectly balanced)`;
-      const tipHtml=`<div style='font-weight:800;font-size:13px;margin-bottom:8px;color:#5DD8D0'>${RCP_HUB_EN[h]} — up to ${wk}</div>
+      const tipHtml=`<div style='font-weight:800;font-size:13px;margin-bottom:8px;color:#7fb4dc'>${RCP_HUB_EN[h]} — up to ${wk}</div>
         <div style='display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;font-size:12px'>
           <div>Arrived (cumulative)</div><div style='font-weight:800;color:#4ade80;text-align:right'>${cum.cumA}</div>
           <div>In transit (cumulative)</div><div style='font-weight:800;color:#60a5fa;text-align:right'>${cum.cumT}</div>
@@ -6868,7 +6875,7 @@ function renderCT(){
     const destVal=r['Destination']||'Belgium';
     const _destFlags={'Belgium':'🇧🇪','Netherlands':'🇳🇱','Italy':'🇮🇹','Germany':'🇩🇪','France':'🇫🇷','Spain':'🇪🇸','Poland':'🇵🇱','UK':'🇬🇧','Austria':'🇦🇹','Switzerland':'🇨🇭','Sweden':'🇸🇪','Denmark':'🇩🇰','Czech Republic':'🇨🇿','Hungary':'🇭🇺','Romania':'🇷🇴','Portugal':'🇵🇹','Greece':'🇬🇷','Slovakia':'🇸🇰','Slovenia':'🇸🇮','Croatia':'🇭🇷','Bulgaria':'🇧🇬','Finland':'🇫🇮','Norway':'🇳🇴'};
     const destFlag=_destFlags[destVal]||'🌍';
-    const destColor=destVal==='Netherlands'?'#fff3e0;color:#c2410c':destVal==='Italy'?'#fdf2f8;color:#9d174d':destVal==='Germany'?'#fef3c7;color:#92400e':destVal==='France'?'#eff6ff;color:#1d4ed8':destVal==='Spain'?'#fef2f2;color:#991b1b':'#e0efef;color:#003a3a';
+    const destColor=destVal==='Netherlands'?'#fff3e0;color:#c2410c':destVal==='Italy'?'#fdf2f8;color:#9d174d':destVal==='Germany'?'#fef3c7;color:#92400e':destVal==='France'?'#eff6ff;color:#1d4ed8':destVal==='Spain'?'#fef2f2;color:#991b1b':'#eef4fa;color:#002d72';
     const destCell=`<td data-id="${r._id}" data-col="Destination">
       <div class="cell-view" onclick="startEdit(this)"><span style="background:${destColor};border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">${destFlag} ${destVal}</span></div>
       <div class="cell-edit"><input type="text" list="dl-dest" value="${destVal.replace(/"/g,'&quot;')}" onblur="commitEdit(this,'Destination',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:130px"/></div>
@@ -7110,7 +7117,7 @@ function renderCT(){
       </td>
       <td data-id="${r._id}" data-col="Price">
         <div class="cell-view" onclick="startEdit(this)">
-          ${r['Price']?`<span style="font-weight:600">€${r['Price']}</span><div style="height:3px;border-radius:2px;background:#004D4C;opacity:.75;margin-top:3px;width:${Math.max(6,Math.round((parseFloat(r['Price'])||0)/_ctMaxP*100))}%"></div>`:'<span style="color:#ccc">—</span>'}
+          ${r['Price']?`<span style="font-weight:600">€${r['Price']}</span><div style="height:3px;border-radius:2px;background:#056dae;opacity:.75;margin-top:3px;width:${Math.max(6,Math.round((parseFloat(r['Price'])||0)/_ctMaxP*100))}%"></div>`:'<span style="color:#ccc">—</span>'}
         </div>
         <div class="cell-edit"><input type="number" min="0" step="0.01" value="${(r['Price']||'').toString().replace(/"/g,'&quot;')}" placeholder="0.00" onblur="commitEdit(this,'Price',${r._id})" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit(this)" style="width:90px"/></div>
       </td>
@@ -8022,7 +8029,7 @@ function renderVT(){
         const malaDt=parseDate(ctRow['ETA in Mala']);
         const hubDt=ctRow['ETA at Hub']?parseDate(ctRow['ETA at Hub']):(malaDt?new Date(malaDt.getTime()+4*864e5):null);
         const parts=[];
-        if(malaDt) parts.push(`<span style="color:#004D4C;font-size:10px" title="ETA in Mala">📍${formatDate(malaDt)}</span>`);
+        if(malaDt) parts.push(`<span style="color:#056dae;font-size:10px" title="ETA in Mala">📍${formatDate(malaDt)}</span>`);
         if(hubDt)  parts.push(`<span style="color:#2e7d32;font-size:10px" title="ETA at Hub">🏭${formatDate(hubDt)}</span>`);
         if(ctRow['Scheduled Slot']) parts.push(`<span style="color:#7B1FA2;font-size:10px" title="Scheduled Slot">📅${ctRow['Scheduled Slot']}</span>`);
         if(parts.length) dateHints=`<span style="display:inline-flex;gap:5px;margin-left:6px">${parts.join('<span style="color:#ccc">›</span>')}</span>`;
@@ -8395,7 +8402,7 @@ function renderSOC(){
       const staleWarning=isStale?`<span class="soc-cn-status" title="Over ${SOC_MAX_DAYS} days on site">⚠</span>`:'';
       const yardEsc=yard.yard.replace(/'/g,"\\'");
       return `<span class="soc-cn-tag ${cls}" title="${days!==null?'On site: '+days+' day(s)':'No date recorded'}">
-        <input type="checkbox" class="soc-sel-cb" data-yard="${yard.yard.replace(/"/g,'&quot;')}" value="${cn}" style="width:12px;height:12px;margin-right:3px;cursor:pointer;accent-color:#004D4C" onclick="event.stopPropagation()"/>
+        <input type="checkbox" class="soc-sel-cb" data-yard="${yard.yard.replace(/"/g,'&quot;')}" value="${cn}" style="width:12px;height:12px;margin-right:3px;cursor:pointer;accent-color:#056dae" onclick="event.stopPropagation()"/>
         ${cn}${ageLabel}${isBooked?'<span class="soc-cn-status">⚓</span>':''}${staleWarning}
         <button class="vt-cn-rm" onclick="socRemoveCN('${yardEsc}','${cn}')" title="Remove">✕</button>
       </span>`;
@@ -8542,36 +8549,36 @@ const _BEL_HIST_STATS = {
 // Stage avgs = calendar days from China departure. Final delivery stage uses
 // working-day projection (belAddWorkingDays) so weekends are skipped properly.
 const BEL_STAGES = [
-  { icon:'🚉', label:'Depart China\nTerminal',      avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
+  { icon:'🚉', label:'Depart China\nTerminal',      avg:0,     p70:0,  p85:0,  color:'#056dae', bg:'#eef4fa', dColor:'#056dae', workingDayLeg:false },
   { icon:'🛂', label:'Alashankou\nBorder',           avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
   { icon:'🏔️', label:'Kazakhstan\nTransit Done',    avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
   { icon:'🚩', label:'Russia\nBorder',               avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
   { icon:'🏭', label:'Malaszewicze\nPoland',         avg:13.68, p70:14, p85:14, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
-  { icon:'🏗️', label:'Duisburg\nHub',               avg:17.00, p70:17, p85:17, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
-  { icon:'📦', label:'Belgium\nDelivery',            avg:3,     p70:4,  p85:5,  color:'#004D4C', bg:'#E0EFEF', dColor:'#003A3A', workingDayLeg:true  },
+  { icon:'🏗️', label:'Duisburg\nHub',               avg:17.00, p70:17, p85:17, color:'#002d72', bg:'#CCFBF1', dColor:'#056dae', workingDayLeg:true  },
+  { icon:'📦', label:'Belgium\nDelivery',            avg:3,     p70:4,  p85:5,  color:'#056dae', bg:'#eef4fa', dColor:'#002d72', workingDayLeg:true  },
 ];
 // NL: Hub→Delivery working-day median = 4wd (slower T1, ~4d customs vs 1d for BE)
 const NL_STAGES = [
-  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
+  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#056dae', bg:'#eef4fa', dColor:'#056dae', workingDayLeg:false },
   { icon:'🛂', label:'Alashankou\nBorder',         avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
   { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
   { icon:'🚩', label:'Russia\nBorder',             avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
   { icon:'🏭', label:'Malaszewicze\nPoland',       avg:13.68, p70:14, p85:14, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
-  { icon:'🏗️', label:'Duisburg\nHub',             avg:17.00, p70:17, p85:17, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
+  { icon:'🏗️', label:'Duisburg\nHub',             avg:17.00, p70:17, p85:17, color:'#002d72', bg:'#CCFBF1', dColor:'#056dae', workingDayLeg:true  },
   { icon:'🇳🇱', label:'Netherlands\nDelivery',     avg:4,     p70:6,  p85:8,  color:'#c2410c', bg:'#fff7ed', dColor:'#c2410c', workingDayLeg:true  },
 ];
 const IT_STAGES = [
-  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
+  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#056dae', bg:'#eef4fa', dColor:'#056dae', workingDayLeg:false },
   { icon:'🛂', label:'Alashankou\nBorder',         avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
   { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
   { icon:'🚩', label:'Russia\nBorder',             avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
   { icon:'🏭', label:'Malaszewicze\nPoland',       avg:13.68, p70:14, p85:14, color:'#9C27B0', bg:'#F3E5F5', dColor:'#9C27B0', workingDayLeg:false },
-  { icon:'🏗️', label:'Duisburg\nHub',             avg:17.00, p70:17, p85:17, color:'#00695C', bg:'#CCFBF1', dColor:'#0F766E', workingDayLeg:true  },
+  { icon:'🏗️', label:'Duisburg\nHub',             avg:17.00, p70:17, p85:17, color:'#002d72', bg:'#CCFBF1', dColor:'#056dae', workingDayLeg:true  },
   { icon:'🇮🇹', label:'Milan MXP\nDelivery',       avg:5,     p70:7,  p85:9,  color:'#9d174d', bg:'#fdf2f8', dColor:'#9d174d', workingDayLeg:true  },
 ];
 // Malaszewicze-only: for shipments whose endpoint IS Malaszewicze (no onward Duisburg/final leg)
 const MALA_STAGES = [
-  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#004D4C', bg:'#E0EFEF', dColor:'#004D4C', workingDayLeg:false },
+  { icon:'🚉', label:'Depart China\nTerminal',    avg:0,     p70:0,  p85:0,  color:'#056dae', bg:'#eef4fa', dColor:'#056dae', workingDayLeg:false },
   { icon:'🛂', label:'Alashankou\nBorder',         avg:4.65,  p70:5,  p85:5,  color:'#7B1FA2', bg:'#EDE7F6', dColor:'#E65100', workingDayLeg:false },
   { icon:'🏔️', label:'Kazakhstan\nTransit Done',  avg:7.47,  p70:9,  p85:9,  color:'#2E7D32', bg:'#DCFCE7', dColor:'#16A34A', workingDayLeg:false },
   { icon:'🚩', label:'Russia\nBorder',             avg:9.95,  p70:11, p85:11, color:'#C62828', bg:'#FEE2E2', dColor:'#C62828', workingDayLeg:false },
@@ -8727,11 +8734,11 @@ function renderBelgiumTimeline(){
   const body=document.getElementById('bel-timeline-body');
   const badge=document.getElementById('bel-anchor-badge');
 
-  let STAGES, smart=null, themeColor='#004D4C';
+  let STAGES, smart=null, themeColor='#056dae';
   if(_rtDest==='nl'){ STAGES=NL_STAGES; themeColor='#c2410c'; }
   else if(_rtDest==='it'){ STAGES=IT_STAGES; themeColor='#9d174d'; }
   else if(_rtDest==='mala'){ STAGES=MALA_STAGES; themeColor='#9C27B0'; }
-  else { smart=computeSmartBelStages(); STAGES=smart.stages; themeColor='#004D4C'; }
+  else { smart=computeSmartBelStages(); STAGES=smart.stages; themeColor='#056dae'; }
 
   const barColors=['#2563EB','#D97706','#16A34A','#DC2626','#9333EA','#0D9488',themeColor];
 
@@ -9695,7 +9702,7 @@ document.addEventListener('change',function(e){
   if(e.target.name==='imp_mode'){
     document.querySelectorAll('#imp-mode-radios label').forEach(l=>{
       const r=l.querySelector('input');
-      if(r.checked){ l.style.border='2px solid '+(r.value==='replace'?'#C62828':r.value==='upsert'?'#004D4C':'#43A047'); l.style.background=r.value==='replace'?'#FFEBEE':r.value==='upsert'?'#E0EFEF':'#F1F8E9'; }
+      if(r.checked){ l.style.border='2px solid '+(r.value==='replace'?'#C62828':r.value==='upsert'?'#056dae':'#43A047'); l.style.background=r.value==='replace'?'#FFEBEE':r.value==='upsert'?'#eef4fa':'#F1F8E9'; }
       else{ l.style.border='1px solid var(--border)'; l.style.background='#fff'; }
     });
   }
@@ -10119,7 +10126,7 @@ function applyAutoSlots(){
 function showToast(msg){
   let t = document.getElementById('toast-msg');
   if(!t){ t=document.createElement('div'); t.id='toast-msg';
-    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#004D4C;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .3s';
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#056dae;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .3s';
     document.body.appendChild(t); }
   t.textContent=msg; t.style.opacity='1';
   clearTimeout(t._to); t._to=setTimeout(()=>{ t.style.opacity='0'; }, 2800);
@@ -11405,7 +11412,7 @@ function noToggleFee(key){
 function _noFeeFold(o,cn,ce,cols,surchargeEditor){
   const lines=_noCharges(o,cn);
   const R=_noReceivable(o,cn), P=_noPayable(o,cn), M=_noMargin(o,cn), pct=_noMarginPct(o,cn);
-  const mc=m=>m<0?'#dc2626':'#0f766e';
+  const mc=m=>m<0?'#dc2626':'#056dae';
   const id=o._id;
   const money=(val,ix,f)=>`<input type="text" class="nf-num" value="${_noN(val)?_noN(val):''}" placeholder="0.00"
       onchange="noChargeSet(${id},'${ce}',${ix},'${f}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"/>`;
@@ -11439,7 +11446,7 @@ function _noFeeFold(o,cn,ce,cols,surchargeEditor){
         <div class="nf-h">ITEM</div>
         <div class="nf-h nf-r" style="color:#0369a1">RECEIVABLE</div>
         <div class="nf-h nf-r" style="color:#b45309">PAYABLE</div>
-        <div class="nf-h nf-r" style="color:#0f766e">MARGIN</div>
+        <div class="nf-h nf-r" style="color:#056dae">MARGIN</div>
         <div class="nf-h">NOTE</div>
         <div class="nf-h"></div>
         ${rows}
@@ -11570,9 +11577,9 @@ function tmSetType(t){
   ['slot','docs'].forEach(k=>{
     const b=document.getElementById('tm-tab-'+k); if(!b) return;
     const on=k===t;
-    b.style.background=on?'#004D4C':'#fff';
+    b.style.background=on?'#056dae':'#fff';
     b.style.color=on?'#fff':'#475569';
-    b.style.borderColor=on?'#004D4C':'#e2e8f0';
+    b.style.borderColor=on?'#056dae':'#e2e8f0';
   });
   tmRender();
 }
@@ -11969,7 +11976,7 @@ function _buildNoticeItems(list, showControls=true){
       <div class="ni-view" style="display:flex;align-items:flex-start;gap:11px;flex:1;min-width:0">
         <div class="ni-body" style="flex:1;min-width:0">
           <div class="ni-text">${full}</div>
-          <div class="ni-date">${n.ts}${n.cat&&n.cat!=='all'?` · <span style="font-weight:700;color:#004D4C">${CAT_LABELS[n.cat]||''}</span>`:''}</div>
+          <div class="ni-date">${n.ts}${n.cat&&n.cat!=='all'?` · <span style="font-weight:700;color:#056dae">${CAT_LABELS[n.cat]||''}</span>`:''}</div>
         </div>
         ${showControls?`<div style="display:flex;gap:4px;flex-shrink:0;margin-top:1px;align-items:center">
           <button class="ni-edit" onclick="noticeStartEdit(${n.id})" title="Edit">✏️</button>
@@ -12057,7 +12064,7 @@ function renderPageReminders(){
     el.innerHTML=`<div class="chart-card" style="padding:10px 14px;margin:0 0 12px">
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#b45309;margin-bottom:6px">🗒 Reminders <span style="background:#fef3c7;color:#92400e;border-radius:8px;padding:1px 7px;font-size:10px">${items.length}</span></div>
       ${items.map(r=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12.5px">
-        <input type="checkbox" onchange="remToggleDone(${r.id})" style="width:15px;height:15px;cursor:pointer;accent-color:#0f766e" title="Mark done"/>
+        <input type="checkbox" onchange="remToggleDone(${r.id})" style="width:15px;height:15px;cursor:pointer;accent-color:#056dae" title="Mark done"/>
         <span style="flex:1">${(r.text||'').replace(/</g,'&lt;')}</span>
         <span style="color:#94a3b8;font-size:10px;white-space:nowrap">${r.ts||''}</span>
       </div>`).join('')}
@@ -12232,7 +12239,7 @@ function renderNoHubs(){
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
       <h3 style="margin:0;font-size:14px">🏗️ Terminal storage tariff</h3>
       <span style="font-size:11.5px;color:#64748b">Orders' Hub only suggests terminals listed here · picking one auto-fills free days and tiered storage fee</span>
-      <button onclick="noHubAdd()" style="margin-left:auto;padding:5px 14px;font-size:12px;font-weight:700;background:#004D4C;color:#fff;border:none;border-radius:6px;cursor:pointer">+ Add terminal</button>
+      <button onclick="noHubAdd()" style="margin-left:auto;padding:5px 14px;font-size:12px;font-weight:700;background:#056dae;color:#fff;border:none;border-radius:6px;cursor:pointer">+ Add terminal</button>
     </div>
     <div class="tbl-scroll"><table class="sur-tbl" style="width:100%;min-width:900px"><thead><tr>
       <th style="min-width:220px">Hub</th><th style="width:80px">Free days</th><th style="width:90px">Currency</th>
@@ -12280,7 +12287,7 @@ function noAdd(){
       ${fld('free','Free days','')}<div></div>
       ${fld('rcp','Recipient / company','')}${fld('mail','Recipient email (several allowed)','a@x.com, b@x.com')}
     </div>
-    <div style="margin-top:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><label style="margin:0;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#64748b">Charges (per B/L)</label><button type="button" onclick="noaChAdd()" style="margin-left:auto;padding:3px 12px;font-size:12px;font-weight:700;border:1px solid #0f766e;color:#0f766e;background:#fff;border-radius:6px;cursor:pointer">+ Add item</button></div>
+    <div style="margin-top:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><label style="margin:0;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#64748b">Charges (per B/L)</label><button type="button" onclick="noaChAdd()" style="margin-left:auto;padding:3px 12px;font-size:12px;font-weight:700;border:1px solid #056dae;color:#056dae;background:#fff;border-radius:6px;cursor:pointer">+ Add item</button></div>
       <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 28px;gap:6px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;padding:0 2px"><span>Item</span><span>Receivable</span><span>Payable</span><span></span></div>
       <div id="noa-ch"></div></div>
     <div style="font-size:11.5px;color:#64748b;margin-top:8px">Everything you fill in here applies to all the B/Ls listed above; edit any single B/L afterwards in the order details.</div>
@@ -12459,19 +12466,31 @@ function renderDispatch(){
   keys.forEach(k=>{
     const d=new Date(k+'T00:00:00'), diff=Math.round((d-today)/864e5);
     const lab=(diff===0?'Today':diff===1?'Tomorrow':diff<0?'Past':'')+' '+k+' '+dn[d.getDay()];
-    html+=sec(lab.trim(),diff===0?'#0f766e':'#0f172a',grp[k]);
+    html+=sec(lab.trim(),diff===0?'#056dae':'#0f172a',grp[k]);
     txt.push('',lab.trim()); grp[k].sort(cmp).forEach(x=>txt.push([x.time||'--:--',x.src,x.cn,x.ref,x.who,x.trucker,x.done?'Delivered':''].filter((v,i)=>i<6||v).join(' | ')));
   });
   if(!html) html='<div style="padding:30px;text-align:center;color:#64748b">No deliveries in this period.</div>';
   body.innerHTML=html; _dpText=txt.join('\n');
   const cnt=(f)=>win.filter(f).length;
   const card=(t,n,c)=>`<div style="padding:10px 16px;border:1px solid #e2e8f0;border-left:4px solid ${c};border-radius:8px;background:#fff"><div style="font-size:12px;color:#64748b">${t}</div><div style="font-size:20px;font-weight:700">${n}</div></div>`;
-  document.getElementById('dp-summary').innerHTML=card('Today',items.filter(x=>_dpDay(x.d)===_dpDay(today)).length,'#0f766e')+card('Tomorrow',items.filter(x=>Math.round((x.d-today)/864e5)===1).length,'#1d4ed8')+card('In period',items.filter(x=>x.d>=today&&x.d<=end&&!x.done).length,'#475569')+card('Not confirmed',items.filter(x=>x.d>=today&&x.d<=end&&!x.done&&!x.conf).length,'#b45309')+card('Overdue',overdue.length,'#b91c1c');
+  document.getElementById('dp-summary').innerHTML=card('Today',items.filter(x=>_dpDay(x.d)===_dpDay(today)).length,'#056dae')+card('Tomorrow',items.filter(x=>Math.round((x.d-today)/864e5)===1).length,'#1d4ed8')+card('In period',items.filter(x=>x.d>=today&&x.d<=end&&!x.done).length,'#475569')+card('Not confirmed',items.filter(x=>x.d>=today&&x.d<=end&&!x.done&&!x.conf).length,'#b45309')+card('Overdue',overdue.length,'#b91c1c');
 }
 function dpCopy(){
   const t=_dpText; const done=()=>{ if(typeof showToast==='function') showToast('✓ Copied'); };
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done);
   else { const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){} ta.remove(); }
+}
+// Edit once → applies to every B/L of the order (clears the per-B/L overrides for that field)
+function noSetAll(id,f,v){
+  const o=NO.find(r=>r._id===id); if(!o) return;
+  o[f]=v; Object.values(o.perCtn||{}).forEach(pc=>{ if(pc) delete pc[f]; });
+  saveNO(); noRenderSoon(); if(typeof showToast==='function') showToast('✓ Applied to all B/Ls');
+}
+function noChargesToAll(id,cn){
+  const o=NO.find(r=>r._id===id); if(!o) return;
+  o['Charges']=JSON.parse(JSON.stringify(_noCharges(o,cn)));
+  Object.values(o.perCtn||{}).forEach(pc=>{ if(pc) delete pc['Charges']; });
+  saveNO(); noRenderSoon(); if(typeof showToast==='function') showToast('✓ Charges applied to all B/Ls');
 }
 function noAddCtnPrompt(id){
   const i=NO.findIndex(r=>r._id===id); if(i<0) return;
@@ -12920,7 +12939,7 @@ function renderNoBatchProgress(){
     </div>`;
   };
   const _groupLbl='font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.6px;margin:0 0 6px 2px';
-  const _bt=(m,l)=>`<button onclick="noBpSetMode('${m}')" style="padding:2px 10px;font-size:11px;font-weight:600;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;background:${_noBpMode===m?'#004D4C':'#fff'};color:${_noBpMode===m?'#fff':'#475569'}">${l}</button>`;
+  const _bt=(m,l)=>`<button onclick="noBpSetMode('${m}')" style="padding:2px 10px;font-size:11px;font-weight:600;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;background:${_noBpMode===m?'#056dae':'#fff'};color:${_noBpMode===m?'#fff':'#475569'}">${l}</button>`;
   const _bar=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="${_groupLbl};margin:0">Order progress · ${active.length} ongoing / ${done.length} finished</span><span style="margin-left:auto;display:flex;gap:4px">${_bt('compact','Compact')}${_bt('full','Full')}${_bt('hide','Hide')}</span></div>`;
   if(_noBpMode==='hide'){ el.innerHTML=_bar; return; }
   const _doneOpen=(_noBpMode==='full')||_noBpDoneOpen;
@@ -13092,7 +13111,7 @@ function renderOrders(){
       <td style="${_tx}">${_noEsc(ataVal)}</td>
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:#0369a1">${_R?_noEur(_R):''}</span></td>
       <td style="${_tx};text-align:right"><span style="font-weight:700;color:#b45309">${_P?_noEur(_P):''}</span></td>
-      <td style="${_tx};text-align:right"><span style="font-weight:700;color:${_M<0?'#dc2626':'#0f766e'}">${_R||_M?_noEur(_M):''}</span></td>
+      <td style="${_tx};text-align:right"><span style="font-weight:700;color:${_M<0?'#dc2626':'#056dae'}">${_R||_M?_noEur(_M):''}</span></td>
       <td style="text-align:center"><input type="checkbox" class="no-sel-cb" data-id="${o._id}" ${noSel.has(o._id)?'checked':''} onchange="noToggleSel(this)" title="Select order for bulk edit"/></td>
       <td style="text-align:center" onclick="event.stopPropagation()">${cn?`<button type="button" onclick="noDelCtn(${o._id},'${ce}')" title="Delete this B/L row" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`:`<button type="button" onclick="noDel(${o._id})" title="Delete entire order" style="border:none;background:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>`}</td>
     </tr>`;
@@ -13457,7 +13476,7 @@ function wbRender(kind){
   const dl='wb-'+kind+'-dl';
   host.innerHTML=`<div class="chart-card" style="padding:0;margin:0 0 12px;overflow:hidden">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 12px;background:#eef4f4;border-bottom:${S.open?'1px solid #d7dde6':'0'}">
-      <b style="font-size:12px;color:#004D4C;cursor:pointer" onclick="wbToggle('${kind}')">${S.open?'▾':'▸'} ${cfg.title}</b>
+      <b style="font-size:12px;color:#056dae;cursor:pointer" onclick="wbToggle('${kind}')">${S.open?'▾':'▸'} ${cfg.title}</b>
       <span style="font-size:11px;color:#64748b">${lbl}${noDate?` · ${noDate} without dates`:''}</span>
       ${S.open?`<input list="${dl}" placeholder="Find &amp; inspect…" onchange="wbFind('${kind}',this.value);this.value=''" style="padding:3px 8px;border:1px solid #cbd5e1;border-radius:5px;font-size:11.5px;width:170px"><datalist id="${dl}">${jobs.slice(0,400).map(j=>`<option value="${_noEsc((j.find||j.label).trim().split(/\s+/)[0])}"></option>`).join('')}</datalist>
       <span style="margin-left:auto;display:flex;gap:4px"><button style="${btn}" onclick="wbSetRange('${kind}','prev')">◀</button><button style="${btn}" onclick="wbSetRange('${kind}','today')">Today</button><button style="${btn}" onclick="wbSetRange('${kind}','next')">▶</button>
@@ -13490,7 +13509,7 @@ function _wbDate(k,val,setter){ return `<input data-k="${_noEsc(k)}" class="no-f
 function _wbSelect(k,val,opts,setter){ const os=opts.includes(val)?opts:[val,...opts]; return `<select data-k="${_noEsc(k)}" style="${_wbI}" onchange="${_wbSet(setter,'this.value')}">${os.map(v=>`<option value="${_noEsc(v)}" ${v===val?'selected':''}>${_noEsc(v||'—')}</option>`).join('')}</select>`; }
 function _wbAgArea(k,val,setter,ph){ return `<textarea class="wb-ag" data-k="${_noEsc(k)}" rows="1" placeholder="${_noEsc(ph||'')}" style="${_wbI};resize:none;overflow:hidden;font-family:inherit;min-height:32px;line-height:1.35" oninput="_noAutoGrow(this)" onchange="${_wbSet(setter,'this.value')}">${_noEsc(val)}</textarea>`; }
 function _wbArea(k,val,setter){ return `<textarea data-k="${_noEsc(k)}" rows="2" style="${_wbI};resize:vertical;font-family:inherit" onchange="${_wbSet(setter,'this.value')}">${_noEsc(val)}</textarea>`; }
-function _wbChk(k,label,on,setter,color){ return `<label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:${on?(color||'#0f766e'):'#64748b'};cursor:pointer;padding:4px 10px;border:1px solid ${on?(color||'#0f766e'):'#e2e8f0'};border-radius:16px;background:${on?'#f0fdfa':'#fff'}"><input data-k="${_noEsc(k)}" type="checkbox" ${on?'checked':''} onchange="${_wbSet(setter,'this.checked')}" style="width:15px;height:15px;accent-color:${color||'#0f766e'};margin:0">${label}</label>`; }
+function _wbChk(k,label,on,setter,color){ return `<label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:${on?(color||'#056dae'):'#64748b'};cursor:pointer;padding:4px 10px;border:1px solid ${on?(color||'#056dae'):'#e2e8f0'};border-radius:16px;background:${on?'#f0f7fd':'#fff'}"><input data-k="${_noEsc(k)}" type="checkbox" ${on?'checked':''} onchange="${_wbSet(setter,'this.checked')}" style="width:15px;height:15px;accent-color:${color||'#056dae'};margin:0">${label}</label>`; }
 // ── 订单详情：全部字段都在这里录入 ──
 function wbDetailNo(id){
   const o=NO.find(x=>x._id===id); if(!o) return '';
@@ -13498,7 +13517,7 @@ function wbDetailNo(id){
   const rp=_noOrderRP(o), doneN=list.filter(cn=>_wbDelivered(o,cn)).length, pct=Math.round(doneN/list.length*100);
   const today=new Date(); today.setHours(0,0,0,0);
   const ceOf=cn=>cn?String(cn).replace(/'/g,"\\'").replace(/"/g,'&quot;'):'';
-  const mc=m=>m>0?'#0f766e':m<0?'#dc2626':'#94a3b8';
+  const mc=m=>m>0?'#056dae':m<0?'#dc2626':'#94a3b8';
   const oset=f=>`noSet(${o._id},'${f}',@@)`;
   const miles=cn=>{
     const steps=[['ETA',_wbFld(o,cn,'ETA')],['At Hub',_wbFld(o,cn,'At Hub Date')],['Pick Up',_wbFld(o,cn,'Pick Up Date')],['Delivery',_wbFld(o,cn,'Delivery Date')],['ATA',_wbFld(o,cn,'ATA')],['POD',_wbFld(o,cn,'POD Date')||(_wbFld(o,cn,'POD')?'✓':'')],['Payment',_wbFld(o,cn,'Payment Status')||''],['Clearance',_wbFld(o,cn,'Clearance Payment')||'']];
@@ -13541,16 +13560,16 @@ function wbDetailNo(id){
       ${sec('Dates',G(5,`${_wbL('ETA',_wbDate(kk('ETA'),txt('ETA'),set('ETA')),1)}${_wbL('At Hub date',_wbDate(kk('At Hub Date'),cn?(pc['At Hub Date']||''):(o['At Hub Date']||''),set('At Hub Date')),1)}${_wbL('Pick up',_wbDate(kk('Pick Up Date'),txt('Pick Up Date'),set('Pick Up Date')),1)}${_wbL('Delivery',_wbDate(kk('Delivery Date'),dv('Delivery Date'),set('Delivery Date')),1)}${_wbL('ATA',_wbDate(kk('ATA'),dv('ATA'),set('ATA')),1)}`))}
       ${sec('Warehouse appointment (约仓)',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${_wbL('Appointment time',_wbText(kk('Appt Time'),txt('Appt Time'),set('Appt Time'),{ph:'YYYY/MM/DD HH:MM'}),180)}<div style="padding-bottom:3px">${_wbChk(kk('Appt Confirmed'),'Confirmed',cn?!!pc['Appt Confirmed']:!!o['Appt Confirmed'],set('Appt Confirmed'),'#1d4ed8')}</div></div>`)}
       ${sec('Status',`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
-        ${_wbChk(kk('Customs Office'),'Customs office',co,set('Customs Office'),'#0f766e')}${_wbChk(kk('At Hub'),'Ready to be picked',cn?!!pc['At Hub']:!!o['Arrived at Hub'],set('At Hub','Arrived at Hub'),'#b45309')}${_wbChk(kk('Demurrage'),'Demurrage'+(autoD?' ('+autoD+'d late)':''),dem,set('Demurrage'),'#dc2626')}</div>
-        ${G(3,`<div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('T1'),'T1',cn?!!pc['T1']:!!o['T1'],set('T1'),'#1d4ed8')}${_wbDate(kk('T1 Date'),txt('T1 Date'),set('T1 Date'))}</div><div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('CC Cleared'),'CC',cn?!!pc['CC Cleared']:!!o['CC Cleared'],set('CC Cleared'),'#0f766e')}${_wbDate(kk('CC Date'),txt('CC Date'),set('CC Date'))}</div><div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('POD'),'POD',cn?!!pc['POD']:!!o['POD'],set('POD'),'#15803d')}${_wbDate(kk('POD Date'),txt('POD Date'),set('POD Date'))}</div>`).replace('gap:10px">','gap:10px;align-items:start">')}
+        ${_wbChk(kk('Customs Office'),'Customs office',co,set('Customs Office'),'#056dae')}${_wbChk(kk('At Hub'),'Ready to be picked',cn?!!pc['At Hub']:!!o['Arrived at Hub'],set('At Hub','Arrived at Hub'),'#b45309')}${_wbChk(kk('Demurrage'),'Demurrage'+(autoD?' ('+autoD+'d late)':''),dem,set('Demurrage'),'#dc2626')}</div>
+        ${G(3,`<div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('T1'),'T1',cn?!!pc['T1']:!!o['T1'],set('T1'),'#1d4ed8')}${_wbDate(kk('T1 Date'),txt('T1 Date'),set('T1 Date'))}</div><div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('CC Cleared'),'CC',cn?!!pc['CC Cleared']:!!o['CC Cleared'],set('CC Cleared'),'#056dae')}${_wbDate(kk('CC Date'),txt('CC Date'),set('CC Date'))}</div><div style="display:flex;flex-direction:column;gap:5px">${_wbChk(kk('POD'),'POD',cn?!!pc['POD']:!!o['POD'],set('POD'),'#15803d')}${_wbDate(kk('POD Date'),txt('POD Date'),set('POD Date'))}</div>`).replace('gap:10px">','gap:10px;align-items:start">')}
         <div style="margin-top:10px">${G(2,`${_wbL('Service',svc,1)}${_wbL('Status',stt,1)}`)}</div>`)}
       ${sec('Costs',G(4,`${_wbL('Free days',`<input data-k="${kk('Free Storage (Days)')}" type="number" min="0" value="${_noEsc(_noCtnFld(o,cn,'Free Storage (Days)'))}" style="${_wbI}" onchange="${_wbSet(set('Free Storage (Days)'),'this.value')}">`,1)}${_wbL('Price / day',`<input data-k="${kk('Price per Day')}" type="text" value="${_noEsc(ppdExplicit)}" placeholder="${tiered?'auto (tariff)':'€'}" style="${_wbI}" onchange="${_wbSet(set('Price per Day'),'this.value.trim()')}">`,1)}${_wbL('Payment status',_wbSelect(kk('Payment Status'),txt('Payment Status'),['','Pending invoice','Requested','Paid'],set('Payment Status')),1)}${_wbL('Clearance payment',_wbSelect(kk('Clearance Payment'),txt('Clearance Payment'),['','Pending invoice','Requested','Paid','Not needed'],set('Clearance Payment')),1)}`))}
       ${sec('Remark',_wbArea(kk('Remark'),txt('Remark'),set('Remark')))}
       ${sur?`<div style="margin-top:8px"><div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:3px">Surcharge tags</div>${sur}</div>`:''}
       <div style="margin-top:12px;border-top:1px dashed #cbd5e1;padding-top:10px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:11.5px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.4px">Charges &amp; margin — enter fees</span>
-          <select onchange="noChargeAdd(${o._id},'${ce}',this)" style="padding:3px 8px;border:1px solid #0f766e;color:#0f766e;border-radius:5px;font-size:11.5px;font-weight:700;background:#fff;margin-left:auto"><option value="">+ Add item…</option>${NO_CHARGE_ITEMS.map(v=>`<option value="${v}">${v}</option>`).join('')}</select></div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#004D4C;color:#fff"><th style="padding:5px 8px;text-align:left;width:130px">Item</th><th style="padding:5px 8px;text-align:right;width:100px">Receivable</th><th style="padding:5px 8px;text-align:right;width:100px">Payable</th><th style="padding:5px 8px;text-align:right;width:80px">Margin</th><th style="padding:5px 8px;text-align:left">Note</th><th style="width:24px"></th></tr></thead><tbody>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:11.5px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.4px">Charges &amp; margin — enter fees</span>${cn&&cs.length>1?`<button type="button" onclick="noChargesToAll(${o._id},'${ce}')" title="Copy this B/L's charges to every B/L of the order" style="padding:3px 10px;border:1px solid #056dae;color:#056dae;border-radius:5px;font-size:11.5px;font-weight:700;background:#fff;cursor:pointer">⇉ Apply to all ${cs.length} B/Ls</button>`:''}
+          <select onchange="noChargeAdd(${o._id},'${ce}',this)" style="padding:3px 8px;border:1px solid #056dae;color:#056dae;border-radius:5px;font-size:11.5px;font-weight:700;background:#fff;margin-left:auto"><option value="">+ Add item…</option>${NO_CHARGE_ITEMS.map(v=>`<option value="${v}">${v}</option>`).join('')}</select></div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#056dae;color:#fff"><th style="padding:5px 8px;text-align:left;width:130px">Item</th><th style="padding:5px 8px;text-align:right;width:100px">Receivable</th><th style="padding:5px 8px;text-align:right;width:100px">Payable</th><th style="padding:5px 8px;text-align:right;width:80px">Margin</th><th style="padding:5px 8px;text-align:left">Note</th><th style="width:24px"></th></tr></thead><tbody>
         ${ch.map((l,ix)=>{ const opts=NO_CHARGE_ITEMS.includes(l.item)?NO_CHARGE_ITEMS:[l.item,...NO_CHARGE_ITEMS]; const m=_noN(l.r)-_noN(l.p);
           return `<tr><td style="padding:3px 4px;border-bottom:1px solid #eef2f7"><select style="${inp}" onchange="noChargeSet(${o._id},'${ce}',${ix},'item',this.value)">${opts.map(v=>`<option ${v===l.item?'selected':''}>${_noEsc(v)}</option>`).join('')}</select></td>
           <td style="padding:3px 4px;border-bottom:1px solid #eef2f7">${num(l.r,ix,'r')}</td><td style="padding:3px 4px;border-bottom:1px solid #eef2f7">${num(l.p,ix,'p')}</td>
@@ -13560,8 +13579,8 @@ function wbDetailNo(id){
         <tr style="font-weight:800;background:#f8fafc"><td style="padding:5px 8px">Total</td><td style="padding:5px 8px;text-align:right;color:#1d4ed8">${_wbF2(R)}</td><td style="padding:5px 8px;text-align:right;color:#b45309">${_wbF2(P)}</td><td style="padding:5px 8px;text-align:right;color:${mc(M)}">${_wbF2(M)}</td><td style="padding:5px 8px;color:${mc(M)}">${_noMarginPct(o,cn)}%</td><td></td></tr></tbody></table></div></div>`;
   };
   return `<div style="padding:14px 16px;background:#f1f5f9;min-height:100%">
-    ${_wbHead('no',o['Order No.']||'Order #'+o._id,(o['Project']?_wbChip(o['Project'],'#0369a1','#e0f2fe'):''),`<button onclick="noApptMail(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #1d4ed8;color:#1d4ed8;background:#fff;border-radius:6px;cursor:pointer">✉ Booking email</button><button onclick="noAddCtnPrompt(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #0f766e;color:#0f766e;background:#fff;border-radius:6px;cursor:pointer">+ Add B/L</button><button onclick="if(confirm('Delete entire order?')){noDel(${o._id})}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${_wbKpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${_wbKpi('Payable',_wbF2(rp.p),'#b45309')}${_wbKpi('Margin',_wbF2(rp.m),rp.m>=0?'#0f766e':'#dc2626')}${_wbKpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#0f766e':'#dc2626')}</div>
+    ${_wbHead('no',o['Order No.']||'Order #'+o._id,(o['Project']?_wbChip(o['Project'],'#0369a1','#e0f2fe'):''),`<button onclick="noApptMail(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #1d4ed8;color:#1d4ed8;background:#fff;border-radius:6px;cursor:pointer">✉ Booking email</button><button onclick="noAddCtnPrompt(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #056dae;color:#056dae;background:#fff;border-radius:6px;cursor:pointer">+ Add B/L</button><button onclick="if(confirm('Delete entire order?')){noDel(${o._id})}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${_wbKpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${_wbKpi('Payable',_wbF2(rp.p),'#b45309')}${_wbKpi('Margin',_wbF2(rp.m),rp.m>=0?'#056dae':'#dc2626')}${_wbKpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#056dae':'#dc2626')}</div>
     ${_wbSec('Order',`<div style="display:flex;flex-wrap:wrap;gap:10px">${_wbL('Project',_wbText('Project|',o['Project']||'',oset('Project'),{ph:'Project'}))}${_wbL('Order No.',_wbText('Order No.|',o['Order No.']||'',oset('Order No.')))}</div>
       <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px;margin-top:10px;align-items:start">${_wbL('Recipient / company',_wbAgArea('Recipient|',o['Recipient']||'',oset('Recipient'),'company, address…'))}${_wbL('Recipient email',_wbAgArea('Recipient Email|',o['Recipient Email']||'',oset('Recipient Email'),'a@x.com, b@x.com'))}${_wbL('Phone',_wbAgArea('Recipient Phone|',o['Recipient Phone']||'',oset('Recipient Phone'),'+32 …'))}</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px"><span style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase">Docs</span>${NO_DOCS.map(([f,l])=>{ const v=o[f]||'', c=v==='yes'?'#16a34a':v==='na'?'#64748b':'#94a3b8'; return `<button type="button" onclick="noDocCycle(${o._id},'${f}')" title="Click: ✓ provided → ✕ not needed → blank (not received)" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid ${v?c:'#e2e8f0'};border-radius:16px;background:${v==='yes'?'#f0fdf4':v==='na'?'#f1f5f9':'#fff'};color:${c};font-size:12.5px;font-weight:700;cursor:pointer"><span style="font-size:14px;width:14px;text-align:center">${v==='yes'?'✓':v==='na'?'✕':'○'}</span>${l}</button>`; }).join('')}<span style="font-size:11px;color:#94a3b8">✓ provided · ✕ not needed · ○ not received</span>${_noDocsDue(o,_noContainers(o)[0]||null).length?`<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#b91c1c">⚠ Missing: ${_noDocsDue(o,_noContainers(o)[0]||null).map(x=>x[1]).join(', ')}</div>`:''}</div>
@@ -13569,6 +13588,12 @@ function wbDetailNo(id){
         <div><div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;margin-bottom:4px">Clearance point (清关点)</div>${_wbAgArea('Clearance Point|',o['Clearance Point']||'',oset('Clearance Point'),'customs office / code…')}</div>
         <div><div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;margin-bottom:4px">Pickup procedure (提货流程)</div>${_wbAgArea('Pickup Procedure|',o['Pickup Procedure']||'',oset('Pickup Procedure'),'')}</div></div>
       <div style="margin-top:10px">${_wbL("Today's status",_wbArea('Today Status|',o['Today Status']||'',oset('Today Status')),300)}</div>`)}
+    ${cs.length>1?(()=>{ const same=f=>{ const vs=[...new Set(cs.map(cn=>String(f==='Hub'?_noCtnHub(o,cn):(_wbFld(o,cn,f)||''))))]; return vs.length===1?vs[0]:null; };
+      const L=(lab,f,html)=>_wbL(lab+(same(f)===null?' <span style="color:#b45309;font-weight:700">· mixed</span>':''),html,1);
+      const aset=f=>`noSetAll(${o._id},'${f}',@@)`, D=(lab,f)=>L(lab,f,_wbDate('ALL '+f+'|',same(f)||'',aset(f))), T=(lab,f,opt)=>L(lab,f,_wbText('ALL '+f+'|',same(f)||'',aset(f),opt||{}));
+      return _wbSec('All '+cs.length+' B/Ls — edit once, applies to every B/L',`<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px">${D('ETA','ETA')}${D('At Hub date','At Hub Date')}${D('Pick up','Pick Up Date')}${D('Delivery','Delivery Date')}${D('ATA','ATA')}</div>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px">${T('Consignee','Consignee',{list:'dl-con'})}${T('Destination','Destination')}${T('Trucker','Trucker',{list:'dl-truck'})}${T('Hub','Hub',{list:'dl-hub-o'})}${T('Free days','Free Storage (Days)')}</div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:8px">Charges: fill them in on one B/L below, then press “⇉ Apply to all B/Ls” on that card. Each B/L can still be changed individually afterwards.</div>`); })():''}
     ${list.map(card).join('')}</div>`;
 }
 // ── TEMU：一个项目 + 日期组（列表）──
@@ -13576,7 +13601,7 @@ function wbDetailCt(key,jobs){
   if(String(key).startsWith('c:')) return wbDetailCtOne(+String(key).slice(2));
   const g=(jobs||_wbJobs('ct')).find(x=>x.key===key); if(!g) return '';
   const rows=g.rows, arr=rows.filter(r=>r['Actual Arrival']||r['Tracking']==='Arrived').length;
-  const th='padding:5px 8px;text-align:left;background:#004D4C;color:#fff;font-size:11px', td='padding:5px 8px;border-bottom:1px solid #eef2f7;font-size:12px;white-space:nowrap';
+  const th='padding:5px 8px;text-align:left;background:#056dae;color:#fff;font-size:11px', td='padding:5px 8px;border-bottom:1px solid #eef2f7;font-size:12px;white-space:nowrap';
   return `<div style="padding:14px 16px;background:#f1f5f9;min-height:100%">
     ${_wbHead('ct',g.row,_wbChip(rows.length+' container'+(rows.length>1?'s':''),'#0369a1','#e0f2fe')+`<span style="color:#64748b;font-size:12px">${_noFmtDate(g.s)} → ${_noFmtDate(g.e)}</span>`)}
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Arrived',arr+'/'+rows.length,'#16a34a')}</div>
@@ -13603,7 +13628,7 @@ function wbDetailCtOne(id){
     ${_wbHead('ct',r['Container No.']||'Container',(r['Batch / Train']?_wbChip(r['Batch / Train'],'#0369a1','#e0f2fe'):'')+(arrived?_wbChip('Arrived','#15803d','#dcfce7'):_wbChip('On the way','#92400e','#fef3c7')),`<button onclick="if(confirm('Delete this container?')){CT=CT.filter(x=>x._id!==${id});saveData();renderCT();wbClose('ct')}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
     ${_wbSec('Shipment',`<div style="display:flex;flex-wrap:wrap;gap:10px">${T('Batch / Train',{list:'dl-batch'})}${T('Container No.')}${T('Master B/L')}${T('Consignee',{list:'dl-con'})}${T('Destination',{list:'dl-dest'})}${T('Trucker',{list:'dl-truck'})}${T('Broker',{list:'dl-broker'})}${T('Hub')}</div>`)}
     ${_wbSec('Dates',`<div style="display:flex;flex-wrap:wrap;gap:10px">${D('ETA in Mala')}${D('ETA at Hub')}${D('T1 Date')}${_wbL('Scheduled Slot',_wbText('Scheduled Slot',r['Scheduled Slot']||'',set('Scheduled Slot'),{ph:'YYYY/MM/DD HH:MM'}),150)}${D('Actual Arrival')}${D('Deadline')}</div>`)}
-    ${_wbSec('Status',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${S('Tracking',['','None','T1','Arrived'])}${S('Trk Confirm',['','Applied','Confirmed'])}<div style="padding-bottom:3px">${_wbChk('Slot Confirmed','Slot confirmed',!!r['Slot Confirmed'],`ctSetField(${id},'Slot Confirmed',@@)`,'#1d4ed8')}</div><div style="padding-bottom:3px">${_wbChk('CMR','CMR received',r['CMR']==='✅',`ctSetField(${id},'CMR',@@?'✅':'')`,'#0f766e')}</div></div>`)}
+    ${_wbSec('Status',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${S('Tracking',['','None','T1','Arrived'])}${S('Trk Confirm',['','Applied','Confirmed'])}<div style="padding-bottom:3px">${_wbChk('Slot Confirmed','Slot confirmed',!!r['Slot Confirmed'],`ctSetField(${id},'Slot Confirmed',@@)`,'#1d4ed8')}</div><div style="padding-bottom:3px">${_wbChk('CMR','CMR received',r['CMR']==='✅',`ctSetField(${id},'CMR',@@?'✅':'')`,'#056dae')}</div></div>`)}
     ${_wbSec('Costs',`<div style="display:flex;flex-wrap:wrap;gap:10px">${T('Pickup Ref')}${T('Price')}${T('Price T1')}${T('Surcharge')}${T('Surcharge Reason')}${S('Payment Status',pay)}${S('T1 Payment Status',pay)}</div>`)}
     ${_wbSec('Remark',_wbArea('Remark',r['Remark']||'',set('Remark')))}</div>`;
 }
@@ -13730,7 +13755,7 @@ try{
     position: sticky;
     top: 0;
     z-index: 10;
-    background: #004D4C;
+    background: #056dae;
     box-shadow: 0 2px 0 rgba(0,0,0,.15);
   }
 </style>
@@ -13771,7 +13796,7 @@ try{
     </div>
   </div>
   <div style="display:flex;gap:8px;margin-top:12px">
-    <button onclick="applyColDF()" style="flex:1;padding:2px 4px;background:#004D4C;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Apply</button>
+    <button onclick="applyColDF()" style="flex:1;padding:2px 4px;background:#056dae;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Apply</button>
     <button onclick="clearColDF()" style="flex:1;padding:2px 4px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Clear</button>
   </div>
 </div>
@@ -13819,7 +13844,7 @@ header { padding-top: max(8px, env(safe-area-inset-top)); }
   display: none;
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  background: linear-gradient(135deg, #003534 0%, #004D4C 100%);
+  background: linear-gradient(135deg, #002d72 0%, #056dae 100%);
   border-top: 1px solid rgba(255,255,255,.12);
   box-shadow: 0 -4px 20px rgba(0,0,0,.25);
   z-index: 1000;
@@ -13845,7 +13870,7 @@ header { padding-top: max(8px, env(safe-area-inset-top)); }
 }
 .mobile-nav button .mnav-icon { font-size: 16px; line-height: 1; }
 .mobile-nav button:hover { background: rgba(255,255,255,.06); }
-.mobile-nav button.active { color: #5DD8D0; }
+.mobile-nav button.active { color: #7fb4dc; }
 .mobile-nav button.active .mnav-icon { filter: drop-shadow(0 0 4px rgba(93,216,208,.5)); }
 @media (max-width:768px) {
   .mobile-nav { display: flex; }
@@ -13854,12 +13879,12 @@ header { padding-top: max(8px, env(safe-area-inset-top)); }
 
 /* ── VT Frozen columns (CY → Vessel Name) ── */
 th.vt-fc,td.vt-fc{position:sticky;z-index:3;background:#fff}
-thead th.vt-fc{z-index:20;top:0;background:#004D4C}
+thead th.vt-fc{z-index:20;top:0;background:#056dae}
 td.vt-fc-expand{position:sticky;left:0;z-index:3;background:#fff}
-thead th.vt-fc-expand{position:sticky;left:0;z-index:20;top:0;background:#004D4C}
-tbody tr:nth-child(even) td.vt-fc,tbody tr:nth-child(even) td.vt-fc-expand{background:#F5FAF9}
-tbody tr:nth-child(even):hover td.vt-fc,tbody tr:nth-child(even):hover td.vt-fc-expand{background:#EFF7F7}
-tbody tr:hover td.vt-fc,tbody tr:hover td.vt-fc-expand{background:#EFF7F7}
+thead th.vt-fc-expand{position:sticky;left:0;z-index:20;top:0;background:#056dae}
+tbody tr:nth-child(even) td.vt-fc,tbody tr:nth-child(even) td.vt-fc-expand{background:#f7fafd}
+tbody tr:nth-child(even):hover td.vt-fc,tbody tr:nth-child(even):hover td.vt-fc-expand{background:#f5f9fd}
+tbody tr:hover td.vt-fc,tbody tr:hover td.vt-fc-expand{background:#f5f9fd}
 
 /* ── VT Group headers ── */
 .vt-group-hdr th{font-size:11px;font-weight:700;text-align:center;padding:4px 6px;letter-spacing:.5px;border-bottom:2px solid rgba(255,255,255,.15);position:sticky;top:0;z-index:15;height:26px}
@@ -13966,7 +13991,7 @@ window.addEventListener('load',()=>{
     const key='oz_pwa_nudge_dismissed';
     if(!localStorage.getItem(key)){
       const bar=document.createElement('div');
-      bar.style.cssText='position:fixed;bottom:env(safe-area-inset-bottom,0);left:0;right:0;z-index:9999;background:#004D4C;color:#fff;font-size:13px;display:flex;align-items:center;gap:10px;padding:10px 16px;box-shadow:0 -2px 12px rgba(0,0,0,.3)';
+      bar.style.cssText='position:fixed;bottom:env(safe-area-inset-bottom,0);left:0;right:0;z-index:9999;background:#056dae;color:#fff;font-size:13px;display:flex;align-items:center;gap:10px;padding:10px 16px;box-shadow:0 -2px 12px rgba(0,0,0,.3)';
       bar.innerHTML=`<span style="font-size:20px">🚢</span><span style="flex:1">Install as app: tap <strong>Share</strong> <span style="font-size:16px">⎙</span> then <strong>"Add to Home Screen"</strong></span><button onclick="localStorage.setItem('${key}','1');this.parentNode.remove()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px">✕</button>`;
       document.body.appendChild(bar);
     }
@@ -14004,9 +14029,73 @@ window.addEventListener('resize', ()=>{ if(_currentPage==='vessels') vtApplyFree
   </button>
 </nav>
 <!-- ── Mobile More Menu ── -->
-<div id="mobile-more-menu" style="display:none;position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;background:linear-gradient(135deg,#003534,#004D4C);border-top:1px solid rgba(255,255,255,.15);z-index:999;padding:8px 0">
+<div id="mobile-more-menu" style="display:none;position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;background:linear-gradient(135deg,#002d72,#056dae);border-top:1px solid rgba(255,255,255,.15);z-index:999;padding:8px 0">
   <button onclick="showPage('planning');toggleMobileMore()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.85);font-size:14px;padding:14px 20px;text-align:left;display:flex;align-items:center;gap:12px">🗓️ Planning</button>
   <button onclick="closeNavTools();document.getElementById('nav-tools-wrap')&&showPage('dashboard');toggleNavTools();toggleMobileMore()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.85);font-size:14px;padding:14px 20px;text-align:left;display:flex;align-items:center;gap:12px">⚙️ FX / Tools Panel</button>
 </div>
+<style id="finance-skin">
+/* Finance-style skin: light ledger background, white sheets with hairline borders, blue accent, underline tab strip, mono figures */
+:root{--bg:#f3f6fa;--card:#ffffff;--border:#d9e1ec;--text:#1a2233;--muted:#5a6578;--navy:#002d72;--blue:#056dae;--soft:#eef4fa;--rad:14px;
+  --shadow:none;--shadow-md:0 8px 24px rgba(0,45,114,.10);
+  --f-display:"Noto Serif SC","Songti SC",Georgia,serif;--f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;--f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace}
+body{background:var(--bg);color:var(--text);font-family:var(--f-body);font-size:14px;line-height:1.5}
+header{background:var(--bg)!important;color:var(--text);box-shadow:none!important;border-bottom:0!important;flex-wrap:wrap;align-items:baseline;padding:16px 24px 0}
+.brand{font-family:var(--f-display);font-size:26px;font-weight:700;letter-spacing:.02em;color:var(--text)!important;padding:0}
+.hbtns{padding:0;margin-left:auto}
+main{padding-top:16px}
+@media (min-width:769px){
+  #hb-btn,#hb-title,.hb-sec,#desktop-nav .nav-divider{display:none!important}
+  .hb-left{padding:0}
+  #desktop-nav{display:flex!important;position:static;flex-direction:row;flex-basis:100%;order:3;background:transparent;box-shadow:none;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:0;min-width:0;gap:2px;margin-top:10px;align-items:stretch}
+  #desktop-nav>button{width:auto;height:auto;padding:10px 14px;font-size:15px;font-weight:400;color:var(--muted);border-radius:0;border:0;border-bottom:2px solid transparent!important;margin:0 0 -1px;background:none!important;letter-spacing:0}
+  #desktop-nav>button:hover{color:var(--text)}
+  #desktop-nav>button.active{color:var(--text);border-bottom-color:var(--blue)!important;font-weight:500}
+  #desktop-nav .nav-tools-wrap{margin-left:auto;position:relative;display:flex;align-items:center}
+  #desktop-nav .nav-tools-btn{display:inline-flex;color:var(--text)!important;border:1px solid var(--border)!important;background:var(--card)!important;border-radius:6px;padding:5px 10px;font-size:13px!important;font-weight:400!important;height:auto}
+  #desktop-nav .nav-tools-panel{display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-md);border-radius:10px;padding:6px;min-width:230px;z-index:9999;backdrop-filter:none}
+  #desktop-nav .nav-tools-panel.open{display:block}
+}
+.nav-tools-panel>button{color:var(--text)!important}
+.nav-tools-panel>button:hover{background:var(--soft)!important;color:var(--text)!important}
+.mobile-nav{background:var(--card)!important;border-top:1px solid var(--border)!important;box-shadow:none!important}
+.mobile-nav button{color:var(--muted)!important}
+.mobile-nav button.active{color:var(--blue)!important}
+.mobile-nav button.active .mnav-icon{filter:none!important}
+/* sheets & figures */
+.kpi{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:var(--rad);box-shadow:none!important;padding:12px 14px}
+.kpi:hover{border-color:var(--muted)!important;box-shadow:none!important;transform:none!important}
+.kl{font-size:12px!important;font-weight:400!important;color:var(--muted)!important;letter-spacing:.04em!important;text-transform:none!important}
+.kv{font-family:var(--f-num);font-weight:500!important;font-size:22px!important;letter-spacing:0!important;line-height:1.25;font-variant-numeric:tabular-nums}
+.ks{font-size:12px!important;color:var(--muted)!important}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rad);box-shadow:none}
+.chart-card h3{font-size:15px!important;font-weight:700!important;letter-spacing:0!important;text-transform:none!important;color:var(--text)!important}
+.chart-subtitle{color:var(--muted)}
+/* tables: light header like a statement */
+table{font-size:13px}
+th{background:var(--card)!important;color:var(--muted)!important;font-weight:500!important;font-size:12px!important;letter-spacing:0!important;text-transform:none!important;border-bottom:1px solid var(--border)!important}
+th *{color:inherit}
+td{border-bottom-color:var(--soft)}
+tbody tr:hover{background:#f7fafd}
+td[style*="monospace"],.mono{font-family:var(--f-num)!important}
+/* buttons, inputs */
+.btn{border-radius:6px;font-weight:500;font-size:13px}
+.btn-green,.mbtn-save{background:var(--blue)!important;border:1px solid var(--blue)!important;color:#fff!important;box-shadow:none!important;border-radius:6px!important;font-weight:500!important}
+.btn-green:hover,.mbtn-save:hover{background:#045c93!important;transform:none!important}
+.mbtn-cancel{background:var(--card)!important;border:1px solid var(--border)!important;color:var(--text)!important;border-radius:6px!important;font-weight:500!important}
+input[type=text],input[type=search],input[type=date],input[type=number],select,textarea{border-radius:6px;font-family:inherit;accent-color:var(--blue)}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(5,109,174,.25)!important;outline-offset:0;border-color:var(--blue)!important}
+input[type=checkbox]{accent-color:var(--blue)}
+.dash-cat-tab.active{background:var(--blue)!important;border-color:var(--blue)!important}
+.ms-btn,.dash-cat-tab,.nb-filter-tab{border-radius:99px}
+/* modals */
+.overlay{background:rgba(10,14,13,.45)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.modal{border-radius:var(--rad);border:1px solid var(--border);box-shadow:var(--shadow-md)}
+.modal h2{font-family:var(--f-display);font-size:18px!important;font-weight:700;letter-spacing:.02em!important;text-transform:none!important;color:var(--text)!important}
+.form-group label{font-size:12px!important;font-weight:400!important;text-transform:none!important;letter-spacing:0!important;color:var(--muted)!important}
+.ni{border-radius:var(--rad)}
+::-webkit-scrollbar-thumb{background:#c5d0de}
+h2,h3{text-transform:none!important;letter-spacing:.01em!important}
+.mobile-nav button{text-transform:none!important;letter-spacing:0!important;font-weight:500!important}
+</style>
 </body>
 </html>
