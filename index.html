@@ -11352,8 +11352,9 @@ function _noDefaultCharges(o,cn){
   const cc=_noN(_noFld(o,cn,'CC'));
   const sf=cn?_noStorageFee(o,cn):null;
   const sur=(typeof _noSurcharges==='function')?_noSurcharges(o,cn):[];
-  if(fr) out.push({item:'Freight',r:fr,p:0,note:''});
-  if(cc) out.push({item:'CC',r:cc,p:0,note:''});
+  // legacy Price / CC fields hold what we PAY (payable), not what we charge
+  if(fr) out.push({item:'Freight',r:0,p:fr,note:''});
+  if(cc) out.push({item:'CC',r:0,p:cc,note:''});
   if(sf&&_noN(sf.fee)) out.push({item:'Storage',r:_noN(sf.fee),p:0,note:sf.tiered?(sf.byDays+'d tiered ('+(sf.cur||'EUR')+')'):(sf.byDays+'d x EUR'+sf.ppd)});
   (sur||[]).forEach(s=>{ if(_noN(s.fee)) out.push({item:'Other',r:_noN(s.fee),p:0,note:s.reason||''}); });
   return out;
@@ -14146,8 +14147,10 @@ h2,h3{text-transform:none!important;letter-spacing:.01em!important}
 <script>
 // ══ QUANT MODELS (Orders data) ═══════════════════════════════════════════════
 // M1 storage-risk pricing · M2 trucker / hub scorecard · M3 newsvendor truck booking · M4 compound-Poisson node risk
+// charge items treated as one-off extras (accidents, waiting, storage…) rather than the normal job cost
+const QM_EXTRA=['Storage','Waiting','Forklift','Terminal charges','Airport fee','Other'];
 const QM_KEY='owenz_qm_cfg_v1';
-let QM={k:0.15,alpha:0.95,spotPrem:80,waitDays:2,dayRate:30,cancelFee:50,sevDays:3,penalty:0,defFree:3,mLo:5,mHi:10,t1Lo:4,t1Hi:5,qCost:500,qT1:60,defRate:30,hubMap:{},sel:''};
+let QM={k:0.15,alpha:0.95,spotPrem:80,waitDays:2,dayRate:30,cancelFee:50,sevDays:3,penalty:0,defFree:3,mLo:5,lateFee:400,lateShare:20,mHi:10,t1Lo:4,t1Hi:5,qCost:500,qT1:60,defRate:30,hubMap:{},sel:''};
 try{ Object.assign(QM,JSON.parse(localStorage.getItem(QM_KEY)||'{}')); }catch(e){}
 function qmSet(k,v){ QM[k]=(typeof QM[k]==='number')?(parseFloat(v)||0):v; try{ localStorage.setItem(QM_KEY,JSON.stringify(QM)); }catch(e){} renderModels(); }
 function qmSetHub(hub,id){ QM.hubMap[hub]=id; try{ localStorage.setItem(QM_KEY,JSON.stringify(QM)); }catch(e){} renderModels(); }
@@ -14179,7 +14182,8 @@ function _qmObs(){
     (cs.length?cs:[null]).forEach(cn=>{
       const a=_noParseDate(_wbFld(o,cn,'At Hub Date')), e=_noParseDate(_wbFld(o,cn,'Pick Up Date'))||_noParseDate(_wbFld(o,cn,'ATA'));
       const hub=String(_noCtnHub(o,cn)||'').trim()||'(no hub)', trk=String(_wbFld(o,cn,'Trucker')||'').trim()||'(no trucker)';
-      const rec={o,cn,hub,trk,a,e,d:null,r:_noReceivable(o,cn),p:_noPayable(o,cn),us:String(_wbFld(o,cn,'Storage Paid By')||'')==='Us'};
+      const ch=_noCharges(o,cn), isX=it=>QM_EXTRA.includes(String(it||'')), extra=ch.filter(l=>isX(l.item)).reduce((s,l)=>s+_noN(l.p),0)+_noSurcharges(o,cn).reduce((s,x)=>s+_noN(x.fee),0);
+      const rec={o,cn,hub,trk,a,e,d:null,r:_noReceivable(o,cn),p:_noPayable(o,cn),base:ch.filter(l=>!isX(l.item)).reduce((s,l)=>s+_noN(l.p),0),extra,us:String(_wbFld(o,cn,'Storage Paid By')||'')==='Us'};
       if(a&&e){ const d=Math.round((e-a)/864e5); if(d>=0&&d<120) rec.d=d; }
       out.push(rec);
     });
@@ -14202,16 +14206,17 @@ function _qmHubStats(obs){
   const rows=Object.keys(g).sort((a,b)=>g[b].length-g[a].length).map(h=>st(h,g[h]));
   return {rows,all:st(null,all)};
 }
-// M2 trucker scorecard
+// M2 trucker scorecard: speed, normal cost, how often extras happen, margin only where a receivable exists
 function _qmTrk(obs){
   const g={}; obs.forEach(x=>(g[x.trk]=g[x.trk]||[]).push(x));
   return Object.keys(g).map(t=>{
     const xs=g[t], dd=xs.filter(x=>x.d!=null), D=dd.map(x=>x.d).sort((a,b)=>a-b);
-    const fees=dd.map(x=>x.us?_qmFee(x.hub,x.d):0), onT=dd.filter(x=>x.d<=_qmFree(x.hub)).length;
-    const mg=xs.filter(x=>x.r||x.p).map(x=>x.r-x.p);
-    const ef=_qmMean(fees), m=_qmMean(mg);
-    return {t,n:xs.length,nd:D.length,mean:_qmMean(D),sd:_qmSd(D),p90:_qmQ(D,.9),onTime:dd.length?onT/dd.length:null,ef,margin:mg.length?m:null,adj:mg.length?m-ef:null};
-  }).sort((a,b)=>(b.adj==null?-1e9:b.adj)-(a.adj==null?-1e9:a.adj));
+    const onT=dd.filter(x=>x.d<=_qmFree(x.hub)).length;
+    const usSt=_qmMean(xs.map(x=>x.us&&x.d!=null?_qmFee(x.hub,x.d):0));
+    const withX=xs.filter(x=>x.extra>0), freq=withX.length/xs.length, avgX=_qmMean(withX.map(x=>x.extra)), expX=freq*avgX;
+    const rx=xs.filter(x=>x.r>0), margin=rx.length?_qmMean(rx.map(x=>x.r-x.base)):null;
+    return {t,n:xs.length,nd:D.length,mean:_qmMean(D),sd:_qmSd(D),p90:_qmQ(D,.9),onTime:dd.length?onT/dd.length:null,base:_qmMean(xs.map(x=>x.base)),freq,avgX,expX,usSt,nR:rx.length,margin,adj:margin==null?null:margin-expX-usSt};
+  }).sort((a,b)=>b.n-a.n);
 }
 // M3 newsvendor on weekly arrivals (week of At Hub date, else ETA)
 function _qmWeeks(obs){
@@ -14285,21 +14290,21 @@ function renderModels(){
       `堆存费 Storage fee   = 超过免堆期的每一天的日费率相加      sum of the daily rates after the free days\n平均每柜 Avg / B/L    = 所有历史柜子堆存费的平均            average over past B/Ls\n坏情况 Bad case       = 最贵的 ${bad}% 柜子的平均              average of the most expensive ${bad}%\n我们付过 We paid      = 标记为 Us 的柜子的堆存费合计          sum over B/Ls marked Us\n多一天免堆 +1 free day = 现在的平均 − 免堆期多一天后的平均`)}`)}
 
   ${sheet('模型 2 · 卡车公司评分','Model 2 · Trucker scorecard',
-    `<b>一句话：</b>比较卡车公司不能只看报价，还要看他们<b>提柜快不快、稳不稳</b>。<br><b>怎么用：</b>“准时率”= 在免堆期内提走的比例；“波动”越小越可靠，适合给长期量；“扣风险后毛利”= 每柜毛利减去我们付过的堆存费（标记 Us 的柜子），按它排序。`,
-    `<b>In one line:</b> don't compare truckers on price alone — also on <b>how fast and how consistently</b> they pick up.<br><b>Use it:</b> “On time” = share picked up within free days; lower “Spread” = more reliable, good for contract volume; “Margin after risk” = margin per B/L minus storage we actually paid (B/Ls marked Us). The table is sorted by it.`,
-    `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${H('卡车公司','Trucker',1)}${H('B/L 数','B/Ls')}${H('有日期','With dates')}${H('平均停留','Avg stay')}${H('波动','Spread (σ)')}${H('10 个里最慢的 1 个','Slowest 10%')}${H('准时率','On time')}${H('每柜毛利','Margin / B/L')}${H('我们付的堆存/柜','Storage we paid / B/L')}${H('扣风险后毛利','Margin after risk')}</tr></thead><tbody>
-    ${trk.map(r=>`<tr><td style="${tl};font-weight:600">${_noEsc(r.t)}${small(r.nd)}</td><td style="${td}">${r.n}</td><td style="${td}">${r.nd}</td><td style="${td}">${r.nd?_qmF(r.mean,1)+'d':'—'}</td><td style="${td}">${r.nd>1?_qmF(r.sd,1)+'d':'—'}</td><td style="${td}">${r.nd?r.p90+'d':'—'}</td><td style="${td}">${r.onTime==null?'—':_qmF(r.onTime*100)+'%'}</td><td style="${td}">${r.margin==null?'—':'€'+_qmF(r.margin)}</td><td style="${td}">€${_qmF(r.ef)}</td><td style="${td};font-weight:700;color:${r.adj==null?'inherit':r.adj<0?'#b8392c':'#1d7a4b'}">${r.adj==null?'—':'€'+_qmF(r.adj)}</td></tr>`).join('')}</tbody></table></div>
-    ${theory(`<b>波动（标准差 σ）：</b>表示停留天数忽长忽短的程度。两家平均都是 4 天，一家总是 3–5 天（σ 小），一家有时 1 天有时 10 天（σ 大），前者更好安排。<br><b>注意：</b>停留时间不全是卡车公司的原因，清关、收货人约仓也会拖；同一家公司写法不同（如 ADAMPOL / Adampol）会被分成两行，请统一名称。`,
-      `<b>Spread (standard deviation σ):</b> how much the stay varies. Two truckers both average 4 days: one is always 3–5 days (small σ), the other 1–10 days (large σ) — the first is easier to plan.<br><b>Note:</b> a long stay is not always the trucker's fault (customs, consignee booking also delay); the same company spelled two ways (ADAMPOL / Adampol) shows as two rows — please unify names.`,
-      `每柜毛利 Margin/BL         = 应收 − 应付 (订单 Charges)      Receivable − Payable\n我们付的堆存 Our storage    = 标记 Us 的柜子堆存费 ÷ 该公司 B/L 数\n扣风险后毛利 After risk     = 每柜毛利 − 我们承担堆存\n准时率 On time             = 停留天数 ≤ 免堆期 的比例`)}`)}
+    `<b>一句话：</b>比较卡车公司要看三件事：<b>正常成本</b>、<b>提柜快不快</b>、<b>多久出一次额外费用</b>（等待、卸货、堆存等意外）。<br><b>怎么用：</b>额外费用单独列出，不和正常运费混在一起：“出现率”= 10 票里有几票产生额外费用，“预期额外/柜”= 出现率 × 平均每次金额，这是每票都应该预留的钱。毛利只在订单填了<b>应收</b>时才计算（TEMU 这类只填应付的订单不算毛利）。`,
+    `<b>In one line:</b> compare truckers on three things: <b>normal cost</b>, <b>pick-up speed</b> and <b>how often extra costs</b> (waiting, unloading, storage…) happen.<br><b>Use it:</b> extras are kept apart from the normal freight: “Extra rate” = how many jobs out of 10 had an extra cost; “Expected extra / B/L” = rate × average amount — what to reserve on every job. Margin is only calculated where the order has a <b>receivable</b> (TEMU-type orders with payables only show no margin).`,
+    `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${H('卡车公司','Trucker',1)}${H('B/L 数','B/Ls')}${H('平均停留','Avg stay')}${H('波动','Spread (σ)')}${H('准时率','On time')}${H('正常应付/柜','Normal cost / B/L')}${H('额外费用出现率','Extra rate')}${H('每次额外平均','Avg extra when it happens')}${H('预期额外/柜','Expected extra / B/L')}${H('每柜毛利','Margin / B/L')}${H('扣额外后毛利','Margin after extras')}</tr></thead><tbody>
+    ${trk.map(r=>`<tr><td style="${tl};font-weight:600">${_noEsc(r.t)}${small(r.n)}</td><td style="${td}">${r.n}</td><td style="${td}">${r.nd?_qmF(r.mean,1)+'d':'—'}</td><td style="${td}">${r.nd>1?_qmF(r.sd,1)+'d':'—'}</td><td style="${td}">${r.onTime==null?'—':_qmF(r.onTime*100)+'%'}</td><td style="${td}">€${_qmF(r.base)}</td><td style="${td}">${_qmF(r.freq*100)}%</td><td style="${td}">${r.avgX?'€'+_qmF(r.avgX):'—'}</td><td style="${td};color:${r.expX>0?'#a86c12':'inherit'}">€${_qmF(r.expX)}</td><td style="${td}">${r.margin==null?'<span style="color:var(--muted)">无应收 no receivable</span>':'€'+_qmF(r.margin)+(r.nR<r.n?' <span style="font-size:11px;color:var(--muted)">('+r.nR+')</span>':'')}</td><td style="${td};font-weight:700;color:${r.adj==null?'inherit':r.adj<0?'#b8392c':'#1d7a4b'}">${r.adj==null?'—':'€'+_qmF(r.adj)}</td></tr>`).join('')}</tbody></table></div>
+    ${theory(`<b>正常应付</b>：运费、清关、T1、文件、操作费等每票都会有的费用。<b>额外费用</b>：Storage、Waiting、Forklift、Terminal charges、Airport fee、Other 这几类收费项，加上订单上的附加费标签，都当作“意外”。<br><b>为什么分开看：</b>像 DCL 这种，正常运费可能不贵，但常出意外。把意外按“多久一次 × 每次多少”平摊到每票，才能和别家公平比较，也知道报价里该预留多少。<br><b>毛利</b> = 应收 − 正常应付，只算填了应收的 B/L（括号里是有应收的票数）；<b>扣额外后毛利</b> = 毛利 − 预期额外 − 我们付的堆存。<br><b>波动</b>：停留天数忽长忽短的程度，越小越好安排。停留时间也受清关、收货人约仓影响，不全是卡车公司的原因；同一家写法不同（ADAMPOL / Adampol）会分成两行，请统一名称。`,
+      `<b>Normal cost:</b> freight, clearance, T1, docs, handling — paid on every job. <b>Extras:</b> charge items Storage, Waiting, Forklift, Terminal charges, Airport fee, Other, plus surcharge tags on the order — treated as incidents.<br><b>Why separate:</b> a trucker like DCL may be cheap on freight but often has incidents. Spreading incidents over every job (“how often × how much”) makes truckers comparable and tells you what to reserve in the quote.<br><b>Margin</b> = receivable − normal cost, only on B/Ls with a receivable (count in brackets); <b>Margin after extras</b> = margin − expected extra − storage we paid.<br><b>Spread:</b> how much the stay varies — smaller is easier to plan. Stay also depends on customs and consignee booking; one company spelled two ways (ADAMPOL / Adampol) shows as two rows — please unify.`,
+      `正常应付 Normal cost      = 非额外项目的应付合计 ÷ B/L 数\n额外费用出现率 Extra rate  = 有额外费用的 B/L ÷ 全部 B/L\n预期额外 Expected extra   = 出现率 × 每次额外平均\n每柜毛利 Margin           = 应收 − 正常应付  (只算有应收的 B/L)\n扣额外后毛利 After extras = 毛利 − 预期额外 − 我们付的堆存`)}`)}
 
-  ${(()=>{ const W=weeks.slice().sort((x,y)=>x-y), Cu=QM.spotPrem, Co=QM.cancelFee, CR=Cu/((Cu+Co)||1), Q=_qmQ(W,CR);
+  ${(()=>{ const W=weeks.slice().sort((x,y)=>x-y), Cu=QM.spotPrem, Co=QM.lateShare/100*QM.lateFee, CR=Cu/((Cu+Co)||1), Q=_qmQ(W,CR);
     const cost=q=>_qmMean(weeks.map(dm=>Cu*Math.max(0,dm-q)+Co*Math.max(0,q-dm)));
     const maxW=W.length?W[W.length-1]:0, qs=[...Array(maxW+1)].map((_,q)=>({q,c:cost(q)})), top=Math.max(...qs.map(x=>x.c),1), avgQ=Math.round(_qmMean(weeks));
     return sheet('模型 3 · 每周提前订几辆车','Model 3 · How many trucks to pre-book per week',
     `<b>一句话：</b>提前订车便宜但订多了要付取消费，临时叫车贵。这个模型告诉你<b>每周提前订几辆最省钱</b>。<br><b>怎么用：</b>填上现货比合约贵多少、取消一辆要多少钱，系统用过去每周的到柜量算出最省钱的数量。`,
     `<b>In one line:</b> pre-booking is cheaper, but unused bookings cost a cancel fee and last-minute trucks are expensive. This tells you <b>how many trucks to pre-book per week</b> for the lowest cost.<br><b>Use it:</b> enter how much more a spot truck costs and the cancel fee; it uses your past weekly arrivals to find the cheapest number.`,
-    `<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">${inp('spotPrem','临时叫车比预订贵 €','Spot − contract €/truck')}${inp('cancelFee','取消/空跑一辆 €','Cancel / idle fee €')}</div>
+    `<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">${inp('spotPrem','临时叫车比预订贵 €','Spot − contract €/truck')}${inp('lateFee','12 小时内取消的费用 €','Cancel within 12h €')}${inp('lateShare','多订的车里 12h 内才取消的比例 %','Extra bookings cancelled < 12h %',5)}</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px">
       <div class="kpi"><div class="kl">少订一辆的代价 · Cost of 1 too few</div><div class="kv">€${_qmF(Cu)}</div></div>
       <div class="kpi"><div class="kl">多订一辆的代价 · Cost of 1 too many</div><div class="kv">€${_qmF(Co)}</div></div>
@@ -14308,9 +14313,9 @@ function renderModels(){
       <div class="kpi"><div class="kl">每周预计成本 · Expected cost / week</div><div class="kv">€${_qmF(cost(Q))}</div><div class="ks">按平均值订 if booking avg (${avgQ}): €${_qmF(cost(avgQ))}</div></div></div>
     <div style="display:flex;align-items:flex-end;gap:2px;height:90px;margin-top:12px">${qs.map(x=>`<div title="${x.q}: €${_qmF(x.c)}" style="flex:1;height:${x.c/top*100}%;background:${x.q===Q?'#056dae':'#c9dff0'};border-radius:2px 2px 0 0"></div>`).join('')}</div>
     <div style="font-size:11px;color:var(--muted)">横轴 = 每周预订 0 → ${maxW} 辆，柱高 = 预计每周多花的钱，深色 = 最省钱的数量（基于 ${weeks.length} 周数据）· x = trucks pre-booked 0 → ${maxW}, height = expected weekly extra cost, dark = cheapest (from ${weeks.length} weeks)</div>
-    ${theory(`<b>道理：</b>少订一辆要付 €${_qmF(Cu)}，多订一辆要付 €${_qmF(Co)}。少订更贵，所以宁可多订一点：订到能覆盖 <b>${_qmF(CR*100)}%</b> 的周就最划算，而不是按平均数订。过去每周到柜量排好序，取第 ${_qmF(CR*100)}% 位置的数，就是 <b>${Q}</b> 辆。<br>取消费越高，越应该少订；临时车越贵，越应该多订。`,
-      `<b>Why:</b> one truck too few costs €${_qmF(Cu)}, one too many costs €${_qmF(Co)}. Too few is pricier, so book a bit more than average: cover <b>${_qmF(CR*100)}%</b> of weeks. Sort past weekly arrivals and take the value at the ${_qmF(CR*100)}% position: <b>${Q}</b> trucks.<br>A higher cancel fee means booking fewer; pricier spot trucks mean booking more.`,
-      `少订一辆 Cost too few  Cu = 临时叫车比预订贵的钱\n多订一辆 Cost too many Co = 取消费\n覆盖比例 Cover level    = Cu / (Cu + Co)\n建议预订 Pre-book       = 过去每周到柜量里第 [覆盖比例] 位置的数   (newsvendor model)`)}`); })()}
+    ${theory(`<b>多订一辆的代价：</b>提前 12 小时以上取消不收费，12 小时内取消要付 €${_qmF(QM.lateFee)}（一般就是 €300–500 的运费）。所以多订一辆的平均代价 = ${QM.lateShare}% × €${_qmF(QM.lateFee)} = <b>€${_qmF(Co)}</b>。如果你通常能提前一天知道不用车，就把比例调低。<br><b>道理：</b>少订一辆要付 €${_qmF(Cu)}，多订一辆平均要付 €${_qmF(Co)}。少订更贵，所以宁可多订一点：订到能覆盖 <b>${_qmF(CR*100)}%</b> 的周就最划算，而不是按平均数订。过去每周到柜量排好序，取第 ${_qmF(CR*100)}% 位置的数，就是 <b>${Q}</b> 辆。<br>取消费越高，越应该少订；临时车越贵，越应该多订。`,
+      `<b>Cost of one too many:</b> cancelling more than 12h ahead is free; within 12h costs €${_qmF(QM.lateFee)} (usually the €300–500 freight). So the average cost of an extra booking = ${QM.lateShare}% × €${_qmF(QM.lateFee)} = <b>€${_qmF(Co)}</b>. Lower the share if you usually know a day ahead.<br><b>Why:</b> one truck too few costs €${_qmF(Cu)}, one too many costs €${_qmF(Co)} on average. Too few is pricier, so book a bit more than average: cover <b>${_qmF(CR*100)}%</b> of weeks. Sort past weekly arrivals and take the value at the ${_qmF(CR*100)}% position: <b>${Q}</b> trucks.<br>A higher cancel fee means booking fewer; pricier spot trucks mean booking more.`,
+      `少订一辆 Cost too few  Cu = 临时叫车比预订贵的钱\n多订一辆 Cost too many Co = 12h 内才取消的比例 × 12h 内取消费\n覆盖比例 Cover level    = Cu / (Cu + Co)\n建议预订 Pre-book       = 过去每周到柜量里第 [覆盖比例] 位置的数   (newsvendor model)`)}`); })()}
 
   ${(()=>{ const q=(c,m)=>c/(1-m/100), CTd=(typeof CT!=='undefined'?CT:[]);
     const g={}; CTd.forEach(x=>{ const k=String(x['Consignee']||'').trim()||'(no consignee)'; const p=parseFloat(x['Price']), t=parseFloat(x['Price T1']); const e=g[k]||(g[k]={n:0,p:[],t:[]}); e.n++; if(p>0) e.p.push(p); if(t>0) e.t.push(t); });
@@ -14333,6 +14338,8 @@ function renderModels(){
 `;
 }
 </script>
+
+
 
 
 
