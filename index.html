@@ -1595,7 +1595,7 @@ tbody tr:hover{background:#fafbfc}
     <button onclick="showPage('containers')">Containers</button>
     <button onclick="showPage('orders')">Orders</button>
     <button onclick="showPage('dispatch')">Dispatch</button>
-    <button onclick="showPage('quotes')">Quotes 报价</button>
+    <button onclick="showPage('quotes')">Models</button>
     <button onclick="showPage('vessels')">Vessels</button>
     <span class="nav-divider"></span>
     <div class="hb-sec">Tools</div>
@@ -1641,6 +1641,7 @@ tbody tr:hover{background:#fafbfc}
     </div>
     <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))" id="no-dash-kpi-row"></div>
     <div id="no-dash-margin"></div>
+    <div id="dash-leadtime"></div>
     <div id="dash-extra-pareto"></div>
     <div class="charts-row" style="margin-top:4px;grid-template-columns:1fr 1fr">
       <div class="chart-card">
@@ -1925,7 +1926,6 @@ tbody tr:hover{background:#fafbfc}
     <div class="ml"><button class="btn-reset" onclick="resetFilters()">↺ Reset</button></div>
   </div>
 
-  <div id="ct-trk-score"></div>
   <div style="margin:0 0 8px">
     <input type="text" id="f-search" placeholder="🔍  Search" oninput="ctSearchSoon()" style="width:100%;box-sizing:border-box;padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;" onfocus="this.style.borderColor='#056dae'" onblur="this.style.borderColor='#d1d5db'"/>
   </div>
@@ -3391,7 +3391,6 @@ function showPage(p){
   if(p==='planning'){ rcpRender(); }
   if(p==='dispatch'){ renderDispatch(); }
   if(p==='quotes'){ renderQuotes(); }
-  if(p==='containers'){ try{ renderCtTrkScore(); }catch(e){} }
   if(p==='notices'){ if(typeof renderNotices==='function') renderNotices(); if(typeof renderReminders==='function') renderReminders(); }
   if(p==='orders'){ if(typeof renderOrders==='function') renderOrders(); if(typeof renderPageNotices==='function') renderPageNotices(); if(typeof renderPageReminders==='function') renderPageReminders(); }
 }
@@ -5514,6 +5513,7 @@ function renderDashboard(){
 // Dashboard 的 Orders 区：KPI + 按项目的毛利表（独立函数，不受图表代码影响）
 function renderDashOrders(){
   try{ if(typeof renderExtraPareto==='function') renderExtraPareto(); }catch(e){ console.error(e); }
+  try{ if(typeof renderDashLeadTime==='function') renderDashLeadTime(); }catch(e){ console.error(e); }
   const _noAll=(typeof NO!=='undefined')?NO:[];
   const _noActive=_noAll.filter(o=>!(typeof _noHasSt==='function'&&_noHasSt(o,'Cancelled')));
     // ── KPI row: quantity, value, lead time, and other logistics-useful metrics ──
@@ -14205,8 +14205,6 @@ function renderQuotes(){
   <div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0">报价计算 · Quote calculator</h3>
     <div style="font-size:12.5px;color:var(--muted);margin:4px 0 12px">报价 = (正常成本 + 预计堆存 + 预期额外费用) ÷ (1 − 利润率) · Quote = (normal cost + expected storage + expected extras) ÷ (1 − margin)</div>
     <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
-      ${inp('cust','客户','Customer',1,'text')}${inp('route','线路 / 说明','Route / description',1,'text')}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:10px">
       ${inp('freight','运费 €','Freight €')}${inp('other','其他成本 € (T1/清关/操作)','Other cost € (T1/CC/handling)')}
       ${inp('dwell','预计停留天数','Expected days at hub',1)}${inp('free','免堆天数','Free days',1)}${inp('rate','堆存日费率 €','Storage €/day')}
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding-bottom:8px"><input type="checkbox" ${QC.inclSt?'checked':''} onchange="qcSet('inclSt',this.checked?1:0)">堆存计入报价 Include storage</label></div>
@@ -14219,31 +14217,14 @@ function renderQuotes(){
         ${row('预计堆存','Expected storage'+(QC.inclSt?'':' (not included)'),c.st)}${row('预期额外','Expected extras = '+_qF(QC.xRate)+'% × €'+_qF(QC.xAvg),c.xp)}
         ${row('总成本','Total cost',c.cost,1)}${row('利润','Profit ('+_qF(QC.margin,1)+'%)',c.profit)}${row('建议报价','Quote',c.quote,1)}</table>
       <div style="font-size:13px;line-height:1.7"><b>说明：</b>预计堆存 = (预计停留天数 − 免堆天数) × 日费率；预期额外 = 出现率 × 每次平均金额，相当于每票预留的“保险费”。利润率按报价算：成本 €500、利润 10% → 报价 €555.6。<br><span style="color:var(--muted)">Expected storage = (days at hub − free days) × daily rate; expected extras = chance × average amount — a reserve on every job, like an insurance premium. Margin is on the quote: cost €500 at 10% → €555.6.</span>
-        <div style="margin-top:10px"><button class="btn btn-green" onclick="qtAdd()">+ 保存到报价记录 Save to quote log</button></div></div></div></div>
-
-  <div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0">报价记录 · Quote log</h3>
-    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">每条报价出结果后改成“成交 / 丢单”，丢单写原因。数据越多，下面的成交率分析越准。 · Mark each quote Won / Lost when you know, with a reason when lost.</div>
-    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${H('日期','Date',1)}${H('客户','Customer',1)}${H('线路','Route',1)}${H('成本','Cost')}${H('报价','Quote')}${H('加价率','Markup')}${H('结果','Result',1)}${H('丢单原因','Lost reason',1)}${H('备注','Note',1)}<th></th></tr></thead><tbody>
-    ${QT.map(q=>`<tr><td style="${tl}">${_noEsc(q.date)}</td><td style="${tl}">${_noEsc(q.cust)}</td><td style="${tl}">${_noEsc(q.route)}</td>
-      <td style="${td}"><input value="${q.cost}" onchange="qtSet(${q.id},'cost',this.value)" style="width:80px;text-align:right;border:1px solid var(--border);border-radius:5px;padding:2px 5px"></td>
-      <td style="${td}"><input value="${q.quote}" onchange="qtSet(${q.id},'quote',this.value)" style="width:80px;text-align:right;border:1px solid var(--border);border-radius:5px;padding:2px 5px"></td>
-      <td style="${td}">${_qF(mk(q),1)}%</td>
-      <td style="${tl}">${sel(q.id,'status',q.status,[['Pending','待定 Pending'],['Won','成交 Won'],['Lost','丢单 Lost']])}</td>
-      <td style="${tl}">${q.status==='Lost'?sel(q.id,'reason',q.reason,[['','—'],['Price','价格 Price'],['Transit time','时效 Transit time'],['Service','服务 Service'],['No reply','没回复 No reply'],['Other','其他 Other']]):''}</td>
-      <td style="${tl}"><input value="${_noEsc(q.note||'')}" onchange="qtSet(${q.id},'note',this.value)" style="width:150px;border:1px solid var(--border);border-radius:5px;padding:2px 5px"></td>
-      <td style="${tl}"><span onclick="qtDel(${q.id})" style="color:#b8392c;cursor:pointer">✕</span></td></tr>`).join('')||`<tr><td colspan="10" style="${tl};color:var(--muted)">还没有报价记录 · No quotes yet — use “Save to quote log” above.</td></tr>`}</tbody></table></div></div>
-
-  <div class="chart-card" style="margin-bottom:16px"><h3 style="margin:0">成交率分析 · Win-rate analysis</h3>
-    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">期望利润 = 加价率 × 成交率。加价太低赚得少，太高接不到单，中间某一档最划算。 · Expected profit = markup × win rate — too low earns little, too high wins nothing.</div>
-    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${H('加价区间','Markup band',1)}${H('已出结果','Decided')}${H('成交','Won')}${H('成交率','Win rate')}${H('平均加价','Avg markup')}${H('每 €100 成本的期望利润','Expected profit per €100 cost')}</tr></thead><tbody>
-    ${bins.map(b=>`<tr style="${best&&b===best?'background:#eef4fa;font-weight:700':''}"><td style="${tl}">${b.lab}${best&&b===best?' ★':''}</td><td style="${td}">${b.n}</td><td style="${td}">${b.won}</td><td style="${td}">${b.n?_qF(b.wr*100)+'%':'—'}</td><td style="${td}">${b.n?_qF(b.am,1)+'%':'—'}</td><td style="${td}">${b.n?'€'+_qF(b.ev,2):'—'}</td></tr>`).join('')}</tbody></table></div>
-    <div style="font-size:12.5px;margin-top:8px">${best?`★ 目前最划算的加价区间：<b>${best.lab}</b>（每 €100 成本期望赚 €${_qF(best.ev,2)}）· Best band so far: <b>${best.lab}</b>`:`<span style="color:var(--muted)">每个区间至少要有 3 条已出结果的报价才会给出建议（现在共 ${decided.length} 条）。· Needs at least 3 decided quotes in a band (${decided.length} so far).</span>`}</div>
-    ${Object.keys(reasons).length?`<div style="font-size:12.5px;margin-top:6px">丢单原因 Lost reasons：${Object.entries(reasons).sort((a,b)=>b[1]-a[1]).map(([r,n])=>`<b>${_noEsc(r)}</b> ${n}`).join(' · ')}</div>`:''}
-    <div style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">加价率 = (报价 − 成本) ÷ 成本。如果丢单原因多是“价格”，说明报高了；多是“时效 / 服务”，降价没用，要改服务。 · Markup = (quote − cost) ÷ cost. Mostly “price” losses → you quote too high; mostly “transit time / service” → cutting price won't help.</div></div>`;
+</div></div></div>
+  <div id="ct-trk-score"></div>
+`;
+  try{ renderCtTrkScore(); }catch(e){ console.error(e); }
 }
 
 // ── Lead-time stages per B/L (auto from dates, or typed in) ──
-const NO_LT=[['LT1','ETA → 到站','ETA → At hub','ETA','At Hub Date'],['LT2','到站 → 提柜','At hub → Pick up','At Hub Date','Pick Up Date'],['LT3','提柜 → 送达','Pick up → Delivered','Pick Up Date','ATA'],['LT4','送达 → POD','Delivered → POD','ATA','POD Date'],['LT5','POD → 开票','POD → Invoice','POD Date','Invoice Date'],['LT6','开票 → 收款','Invoice → Paid','Invoice Date','Paid Date']];
+const NO_LT=[['LT1','ETA → 到站','ETA → At hub','ETA','At Hub Date'],['LT2','到站 → 提柜','At hub → Pick up','At Hub Date','Pick Up Date'],['LT3','提柜 → 送达','Pick up → Delivered','Pick Up Date','ATA'],['LT4','送达 → POD','Delivered → POD','ATA','POD Date'],['LT5','POD → 开票','POD → Invoice','POD Date','Invoice Date']];
 function _noLtAuto(o,cn,a,b){ const x=_noParseDate(_wbFld(o,cn,a)), y=_noParseDate(_wbFld(o,cn,b)); return (x&&y)?Math.round((y-x)/864e5):null; }
 function _noLtVal(o,cn,s){ const ov=_wbFld(o,cn,s[0]); return (ov!==''&&ov!=null&&!isNaN(parseFloat(ov)))?parseFloat(ov):_noLtAuto(o,cn,s[3],s[4]); }
 function _noLtHtml(o,cn,kk,set,txt){
@@ -14252,42 +14233,85 @@ function _noLtHtml(o,cn,kk,set,txt){
   const cell=(s,i)=>{ const auto=_noLtAuto(o,cn,s[3],s[4]), ov=txt(s[0]);
     return `<div style="min-width:0"><div style="font-size:10.5px;font-weight:700;color:#475569;line-height:1.2">${s[1]}<br><span style="font-weight:400;color:#94a3b8">${s[2]}</span></div>
       <input data-k="${kk(s[0])}" type="number" step="1" value="${_noEsc(ov)}" placeholder="${auto==null?'—':'auto '+auto}" onchange="${_wbSet(set(s[0]),'this.value')}" style="${_wbI};margin-top:3px;${mx&&mx.s===s?'border-color:#b8392c;color:#b8392c;font-weight:700':''}"></div>`; };
-  return `<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) 80px;gap:8px;align-items:end">${NO_LT.map(cell).join('')}
+  return `<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) 80px;gap:8px;align-items:end">${NO_LT.map(cell).join('')}
     <div style="text-align:right"><div style="font-size:10.5px;font-weight:700;color:#475569">合计 Total</div><div style="font-size:18px;font-weight:700;font-family:var(--f-num,monospace)">${any?tot+'d':'—'}</div></div></div>
-    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px">${_wbL('开票日 Invoice date',_wbDate(kk('Invoice Date'),txt('Invoice Date'),set('Invoice Date')),1)}${_wbL('收款日 Paid date',_wbDate(kk('Paid Date'),txt('Paid Date'),set('Paid Date')),1)}
-    <div style="grid-column:span 2;font-size:11px;color:#94a3b8;align-self:center">灰色 auto = 按日期自动算的天数，填数字可覆盖；红框 = 最长的环节。付款状态改成 Requested / Paid 时自动填开票日 / 收款日。· Grey “auto” = days from the dates; type a number to override. Red = longest stage.</div></div>`;
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px">${_wbL('开票日 Invoice date',_wbDate(kk('Invoice Date'),txt('Invoice Date'),set('Invoice Date')),1)}
+    <div style="grid-column:span 3;font-size:11px;color:#94a3b8;align-self:center">灰色 auto = 按日期自动算的天数，填数字可覆盖；红框 = 最长的环节。付款状态改成 Requested / Paid 时自动填开票日。· Grey “auto” = days from the dates; type a number to override. Red = longest stage.</div></div>`;
 }
 function _noTodayStr(){ const t=new Date(); return t.getFullYear()+'/'+String(t.getMonth()+1).padStart(2,'0')+'/'+String(t.getDate()).padStart(2,'0'); }
 function _noPayAutoDates(tgt,val){
   const v=String(val||'').toLowerCase();
   if((v==='requested'||v==='paid')&&!tgt['Invoice Date']) tgt['Invoice Date']=_noTodayStr();
-  if(v==='paid'&&!tgt['Paid Date']) tgt['Paid Date']=_noTodayStr();
+}
+
+
+// ── Dashboard: lead time by stage across all Orders B/Ls ──
+function renderDashLeadTime(){
+  const el=document.getElementById('dash-leadtime'); if(!el) return;
+  const S=NO_LT.map(s=>({s,v:[]}));
+  (typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{ const cs=_noContainers(o); (cs.length?cs:[null]).forEach(cn=>{
+    S.forEach(x=>{ const v=_noLtVal(o,cn,x.s); if(v!=null&&v>=0&&v<180) x.v.push(v); }); }); });
+  if(!S.some(x=>x.v.length)){ el.innerHTML=''; return; }
+  const q=(a,p)=>{ const b=a.slice().sort((x,y)=>x-y); return b[Math.min(b.length-1,Math.max(0,Math.ceil(p*b.length)-1))]; };
+  S.forEach(x=>{ x.n=x.v.length; x.avg=x.n?x.v.reduce((a,b)=>a+b,0)/x.n:null; x.med=x.n?q(x.v,.5):null; x.p90=x.n?q(x.v,.9):null; });
+  const mx=Math.max(...S.map(x=>x.avg||0),1), bott=S.reduce((b,x)=>(x.avg!=null&&(!b||x.avg>b.avg))?x:b,null), tot=S.reduce((s,x)=>s+(x.avg||0),0);
+  const td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)';
+  el.innerHTML=`<div class="chart-card" style="margin:12px 0"><h3 style="margin:0">环节耗时 · Lead time by stage</h3>
+    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">所有 Orders B/L 的各环节平均天数，合计约 <b style="color:var(--text)">${_qF(tot,1)} 天</b>。红色 = 最慢的环节（瓶颈），先改它效果最大。 · Average days per stage across all Orders B/Ls, total ≈ ${_qF(tot,1)} days. Red = the slowest stage (bottleneck).</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="padding:6px 8px;text-align:left">环节 Stage</th><th style="padding:6px 8px;text-align:right">B/L 数 n</th><th style="padding:6px 8px;text-align:right">平均 Avg</th><th style="padding:6px 8px;text-align:right">中位数 Median</th><th style="padding:6px 8px;text-align:right">10 票里最慢的 1 票 Slowest 10%</th><th style="padding:6px 8px;text-align:left;width:34%"></th></tr></thead><tbody>
+    ${S.map(x=>{ const b=bott===x; return `<tr style="${b?'background:#fdf1ef':''}"><td style="padding:5px 8px;font-weight:${b?700:500};color:${b?'#b8392c':'inherit'}">${x.s[1]} <span style="color:var(--muted);font-weight:400;font-size:12px">${x.s[2]}</span>${b?' · 瓶颈 bottleneck':''}</td><td style="${td}">${x.n}</td><td style="${td};font-weight:700">${x.n?_qF(x.avg,1)+'d':'—'}</td><td style="${td}">${x.n?x.med+'d':'—'}</td><td style="${td}">${x.n?x.p90+'d':'—'}</td>
+      <td style="padding:5px 8px"><div style="height:10px;border-radius:3px;background:${b?'#b8392c':'#056dae'};width:${(x.avg||0)/mx*100}%"></div></td></tr>`; }).join('')}</tbody></table></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">天数来自订单详情里的“环节耗时”：有日期自动算，手动填的数字优先。 · Days come from each B/L's “Lead time by stage”: computed from dates, typed numbers take priority.</div></div>`;
 }
 
 // ── Dashboard: extra-cost Pareto (Orders + TEMU) ──
+let _parOpen=null, _parRows=[];
 function renderExtraPareto(){
   const el=document.getElementById('dash-extra-pareto'); if(!el) return;
-  const g={}; const add=(r,v,src)=>{ if(!(v>0)) return; const k=String(r||'Other').trim()||'Other'; const e=g[k]||(g[k]={k,n:0,sum:0,src:{}}); e.n++; e.sum+=v; e.src[src]=(e.src[src]||0)+v; };
+  const g={};
+  const add=(r,v,src,ref)=>{ if(!(v>0)) return; const raw=String(r||'Other').trim()||'Other', k=raw.toLowerCase().replace(/\s+/g,' ');
+    const e=g[k]||(g[k]={k,labels:{},n:0,sum:0,src:{},refs:[]}); e.labels[raw]=(e.labels[raw]||0)+1; e.n++; e.sum+=v; e.src[src]=(e.src[src]||0)+v; e.refs.push(Object.assign({src,v},ref)); };
   (typeof NO!=='undefined'?NO:[]).filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{ const cs=_noContainers(o); (cs.length?cs:[null]).forEach(cn=>{
+    const ref={id:o._id,cn:cn||'',no:o['Order No.']||('#'+o._id),proj:o['Project']||''};
     const ch=Array.isArray(_noFld(o,cn,'Charges'))?_noFld(o,cn,'Charges'):[];
-    ch.filter(l=>QX_ITEMS.includes(l.item)&&_noN(l.p)>0).forEach(l=>add(l.item==='Other'&&l.note?l.note:l.item,_noN(l.p),'Orders'));
-    _noSurcharges(o,cn).forEach(t=>add(t.reason,_noN(t.fee),'Orders')); }); });
-  (typeof CT!=='undefined'?CT:[]).forEach(r=>add(r['Surcharge Reason']||'other',parseFloat(r['Surcharge']),'TEMU'));
-  const rows=Object.values(g).sort((a,b)=>b.sum-a.sum), tot=rows.reduce((s,r)=>s+r.sum,0);
+    ch.filter(l=>QX_ITEMS.includes(l.item)&&_noN(l.p)>0).forEach(l=>add(l.item==='Other'&&l.note?l.note:l.item,_noN(l.p),'Orders',ref));
+    _noSurcharges(o,cn).forEach(t=>add(t.reason,_noN(t.fee),'Orders',ref)); }); });
+  (typeof CT!=='undefined'?CT:[]).forEach(r=>add(r['Surcharge Reason']||'other',parseFloat(r['Surcharge']),'TEMU',{ctn:r['Container No.']||'',batch:r['Batch / Train']||'',ctId:r._id}));
+  const rows=Object.values(g).map(e=>Object.assign(e,{label:Object.entries(e.labels).sort((a,b)=>b[1]-a[1])[0][0]})).sort((a,b)=>b.sum-a.sum), tot=rows.reduce((s,r)=>s+r.sum,0);
+  _parRows=rows;
   if(!rows.length){ el.innerHTML=''; return; }
-  let cum=0; const top=rows[0].sum;
+  let cum=0; const top=rows[0].sum, td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)';
   el.innerHTML=`<div class="chart-card" style="margin:12px 0"><h3 style="margin:0">额外费用排行 · Extra costs by reason (Pareto)</h3>
-    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">共 €${_qF(tot)}。蓝色行加起来约占 80% —— 先解决这几个原因，效果最大。 · Total €${_qF(tot)}. Blue rows ≈ 80% of the money — fix these first.</div>
-    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="padding:6px 8px;text-align:left">原因 Reason</th><th style="padding:6px 8px;text-align:right">次数 Times</th><th style="padding:6px 8px;text-align:right">金额 Amount</th><th style="padding:6px 8px;text-align:right">占比 Share</th><th style="padding:6px 8px;text-align:right">累计 Cumulative</th><th style="padding:6px 8px;text-align:left;width:32%"></th><th style="padding:6px 8px;text-align:left">来源 Source</th></tr></thead><tbody>
-    ${rows.map(r=>{ const pre=cum; cum+=r.sum; const vital=pre/tot<0.8;
-      return `<tr style="${vital?'background:#eef4fa':''}"><td style="padding:5px 8px;font-weight:${vital?700:400}">${_noEsc(r.k)}</td><td style="padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)">${r.n}</td><td style="padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)">€${_qF(r.sum)}</td><td style="padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)">${_qF(r.sum/tot*100,1)}%</td><td style="padding:5px 8px;text-align:right;font-family:var(--f-num,monospace)">${_qF(cum/tot*100,1)}%</td>
-        <td style="padding:5px 8px"><div style="height:10px;border-radius:3px;background:${vital?'#056dae':'#c9dff0'};width:${r.sum/top*100}%"></div></td><td style="padding:5px 8px;font-size:12px;color:var(--muted)">${Object.entries(r.src).map(([s,v])=>s+' €'+_qF(v)).join(' · ')}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+    <div style="font-size:12.5px;color:var(--muted);margin:4px 0 10px">共 €${_qF(tot)}。蓝色行加起来约占 80% —— 先解决这几个原因。点一行展开明细，点订单号或柜号直接跳转。 · Total €${_qF(tot)}. Blue rows ≈ 80% of the money. Click a row for details, click an order / container to jump there.</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="padding:6px 8px;text-align:left">原因 Reason</th><th style="padding:6px 8px;text-align:right">次数 Times</th><th style="padding:6px 8px;text-align:right">金额 Amount</th><th style="padding:6px 8px;text-align:right">占比 Share</th><th style="padding:6px 8px;text-align:right">累计 Cumulative</th><th style="padding:6px 8px;text-align:left;width:30%"></th><th style="padding:6px 8px;text-align:left">来源 Source</th></tr></thead><tbody>
+    ${rows.map((r,ri)=>{ const pre=cum; cum+=r.sum; const vital=pre/tot<0.8, open=_parOpen===r.k;
+      const byOrder={}; r.refs.filter(x=>x.src==='Orders').forEach(x=>{ const k=x.id+'|'+x.cn; (byOrder[k]=byOrder[k]||Object.assign({},x,{v:0})).v+=x.v; });
+      const ords=Object.values(byOrder).sort((a,b)=>b.v-a.v), temu=r.refs.filter(x=>x.src==='TEMU').sort((a,b)=>b.v-a.v);
+      const link='color:#056dae;cursor:pointer;text-decoration:underline';
+      const det=open?`<tr><td colspan="7" style="padding:8px 12px 12px;background:#f7fafd;border-bottom:1px solid #d9e1ec">
+        ${ords.length?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><b style="font-size:12px">Orders (${ords.length})</b><button class="btn" style="border:1px solid var(--border);background:#fff;padding:2px 8px;font-size:12px" onclick="parGo(${ri},'Orders')">在 Orders 中筛选全部 · Filter all in Orders</button></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px">${ords.map(x=>`<span><span style="${link}" onclick="parOpenOrder(${x.id})">${_noEsc(x.no)}</span>${x.cn?' · '+_noEsc(x.cn):''}${x.proj?' <span style="color:var(--muted)">'+_noEsc(x.proj)+'</span>':''} <b style="font-family:var(--f-num,monospace)">€${_qF(x.v)}</b></span>`).join('')}</div>`:''}
+        ${temu.length?`<div style="display:flex;align-items:center;gap:10px;margin:${ords.length?'10px':'0'} 0 4px"><b style="font-size:12px">TEMU (${temu.length})</b><button class="btn" style="border:1px solid var(--border);background:#fff;padding:2px 8px;font-size:12px" onclick="parGo(${ri},'TEMU')">在 TEMU 中筛选全部 · Filter all in TEMU</button></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px">${temu.map(x=>`<span><span style="${link}" onclick="parOpenCtn('${_noEsc(x.ctn).replace(/'/g,'')}')">${_noEsc(x.ctn)}</span>${x.batch?' <span style="color:var(--muted)">'+_noEsc(x.batch)+'</span>':''} <b style="font-family:var(--f-num,monospace)">€${_qF(x.v)}</b></span>`).join('')}</div>`:''}</td></tr>`:'';
+      return `<tr style="cursor:pointer;${vital?'background:#eef4fa':''}" onclick="parToggle('${r.k.replace(/'/g,"\\'")}')"><td style="padding:5px 8px;font-weight:${vital?700:400}">${open?'▾':'▸'} ${_noEsc(r.label)}${Object.keys(r.labels).length>1?' <span style="font-size:11px;color:var(--muted);font-weight:400">('+Object.keys(r.labels).length+' spellings)</span>':''}</td><td style="${td}">${r.n}</td><td style="${td}">€${_qF(r.sum)}</td><td style="${td}">${_qF(r.sum/tot*100,1)}%</td><td style="${td}">${_qF(cum/tot*100,1)}%</td>
+        <td style="padding:5px 8px"><div style="height:10px;border-radius:3px;background:${vital?'#056dae':'#c9dff0'};width:${r.sum/top*100}%"></div></td><td style="padding:5px 8px;font-size:12px;color:var(--muted)">${Object.entries(r.src).map(([s,v])=>s+' €'+_qF(v)).join(' · ')}</td></tr>${det}`; }).join('')}</tbody></table></div></div>`;
+}
+function parToggle(k){ _parOpen=_parOpen===k?null:k; renderExtraPareto(); }
+function parOpenOrder(id){ showPage('orders'); setTimeout(()=>{ try{ wbPick('no',id); }catch(e){} },60); }
+function parOpenCtn(cn){ showPage('containers'); const s=document.getElementById('f-search'); if(s){ s.value=cn; } try{ renderCT(); }catch(e){} setTimeout(()=>{ const t=document.getElementById('ct-table'); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); },80); }
+function parGo(ri,src){
+  const r=_parRows[ri]; if(!r) return;
+  if(src==='TEMU'){ const list=[...new Set(r.refs.filter(x=>x.src==='TEMU').map(x=>x.ctn).filter(Boolean))]; showPage('containers'); const s=document.getElementById('f-search'); if(s) s.value=list.join(' '); try{ renderCT(); }catch(e){} return; }
+  const list=[...new Set(r.refs.filter(x=>x.src==='Orders').map(x=>x.cn||x.no).filter(Boolean))]; showPage('orders'); const s=document.getElementById('no-search'); if(s) s.value=list.join(' '); try{ renderOrders(); }catch(e){}
+  setTimeout(()=>{ const t=document.getElementById('no-body'); if(t&&t.closest('.chart-card')) t.closest('.chart-card').scrollIntoView({behavior:'smooth',block:'start'}); },80);
 }
 
 // ── TEMU: weighted trucker score ──
-const CTS_KEY='owenz_ct_trkscore_v1'; let CTS={wp:50,wo:30,wx:20,open:1};
+const CTS_KEY='owenz_ct_trkscore_v1'; let CTS={wp:50,wo:30,wx:20,open:1,ov:{}};
 try{ Object.assign(CTS,JSON.parse(localStorage.getItem(CTS_KEY)||'{}')); }catch(e){}
 function ctsSet(k,v){ CTS[k]=parseFloat(v)||0; try{ localStorage.setItem(CTS_KEY,JSON.stringify(CTS)); }catch(e){} renderCtTrkScore(); }
+function ctsOv(t,f,v){ CTS.ov=CTS.ov||{}; const o=CTS.ov[t]||(CTS.ov[t]={}); if(String(v).trim()==='') delete o[f]; else o[f]=parseFloat(v); if(!Object.keys(o).length) delete CTS.ov[t]; try{ localStorage.setItem(CTS_KEY,JSON.stringify(CTS)); }catch(e){} renderCtTrkScore(); }
+function ctsReset(){ if(!confirm('Clear all edited values? · 清除所有手动修改的数值？')) return; CTS.ov={}; try{ localStorage.setItem(CTS_KEY,JSON.stringify(CTS)); }catch(e){} renderCtTrkScore(); }
 function renderCtTrkScore(){
   const el=document.getElementById('ct-trk-score'); if(!el) return;
   const rows=(typeof CT!=='undefined'?CT:[]).filter(r=>String(r['Trucker']||'').trim());
@@ -14303,17 +14327,26 @@ function renderCtTrkScore(){
     const ps=xs.map(r=>parseFloat(r['Price'])).filter(p=>p>0);
     return {t,n:xs.length,price:ps.length?ps.reduce((a,b)=>a+b,0)/ps.length:null,pIdx:pi.length?pi.reduce((a,b)=>a+b,0)/pi.length:null,onT:ot.length?ot.reduce((a,b)=>a+b,0)/ot.length:null,nOt:ot.length,xr};
   });
-  const minIdx=Math.min(...T.map(x=>x.pIdx).filter(v=>v!=null),1), W=(CTS.wp+CTS.wo+CTS.wx)||1;
-  T.forEach(x=>{ const pS=x.pIdx!=null?minIdx/x.pIdx:0.5, oS=x.onT!=null?x.onT:0.5; x.pS=pS; x.score=(CTS.wp*pS+CTS.wo*oS+CTS.wx*(1-x.xr))/W*100; });
+  // manual values override the automatic ones (price €, on-time %, extra rate %)
+  const allP=T.filter(x=>x.price!=null), avgP=allP.length?allP.reduce((s,x)=>s+x.price,0)/allP.length:0;
+  T.forEach(x=>{ const o=(CTS.ov||{})[x.t]||{}; x.o=o;
+    const ref=(x.price!=null&&x.pIdx)?x.price/x.pIdx:avgP;
+    x.eP=o.price!=null?o.price:x.price; x.eIdx=o.price!=null?(ref?o.price/ref:null):x.pIdx;
+    x.eOn=o.onT!=null?o.onT/100:x.onT; x.eX=o.xr!=null?o.xr/100:x.xr; });
+  const minIdx=Math.min(...T.map(x=>x.eIdx).filter(v=>v!=null&&v>0),1), W=(CTS.wp+CTS.wo+CTS.wx)||1;
+  T.forEach(x=>{ const pS=(x.eIdx!=null&&x.eIdx>0)?minIdx/x.eIdx:0.5, oS=x.eOn!=null?x.eOn:0.5; x.pS=pS; x.score=(CTS.wp*pS+CTS.wo*oS+CTS.wx*(1-x.eX))/W*100; });
   T.sort((a,b)=>b.score-a.score);
   const inp=(k,lab)=>`<label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:4px">${lab}<input type="number" value="${CTS[k]}" onchange="ctsSet('${k}',this.value)" style="width:56px;padding:3px 6px;border:1px solid var(--border);border-radius:6px"></label>`;
   const td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace);border-bottom:1px solid #eef4fa;white-space:nowrap';
   el.innerHTML=`<div class="chart-card" style="margin:0 0 12px;padding:12px 16px">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="if(event.target.tagName!=='INPUT') ctsSet('open',${CTS.open?0:1})"><h3 style="margin:0">${CTS.open?'▾':'▸'} 卡车公司评分 · Trucker score</h3>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="if(event.target.tagName!=='INPUT') ctsSet('open',${CTS.open?0:1})"><h3 style="margin:0">${CTS.open?'▾':'▸'} TEMU 卡车公司评分 · TEMU trucker score</h3>
       <span style="margin-left:auto;display:inline-flex;gap:10px;flex-wrap:wrap" onclick="event.stopPropagation()">${inp('wp','价格 Price %')}${inp('wo','准时 On time %')}${inp('wx','少额外 Few extras %')}</span></div>
     ${CTS.open?`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="padding:6px 8px;text-align:left">#</th><th style="padding:6px 8px;text-align:left">卡车公司 Trucker</th><th style="padding:6px 8px;text-align:right">柜数 Ctns</th><th style="padding:6px 8px;text-align:right">平均价 Avg price</th><th style="padding:6px 8px;text-align:right">价格指数 Price index</th><th style="padding:6px 8px;text-align:right">准时率 On slot</th><th style="padding:6px 8px;text-align:right">额外费用率 Extra rate</th><th style="padding:6px 8px;text-align:right">总分 Score</th></tr></thead><tbody>
-      ${T.map((x,i)=>`<tr><td style="padding:5px 8px;border-bottom:1px solid #eef4fa">${i+1}</td><td style="padding:5px 8px;font-weight:600;border-bottom:1px solid #eef4fa">${_noEsc(x.t)}${x.n<5?' <span style="color:#a86c12;font-size:11px">small n</span>':''}</td><td style="${td}">${x.n}</td><td style="${td}">${x.price!=null?'€'+_qF(x.price):'—'}</td><td style="${td}">${x.pIdx!=null?_qF(x.pIdx*100)+'%':'—'}</td><td style="${td}">${x.onT!=null?_qF(x.onT*100)+'%':'—'} <span style="color:var(--muted);font-size:11px">(${x.nOt})</span></td><td style="${td}">${_qF(x.xr*100)}%</td><td style="${td};font-weight:700;color:#056dae">${_qF(x.score)}</td></tr>`).join('')}</tbody></table></div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">总分 = 价格分 × ${CTS.wp}% + 准时率 × ${CTS.wo}% + (1 − 额外费用率) × ${CTS.wx}%（满分 100）。价格指数 = 该公司价格 ÷ 同目的地平均价（100% = 平均，低于 100% 更便宜），价格分 = 最便宜者的指数 ÷ 自己的指数。准时 = 实际到达日 ≤ 预约 slot 日（括号内为有两个日期的柜数）。额外费用率 = 有 Surcharge 的柜子比例。缺数据的项按 0.5 计。<br>Score = price score × ${CTS.wp}% + on-slot rate × ${CTS.wo}% + (1 − extra rate) × ${CTS.wx}%. Price index = trucker's price ÷ average price for the same destination; on slot = Actual Arrival ≤ Scheduled Slot day; extra rate = share of containers with a surcharge. Missing data counts as 0.5.</div>`:''}</div>`;
+      ${T.map((x,i)=>{ const tq=x.t.replace(/'/g,"\\'"), ed=(f,val,auto,suf)=>`<input type="number" step="any" value="${val!=null?val:''}" placeholder="${auto}" onchange="ctsOv('${tq}','${f}',this.value)" style="width:78px;text-align:right;padding:2px 5px;border:1px solid ${val!=null?'#056dae':'var(--border)'};border-radius:5px;font-family:inherit">${suf||''}`;
+        return `<tr><td style="padding:5px 8px;border-bottom:1px solid #eef4fa">${i+1}</td><td style="padding:5px 8px;font-weight:600;border-bottom:1px solid #eef4fa">${_noEsc(x.t)}${x.n<5?' <span style="color:#a86c12;font-size:11px">small n</span>':''}</td><td style="${td}">${x.n}</td>
+        <td style="${td}">€ ${ed('price',x.o.price,x.price!=null?_qF(x.price):'—')}</td><td style="${td}">${x.eIdx!=null?_qF(x.eIdx*100)+'%':'—'}</td>
+        <td style="${td}">${ed('onT',x.o.onT,x.onT!=null?_qF(x.onT*100):'—',' %')} <span style="color:var(--muted);font-size:11px">(${x.nOt})</span></td><td style="${td}">${ed('xr',x.o.xr,_qF(x.xr*100),' %')}</td><td style="${td};font-weight:700;color:#056dae">${_qF(x.score)}</td></tr>`; }).join('')}</tbody></table></div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">总分 = 价格分 × ${CTS.wp}% + 准时率 × ${CTS.wo}% + (1 − 额外费用率) × ${CTS.wx}%（满分 100）。价格指数 = 该公司价格 ÷ 同目的地平均价（100% = 平均，低于 100% 更便宜），价格分 = 最便宜者的指数 ÷ 自己的指数。准时 = 实际到达日 ≤ 预约 slot 日（括号内为有两个日期的柜数）。额外费用率 = 有 Surcharge 的柜子比例。缺数据的项按 0.5 计。<b>价格、准时率、额外费用率都可以直接改</b>：灰色是系统自动算的数，填了数字（蓝框）就用你的数。<span style="color:#056dae;cursor:pointer;text-decoration:underline" onclick="ctsReset()">清除手动修改</span><br>Score = price score × ${CTS.wp}% + on-slot rate × ${CTS.wo}% + (1 − extra rate) × ${CTS.wx}%. Price index = trucker's price ÷ average price for the same destination; on slot = Actual Arrival ≤ Scheduled Slot day; extra rate = share of containers with a surcharge. Missing data counts as 0.5. Price, on-slot and extra rate can be edited: grey = automatic value, a typed number (blue box) is used instead.</div>`:''}</div>`;
 }
 </script>
 
