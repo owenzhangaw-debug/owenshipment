@@ -14317,41 +14317,43 @@ function ctsReset(){ if(!confirm('Clear all edited values? · 清除所有手动
 function renderCtTrkScore(){
   const el=document.getElementById('ct-trk-score'); if(!el) return;
   const rows=(typeof CT!=='undefined'?CT:[]).filter(r=>String(r['Trucker']||'').trim());
-  const lane=r=>(String(r['Destination']||'').trim()||String(r['Consignee']||'').trim()).toLowerCase().replace(/\s+/g,'');
-  const lp={}; rows.forEach(r=>{ const p=parseFloat(r['Price']); if(p>0) (lp[lane(r)]=lp[lane(r)]||[]).push(p); });
-  const lAvg={}; Object.keys(lp).forEach(k=>lAvg[k]=lp[k].reduce((a,b)=>a+b,0)/lp[k].length);
+  // destination: the Destination field, or learnt from the consignee (most common destination for that consignee)
+  const cK=r=>String(r['Consignee']||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const cd={}; rows.forEach(r=>{ const d=String(r['Destination']||'').trim(); if(d){ const m=cd[cK(r)]||(cd[cK(r)]={}); m[d]=(m[d]||0)+1; } });
+  const dest=r=>{ const d=String(r['Destination']||'').trim(); if(d) return d; const m=cd[cK(r)]; return m?Object.entries(m).sort((a,b)=>b[1]-a[1])[0][0]:'Other'; };
+  const dp={}; rows.forEach(r=>{ const p=parseFloat(r['Price']); if(p>0) (dp[dest(r)]=dp[dest(r)]||[]).push(p); });
+  const dAvg={}; Object.keys(dp).forEach(k=>dAvg[k]=dp[k].reduce((a,b)=>a+b,0)/dp[k].length);
+  const D=Object.keys(dp).sort((a,b)=>dp[b].length-dp[a].length);
   const g={}; rows.forEach(r=>(g[String(r['Trucker']).trim()]=g[String(r['Trucker']).trim()]||[]).push(r));
   const day=v=>{ const d=parseDate(String(v||'')); if(d){ d.setHours(0,0,0,0); return d; } return null; };
   if(!(CTS.minN>=0)) CTS.minN=20;
   const few=Object.keys(g).filter(t=>g[t].length<CTS.minN).sort((a,b)=>g[b].length-g[a].length);
-  const T=Object.keys(g).filter(t=>g[t].length>=CTS.minN).map(t=>{ const xs=g[t];
-    const pi=xs.map(r=>{ const p=parseFloat(r['Price']), a=lAvg[lane(r)]; return (p>0&&a)?p/a:null; }).filter(v=>v!=null);
+  const T=Object.keys(g).filter(t=>g[t].length>=CTS.minN).map(t=>{ const xs=g[t], o=(CTS.ov||{})[t]||{};
+    const byD={}; xs.forEach(r=>{ const p=parseFloat(r['Price']); if(p>0){ const e=byD[dest(r)]||(byD[dest(r)]={n:0,s:0}); e.n++; e.s+=p; } });
+    const per={}; D.forEach(d=>{ const e=byD[d]; const auto=e?e.s/e.n:null, ov=o['p_'+d]; per[d]={n:e?e.n:0,auto,ov:ov!=null?ov:null,eff:ov!=null?ov:auto}; });
+    let wn=0,ws=0; D.forEach(d=>{ const x=per[d]; if(x.eff!=null&&dAvg[d]){ const n=x.n||1; wn+=n; ws+=n*x.eff/dAvg[d]; } });
     const ot=xs.map(r=>{ const s=day(r['Scheduled Slot']), a=day(r['Actual Arrival']); return (s&&a)?(a<=s?1:0):null; }).filter(v=>v!=null);
-    const xr=xs.filter(r=>parseFloat(r['Surcharge'])>0).length/xs.length;
-    const ps=xs.map(r=>parseFloat(r['Price'])).filter(p=>p>0);
-    return {t,n:xs.length,price:ps.length?ps.reduce((a,b)=>a+b,0)/ps.length:null,pIdx:pi.length?pi.reduce((a,b)=>a+b,0)/pi.length:null,onT:ot.length?ot.reduce((a,b)=>a+b,0)/ot.length:null,nOt:ot.length,xr};
+    const xr=xs.filter(r=>parseFloat(r['Surcharge'])>0).length/xs.length, onT=ot.length?ot.reduce((a,b)=>a+b,0)/ot.length:null;
+    return {t,n:xs.length,o,per,eIdx:wn?ws/wn:null,onT,nOt:ot.length,xr,eOn:o.onT!=null?o.onT/100:onT,eX:o.xr!=null?o.xr/100:xr};
   });
-  // manual values override the automatic ones (price €, on-time %, extra rate %)
-  const allP=T.filter(x=>x.price!=null), avgP=allP.length?allP.reduce((s,x)=>s+x.price,0)/allP.length:0;
-  T.forEach(x=>{ const o=(CTS.ov||{})[x.t]||{}; x.o=o;
-    const ref=(x.price!=null&&x.pIdx)?x.price/x.pIdx:avgP;
-    x.eP=o.price!=null?o.price:x.price; x.eIdx=o.price!=null?(ref?o.price/ref:null):x.pIdx;
-    x.eOn=o.onT!=null?o.onT/100:x.onT; x.eX=o.xr!=null?o.xr/100:x.xr; });
   const minIdx=Math.min(...T.map(x=>x.eIdx).filter(v=>v!=null&&v>0),1), W=(CTS.wp+CTS.wo+CTS.wx)||1;
-  T.forEach(x=>{ const pS=(x.eIdx!=null&&x.eIdx>0)?minIdx/x.eIdx:0.5, oS=x.eOn!=null?x.eOn:0.5; x.pS=pS; x.score=(CTS.wp*pS+CTS.wo*oS+CTS.wx*(1-x.eX))/W*100; });
+  T.forEach(x=>{ const pS=(x.eIdx!=null&&x.eIdx>0)?minIdx/x.eIdx:0.5, oS=x.eOn!=null?x.eOn:0.5; x.score=(CTS.wp*pS+CTS.wo*oS+CTS.wx*(1-x.eX))/W*100; });
   T.sort((a,b)=>b.score-a.score);
   const inp=(k,lab)=>`<label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:4px">${lab}<input type="number" value="${CTS[k]}" onchange="ctsSet('${k}',this.value)" style="width:56px;padding:3px 6px;border:1px solid var(--border);border-radius:6px"></label>`;
-  const td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace);border-bottom:1px solid #eef4fa;white-space:nowrap';
+  const td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace);border-bottom:1px solid #eef4fa;white-space:nowrap', th='padding:6px 8px;text-align:right;white-space:nowrap;line-height:1.25';
   el.innerHTML=`<div class="chart-card" style="margin:0 0 12px;padding:12px 16px">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="if(event.target.tagName!=='INPUT') ctsSet('open',${CTS.open?0:1})"><h3 style="margin:0">${CTS.open?'▾':'▸'} TEMU 卡车公司评分 · TEMU trucker score</h3>
       <span style="margin-left:auto;display:inline-flex;gap:10px;flex-wrap:wrap" onclick="event.stopPropagation()">${inp('minN','最少柜数 Min ctns')}${inp('wp','价格 Price %')}${inp('wo','准时 On time %')}${inp('wx','少额外 Few extras %')}</span></div>
-    ${CTS.open?`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="padding:6px 8px;text-align:left">#</th><th style="padding:6px 8px;text-align:left">卡车公司 Trucker</th><th style="padding:6px 8px;text-align:right">柜数 Ctns</th><th style="padding:6px 8px;text-align:right">平均价 Avg price</th><th style="padding:6px 8px;text-align:right">价格指数 Price index</th><th style="padding:6px 8px;text-align:right">准时率 On slot</th><th style="padding:6px 8px;text-align:right">额外费用率 Extra rate</th><th style="padding:6px 8px;text-align:right">总分 Score</th></tr></thead><tbody>
-      ${T.map((x,i)=>{ const tq=x.t.replace(/'/g,"\\'"), ed=(f,val,auto,suf)=>`<input type="number" step="any" value="${val!=null?val:''}" placeholder="${auto}" onchange="ctsOv('${tq}','${f}',this.value)" style="width:78px;text-align:right;padding:2px 5px;border:1px solid ${val!=null?'#056dae':'var(--border)'};border-radius:5px;font-family:inherit">${suf||''}`;
+    ${CTS.open?`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="${th};text-align:left">#</th><th style="${th};text-align:left">卡车公司 Trucker</th><th style="${th}">柜数 Ctns</th>
+      ${D.map(d=>`<th style="${th}">${_noEsc(d)}<br><span style="font-weight:400;font-size:11px">平均 avg €${_qF(dAvg[d])}</span></th>`).join('')}<th style="${th}">价格指数<br><span style="font-weight:400;font-size:11px">Price index</span></th><th style="${th}">准时率<br><span style="font-weight:400;font-size:11px">On slot</span></th><th style="${th}">额外费用率<br><span style="font-weight:400;font-size:11px">Extra rate</span></th><th style="${th}">总分<br><span style="font-weight:400;font-size:11px">Score</span></th></tr></thead><tbody>
+      ${T.map((x,i)=>{ const tq=x.t.replace(/'/g,"\\'"), ed=(f,val,auto,suf,w)=>`<input type="number" step="any" value="${val!=null?val:''}" placeholder="${auto}" onchange="ctsOv('${tq}','${f}',this.value)" style="width:${w||70}px;text-align:right;padding:2px 5px;border:1px solid ${val!=null?'#056dae':'var(--border)'};border-radius:5px;font-family:inherit">${suf||''}`;
         return `<tr><td style="padding:5px 8px;border-bottom:1px solid #eef4fa">${i+1}</td><td style="padding:5px 8px;font-weight:600;border-bottom:1px solid #eef4fa">${_noEsc(x.t)}</td><td style="${td}">${x.n}</td>
-        <td style="${td}">€ ${ed('price',x.o.price,x.price!=null?_qF(x.price):'—')}</td><td style="${td}">${x.eIdx!=null?_qF(x.eIdx*100)+'%':'—'}</td>
-        <td style="${td}">${ed('onT',x.o.onT,x.onT!=null?_qF(x.onT*100):'—',' %')} <span style="color:var(--muted);font-size:11px">(${x.nOt})</span></td><td style="${td}">${ed('xr',x.o.xr,_qF(x.xr*100),' %')}</td><td style="${td};font-weight:700;color:#056dae">${_qF(x.score)}</td></tr>`; }).join('')}</tbody></table></div>
+        ${D.map(d=>{ const p=x.per[d]; return `<td style="${td}">€ ${ed('p_'+d,p.ov,p.auto!=null?_qF(p.auto):'—','',66)} <span style="color:var(--muted);font-size:11px">(${p.n})</span></td>`; }).join('')}
+        <td style="${td}">${x.eIdx!=null?_qF(x.eIdx*100)+'%':'—'}</td>
+        <td style="${td}">${ed('onT',x.o.onT,x.onT!=null?_qF(x.onT*100):'—',' %',60)} <span style="color:var(--muted);font-size:11px">(${x.nOt})</span></td><td style="${td}">${ed('xr',x.o.xr,_qF(x.xr*100),' %',56)}</td><td style="${td};font-weight:700;color:#056dae">${_qF(x.score)}</td></tr>`; }).join('')}</tbody></table></div>
       ${few.length?`<div style="font-size:12px;color:var(--muted);margin-top:6px">柜数少于 ${CTS.minN} 的不评分 · Not scored (< ${CTS.minN} containers)：${few.map(t=>_noEsc(t)+' ('+g[t].length+')').join(', ')}</div>`:''}
-      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">总分 = 价格分 × ${CTS.wp}% + 准时率 × ${CTS.wo}% + (1 − 额外费用率) × ${CTS.wx}%（满分 100）。价格指数 = 该公司价格 ÷ 同目的地平均价（100% = 平均，低于 100% 更便宜），价格分 = 最便宜者的指数 ÷ 自己的指数。准时 = 实际到达日 ≤ 预约 slot 日（括号内为有两个日期的柜数）。额外费用率 = 有 Surcharge 的柜子比例。缺数据的项按 0.5 计。<b>价格、准时率、额外费用率都可以直接改</b>：灰色是系统自动算的数，填了数字（蓝框）就用你的数。<span style="color:#056dae;cursor:pointer;text-decoration:underline" onclick="ctsReset()">清除手动修改</span><br>Score = price score × ${CTS.wp}% + on-slot rate × ${CTS.wo}% + (1 − extra rate) × ${CTS.wx}%. Price index = trucker's price ÷ average price for the same destination; on slot = Actual Arrival ≤ Scheduled Slot day; extra rate = share of containers with a surcharge. Missing data counts as 0.5. Price, on-slot and extra rate can be edited: grey = automatic value, a typed number (blue box) is used instead.</div>`:''}</div>`;
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">价格按<b>目的地分开</b>比较：每个目的地一列，显示该公司在这个目的地的平均价（括号内为柜数），表头是所有公司在该目的地的平均价。Destination 没填的柜子，按同一收货人最常去的目的地归类。<b>价格指数</b> = 该公司各目的地价格 ÷ 该目的地平均价，按柜数加权（100% = 平均，越低越便宜）；价格分 = 最便宜者的指数 ÷ 自己的指数。<br>总分 = 价格分 × ${CTS.wp}% + 准时率 × ${CTS.wo}% + (1 − 额外费用率) × ${CTS.wx}%。准时 = 实际到达日 ≤ 预约 slot 日；额外费用率 = 有 Surcharge 的柜子比例；缺数据按 0.5 计。所有灰色数字都可以改，填了（蓝框）就用你的数。<span style="color:#056dae;cursor:pointer;text-decoration:underline" onclick="ctsReset()">清除手动修改</span><br>
+      Prices are compared <b>per destination</b>: one column per destination with this trucker's average price there (container count in brackets); the header shows the average of all truckers. Containers without a Destination take the most common destination of the same consignee. Price index = trucker's price ÷ destination average, weighted by containers. Score = price score × ${CTS.wp}% + on-slot × ${CTS.wo}% + (1 − extra rate) × ${CTS.wx}%. Grey numbers can be edited; a typed number (blue box) is used instead.</div>`:''}</div>`;
 }
 </script>
 
