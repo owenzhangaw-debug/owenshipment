@@ -1931,7 +1931,11 @@ tbody tr:hover{background:#fafbfc}
     <!-- Inline selection bar — appears inside the card when rows are ticked -->
     <div class="tbl-top">
       <h3>Container List</h3><span id="ct-count"></span><span id="ct-filter-notice" class="flt-notice"></span>
-      
+      <span style="margin-left:auto;display:inline-flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" style="border:1px solid var(--border,#d9e1ec);background:#fff;color:var(--text,#1a2233)" onclick="openBulk()">⊞ Bulk Add</button>
+        <button class="btn" style="border:1px solid var(--border,#d9e1ec);background:#fff;color:var(--text,#1a2233)" onclick="autoGenerateSlots()">⚡ Auto Slots</button>
+        <button class="btn" style="border:1px solid var(--border,#d9e1ec);background:#fff;color:var(--text,#1a2233)" onclick="openBulkPickup()">Bulk Pickup Ref</button>
+      </span>
     </div>
     <div class="tbl-scroll">
       <table id="ct-table">
@@ -9579,18 +9583,25 @@ function applyBulkPickup(){
   const resEl=document.getElementById('bulk-pickup-result');
   if(!text){ if(resEl) resEl.innerHTML='<span style="color:#dc2626">Nothing to import.</span>'; return; }
   const map={};
+  // Container no. (4 letters + 7 digits) is recognised wherever it sits on the line;
+  // the pickup code is the other token (left or right of it).
+  const isCn=t=>/^[A-Z]{4}\d{7}$/.test(t.toUpperCase());
   text.split('\n').forEach(line=>{
-    const parts=line.trim().split(/[\t,; ]+/);
-    if(parts.length>=2){
-      const cn=parts[0].trim().toUpperCase();
-      const ref=parts[1].trim();
-      if(cn&&ref) map[cn]=ref;
-    }
+    const parts=line.trim().split(/[\t,;|: ]+/).map(s=>s.trim()).filter(Boolean);
+    if(parts.length<2) return;
+    const ci=parts.findIndex(isCn); if(ci<0) return;
+    const cn=parts[ci].toUpperCase();
+    const others=parts.filter((_,i)=>i!==ci&&!isCn(parts[i]));
+    // prefer a token with digits (codes usually contain numbers); otherwise the nearest neighbour
+    const ref=others.find(t=>/\d/.test(t))||others[0];
+    if(cn&&ref) map[cn]=ref;
   });
-  let updated=0, wrongBatch=0, noMatch=0;
+  let updated=0, wrongBatch=0;
+  const inApp=new Set(CT.map(r=>(r['Container No.']||'').toUpperCase()));
+  const noMatch=Object.keys(map).filter(k=>!inApp.has(k)).length;
   CT.forEach(r=>{
     const cn=(r['Container No.']||'').toUpperCase();
-    if(!map[cn]){ noMatch++; return; }
+    if(!map[cn]) return;
     if(batchFilter && r['Batch / Train']!==batchFilter){ wrongBatch++; return; }
     r['Pickup Ref']=map[cn]; updated++;
   });
@@ -9598,7 +9609,7 @@ function applyBulkPickup(){
   let msg=`<span style="color:#15803d;font-weight:700">✓ ${updated} containers updated</span>`;
   if(wrongBatch) msg+=` <span style="color:#dc2626">(${wrongBatch} skipped — wrong batch)</span>`;
   if(noMatch) msg+=` <span style="color:#6b7280">(${noMatch} not in app)</span>`;
-  res.innerHTML=msg;
+  if(resEl) resEl.innerHTML=msg;
 }
 
 function handleImport(e){
@@ -12486,6 +12497,19 @@ function noSetAll(id,f,v){
   o[f]=v; Object.values(o.perCtn||{}).forEach(pc=>{ if(pc) delete pc[f]; });
   saveNO(); noRenderSoon(); if(typeof showToast==='function') showToast('✓ Applied to all B/Ls');
 }
+function noOrdSecToggle(){ try{ localStorage.setItem('owenz_no_ordsec',localStorage.getItem('owenz_no_ordsec')==='0'?'1':'0'); }catch(e){} wbRender('no'); }
+function _noAllCharges(o){
+  const cs=_noContainers(o), js=cs.map(cn=>JSON.stringify(_noCharges(o,cn)));
+  return {rows:_noCharges(o,cs[0]||null), same:js.every(x=>x===js[0])};
+}
+function _noAllChargeSave(o,arr){
+  o['Charges']=arr.map(l=>({item:l.item||'Other',r:_noN(l.r),p:_noN(l.p),note:String(l.note||'')}));
+  Object.values(o.perCtn||{}).forEach(pc=>{ if(pc) delete pc['Charges']; });
+  saveNO(); noRenderSoon();
+}
+function noAllChargeAdd(id,sel){ const item=sel.value; if(!item) return; sel.value=''; const o=NO.find(r=>r._id===id); if(!o) return; _noAllChargeSave(o,[..._noAllCharges(o).rows,{item,r:0,p:0,note:''}]); }
+function noAllChargeSet(id,ix,f,v){ const o=NO.find(r=>r._id===id); if(!o) return; const a=_noAllCharges(o).rows.map(l=>Object.assign({},l)); if(!a[ix]) return; a[ix][f]=(f==='r'||f==='p')?_noN(v):v; _noAllChargeSave(o,a); }
+function noAllChargeDel(id,ix){ const o=NO.find(r=>r._id===id); if(!o) return; const a=_noAllCharges(o).rows.slice(); a.splice(ix,1); _noAllChargeSave(o,a); }
 function noChargesToAll(id,cn){
   const o=NO.find(r=>r._id===id); if(!o) return;
   o['Charges']=JSON.parse(JSON.stringify(_noCharges(o,cn)));
@@ -13581,19 +13605,30 @@ function wbDetailNo(id){
   return `<div style="padding:14px 16px;background:#f1f5f9;min-height:100%">
     ${_wbHead('no',o['Order No.']||'Order #'+o._id,(o['Project']?_wbChip(o['Project'],'#0369a1','#e0f2fe'):''),`<button onclick="noApptMail(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #1d4ed8;color:#1d4ed8;background:#fff;border-radius:6px;cursor:pointer">✉ Booking email</button><button onclick="noAddCtnPrompt(${o._id})" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #056dae;color:#056dae;background:#fff;border-radius:6px;cursor:pointer">+ Add B/L</button><button onclick="if(confirm('Delete entire order?')){noDel(${o._id})}" style="padding:5px 12px;font-size:12px;border:1px solid #fecaca;color:#dc2626;background:#fff;border-radius:6px;cursor:pointer">🗑 Delete</button>`)}
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${_wbKpi('Progress',doneN+'/'+list.length+' · '+pct+'%','#0369a1')}${_wbKpi('Receivable',_wbF2(rp.r),'#1d4ed8')}${_wbKpi('Payable',_wbF2(rp.p),'#b45309')}${_wbKpi('Margin',_wbF2(rp.m),rp.m>=0?'#056dae':'#dc2626')}${_wbKpi('Margin %',(rp.r?rp.pct:0)+'%',rp.m>=0?'#056dae':'#dc2626')}</div>
-    ${_wbSec('Order',`<div style="display:flex;flex-wrap:wrap;gap:10px">${_wbL('Project',_wbText('Project|',o['Project']||'',oset('Project'),{ph:'Project'}))}${_wbL('Order No.',_wbText('Order No.|',o['Order No.']||'',oset('Order No.')))}</div>
+    ${_wbSec(`<span onclick="noOrdSecToggle()" style="cursor:pointer;user-select:none">${localStorage.getItem('owenz_no_ordsec')==='0'?'▸':'▾'} Order${cs.length>1?' · all '+cs.length+' B/Ls':''} <span style="font-weight:500;text-transform:none;color:#94a3b8">${localStorage.getItem('owenz_no_ordsec')==='0'?'(click to expand)':''}</span></span>`,localStorage.getItem('owenz_no_ordsec')==='0'?'':`<div style="display:flex;flex-wrap:wrap;gap:10px">${_wbL('Project',_wbText('Project|',o['Project']||'',oset('Project'),{ph:'Project'}))}${_wbL('Order No.',_wbText('Order No.|',o['Order No.']||'',oset('Order No.')))}</div>
       <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px;margin-top:10px;align-items:start">${_wbL('Recipient / company',_wbAgArea('Recipient|',o['Recipient']||'',oset('Recipient'),'company, address…'))}${_wbL('Recipient email',_wbAgArea('Recipient Email|',o['Recipient Email']||'',oset('Recipient Email'),'a@x.com, b@x.com'))}${_wbL('Phone',_wbAgArea('Recipient Phone|',o['Recipient Phone']||'',oset('Recipient Phone'),'+32 …'))}</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px"><span style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase">Docs</span>${NO_DOCS.map(([f,l])=>{ const v=o[f]||'', c=v==='yes'?'#16a34a':v==='na'?'#64748b':'#94a3b8'; return `<button type="button" onclick="noDocCycle(${o._id},'${f}')" title="Click: ✓ provided → ✕ not needed → blank (not received)" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid ${v?c:'#e2e8f0'};border-radius:16px;background:${v==='yes'?'#f0fdf4':v==='na'?'#f1f5f9':'#fff'};color:${c};font-size:12.5px;font-weight:700;cursor:pointer"><span style="font-size:14px;width:14px;text-align:center">${v==='yes'?'✓':v==='na'?'✕':'○'}</span>${l}</button>`; }).join('')}<span style="font-size:11px;color:#94a3b8">✓ provided · ✕ not needed · ○ not received</span>${_noDocsDue(o,_noContainers(o)[0]||null).length?`<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#b91c1c">⚠ Missing: ${_noDocsDue(o,_noContainers(o)[0]||null).map(x=>x[1]).join(', ')}</div>`:''}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;align-items:start">
         <div><div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;margin-bottom:4px">Clearance point (清关点)</div>${_wbAgArea('Clearance Point|',o['Clearance Point']||'',oset('Clearance Point'),'customs office / code…')}</div>
         <div><div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;margin-bottom:4px">Pickup procedure (提货流程)</div>${_wbAgArea('Pickup Procedure|',o['Pickup Procedure']||'',oset('Pickup Procedure'),'')}</div></div>
-      <div style="margin-top:10px">${_wbL("Today's status",_wbArea('Today Status|',o['Today Status']||'',oset('Today Status')),300)}</div>`)}
-    ${cs.length>1?(()=>{ const same=f=>{ const vs=[...new Set(cs.map(cn=>String(f==='Hub'?_noCtnHub(o,cn):(_wbFld(o,cn,f)||''))))]; return vs.length===1?vs[0]:null; };
+      <div style="margin-top:10px">${_wbL("Today's status",_wbArea('Today Status|',o['Today Status']||'',oset('Today Status')),300)}</div>${cs.length>1?(()=>{ const same=f=>{ const vs=[...new Set(cs.map(cn=>String(f==='Hub'?_noCtnHub(o,cn):(_wbFld(o,cn,f)||''))))]; return vs.length===1?vs[0]:null; };
       const L=(lab,f,html)=>_wbL(lab+(same(f)===null?' <span style="color:#b45309;font-weight:700">· mixed</span>':''),html,1);
       const aset=f=>`noSetAll(${o._id},'${f}',@@)`, D=(lab,f)=>L(lab,f,_wbDate('ALL '+f+'|',same(f)||'',aset(f))), T=(lab,f,opt)=>L(lab,f,_wbText('ALL '+f+'|',same(f)||'',aset(f),opt||{}));
-      return _wbSec('All '+cs.length+' B/Ls — edit once, applies to every B/L',`<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px">${D('ETA','ETA')}${D('At Hub date','At Hub Date')}${D('Pick up','Pick Up Date')}${D('Delivery','Delivery Date')}${D('ATA','ATA')}</div>
+      const ac=_noAllCharges(o), ist='padding:4px 6px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;width:100%;box-sizing:border-box;background:#fff';
+      const tr=ac.rows.reduce((s,l)=>s+_noN(l.r),0), tp=ac.rows.reduce((s,l)=>s+_noN(l.p),0);
+      return `<div style="margin-top:14px;padding-top:10px;border-top:1px dashed #cbd5e1"><div style="font-size:11.5px;font-weight:800;color:#475569;letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px">All ${cs.length} B/Ls — edit once, applies to every B/L</div>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px">${D('ETA','ETA')}${D('At Hub date','At Hub Date')}${D('Pick up','Pick Up Date')}${D('Delivery','Delivery Date')}${D('ATA','ATA')}</div>
         <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px">${T('Consignee','Consignee',{list:'dl-con'})}${T('Destination','Destination')}${T('Trucker','Trucker',{list:'dl-truck'})}${T('Hub','Hub',{list:'dl-hub-o'})}${T('Free days','Free Storage (Days)')}</div>
-        <div style="font-size:11.5px;color:#64748b;margin-top:8px">Charges: fill them in on one B/L below, then press “⇉ Apply to all B/Ls” on that card. Each B/L can still be changed individually afterwards.</div>`); })():''}
+        <div style="display:flex;align-items:center;gap:10px;margin:12px 0 4px"><span style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase">Charges per B/L${ac.same?'':' <span style="color:#b45309">· mixed (showing first B/L — editing overwrites all)</span>'}</span>
+          <select onchange="noAllChargeAdd(${o._id},this)" style="padding:3px 8px;border:1px solid #056dae;color:#056dae;border-radius:5px;font-size:11.5px;font-weight:700;background:#fff;margin-left:auto"><option value="">+ Add item…</option>${NO_CHARGE_ITEMS.map(v=>`<option value="${v}">${v}</option>`).join('')}</select></div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="padding:5px 8px;text-align:left;width:150px">Item</th><th style="padding:5px 8px;text-align:right;width:110px">Receivable</th><th style="padding:5px 8px;text-align:right;width:110px">Payable</th><th style="padding:5px 8px;text-align:left">Note</th><th style="width:24px"></th></tr></thead><tbody>
+        ${ac.rows.map((l,ix)=>{ const opts=NO_CHARGE_ITEMS.includes(l.item)?NO_CHARGE_ITEMS:[l.item,...NO_CHARGE_ITEMS];
+          return `<tr><td style="padding:3px 4px"><select style="${ist}" onchange="noAllChargeSet(${o._id},${ix},'item',this.value)">${opts.map(v=>`<option ${v===l.item?'selected':''}>${_noEsc(v)}</option>`).join('')}</select></td>
+          <td style="padding:3px 4px"><input data-k="allch${ix}r|" style="${ist};text-align:right" value="${_noN(l.r)?_noN(l.r):''}" placeholder="0.00" onchange="noAllChargeSet(${o._id},${ix},'r',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+          <td style="padding:3px 4px"><input data-k="allch${ix}p|" style="${ist};text-align:right" value="${_noN(l.p)?_noN(l.p):''}" placeholder="0.00" onchange="noAllChargeSet(${o._id},${ix},'p',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+          <td style="padding:3px 4px"><input data-k="allch${ix}n|" style="${ist}" value="${_noEsc(l.note||'')}" placeholder="note…" onchange="noAllChargeSet(${o._id},${ix},'note',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+          <td style="text-align:center"><span onclick="noAllChargeDel(${o._id},${ix})" style="color:#dc2626;cursor:pointer;font-weight:700" title="Remove">✕</span></td></tr>`; }).join('')||'<tr><td colspan="5" style="padding:8px;color:#94a3b8">No charges yet — add one with “+ Add item…”.</td></tr>'}
+        <tr style="font-weight:800;background:#f8fafc"><td style="padding:5px 8px">Per B/L</td><td style="padding:5px 8px;text-align:right;color:#1d4ed8">${_wbF2(tr)}</td><td style="padding:5px 8px;text-align:right;color:#b45309">${_wbF2(tp)}</td><td style="padding:5px 8px;color:${mc(tr-tp)}">margin ${_wbF2(tr-tp)} · × ${cs.length} B/Ls = ${_wbF2((tr-tp)*cs.length)}</td><td></td></tr></tbody></table></div>`; })():''}`)}
     ${list.map(card).join('')}</div>`;
 }
 // ── TEMU：一个项目 + 日期组（列表）──
@@ -14095,7 +14130,44 @@ input[type=checkbox]{accent-color:var(--blue)}
 .ni{border-radius:var(--rad)}
 ::-webkit-scrollbar-thumb{background:#c5d0de}
 h2,h3{text-transform:none!important;letter-spacing:.01em!important}
+#desktop-nav,header{z-index:auto!important}
+.overlay{z-index:20000!important}
+.ov-x{position:absolute;top:10px;left:10px;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:16px;line-height:1;cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center}
+.ov-x:hover{color:var(--text);border-color:var(--muted)}
+.ov-has-x{position:relative}
+.ov-has-x>h2:first-of-type,.ov-has-x>.ov-x+h2,.ov-has-x>div:first-of-type>h2{padding-left:34px}
 .mobile-nav button{text-transform:none!important;letter-spacing:0!important;font-weight:500!important}
 </style>
+
+<script>
+// ── Every pop-up: Esc closes it, and a ✕ button sits in its top-left corner ──
+(function(){
+  function visible(el){ return el && getComputedStyle(el).display!=='none' && el.offsetParent!==null || (el && getComputedStyle(el).position==='fixed' && getComputedStyle(el).display!=='none'); }
+  function closeOv(ov){
+    if(!ov) return;
+    const btn=[...ov.querySelectorAll('button')].find(b=>!b.classList.contains('ov-x')&&/^\s*(cancel|close|✕\s*close|×|✕)\s*$/i.test(b.textContent));
+    if(btn){ btn.click(); if(getComputedStyle(ov).display==='none') return; }
+    ov.classList.remove('open'); ov.style.display=ov.classList.contains('overlay')?'':'none';
+    if(ov.id==='no-appt-overlay'||ov.id==='no-add-overlay') ov.remove();
+  }
+  function openOverlays(){ return [...document.querySelectorAll('.overlay,#soc-overlay')].filter(o=>o.id==='soc-overlay'?o.classList.contains('open'):getComputedStyle(o).display!=='none'); }
+  function addX(ov){
+    const box=ov.firstElementChild; if(!box||box.querySelector(':scope>.ov-x')) return;
+    box.classList.add('ov-has-x');
+    const b=document.createElement('button'); b.type='button'; b.className='ov-x'; b.title='Close (Esc)'; b.textContent='✕';
+    b.addEventListener('click',e=>{ e.stopPropagation(); closeOv(ov); });
+    box.insertBefore(b,box.firstChild);
+  }
+  function scan(){ openOverlays().forEach(addX); }
+  new MutationObserver(scan).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape') return;
+    const ovs=openOverlays();
+    if(ovs.length){ e.preventDefault(); closeOv(ovs[ovs.length-1]); return; }
+    try{ for(const k of ['no','ct','vt']){ if(_wbS[k]&&_wbS[k].sel!=null){ wbClose(k); return; } } }catch(_){}
+  });
+  scan();
+})();
+</script>
 </body>
 </html>
