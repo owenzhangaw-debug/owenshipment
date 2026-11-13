@@ -12239,6 +12239,7 @@ function noHubRefreshDL(){
 function noHubSet(id,f,v){
   const h=NO_HUBS.find(x=>x.id===id); if(!h) return;
   h[f]=(f==='free')?(v===''?'':Math.max(0,parseInt(v,10)||0)):String(v).trim();
+  if(f==='addr'){ delete h.lat; delete h.lon; delete h.cc; delete h.geo; renderNoHubs(); }
   saveNoHubs(); noHubRefreshDL();
   if(typeof noRenderSoon==='function') noRenderSoon();
 }
@@ -12261,11 +12262,13 @@ function renderNoHubs(){
       <span style="font-size:11.5px;color:#64748b">Orders' Hub only suggests terminals listed here · picking one auto-fills free days and tiered storage fee</span>
       <button onclick="noHubAdd()" style="margin-left:auto;padding:5px 14px;font-size:12px;font-weight:700;background:#056dae;color:#fff;border:none;border-radius:6px;cursor:pointer">+ Add terminal</button>
     </div>
-    <div class="tbl-scroll"><table class="sur-tbl" style="width:100%;min-width:900px"><thead><tr>
-      <th style="min-width:220px">Hub</th><th style="width:80px">Free days</th><th style="width:90px">Currency</th>
+    <div class="tbl-scroll"><table class="sur-tbl" style="width:100%;min-width:1250px"><thead><tr>
+      <th style="min-width:200px">Hub</th><th style="min-width:230px">地址 Address</th><th style="min-width:170px">位置 Location</th><th style="width:80px">Free days</th><th style="width:90px">Currency</th>
       <th style="min-width:240px">Tiers — from day : rate/day</th><th style="min-width:200px">Note</th><th style="width:36px"></th></tr></thead><tbody>
     ${NO_HUBS.map(h=>`<tr>
       <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.name)}" onchange="noHubSet(${h.id},'name',this.value)" placeholder="e.g. Duisburg（DGT）"/></td>
+      <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.addr||'')}" onchange="noHubSet(${h.id},'addr',this.value)" placeholder="street, city, country"/></td>
+      <td style="padding:4px;white-space:nowrap"><button onclick="noHubLocate(${h.id},this)" style="padding:4px 9px;font-size:12px;border:1px solid #056dae;color:#056dae;background:#fff;border-radius:5px;cursor:pointer">📍 测算</button> <span style="font-size:11.5px;color:#475569">${h.lat!=null?geoFlag(h.cc)+' '+_noEsc(h.geo||h.cc):'<span style="color:#94a3b8">—</span>'}</span></td>
       <td style="padding:4px"><input type="number" min="0" style="${inp};text-align:center" value="${_noEsc(h.free)}" onchange="noHubSet(${h.id},'free',this.value)"/></td>
       <td style="padding:4px"><select style="${inp}" onchange="noHubSet(${h.id},'cur',this.value)">${['EUR','USD'].map(c=>`<option${h.cur===c?' selected':''}>${c}</option>`).join('')}</select></td>
       <td style="padding:4px"><input style="${inp}" value="${_noEsc(h.tiers)}" onchange="noHubSet(${h.id},'tiers',this.value)" placeholder="5:20, 11:40, 21:50"/></td>
@@ -13593,6 +13596,14 @@ function wbDetailNo(id){
       ${sec('Shipment',G(4,`${_wbL('Consignee',_wbText(kk('Consignee'),txt('Consignee'),set('Consignee'),{list:'dl-con'}),1)}${_wbL('Destination',_wbText(kk('Destination'),txt('Destination'),set('Destination'),{ph:'country / city'}),1)}${_wbL('Trucker',_wbText(kk('Trucker'),txt('Trucker'),set('Trucker'),{list:'dl-truck'}),1)}${_wbL('Hub',_wbText(kk('Hub'),cn?(pc['Hub']!==undefined?pc['Hub']:(o['Hub']||'')):(o['Hub']||''),set('Hub'),{list:'dl-hub-o',ph:'pick from tariff table'}),1)}`))}
       ${sec('Dates',G(5,`${_wbL('ETA',_wbDate(kk('ETA'),txt('ETA'),set('ETA')),1)}${_wbL('At Hub date',_wbDate(kk('At Hub Date'),cn?(pc['At Hub Date']||''):(o['At Hub Date']||''),set('At Hub Date')),1)}${_wbL('Pick up',_wbDate(kk('Pick Up Date'),txt('Pick Up Date'),set('Pick Up Date')),1)}${_wbL('Delivery',_wbDate(kk('Delivery Date'),dv('Delivery Date'),set('Delivery Date')),1)}${_wbL('ATA',_wbDate(kk('ATA'),dv('ATA'),set('ATA')),1)}`))}
       ${sec('环节耗时 · Lead time by stage',_noLtHtml(o,cn,kk,set,txt))}
+      ${sec('地址与距离 · Address & distance',`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start">
+        ${_wbL('收货地址 Delivery address',_wbAgArea(kk('Delivery Address'),txt('Delivery Address'),set('Delivery Address'),'street, postcode, city, country'),1)}
+        ${_wbL('清关办公室地址 Customs office address',txt('Customs Address')==='None'?`<div style="padding:7px 9px;border:1px dashed #cbd5e1;border-radius:6px;color:#64748b;font-size:12.5px">无 None — 直接派送 direct delivery</div>`:_wbAgArea(kk('Customs Address'),txt('Customs Address'),set('Customs Address'),'address or leave empty'),1)}</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px">
+          <label style="font-size:12px;color:#475569;display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ${txt('Customs Address')==='None'?'checked':''} onchange="${_wbSet(set('Customs Address'),"this.checked?'None':''")}">无清关办公室 No customs office</label>
+          <button type="button" onclick="noGeoBtn(${o._id},'${ce}',this)" style="padding:4px 12px;font-size:12px;font-weight:700;border:1px solid #056dae;color:#056dae;background:#fff;border-radius:6px;cursor:pointer">📍 测算距离 Calculate</button>
+          <span style="font-size:12.5px">${_geoLine(_wbFld(o,cn,'Geo'))}</span></div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px">联网识别国家和位置（OpenStreetMap），距离 = 场站 → (清关点) → 收货地址 的直线距离 × 1.25 估算公路距离。没填收货地址时用 Destination。· Looked up online (OpenStreetMap); road km ≈ straight line × 1.25, hub → (customs) → delivery.</div>`)}
       ${sec('Warehouse appointment (约仓)',`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">${_wbL('Appointment time',_wbText(kk('Appt Time'),txt('Appt Time'),set('Appt Time'),{ph:'YYYY/MM/DD HH:MM'}),180)}<div style="padding-bottom:3px">${_wbChk(kk('Appt Confirmed'),'Confirmed',cn?!!pc['Appt Confirmed']:!!o['Appt Confirmed'],set('Appt Confirmed'),'#1d4ed8')}</div></div>`)}
       ${sec('Status',`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
         ${_wbChk(kk('Customs Office'),'Customs office',co,set('Customs Office'),'#056dae')}${_wbChk(kk('At Hub'),'Ready to be picked',cn?!!pc['At Hub']:!!o['Arrived at Hub'],set('At Hub','Arrived at Hub'),'#b45309')}${_wbChk(kk('Demurrage'),'Demurrage'+(autoD?' ('+autoD+'d late)':''),dem,set('Demurrage'),'#dc2626')}</div>
@@ -14158,6 +14169,90 @@ h2,h3{text-transform:none!important;letter-spacing:.01em!important}
 
 
 <script>
+// ══ GEO: address → country + coordinates (OpenStreetMap Nominatim), road-distance estimate from the hub ══
+const GEO_KEY='owenz_geo_cache_v1'; let GEO={}; try{ GEO=JSON.parse(localStorage.getItem(GEO_KEY)||'{}'); }catch(e){}
+const GEO_ROAD=1.25; // road km ≈ straight line × 1.25
+const GEO_BANDS=[[0,150],[150,300],[300,500],[500,800],[800,1e9]];
+function geoBand(km){ const b=GEO_BANDS.find(([a,z])=>km>=a&&km<z)||GEO_BANDS[GEO_BANDS.length-1]; return b[1]>1e8?b[0]+'+ km':b[0]+'–'+b[1]+' km'; }
+function geoFlag(cc){ cc=String(cc||'').toUpperCase(); return /^[A-Z]{2}$/.test(cc)?String.fromCodePoint(...[...cc].map(c=>0x1F1E6+c.charCodeAt(0)-65)):''; }
+function geoKm(a,b){ const R=6371,r=x=>x*Math.PI/180, dLa=r(b.lat-a.lat), dLo=r(b.lon-a.lon); const s=Math.sin(dLa/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
+const geoRoad=(a,b)=>geoKm(a,b)*GEO_ROAD;
+let _geoLast=0;
+async function geoLookup(q){
+  q=String(q||'').trim(); if(!q) return null; const k=q.toLowerCase();
+  if(GEO[k]) return GEO[k];
+  const wait=Math.max(0,_geoLast+1100-Date.now()); if(wait) await new Promise(r=>setTimeout(r,wait)); _geoLast=Date.now(); // service limit: 1 request / second
+  const res=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&accept-language=en&q='+encodeURIComponent(q),{headers:{'Accept':'application/json'}});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const j=await res.json(); if(!j||!j[0]) return null;
+  const a=j[0].address||{}, v={lat:+j[0].lat,lon:+j[0].lon,cc:String(a.country_code||'').toUpperCase(),country:a.country||'',city:a.city||a.town||a.village||a.municipality||a.county||'',label:j[0].display_name||q};
+  GEO[k]=v; try{ localStorage.setItem(GEO_KEY,JSON.stringify(GEO)); }catch(e){}
+  return v;
+}
+function _geoHubRec(name){
+  const n=String(name||'').trim(); if(!n) return null;
+  const ex=_noHubByName(n); if(ex) return ex;
+  const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ł/g,'l').toLowerCase();
+  const tok=norm(n).split(/[\s（(,]+/)[0];
+  return NO_HUBS.find(h=>norm(h.name).startsWith(tok))||null;
+}
+// hub table: locate one terminal from its address (or its name)
+async function noHubLocate(id,btn){
+  const h=NO_HUBS.find(x=>x.id===id); if(!h) return;
+  const q=(h.addr||'').trim()||String(h.name||'').replace(/[（(].*$/,'').trim();
+  if(!q) return alert('Enter the terminal address first · 先填场站地址');
+  if(btn){ btn.disabled=true; btn.textContent='…'; }
+  try{ const g=await geoLookup(q); if(!g){ alert('Address not found · 找不到这个地址：'+q); }
+    else { h.lat=g.lat; h.lon=g.lon; h.cc=g.cc; h.geo=(g.city?g.city+', ':'')+g.country; saveNoHubs(); } }
+  catch(e){ alert('Lookup failed (no internet?) · 查询失败：'+e.message); }
+  renderNoHubs(); if(typeof noRenderSoon==='function') noRenderSoon();
+}
+async function _geoHubPoint(hubName){
+  const h=_geoHubRec(hubName);
+  if(h&&h.lat!=null) return {lat:h.lat,lon:h.lon,cc:h.cc,name:h.name};
+  const q=(h&&h.addr)||String(h?h.name:hubName||'').replace(/[（(].*$/,'').trim(); if(!q) return null;
+  const g=await geoLookup(q); if(!g) return null;
+  if(h){ h.lat=g.lat; h.lon=g.lon; h.cc=g.cc; h.geo=(g.city?g.city+', ':'')+g.country; saveNoHubs(); }
+  return {lat:g.lat,lon:g.lon,cc:g.cc,name:h?h.name:hubName};
+}
+// one B/L: hub → (customs office) → delivery address
+async function noGeoCalc(id,cn,quiet){
+  const o=NO.find(r=>r._id===id); if(!o) return false;
+  const setF=(f,v)=>{ if(cn) noSetCtn(id,cn,f,v); else noSet(id,f,v); };
+  const dq=String(_wbFld(o,cn,'Delivery Address')||'').trim()||String(_wbFld(o,cn,'Destination')||'').trim();
+  const hubName=_noCtnHub(o,cn);
+  if(!dq){ if(!quiet) alert('Enter the delivery address (or Destination) first · 先填收货地址'); return false; }
+  if(!hubName){ if(!quiet) alert('This B/L has no Hub · 这个 B/L 没有填场站'); return false; }
+  try{
+    const hp=await _geoHubPoint(hubName); if(!hp){ if(!quiet) alert('Hub location not found — add its address in the terminal table · 找不到场站位置，请在场站表填地址'); return false; }
+    const dp=await geoLookup(dq); if(!dp){ if(!quiet) alert('Delivery address not found · 找不到收货地址：'+dq); return false; }
+    const ca=String(_wbFld(o,cn,'Customs Address')||'').trim(); let cp=null;
+    if(ca&&ca!=='None'){ cp=await geoLookup(ca); if(!cp&&!quiet) alert('Customs office address not found, distance calculated without it · 找不到清关办公室地址，按直接派送计算'); }
+    const km=Math.round(cp?geoRoad(hp,cp)+geoRoad(cp,dp):geoRoad(hp,dp));
+    setF('Geo',{cc:dp.cc,country:dp.country,city:dp.city,lat:dp.lat,lon:dp.lon,km,hub:hp.name,via:!!cp,ts:Date.now()});
+    return true;
+  }catch(e){ if(!quiet) alert('Lookup failed (no internet?) · 查询失败：'+e.message); return false; }
+}
+async function noGeoBtn(id,cn,btn){ if(btn){ btn.disabled=true; btn.textContent='测算中…'; } await noGeoCalc(id,cn||null); if(btn){ btn.disabled=false; btn.textContent='📍 测算距离 Calculate'; } }
+// every B/L that has an address/destination and a hub but no distance yet
+async function noGeoAll(btn){
+  const todo=[]; NO.filter(o=>!_noHasSt(o,'Cancelled')).forEach(o=>{ const cs=_noContainers(o); (cs.length?cs:[null]).forEach(cn=>{
+    const g=_wbFld(o,cn,'Geo'); if(g&&g.km!=null) return;
+    if((_wbFld(o,cn,'Delivery Address')||_wbFld(o,cn,'Destination'))&&_noCtnHub(o,cn)) todo.push([o._id,cn]); }); });
+  if(!todo.length) return alert('Nothing to calculate · 没有需要测算的 B/L');
+  if(!confirm(todo.length+' B/Ls will be looked up online (about 1 per second). Continue? · 将联网测算 '+todo.length+' 个 B/L，继续？')) return;
+  let ok=0; for(let i=0;i<todo.length;i++){ if(btn) btn.textContent='测算中 '+(i+1)+'/'+todo.length; if(await noGeoCalc(todo[i][0],todo[i][1],true)) ok++; }
+  if(btn) btn.textContent='📍 全部测算 Locate all';
+  if(typeof showToast==='function') showToast('✓ '+ok+' / '+todo.length+' B/Ls located');
+  try{ renderNoTrkScore(); }catch(e){}
+}
+function _geoLine(g){
+  if(!g||g.km==null) return '<span style="color:#94a3b8">未测算 · not calculated</span>';
+  return `${geoFlag(g.cc)} <b>${_noEsc(g.country||g.cc)}</b>${g.city?' · '+_noEsc(g.city):''} · 距 ${_noEsc(g.hub||'hub')} 约 <b>${g.km} km</b>${g.via?'（经清关点 via customs）':''} · <span style="color:#056dae;font-weight:700">${geoBand(g.km)}</span>`;
+}
+</script>
+
+<script>
 // ══ QUOTES (risk-reserved quote calculator + quote log / win-rate) · LEAD TIME · EXTRA-COST PARETO · TEMU TRUCKER SCORE ══
 const QT_KEY='owenz_quotes_v1', QC_KEY='owenz_qcalc_v1';
 let QT=[]; try{ QT=JSON.parse(localStorage.getItem(QT_KEY)||'[]'); }catch(e){}
@@ -14241,7 +14336,8 @@ function renderNoTrkScore(){
     const ch=_noCharges(o,cn), fr=ch.filter(l=>l.item==='Freight').reduce((s,l)=>s+_noN(l.p),0);
     const x=ch.filter(l=>QX_ITEMS.includes(l.item)).reduce((s,l)=>s+_noN(l.p),0)+_noSurcharges(o,cn).reduce((s,q)=>s+_noN(q.fee),0);
     const dd=_noParseDate(_wbFld(o,cn,'Delivery Date')), ata=_noParseDate(_wbFld(o,cn,'ATA'));
-    B.push({t,dest:String(_wbFld(o,cn,'Destination')||'').trim().toLowerCase(),fr,x,ot:(dd&&ata)?(ata<=dd?1:0):null}); }); });
+    const geo=_wbFld(o,cn,'Geo'), km=geo&&geo.km>0?geo.km:null;
+    B.push({t,dest:km?((geo.cc||'?')+' · '+geoBand(km)):String(_wbFld(o,cn,'Destination')||'').trim().toLowerCase(),km,fr,x,ot:(dd&&ata)?(ata<=dd?1:0):null}); }); });
   // destination averages, only where at least 2 truckers have a price → a real comparison
   const dm={}; B.filter(b=>b.fr>0&&b.dest).forEach(b=>{ const e=dm[b.dest]||(dm[b.dest]={s:0,n:0,tr:new Set()}); e.s+=b.fr; e.n++; e.tr.add(b.t); });
   const dAvg={}; Object.keys(dm).forEach(k=>{ if(dm[k].tr.size>=2) dAvg[k]=dm[k].s/dm[k].n; });
@@ -14250,8 +14346,9 @@ function renderNoTrkScore(){
     const pr=xs.filter(b=>b.fr>0), avgFr=pr.length?pr.reduce((s,b)=>s+b.fr,0)/pr.length:null;
     const cmp=pr.filter(b=>dAvg[b.dest]), idx=cmp.length?cmp.reduce((s,b)=>s+b.fr/dAvg[b.dest],0)/cmp.length:null;
     const ref=(avgFr&&idx)?avgFr/idx:null;
+    const pk=pr.filter(b=>b.km), perKm=pk.length?pk.reduce((s,b)=>s+b.fr/b.km,0)/pk.length:null;
     const ot=xs.map(b=>b.ot).filter(v=>v!=null), onT=ot.length?ot.reduce((a,b)=>a+b,0)/ot.length:null, xr=xs.filter(b=>b.x>0).length/xs.length;
-    return {t,n:xs.length,o,avgFr,idx,nCmp:cmp.length,onT,nOt:ot.length,xr,
+    return {t,n:xs.length,o,avgFr,perKm,nKm:pk.length,idx,nCmp:cmp.length,onT,nOt:ot.length,xr,
       eIdx:o.price!=null?(ref?o.price/ref:null):idx, eOn:o.onT!=null?o.onT/100:onT, eX:o.xr!=null?o.xr/100:xr};
   });
   const minIdx=Math.min(...T.map(x=>x.eIdx).filter(v=>v!=null&&v>0),1), W=(OTS.wp+OTS.wo+OTS.wx)||1;
@@ -14261,15 +14358,16 @@ function renderNoTrkScore(){
   const td='padding:5px 8px;text-align:right;font-family:var(--f-num,monospace);border-bottom:1px solid #eef4fa;white-space:nowrap', th='padding:6px 8px;text-align:right;white-space:nowrap;line-height:1.25';
   el.innerHTML=`<div class="chart-card" style="margin:0 0 12px;padding:12px 16px">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="if(event.target.tagName!=='INPUT'){ OTS.open=OTS.open?0:1; otsSave(); }"><h3 style="margin:0">${OTS.open?'▾':'▸'} Orders 卡车公司评分 · Orders trucker score</h3>
-      <span style="margin-left:auto;display:inline-flex;gap:10px;flex-wrap:wrap" onclick="event.stopPropagation()">${inp('wp','价格 Price %')}${inp('wo','准时 On time %')}${inp('wx','少额外 Few extras %')}</span></div>
-    ${OTS.open?`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="${th};text-align:left">#</th><th style="${th};text-align:left">卡车公司 Trucker</th><th style="${th}">B/L / 柜数<br><span style="font-weight:400;font-size:11px">B/Ls (40HQ)</span></th><th style="${th}">平均运费<br><span style="font-weight:400;font-size:11px">Avg freight</span></th><th style="${th}">价格指数<br><span style="font-weight:400;font-size:11px">Price index (vs same destination)</span></th><th style="${th}">准时率<br><span style="font-weight:400;font-size:11px">On time</span></th><th style="${th}">额外费用率<br><span style="font-weight:400;font-size:11px">Extra rate</span></th><th style="${th}">总分<br><span style="font-weight:400;font-size:11px">Score</span></th></tr></thead><tbody>
+      <span style="margin-left:auto;display:inline-flex;gap:10px;flex-wrap:wrap;align-items:center" onclick="event.stopPropagation()"><button class="btn" style="border:1px solid #056dae;color:#056dae;background:#fff;padding:3px 10px;font-size:12px" onclick="noGeoAll(this)">📍 全部测算 Locate all</button>${inp('wp','价格 Price %')}${inp('wo','准时 On time %')}${inp('wx','少额外 Few extras %')}</span></div>
+    ${OTS.open?`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="${th};text-align:left">#</th><th style="${th};text-align:left">卡车公司 Trucker</th><th style="${th}">B/L / 柜数<br><span style="font-weight:400;font-size:11px">B/Ls (40HQ)</span></th><th style="${th}">平均运费<br><span style="font-weight:400;font-size:11px">Avg freight</span></th><th style="${th}">每公里<br><span style="font-weight:400;font-size:11px">€ / km</span></th><th style="${th}">价格指数<br><span style="font-weight:400;font-size:11px">Price index (same group)</span></th><th style="${th}">准时率<br><span style="font-weight:400;font-size:11px">On time</span></th><th style="${th}">额外费用率<br><span style="font-weight:400;font-size:11px">Extra rate</span></th><th style="${th}">总分<br><span style="font-weight:400;font-size:11px">Score</span></th></tr></thead><tbody>
       ${T.map((x,i)=>{ const tq=x.t.replace(/'/g,"\\'"), ed=(f,val,auto,suf,w)=>`<input type="number" step="any" value="${val!=null?val:''}" placeholder="${auto}" onchange="otsOv('${tq}','${f}',this.value)" style="width:${w||70}px;text-align:right;padding:2px 5px;border:1px solid ${val!=null?'#056dae':'var(--border)'};border-radius:5px;font-family:inherit">${suf||''}`;
         return `<tr><td style="padding:5px 8px;border-bottom:1px solid #eef4fa">${i+1}</td><td style="padding:5px 8px;font-weight:600;border-bottom:1px solid #eef4fa">${_noEsc(x.t)}</td><td style="${td}">${x.n}</td>
         <td style="${td}">€ ${ed('price',x.o.price,x.avgFr!=null?_qF(x.avgFr):'—','',72)}</td>
+        <td style="${td}">${x.perKm!=null?'€'+_qF(x.perKm,2):'—'} <span style="color:var(--muted);font-size:11px">(${x.nKm})</span></td>
         <td style="${td}">${x.eIdx!=null?_qF(x.eIdx*100)+'%':'—'} <span style="color:var(--muted);font-size:11px">(${x.nCmp})</span></td>
         <td style="${td}">${ed('onT',x.o.onT,x.onT!=null?_qF(x.onT*100):'—',' %',60)} <span style="color:var(--muted);font-size:11px">(${x.nOt})</span></td><td style="${td}">${ed('xr',x.o.xr,_qF(x.xr*100),' %',56)}</td><td style="${td};font-weight:700;color:#056dae">${_qF(x.score)}</td></tr>`; }).join('')||`<tr><td colspan="8" style="padding:8px;color:var(--muted)">No data</td></tr>`}</tbody></table></div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">不设最少柜数，Orders 里每个 B/L（40HQ）都计入。平均运费 = Charges 里 Freight 的应付。散单距离不同，所以<b>价格指数只和同一目的地比</b>：只用至少有 2 家公司都跑过的目的地（括号内为可比较的票数），100% = 该目的地平均，越低越便宜；没有可比较目的地的显示 —，价格分按 0.5 计。准时 = ATA ≤ Delivery Date；额外费用率 = 有额外费用（Waiting、Storage、Other 等或附加费）的 B/L 比例。灰色数字都可以改，填了（蓝框）就用你的数。<span style="color:#056dae;cursor:pointer;text-decoration:underline" onclick="otsReset()">清除手动修改</span><br>
-      No minimum volume — every B/L (40HQ) in Orders counts. Avg freight = Freight payable in Charges. Because distances differ, the price index only compares the same destination, using destinations served by at least 2 truckers (comparable B/Ls in brackets). On time = ATA ≤ Delivery Date; extra rate = share of B/Ls with extra costs. Grey numbers can be edited.</div>`:''}</div>`;
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">不设最少柜数，Orders 里每个 B/L（40HQ）都计入。平均运费 = Charges 里 Freight 的应付。散单距离不同，所以<b>价格指数只和同一组比</b>：测算过距离的 B/L 按「国家 · 距离档」（如 DE · 300–500 km）分组，没测算的按目的地；只用至少有 2 家公司都跑过的组（括号内为可比较的票数），100% = 该目的地平均，越低越便宜；没有可比较目的地的显示 —，价格分按 0.5 计。准时 = ATA ≤ Delivery Date；额外费用率 = 有额外费用（Waiting、Storage、Other 等或附加费）的 B/L 比例。灰色数字都可以改，填了（蓝框）就用你的数。<span style="color:#056dae;cursor:pointer;text-decoration:underline" onclick="otsReset()">清除手动修改</span><br>
+      No minimum volume — every B/L (40HQ) in Orders counts. Avg freight = Freight payable in Charges. Because distances differ, the price index compares within the same group — country + distance band (e.g. DE · 300–500 km) for located B/Ls, otherwise destination — using groups served by at least 2 truckers (comparable B/Ls in brackets). On time = ATA ≤ Delivery Date; extra rate = share of B/Ls with extra costs. Grey numbers can be edited.</div>`:''}</div>`;
 }
 
 // ── Lead-time stages per B/L (auto from dates, or typed in) ──
